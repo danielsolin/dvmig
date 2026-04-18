@@ -1,0 +1,11 @@
+C:\Users\daniel\source\dvmig\src\dvmig.Plugins\bin\Debug\netstandard2.0\dvmig.Plugins.deps.json
+C:\Users\daniel\source\dvmig\src\dvmig.Plugins\bin\Debug\netstandard2.0\dvmig.Plugins.dll
+C:\Users\daniel\source\dvmig\src\dvmig.Plugins\bin\Debug\netstandard2.0\dvmig.Plugins.pdb
+C:\Users\daniel\source\dvmig\src\dvmig.Plugins\obj\Debug\netstandard2.0\dvmig.Plugins.csproj.AssemblyReference.cache
+C:\Users\daniel\source\dvmig\src\dvmig.Plugins\obj\Debug\netstandard2.0\dvmig.Plugins.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\daniel\source\dvmig\src\dvmig.Plugins\obj\Debug\netstandard2.0\dvmig.Plugins.AssemblyInfoInputs.cache
+C:\Users\daniel\source\dvmig\src\dvmig.Plugins\obj\Debug\netstandard2.0\dvmig.Plugins.AssemblyInfo.cs
+C:\Users\daniel\source\dvmig\src\dvmig.Plugins\obj\Debug\netstandard2.0\dvmig.Plugins.csproj.CoreCompileInputs.cache
+C:\Users\daniel\source\dvmig\src\dvmig.Plugins\obj\Debug\netstandard2.0\dvmig.Plugins.sourcelink.json
+C:\Users\daniel\source\dvmig\src\dvmig.Plugins\obj\Debug\netstandard2.0\dvmig.Plugins.dll
+C:\Users\daniel\source\dvmig\src\dvmig.Plugins\obj\Debug\netstandard2.0\dvmig.Plugins.pdb

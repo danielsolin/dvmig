@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("dvmig.Core")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+88e73a6089cf80e5b3f86c3a13132e0fc6944dcc")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+2d2997962c3b17527e230059bd0d622ae57ff9f2")]
 [assembly: System.Reflection.AssemblyProductAttribute("dvmig.Core")]
 [assembly: System.Reflection.AssemblyTitleAttribute("dvmig.Core")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

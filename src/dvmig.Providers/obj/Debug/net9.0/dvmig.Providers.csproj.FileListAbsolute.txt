@@ -1,0 +1,13 @@
+C:\Users\daniel\source\dvmig\src\dvmig.Providers\bin\Debug\net9.0\dvmig.Providers.deps.json
+C:\Users\daniel\source\dvmig\src\dvmig.Providers\bin\Debug\net9.0\dvmig.Providers.dll
+C:\Users\daniel\source\dvmig\src\dvmig.Providers\bin\Debug\net9.0\dvmig.Providers.pdb
+C:\Users\daniel\source\dvmig\src\dvmig.Providers\obj\Debug\net9.0\dvmig.Providers.csproj.AssemblyReference.cache
+C:\Users\daniel\source\dvmig\src\dvmig.Providers\obj\Debug\net9.0\dvmig.Providers.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\daniel\source\dvmig\src\dvmig.Providers\obj\Debug\net9.0\dvmig.Providers.AssemblyInfoInputs.cache
+C:\Users\daniel\source\dvmig\src\dvmig.Providers\obj\Debug\net9.0\dvmig.Providers.AssemblyInfo.cs
+C:\Users\daniel\source\dvmig\src\dvmig.Providers\obj\Debug\net9.0\dvmig.Providers.csproj.CoreCompileInputs.cache
+C:\Users\daniel\source\dvmig\src\dvmig.Providers\obj\Debug\net9.0\dvmig.Providers.sourcelink.json
+C:\Users\daniel\source\dvmig\src\dvmig.Providers\obj\Debug\net9.0\dvmig.Providers.dll
+C:\Users\daniel\source\dvmig\src\dvmig.Providers\obj\Debug\net9.0\refint\dvmig.Providers.dll
+C:\Users\daniel\source\dvmig\src\dvmig.Providers\obj\Debug\net9.0\dvmig.Providers.pdb
+C:\Users\daniel\source\dvmig\src\dvmig.Providers\obj\Debug\net9.0\ref\dvmig.Providers.dll

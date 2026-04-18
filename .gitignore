@@ -1,2 +1,16 @@
 old
 .vs
+MODERNIZATION.md
+
+# .NET Ignore Patterns
+bin/
+obj/
+*.user
+*.userosscache
+*.sln.docstates
+_ReSharper*/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+TestResults/
