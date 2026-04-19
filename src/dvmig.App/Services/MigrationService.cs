@@ -12,7 +12,9 @@ namespace dvmig.App.Services
 {
     public interface IMigrationService
     {
-        Task<bool> TestConnectionAsync(string connectionString, bool isLegacy);
+        Task<bool> ConnectSourceAsync(string connectionString, bool isLegacy);
+        Task<bool> ConnectTargetAsync(string connectionString, bool isLegacy);
+        
         Task<List<EntityMetadata>> GetSourceEntitiesAsync(CancellationToken ct = default);
         
         IDataverseProvider? SourceProvider { get; }
@@ -27,31 +29,44 @@ namespace dvmig.App.Services
         public IDataverseProvider? TargetProvider { get; private set; }
         public List<string> SelectedEntities { get; } = new List<string>();
 
-        public async Task<bool> TestConnectionAsync(
-            string connectionString, 
-            bool isLegacy)
+        public async Task<bool> ConnectSourceAsync(string connectionString, bool isLegacy)
         {
             try
             {
-                IDataverseProvider provider = isLegacy
+                SourceProvider = isLegacy
                     ? await Task.Run(() => new LegacyCrmProvider(connectionString))
                     : await Task.Run(() => new DataverseProvider(connectionString));
-
-                if (SourceProvider == null)
-                {
-                    SourceProvider = provider;
-                }
-                else
-                {
-                    TargetProvider = provider;
-                }
-
+                
                 return true;
             }
             catch
             {
                 return false;
             }
+        }
+
+        public async Task<bool> ConnectTargetAsync(string connectionString, bool isLegacy)
+        {
+            try
+            {
+                TargetProvider = isLegacy
+                    ? await Task.Run(() => new LegacyCrmProvider(connectionString))
+                    : await Task.Run(() => new DataverseProvider(connectionString));
+                
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        public async Task<bool> TestConnectionAsync(
+            string connectionString, 
+            bool isLegacy)
+        {
+            // Deprecated, using ConnectSource/ConnectTarget
+            return false;
         }
 
         public async Task<List<EntityMetadata>> GetSourceEntitiesAsync(
