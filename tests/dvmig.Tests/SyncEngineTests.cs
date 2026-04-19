@@ -4,11 +4,6 @@ using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Messages;
 using Moq;
 using Serilog;
-using System;
-using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
-using Xunit;
 
 namespace dvmig.Tests
 {
@@ -154,6 +149,48 @@ namespace dvmig.Tests
             // Assert
             _targetMock.Verify(t => t.ExecuteAsync(It.IsAny<ExecuteMultipleRequest>(), It.IsAny<CancellationToken>()), Times.Once);
             _targetMock.Verify(t => t.CreateAsync(It.Is<Entity>(e => (string)e["name"] == "Fail"), It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task SyncRecordAsync_ShouldCallAssociate_WhenEntityIsIntersect()
+        {
+            // Arrange
+            var relName = "new_account_contact";
+            var accountId = Guid.NewGuid();
+            var contactId = Guid.NewGuid();
+
+            var intersectEntity = new Entity(relName, Guid.NewGuid());
+            intersectEntity["accountid"] = new EntityReference("account", accountId);
+            intersectEntity["contactid"] = new EntityReference("contact", contactId);
+
+            // Mock Metadata
+            var metadata = new Microsoft.Xrm.Sdk.Metadata.EntityMetadata
+            {
+                LogicalName = relName
+            };
+            
+            // Set IsIntersect via reflection as it is read-only
+            typeof(Microsoft.Xrm.Sdk.Metadata.EntityMetadata)
+                .GetProperty(nameof(metadata.IsIntersect))
+                ?.SetValue(metadata, true);
+
+            _targetMock.Setup(t => t.GetEntityMetadataAsync(relName, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(metadata);
+
+            _targetMock.Setup(t => t.ExecuteAsync(It.IsAny<AssociateRequest>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new AssociateResponse());
+
+            var options = new SyncOptions { SkipExisting = false };
+
+            // Act
+            var result = await _engine.SyncRecordAsync(intersectEntity, options);
+
+            // Assert
+            Assert.True(result);
+            _targetMock.Verify(t => t.ExecuteAsync(It.Is<AssociateRequest>(r => 
+                r.Relationship.SchemaName == relName &&
+                r.Target.Id == accountId &&
+                r.RelatedEntities[0].Id == contactId), It.IsAny<CancellationToken>()), Times.Once);
         }
     }
 }

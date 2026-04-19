@@ -108,11 +108,18 @@ namespace dvmig.Core
 
                 foreach (var entity in batch)
                 {
-                    // 1. Proactive Stripping
-                    var prepared = await PrepareEntityForTargetAsync(entity, 
-                        options, ct);
+                    var metadata = await GetMetadataAsync(entity.LogicalName, ct);
                     
-                    request.Requests.Add(new CreateRequest { Target = prepared });
+                    if (metadata?.IsIntersect == true)
+                    {
+                        request.Requests.Add(CreateAssociateRequest(entity));
+                    }
+                    else
+                    {
+                        var prepared = await PrepareEntityForTargetAsync(entity, 
+                            metadata, options, ct);
+                        request.Requests.Add(new CreateRequest { Target = prepared });
+                    }
                 }
 
                 var response = (ExecuteMultipleResponse)await _target
@@ -127,7 +134,6 @@ namespace dvmig.Core
                             "Shunting to single sync.", 
                             item.RequestIndex, item.Fault.Message);
                         
-                        // SHUNT: Fall back to single-record logic for fixes
                         await SyncRecordAsync(failedEntity, options, ct);
                     }
                 }
@@ -151,6 +157,14 @@ namespace dvmig.Core
 
             try
             {
+                var metadata = await GetMetadataAsync(entity.LogicalName, ct);
+
+                // N:N Handling
+                if (metadata?.IsIntersect == true)
+                {
+                    return await SyncIntersectEntityAsync(entity, options, ct);
+                }
+
                 if (options.SkipExisting)
                 {
                     var existing = await _target.RetrieveAsync(entity.LogicalName,
@@ -158,7 +172,8 @@ namespace dvmig.Core
                     if (existing != null) return true;
                 }
 
-                var prepared = await PrepareEntityForTargetAsync(entity, options, ct);
+                var prepared = await PrepareEntityForTargetAsync(entity, 
+                    metadata, options, ct);
                 return await CreateWithFixStrategyAsync(prepared, options, ct);
             }
             catch (Exception ex)
@@ -166,6 +181,52 @@ namespace dvmig.Core
                 _logger.Error(ex, "Failed to sync {Key}", recordKey);
                 return false;
             }
+        }
+
+        private async Task<bool> SyncIntersectEntityAsync(
+            Entity entity,
+            SyncOptions options,
+            CancellationToken ct)
+        {
+            try
+            {
+                var request = CreateAssociateRequest(entity);
+                if (request == null) return false;
+
+                await _retryPolicy.ExecuteAsync(() => _target.ExecuteAsync(request, ct));
+                _logger.Information("Associated N:N relationship {Key}", 
+                    entity.LogicalName);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                // If it already exists, consider it a success
+                if (ex.Message.Contains("already exists")) return true;
+
+                return await HandleSyncExceptionAsync(ex, entity, options, ct);
+            }
+        }
+
+        private AssociateRequest CreateAssociateRequest(Entity entity)
+        {
+            var references = entity.Attributes
+                .Values.OfType<EntityReference>().ToList();
+
+            if (references.Count < 2)
+            {
+                _logger.Warning("Intersect entity {Key} does not have " +
+                    "two EntityReferences.", entity.LogicalName);
+                return null;
+            }
+
+            var request = new AssociateRequest
+            {
+                Target = references[0],
+                Relationship = new Relationship(entity.LogicalName),
+                RelatedEntities = new EntityReferenceCollection { references[1] }
+            };
+
+            return request;
         }
 
         private async Task<bool> CreateWithFixStrategyAsync(
@@ -256,6 +317,13 @@ namespace dvmig.Core
                     var success = await SyncRecordAsync(missingRecord, options, ct);
                     if (success)
                     {
+                        // For Intersect, we retry the sync itself
+                        var metadata = await GetMetadataAsync(entity.LogicalName, ct);
+                        if (metadata?.IsIntersect == true)
+                        {
+                            return await SyncIntersectEntityAsync(entity, options, ct);
+                        }
+
                         return await CreateWithFixStrategyAsync(entity, options, ct);
                     }
                 }
@@ -265,17 +333,16 @@ namespace dvmig.Core
 
         private async Task<Entity> PrepareEntityForTargetAsync(
             Entity entity, 
+            EntityMetadata metadata,
             SyncOptions options, 
             CancellationToken ct)
         {
             var target = new Entity(entity.LogicalName, entity.Id);
-            var metadata = await GetMetadataAsync(entity.LogicalName, ct);
-
+            
             foreach (var attr in entity.Attributes)
             {
                 if (IsForbiddenAttribute(attr.Key)) continue;
 
-                // PROACTIVE STRIPPING: Use metadata to check if field is valid
                 if (metadata?.Attributes != null)
                 {
                     var attrMeta = metadata.Attributes

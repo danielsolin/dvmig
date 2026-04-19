@@ -2,9 +2,6 @@ using Microsoft.PowerPlatform.Dataverse.Client;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Metadata;
 using Microsoft.Xrm.Sdk.Query;
-using System;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace dvmig.Providers
 {
