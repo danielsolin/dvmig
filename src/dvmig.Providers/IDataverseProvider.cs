@@ -39,6 +39,10 @@ namespace dvmig.Providers
             QueryBase query,
             CancellationToken ct = default);
 
+        Task<OrganizationResponse> ExecuteAsync(
+            OrganizationRequest request,
+            CancellationToken ct = default);
+
         Guid? CallerId { get; set; }
     }
 }

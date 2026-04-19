@@ -1,9 +1,11 @@
 using dvmig.Core;
 using dvmig.Providers;
 using Microsoft.Xrm.Sdk;
+using Microsoft.Xrm.Sdk.Messages;
 using Moq;
 using Serilog;
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -30,6 +32,39 @@ namespace dvmig.Tests
         }
 
         [Fact]
+        public async Task SyncRecordAsync_ShouldStripReadOnlyAttribute_WhenModificationForbidden()
+        {
+            // Arrange
+            var accountId = Guid.NewGuid();
+            var account = new Entity("account", accountId);
+            account["name"] = "Test Account";
+            account["readonlyfield"] = "Value";
+
+            int callCount = 0;
+            _targetMock.Setup(t => t.CreateAsync(
+                It.Is<Entity>(e => e.LogicalName == "account"), 
+                It.IsAny<CancellationToken>()))
+                .Returns<Entity, CancellationToken>((e, ct) =>
+                {
+                    callCount++;
+                    if (e.Attributes.Contains("readonlyfield"))
+                    {
+                        throw new Exception("The property 'readonlyfield' cannot be modified.");
+                    }
+                    return Task.FromResult(accountId);
+                });
+
+            var options = new SyncOptions { SkipExisting = false };
+
+            // Act
+            var result = await _engine.SyncRecordAsync(account, options);
+
+            // Assert
+            Assert.True(result);
+            Assert.Equal(2, callCount); // 1 failed attempt, 1 successful retry
+        }
+
+        [Fact]
         public async Task SyncRecordAsync_ShouldRecursivelySyncDependency_WhenMissing()
         {
             // Arrange
@@ -42,12 +77,20 @@ namespace dvmig.Tests
             var account = new Entity("account", accountId);
             account["name"] = "Test Account";
 
+            int contactCreateCalls = 0;
+
             // First attempt to create contact fails with "account does not exist"
-            _targetMock.SetupSequence(t => t.CreateAsync(
+            _targetMock.Setup(t => t.CreateAsync(
                 It.Is<Entity>(e => e.LogicalName == "contact"), 
                 It.IsAny<CancellationToken>()))
-                .ThrowsAsync(new Exception("account with Id=" + accountId + " does not exist"))
-                .ReturnsAsync(contactId); // Succeeds on second attempt
+                .Returns<Entity, CancellationToken>((e, ct) =>
+                {
+                    contactCreateCalls++;
+                    if (contactCreateCalls == 1)
+                        throw new Exception("account with Id=" + accountId + " does not exist");
+                    
+                    return Task.FromResult(contactId);
+                });
 
             // Setup source to return the missing account
             _sourceMock.Setup(s => s.RetrieveAsync("account", accountId, 
@@ -67,12 +110,50 @@ namespace dvmig.Tests
 
             // Assert
             Assert.True(result);
+            Assert.Equal(2, contactCreateCalls);
             _targetMock.Verify(t => t.CreateAsync(
                 It.Is<Entity>(e => e.LogicalName == "account"), 
                 It.IsAny<CancellationToken>()), Times.Once);
-            _targetMock.Verify(t => t.CreateAsync(
-                It.Is<Entity>(e => e.LogicalName == "contact"), 
-                It.IsAny<CancellationToken>()), Times.Exactly(2));
+        }
+        [Fact]
+        public async Task SyncBulkAsync_ShouldShuntToSingleSync_WhenBulkItemFails()
+        {
+            // Arrange
+            var entity1 = new Entity("account", Guid.NewGuid()) { ["name"] = "Success" };
+            var entity2 = new Entity("account", Guid.NewGuid()) { ["name"] = "Fail" };
+            var entities = new List<Entity> { entity1, entity2 };
+
+            // Mock Metadata for Proactive Stripping
+            var metadata = new Microsoft.Xrm.Sdk.Metadata.EntityMetadata
+            {
+                LogicalName = "account"
+            };
+            _targetMock.Setup(t => t.GetEntityMetadataAsync("account", It.IsAny<CancellationToken>()))
+                .ReturnsAsync(metadata);
+
+            // Mock Bulk Response: 1 Success, 1 Fault
+            var bulkResponse = new ExecuteMultipleResponse();
+            bulkResponse.Results["Responses"] = new ExecuteMultipleResponseItemCollection
+            {
+                new ExecuteMultipleResponseItem { RequestIndex = 0, Response = new CreateResponse() },
+                new ExecuteMultipleResponseItem { RequestIndex = 1, Fault = new OrganizationServiceFault { Message = "Bulk Error" } }
+            };
+
+            _targetMock.Setup(t => t.ExecuteAsync(It.IsAny<ExecuteMultipleRequest>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(bulkResponse);
+
+            // Mock Shunt (Single Sync) for the failed entity
+            _targetMock.Setup(t => t.CreateAsync(It.Is<Entity>(e => (string)e["name"] == "Fail"), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(entity2.Id);
+
+            var options = new SyncOptions { UseBulk = true, BulkBatchSize = 10, SkipExisting = false };
+
+            // Act
+            await _engine.SyncAsync(entities, options);
+
+            // Assert
+            _targetMock.Verify(t => t.ExecuteAsync(It.IsAny<ExecuteMultipleRequest>(), It.IsAny<CancellationToken>()), Times.Once);
+            _targetMock.Verify(t => t.CreateAsync(It.Is<Entity>(e => (string)e["name"] == "Fail"), It.IsAny<CancellationToken>()), Times.Once);
         }
     }
 }

@@ -93,6 +93,13 @@ namespace dvmig.Providers
             return Task.FromResult(_client.RetrieveMultiple(query));
         }
 
+        public Task<OrganizationResponse> ExecuteAsync(
+            OrganizationRequest request,
+            CancellationToken ct = default)
+        {
+            return Task.FromResult(_client.Execute(request));
+        }
+
         public void Dispose()
         {
             _client.Dispose();
