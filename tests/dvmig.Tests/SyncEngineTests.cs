@@ -11,6 +11,7 @@ namespace dvmig.Tests
     {
         private readonly Mock<IDataverseProvider> _sourceMock;
         private readonly Mock<IDataverseProvider> _targetMock;
+        private readonly Mock<IUserMapper> _userMapperMock;
         private readonly Mock<ILogger> _loggerMock;
         private readonly SyncEngine _engine;
 
@@ -18,12 +19,20 @@ namespace dvmig.Tests
         {
             _sourceMock = new Mock<IDataverseProvider>();
             _targetMock = new Mock<IDataverseProvider>();
+            _userMapperMock = new Mock<IUserMapper>();
             _loggerMock = new Mock<ILogger>();
+            
             _engine = new SyncEngine(
                 _sourceMock.Object, 
                 _targetMock.Object, 
+                _userMapperMock.Object,
                 _loggerMock.Object
             );
+
+            // Default behavior for user mapper: return the same reference
+            _userMapperMock.Setup(m => m.MapUserAsync(It.IsAny<EntityReference>(), 
+                It.IsAny<CancellationToken>()))
+                .ReturnsAsync((EntityReference r, CancellationToken ct) => r);
         }
 
         [Fact]
@@ -46,6 +55,7 @@ namespace dvmig.Tests
                     {
                         throw new Exception("The property 'readonlyfield' cannot be modified.");
                     }
+                    
                     return Task.FromResult(accountId);
                 });
 
@@ -82,7 +92,9 @@ namespace dvmig.Tests
                 {
                     contactCreateCalls++;
                     if (contactCreateCalls == 1)
+                    {
                         throw new Exception("account with Id=" + accountId + " does not exist");
+                    }
                     
                     return Task.FromResult(contactId);
                 });
@@ -110,6 +122,7 @@ namespace dvmig.Tests
                 It.Is<Entity>(e => e.LogicalName == "account"), 
                 It.IsAny<CancellationToken>()), Times.Once);
         }
+
         [Fact]
         public async Task SyncBulkAsync_ShouldShuntToSingleSync_WhenBulkItemFails()
         {
@@ -191,6 +204,35 @@ namespace dvmig.Tests
                 r.Relationship.SchemaName == relName &&
                 r.Target.Id == accountId &&
                 r.RelatedEntities[0].Id == contactId), It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task SyncRecordAsync_ShouldMapUser_WhenAttributeIsUserField()
+        {
+            // Arrange
+            var sourceUserId = Guid.NewGuid();
+            var targetUserId = Guid.NewGuid();
+            var sourceUserRef = new EntityReference("systemuser", sourceUserId);
+            var targetUserRef = new EntityReference("systemuser", targetUserId);
+
+            var account = new Entity("account", Guid.NewGuid());
+            account["ownerid"] = sourceUserRef;
+
+            _userMapperMock.Setup(m => m.MapUserAsync(sourceUserRef, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(targetUserRef);
+
+            _targetMock.Setup(t => t.CreateAsync(It.IsAny<Entity>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(account.Id);
+
+            var options = new SyncOptions { SkipExisting = false };
+
+            // Act
+            await _engine.SyncRecordAsync(account, options);
+
+            // Assert
+            _targetMock.Verify(t => t.CreateAsync(It.Is<Entity>(e => 
+                ((EntityReference)e["ownerid"]).Id == targetUserId), 
+                It.IsAny<CancellationToken>()), Times.Once);
         }
     }
 }

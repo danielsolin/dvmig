@@ -5,12 +5,7 @@ using Microsoft.Xrm.Sdk.Metadata;
 using Polly;
 using Polly.Retry;
 using Serilog;
-using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace dvmig.Core
 {
@@ -152,6 +147,7 @@ namespace dvmig.Core
             {
                 _logger.Error("Max recursion depth reached for {Key}. Skipping.",
                     recordKey);
+                
                 return false;
             }
 
@@ -159,7 +155,6 @@ namespace dvmig.Core
             {
                 var metadata = await GetMetadataAsync(entity.LogicalName, ct);
 
-                // N:N Handling
                 if (metadata?.IsIntersect == true)
                 {
                     return await SyncIntersectEntityAsync(entity, options, ct);
@@ -169,16 +164,22 @@ namespace dvmig.Core
                 {
                     var existing = await _target.RetrieveAsync(entity.LogicalName,
                         entity.Id, new[] { "modifiedon" }, ct);
-                    if (existing != null) return true;
+                    
+                    if (existing != null)
+                    {
+                        return true;
+                    }
                 }
 
                 var prepared = await PrepareEntityForTargetAsync(entity, 
                     metadata, options, ct);
+                
                 return await CreateWithFixStrategyAsync(prepared, options, ct);
             }
             catch (Exception ex)
             {
                 _logger.Error(ex, "Failed to sync {Key}", recordKey);
+                
                 return false;
             }
         }
@@ -191,17 +192,23 @@ namespace dvmig.Core
             try
             {
                 var request = CreateAssociateRequest(entity);
-                if (request == null) return false;
+                if (request == null)
+                {
+                    return false;
+                }
 
                 await _retryPolicy.ExecuteAsync(() => _target.ExecuteAsync(request, ct));
                 _logger.Information("Associated N:N relationship {Key}", 
                     entity.LogicalName);
+                
                 return true;
             }
             catch (Exception ex)
             {
-                // If it already exists, consider it a success
-                if (ex.Message.Contains("already exists")) return true;
+                if (ex.Message.Contains("already exists"))
+                {
+                    return true;
+                }
 
                 return await HandleSyncExceptionAsync(ex, entity, options, ct);
             }
@@ -216,6 +223,7 @@ namespace dvmig.Core
             {
                 _logger.Warning("Intersect entity {Key} does not have " +
                     "two EntityReferences.", entity.LogicalName);
+                
                 return null;
             }
 
@@ -239,6 +247,7 @@ namespace dvmig.Core
                 await _retryPolicy.ExecuteAsync(() => _target.CreateAsync(entity, ct));
                 _logger.Information("Created {Key}:{Id}", 
                     entity.LogicalName, entity.Id);
+                
                 return true;
             }
             catch (Exception ex)
@@ -269,6 +278,7 @@ namespace dvmig.Core
 
             _logger.Error(ex, "Unresolved error for {Key}:{Id}", 
                 entity.LogicalName, entity.Id);
+            
             return false;
         }
 
@@ -288,10 +298,13 @@ namespace dvmig.Core
                 {
                     _logger.Warning("Stripping attribute '{Attr}' for {Key}:{Id}",
                         attrName, entity.LogicalName, entity.Id);
+                    
                     entity.Attributes.Remove(attrName);
+                    
                     return await CreateWithFixStrategyAsync(entity, options, ct);
                 }
             }
+            
             return false; 
         }
 
@@ -317,7 +330,6 @@ namespace dvmig.Core
                     var success = await SyncRecordAsync(missingRecord, options, ct);
                     if (success)
                     {
-                        // For Intersect, we retry the sync itself
                         var metadata = await GetMetadataAsync(entity.LogicalName, ct);
                         if (metadata?.IsIntersect == true)
                         {
@@ -328,6 +340,7 @@ namespace dvmig.Core
                     }
                 }
             }
+            
             return false;
         }
 
@@ -341,7 +354,10 @@ namespace dvmig.Core
             
             foreach (var attr in entity.Attributes)
             {
-                if (IsForbiddenAttribute(attr.Key)) continue;
+                if (IsForbiddenAttribute(attr.Key))
+                {
+                    continue;
+                }
 
                 if (metadata?.Attributes != null)
                 {
@@ -352,12 +368,14 @@ namespace dvmig.Core
                     {
                         _logger.Debug("Proactively stripping {Attr} for {Entity}", 
                             attr.Key, entity.LogicalName);
+                        
                         continue;
                     }
                 }
 
                 target[attr.Key] = attr.Value;
             }
+            
             return target;
         }
 
@@ -365,18 +383,26 @@ namespace dvmig.Core
             string logicalName, 
             CancellationToken ct)
         {
-            if (_metadataCache.TryGetValue(logicalName, out var meta)) return meta;
+            if (_metadataCache.TryGetValue(logicalName, out var meta))
+            {
+                return meta;
+            }
 
             try
             {
                 var newMeta = await _target.GetEntityMetadataAsync(logicalName, ct);
-                if (newMeta != null) _metadataCache[logicalName] = newMeta;
+                if (newMeta != null)
+                {
+                    _metadataCache[logicalName] = newMeta;
+                }
+                
                 return newMeta;
             }
             catch (Exception ex)
             {
                 _logger.Warning("Could not fetch metadata for {Entity}: {Msg}", 
                     logicalName, ex.Message);
+                
                 return null;
             }
         }
@@ -387,6 +413,7 @@ namespace dvmig.Core
                 "createdon", "modifiedon", "versionnumber", 
                 "createdby", "modifiedby", "ownerid" 
             };
+            
             return forbidden.Contains(attrName.ToLower());
         }
     }
