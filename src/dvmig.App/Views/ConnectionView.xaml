@@ -53,11 +53,17 @@
             </Border>
         </UniformGrid>
 
-        <!-- Navigation -->
-        <Button Grid.Row="1" Command="{Binding ProceedToSelectionCommand}" 
-                IsEnabled="{Binding IsTargetConnected}"
-                Content="PROCEED TO SELECTION →" HorizontalAlignment="Right" 
-                Padding="20,10" Background="#3F51B5" Foreground="White" 
-                BorderThickness="0" Margin="10" />
+        <!-- Navigation and Settings -->
+        <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="10">
+            <CheckBox Content="Remember Connections (Encrypted)" 
+                      IsChecked="{Binding RememberConnections}" 
+                      VerticalAlignment="Center" Margin="0,0,20,0" />
+            
+            <Button Command="{Binding ProceedToSelectionCommand}" 
+                    IsEnabled="{Binding IsTargetConnected}"
+                    Content="PROCEED TO SELECTION →" 
+                    Padding="20,10" Background="#3F51B5" Foreground="White" 
+                    BorderThickness="0" />
+        </StackPanel>
     </Grid>
 </UserControl>

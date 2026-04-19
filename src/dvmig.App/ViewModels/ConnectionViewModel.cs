@@ -10,6 +10,7 @@ namespace dvmig.App.ViewModels
     {
         private readonly INavigationService _navigationService;
         private readonly IMigrationService _migrationService;
+        private readonly ISettingsService _settingsService;
 
         [ObservableProperty]
         private string _sourceConnectionString = string.Empty;
@@ -29,19 +30,36 @@ namespace dvmig.App.ViewModels
         [ObservableProperty]
         private string _targetStatus = "Not Connected";
 
+        [ObservableProperty]
+        private bool _rememberConnections;
+
         public ConnectionViewModel(
             INavigationService navigationService,
-            IMigrationService migrationService)
+            IMigrationService migrationService,
+            ISettingsService settingsService)
         {
             _navigationService = navigationService;
             _migrationService = migrationService;
+            _settingsService = settingsService;
+
+            LoadSavedSettings();
+        }
+
+        private void LoadSavedSettings()
+        {
+            var settings = _settingsService.LoadSettings();
+            RememberConnections = settings.RememberConnections;
+            if (RememberConnections)
+            {
+                SourceConnectionString = settings.SourceConnectionString;
+                TargetConnectionString = settings.TargetConnectionString;
+            }
         }
 
         [RelayCommand]
         private async Task TestSourceConnectionAsync()
         {
             SourceStatus = "Connecting...";
-            // Heuristic to detect legacy (simple check for now)
             bool isLegacy = SourceConnectionString.Contains("AuthType=AD") || 
                            SourceConnectionString.Contains("AuthType=IFD");
             
@@ -66,6 +84,23 @@ namespace dvmig.App.ViewModels
         [RelayCommand]
         private void ProceedToSelection()
         {
+            if (RememberConnections)
+            {
+                _settingsService.SaveSettings(new UserSettings
+                {
+                    SourceConnectionString = SourceConnectionString,
+                    TargetConnectionString = TargetConnectionString,
+                    RememberConnections = true
+                });
+            }
+            else
+            {
+                _settingsService.SaveSettings(new UserSettings
+                {
+                    RememberConnections = false
+                });
+            }
+
             _navigationService.NavigateTo<EntitySelectionViewModel>();
         }
     }

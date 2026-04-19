@@ -47,7 +47,7 @@ namespace dvmig.App.ViewModels
                 return;
             }
 
-            var progressReporter = new Progress<string>(msg => 
+            IProgress<string> progressReporter = new Progress<string>(msg => 
             {
                 Logs.Insert(0, $"[{DateTime.Now:HH:mm:ss}] {msg}");
             });

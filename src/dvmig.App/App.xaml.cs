@@ -20,6 +20,7 @@ namespace dvmig.App
             services.AddSingleton<ILogger>(Log.Logger);
             services.AddSingleton<INavigationService, NavigationService>();
             services.AddSingleton<IMigrationService, MigrationService>();
+            services.AddSingleton<ISettingsService, SettingsService>();
 
             // Core Migration Logic
             services.AddTransient<IUserMapper>(provider => 
