@@ -35,13 +35,13 @@ namespace dvmig.Plugins
             var fetchXml = $@"
                 <fetch version='1.0' output-format='xml-platform' 
                        mapping='logical' distinct='false' count='1'>
-                  <entity name='mp_sourcedate'>
-                    <attribute name='mp_sourcecreateddate' />
-                    <attribute name='mp_sourcemodifieddate' />
+                  <entity name='dm_sourcedate'>
+                    <attribute name='dm_sourcecreateddate' />
+                    <attribute name='dm_sourcemodifieddate' />
                     <filter type='and'>
-                      <condition attribute='mp_sourceentityid' 
+                      <condition attribute='dm_sourceentityid' 
                                  operator='eq' value='{entity.Id}' />
-                      <condition attribute='mp_sourceentitylogicalname' 
+                      <condition attribute='dm_sourceentitylogicalname' 
                                  operator='eq' value='{entity.LogicalName.ToLower()}' />
                     </filter>
                   </entity>
@@ -53,15 +53,15 @@ namespace dvmig.Plugins
             {
                 var sourceDate = result.Entities[0];
 
-                if (sourceDate.Contains("mp_sourcecreateddate"))
+                if (sourceDate.Contains("dm_sourcecreateddate"))
                 {
-                    entity["createdon"] = sourceDate["mp_sourcecreateddate"];
+                    entity["createdon"] = sourceDate["dm_sourcecreateddate"];
                     entity["overriddencreatedon"] = DateTime.UtcNow;
                 }
 
-                if (sourceDate.Contains("mp_sourcemodifieddate"))
+                if (sourceDate.Contains("dm_sourcemodifieddate"))
                 {
-                    entity["modifiedon"] = sourceDate["mp_sourcemodifieddate"];
+                    entity["modifiedon"] = sourceDate["dm_sourcemodifieddate"];
                 }
             }
 

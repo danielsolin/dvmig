@@ -96,18 +96,18 @@ namespace dvmig.Core
 
         private Entity CreateSourceDateEntity(Entity entity)
         {
-            var sourceDate = new Entity("mp_sourcedate");
-            sourceDate["mp_sourceentityid"] = entity.Id.ToString();
-            sourceDate["mp_sourceentitylogicalname"] = entity.LogicalName.ToLower();
+            var sourceDate = new Entity("dm_sourcedate");
+            sourceDate["dm_sourceentityid"] = entity.Id.ToString();
+            sourceDate["dm_sourceentitylogicalname"] = entity.LogicalName.ToLower();
             
             if (entity.Contains("createdon"))
             {
-                sourceDate["mp_sourcecreateddate"] = entity["createdon"];
+                sourceDate["dm_sourcecreateddate"] = entity["createdon"];
             }
 
             if (entity.Contains("modifiedon"))
             {
-                sourceDate["mp_sourcemodifieddate"] = entity["modifiedon"];
+                sourceDate["dm_sourcemodifieddate"] = entity["modifiedon"];
             }
             
             return sourceDate;
