@@ -5,7 +5,12 @@ using Microsoft.Xrm.Sdk.Metadata;
 using Polly;
 using Polly.Retry;
 using Serilog;
+using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace dvmig.Core
 {
@@ -13,6 +18,8 @@ namespace dvmig.Core
     {
         private readonly IDataverseProvider _source;
         private readonly IDataverseProvider _target;
+        private readonly IUserMapper _userMapper;
+        private readonly IDataPreservationManager _dataPreservation;
         private readonly ILogger _logger;
         private readonly AsyncRetryPolicy _retryPolicy;
 
@@ -24,11 +31,17 @@ namespace dvmig.Core
 
         private const int MaxRecursionDepth = 3;
 
-        public SyncEngine(IDataverseProvider source, 
-            IDataverseProvider target, ILogger logger)
+        public SyncEngine(
+            IDataverseProvider source, 
+            IDataverseProvider target, 
+            IUserMapper userMapper,
+            IDataPreservationManager dataPreservation,
+            ILogger logger)
         {
             _source = source;
             _target = target;
+            _userMapper = userMapper;
+            _dataPreservation = dataPreservation;
             _logger = logger;
 
             _retryPolicy = Policy
@@ -91,6 +104,11 @@ namespace dvmig.Core
                 _logger.Information("Processing bulk batch of {Count} records", 
                     batch.Count);
 
+                if (options.PreserveDates)
+                {
+                    await _dataPreservation.PreserveDatesBulkAsync(batch, ct);
+                }
+
                 var request = new ExecuteMultipleRequest
                 {
                     Settings = new ExecuteMultipleSettings
@@ -120,16 +138,19 @@ namespace dvmig.Core
                 var response = (ExecuteMultipleResponse)await _target
                     .ExecuteAsync(request, ct);
 
-                foreach (var item in response.Responses)
+                if (response.Responses != null)
                 {
-                    if (item.Fault != null)
+                    foreach (var item in response.Responses)
                     {
-                        var failedEntity = batch[item.RequestIndex];
-                        _logger.Warning("Bulk item {Index} failed: {Error}. " +
-                            "Shunting to single sync.", 
-                            item.RequestIndex, item.Fault.Message);
-                        
-                        await SyncRecordAsync(failedEntity, options, ct);
+                        if (item.Fault != null)
+                        {
+                            var failedEntity = batch[item.RequestIndex];
+                            _logger.Warning("Bulk item {Index} failed: {Error}. " +
+                                "Shunting to single sync.", 
+                                item.RequestIndex, item.Fault.Message);
+                            
+                            await SyncRecordAsync(failedEntity, options, ct);
+                        }
                     }
                 }
             }
@@ -174,6 +195,11 @@ namespace dvmig.Core
                 var prepared = await PrepareEntityForTargetAsync(entity, 
                     metadata, options, ct);
                 
+                if (options.PreserveDates)
+                {
+                    await _dataPreservation.PreserveDatesAsync(entity, ct);
+                }
+
                 return await CreateWithFixStrategyAsync(prepared, options, ct);
             }
             catch (Exception ex)
@@ -214,7 +240,7 @@ namespace dvmig.Core
             }
         }
 
-        private AssociateRequest CreateAssociateRequest(Entity entity)
+        private AssociateRequest? CreateAssociateRequest(Entity entity)
         {
             var references = entity.Attributes
                 .Values.OfType<EntityReference>().ToList();
@@ -346,7 +372,7 @@ namespace dvmig.Core
 
         private async Task<Entity> PrepareEntityForTargetAsync(
             Entity entity, 
-            EntityMetadata metadata,
+            EntityMetadata? metadata,
             SyncOptions options, 
             CancellationToken ct)
         {
@@ -357,6 +383,17 @@ namespace dvmig.Core
                 if (IsForbiddenAttribute(attr.Key))
                 {
                     continue;
+                }
+
+                if (IsUserAttribute(attr.Key) && attr.Value is EntityReference userRef)
+                {
+                    var mapped = await _userMapper.MapUserAsync(userRef, ct);
+                    if (mapped != null)
+                    {
+                        target[attr.Key] = mapped;
+                        
+                        continue;
+                    }
                 }
 
                 if (metadata?.Attributes != null)
@@ -379,7 +416,7 @@ namespace dvmig.Core
             return target;
         }
 
-        private async Task<EntityMetadata> GetMetadataAsync(
+        private async Task<EntityMetadata?> GetMetadataAsync(
             string logicalName, 
             CancellationToken ct)
         {
@@ -410,11 +447,17 @@ namespace dvmig.Core
         private bool IsForbiddenAttribute(string attrName)
         {
             var forbidden = new[] { 
-                "createdon", "modifiedon", "versionnumber", 
-                "createdby", "modifiedby", "ownerid" 
+                "createdon", "modifiedon", "versionnumber"
             };
             
             return forbidden.Contains(attrName.ToLower());
+        }
+
+        private bool IsUserAttribute(string attrName)
+        {
+            var userFields = new[] { "ownerid", "createdby", "modifiedby" };
+            
+            return userFields.Contains(attrName.ToLower());
         }
     }
 }

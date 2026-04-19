@@ -1,15 +1,20 @@
 using Microsoft.Xrm.Sdk;
+using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 using dvmig.Providers;
 using Microsoft.Xrm.Sdk.Query;
+using System.Linq;
 using Serilog;
 
 namespace dvmig.Core
 {
     public interface IUserMapper
     {
-        Task<EntityReference> MapUserAsync(
-            EntityReference sourceUser, 
+        Task<EntityReference?> MapUserAsync(
+            EntityReference? sourceUser, 
             CancellationToken ct = default);
 
         void AddManualMapping(Guid sourceUserId, Guid targetUserId);
@@ -39,8 +44,8 @@ namespace dvmig.Core
             _mappingCache[sourceUserId] = new EntityReference("systemuser", targetUserId);
         }
 
-        public async Task<EntityReference> MapUserAsync(
-            EntityReference sourceUser, 
+        public async Task<EntityReference?> MapUserAsync(
+            EntityReference? sourceUser, 
             CancellationToken ct = default)
         {
             if (sourceUser == null)
@@ -55,7 +60,6 @@ namespace dvmig.Core
 
             _logger.Debug("Attempting to map source user {Id}", sourceUser.Id);
 
-            // 1. Fetch source user details
             var sourceUserData = await _source.RetrieveAsync("systemuser", 
                 sourceUser.Id, 
                 new[] { "internalemailaddress", "domainname", "fullname" }, 
@@ -68,7 +72,6 @@ namespace dvmig.Core
                 return null;
             }
 
-            // 2. Try map by Email
             var email = sourceUserData.GetAttributeValue<string>("internalemailaddress");
             if (!string.IsNullOrEmpty(email))
             {
@@ -81,7 +84,6 @@ namespace dvmig.Core
                 }
             }
 
-            // 3. Try map by Domain Name
             var domainName = sourceUserData.GetAttributeValue<string>("domainname");
             if (!string.IsNullOrEmpty(domainName))
             {
@@ -100,7 +102,7 @@ namespace dvmig.Core
             return null;
         }
 
-        private async Task<EntityReference> FindTargetUserAsync(
+        private async Task<EntityReference?> FindTargetUserAsync(
             string attribute, 
             string value, 
             CancellationToken ct)
