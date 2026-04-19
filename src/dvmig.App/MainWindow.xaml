@@ -3,15 +3,11 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
         xmlns:viewmodels="clr-namespace:dvmig.App.ViewModels"
         xmlns:views="clr-namespace:dvmig.App.Views"
         mc:Ignorable="d"
         Title="Dataverse Migrator" Height="650" Width="1000"
-        WindowStartupLocation="CenterScreen"
-        TextElement.Foreground="{DynamicResource MaterialDesignBody}"
-        Background="{DynamicResource MaterialDesignPaper}"
-        FontFamily="{materialDesign:MaterialDesignFont}">
+        WindowStartupLocation="CenterScreen">
 
     <Window.Resources>
         <DataTemplate DataType="{x:Type viewmodels:ConnectionViewModel}">
@@ -25,40 +21,34 @@
         </DataTemplate>
     </Window.Resources>
 
-    <Grid>
+    <Grid Background="#F5F5F5">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
+            <RowDefinition Height="60" />
             <RowDefinition Height="*" />
-            <RowDefinition Height="Auto" />
+            <RowDefinition Height="30" />
         </Grid.RowDefinitions>
 
-        <!-- Top Bar / Stepper Placeholder -->
-        <materialDesign:ColorZone Mode="PrimaryMid" Padding="16">
-            <StackPanel Orientation="Horizontal">
-                <materialDesign:PackIcon Kind="DatabaseSync" Width="24" Height="24" />
-                <TextBlock Margin="16,0,0,0" VerticalAlignment="Center" 
-                           Style="{StaticResource MaterialDesignHeadline6TextBlock}"
-                           Text="Dataverse Migrator" />
+        <!-- Header -->
+        <Border Background="#3F51B5" Padding="20,0">
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <TextBlock Text="DVMIG" Foreground="White" 
+                           FontSize="24" FontWeight="Bold" />
+                <TextBlock Text="Dataverse Migrator" Foreground="White" 
+                           FontSize="18" Margin="15,0,0,0" VerticalAlignment="Bottom" 
+                           Opacity="0.8" />
             </StackPanel>
-        </materialDesign:ColorZone>
+        </Border>
 
-        <!-- Main Content -->
-        <ContentControl Grid.Row="1" Content="{Binding CurrentViewModel}" 
-                        Margin="16">
-            <ContentControl.ContentTemplate>
-                <DataTemplate>
-                    <TextBlock Text="Welcome to dvmig. Initialization in progress..." 
-                               HorizontalAlignment="Center" VerticalAlignment="Center"
-                               Style="{StaticResource MaterialDesignHeadline4TextBlock}" />
-                </DataTemplate>
-            </ContentControl.ContentTemplate>
-        </ContentControl>
+        <!-- Content -->
+        <ContentControl Grid.Row="1" Content="{Binding CurrentViewModel}" />
 
-        <!-- Bottom Status Bar -->
-        <StatusBar Grid.Row="2" Background="{DynamicResource MaterialDesignSelection}">
-            <StatusBarItem>
-                <TextBlock Text="Ready" />
-            </StatusBarItem>
-        </StatusBar>
+        <!-- Status Bar -->
+        <Border Grid.Row="2" Background="#E0E0E0" BorderBrush="#BDBDBD" BorderThickness="0,1,0,0">
+            <StatusBar Background="Transparent">
+                <StatusBarItem>
+                    <TextBlock Text="Ready" FontSize="12" Foreground="#616161" />
+                </StatusBarItem>
+            </StatusBar>
+        </Border>
     </Grid>
 </Window>
