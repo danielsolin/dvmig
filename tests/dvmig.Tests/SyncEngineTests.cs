@@ -243,5 +243,36 @@ namespace dvmig.Tests
             _dataPreservationMock.Verify(p => p.PreserveDatesAsync(account, 
                 It.IsAny<CancellationToken>()), Times.Once);
         }
+
+        [Fact]
+        public async Task SyncRecordAsync_ShouldRetry_WhenServiceProtectionLimitReached()
+        {
+            // Arrange
+            var accountId = Guid.NewGuid();
+            var account = new Entity("account", accountId) { ["name"] = "Retry Test" };
+
+            int callCount = 0;
+            _targetMock.Setup(t => t.CreateAsync(It.IsAny<Entity>(), It.IsAny<CancellationToken>()))
+                .Returns<Entity, CancellationToken>((e, ct) =>
+                {
+                    callCount++;
+                    if (callCount == 1)
+                    {
+                        // Simulate Service Protection Limit error
+                        throw new Exception("Rate limit exceeded. Error Code: 0x8004410d");
+                    }
+                    
+                    return Task.FromResult(accountId);
+                });
+
+            var options = new SyncOptions { SkipExisting = false };
+
+            // Act
+            var result = await _engine.SyncRecordAsync(account, options);
+
+            // Assert
+            Assert.True(result);
+            Assert.Equal(2, callCount); // Verified that it retried
+        }
     }
 }

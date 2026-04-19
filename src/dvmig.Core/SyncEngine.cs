@@ -45,14 +45,42 @@ namespace dvmig.Core
             _logger = logger;
 
             _retryPolicy = Policy
-                .Handle<Exception>(ex => ex.Message.Contains("Generic SQL error") ||
-                                         ex.Message.Contains("Timeout"))
-                .WaitAndRetryAsync(3, i => TimeSpan.FromSeconds(Math.Pow(2, i)),
+                .Handle<Exception>(IsTransientError)
+                .WaitAndRetryAsync(5, GetRetryDelay, 
                     (ex, time, count, ctx) =>
                     {
-                        _logger.Warning(ex, "Transient error. Retry {Count} in {Time}s",
-                            count, time.TotalSeconds);
+                        _logger.Warning(ex, "Throttling or transient error. " +
+                            "Retry {Count} in {Time}ms",
+                            count, time.TotalMilliseconds);
+                        
+                        return Task.CompletedTask;
                     });
+        }
+
+        private bool IsTransientError(Exception ex)
+        {
+            var msg = ex.Message.ToLower();
+            
+            if (msg.Contains("8004410d") || msg.Contains("too many requests"))
+            {
+                return true;
+            }
+
+            return msg.Contains("generic sql error") ||
+                   msg.Contains("timeout");
+        }
+
+        private TimeSpan GetRetryDelay(int retryCount, Exception ex, Context ctx)
+        {
+            if (ex.Message.Contains("8004410d"))
+            {
+                _logger.Information("Service Protection Limit reached. " +
+                    "Applying throttled backoff.");
+                
+                return TimeSpan.FromSeconds(Math.Min(Math.Pow(2, retryCount), 30));
+            }
+
+            return TimeSpan.FromSeconds(Math.Pow(2, retryCount));
         }
 
         public async Task SyncAsync(
@@ -135,8 +163,8 @@ namespace dvmig.Core
                     }
                 }
 
-                var response = (ExecuteMultipleResponse)await _target
-                    .ExecuteAsync(request, ct);
+                var response = (ExecuteMultipleResponse)await _retryPolicy
+                    .ExecuteAsync(() => _target.ExecuteAsync(request, ct));
 
                 if (response.Responses != null)
                 {

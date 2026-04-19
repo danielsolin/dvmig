@@ -1,10 +1,5 @@
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Messages;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using dvmig.Providers;
 
 namespace dvmig.Core
@@ -51,8 +46,11 @@ namespace dvmig.Core
             }
             catch (Exception ex)
             {
-                _logger.Warning(ex, "Failed to create source date for {Entity}:{Id}", 
-                    sourceEntity.LogicalName, sourceEntity.Id);
+                _logger.Warning(
+                    ex,
+                    "Failed to create source date for {Entity}:{Id}", 
+                    sourceEntity.LogicalName, sourceEntity.Id
+                );
             }
         }
 
