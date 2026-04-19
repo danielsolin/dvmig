@@ -1,4 +1,8 @@
 using Microsoft.Xrm.Sdk;
+using System;
+using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace dvmig.Core
 {
@@ -7,11 +11,13 @@ namespace dvmig.Core
         Task SyncAsync(
             IEnumerable<Entity> entities,
             SyncOptions options,
+            IProgress<string>? progress = null,
             CancellationToken cancellationToken = default);
 
         Task SyncBulkAsync(
             IEnumerable<Entity> entities,
             SyncOptions options,
+            IProgress<string>? progress = null,
             CancellationToken cancellationToken = default);
 
         Task<bool> SyncRecordAsync(

@@ -3,6 +3,8 @@ using System;
 using System.Windows;
 using dvmig.App.ViewModels;
 using dvmig.App.Services;
+using dvmig.Core;
+using Serilog;
 
 namespace dvmig.App
 {
@@ -14,9 +16,44 @@ namespace dvmig.App
         {
             var services = new ServiceCollection();
 
-            // Services
+            // Infrastructure
+            services.AddSingleton<ILogger>(Log.Logger);
             services.AddSingleton<INavigationService, NavigationService>();
             services.AddSingleton<IMigrationService, MigrationService>();
+
+            // Core Migration Logic
+            services.AddTransient<IUserMapper>(provider => 
+            {
+                var migrationService = provider.GetRequiredService<IMigrationService>();
+                if (migrationService.SourceProvider == null || migrationService.TargetProvider == null)
+                {
+                    // Fallback or empty implementation if providers aren't ready
+                    // In real use, we'd ensure they are ready before resolving
+                }
+                return new UserMapper(
+                    migrationService.SourceProvider!, 
+                    migrationService.TargetProvider!, 
+                    provider.GetRequiredService<ILogger>());
+            });
+
+            services.AddTransient<IDataPreservationManager>(provider =>
+            {
+                var migrationService = provider.GetRequiredService<IMigrationService>();
+                return new DataPreservationManager(
+                    migrationService.TargetProvider!,
+                    provider.GetRequiredService<ILogger>());
+            });
+
+            services.AddTransient<ISyncEngine>(provider =>
+            {
+                var migrationService = provider.GetRequiredService<IMigrationService>();
+                return new SyncEngine(
+                    migrationService.SourceProvider!,
+                    migrationService.TargetProvider!,
+                    provider.GetRequiredService<IUserMapper>(),
+                    provider.GetRequiredService<IDataPreservationManager>(),
+                    provider.GetRequiredService<ILogger>());
+            });
 
             // ViewModels
             services.AddSingleton<MainViewModel>();

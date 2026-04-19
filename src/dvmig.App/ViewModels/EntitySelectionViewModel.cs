@@ -44,6 +44,10 @@ namespace dvmig.App.ViewModels
         [RelayCommand]
         private void StartMigration()
         {
+            _migrationService.SelectedEntities.Clear();
+            _migrationService.SelectedEntities.AddRange(
+                Entities.Where(e => e.IsSelected).Select(e => e.LogicalName));
+            
             _navigationService.NavigateTo<MigrationDashboardViewModel>();
         }
     }

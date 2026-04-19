@@ -5,7 +5,12 @@ using Microsoft.Xrm.Sdk.Metadata;
 using Polly;
 using Polly.Retry;
 using Serilog;
+using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace dvmig.Core
 {
@@ -81,15 +86,18 @@ namespace dvmig.Core
         public async Task SyncAsync(
             IEnumerable<Entity> entities,
             SyncOptions options,
+            IProgress<string>? progress = null,
             CancellationToken ct = default)
         {
             _logger.Information("Starting sync of {Count} entities", 
                 entities.Count());
             _recursionTracker.Clear();
 
+            progress?.Report($"Starting migration of {entities.Count()} records...");
+
             if (options.UseBulk)
             {
-                await SyncBulkAsync(entities, options, ct);
+                await SyncBulkAsync(entities, options, progress, ct);
             }
             else
             {
@@ -100,6 +108,7 @@ namespace dvmig.Core
                     try
                     {
                         await SyncRecordAsync(entity, options, ct);
+                        progress?.Report($"Synced {entity.LogicalName}:{entity.Id}");
                     }
                     finally
                     {
@@ -110,11 +119,13 @@ namespace dvmig.Core
             }
 
             _logger.Information("Sync completed");
+            progress?.Report("Migration completed successfully.");
         }
 
         public async Task SyncBulkAsync(
             IEnumerable<Entity> entities,
             SyncOptions options,
+            IProgress<string>? progress = null,
             CancellationToken ct = default)
         {
             var batches = entities
@@ -126,6 +137,8 @@ namespace dvmig.Core
             {
                 _logger.Information("Processing bulk batch of {Count} records", 
                     batch.Count);
+                
+                progress?.Report($"Processing batch of {batch.Count} records...");
 
                 if (options.PreserveDates)
                 {
@@ -172,6 +185,7 @@ namespace dvmig.Core
                                 "Shunting to single sync.", 
                                 item.RequestIndex, item.Fault.Message);
                             
+                            progress?.Report($"Shunting failed record {failedEntity.LogicalName} to retry...");
                             await SyncRecordAsync(failedEntity, options, ct);
                         }
                     }
