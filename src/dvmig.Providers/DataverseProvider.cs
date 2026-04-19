@@ -51,12 +51,14 @@ namespace dvmig.Providers
             return response?.EntityMetadata;
         }
 
-        public async Task<Guid> CreateAsync(Entity entity, CancellationToken ct = default)
+        public async Task<Guid> CreateAsync(Entity entity,
+            CancellationToken ct = default)
         {
             return await _client.CreateAsync(entity, ct);
         }
 
-        public async Task UpdateAsync(Entity entity, CancellationToken ct = default)
+        public async Task UpdateAsync(Entity entity,
+            CancellationToken ct = default)
         {
             await _client.UpdateAsync(entity, ct);
         }
@@ -77,7 +79,12 @@ namespace dvmig.Providers
             CancellationToken ct = default)
         {
             await _client.AssociateAsync(
-                entityLogicalName, entityId, relationship, relatedEntities, ct);
+                entityLogicalName,
+                entityId,
+                relationship,
+                relatedEntities,
+                ct
+            );
         }
 
         public async Task<EntityCollection> RetrieveMultipleAsync(

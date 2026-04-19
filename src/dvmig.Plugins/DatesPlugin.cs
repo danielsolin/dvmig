@@ -40,9 +40,9 @@ namespace dvmig.Plugins
                     <attribute name='dm_sourcemodifieddate' />
                     <filter type='and'>
                       <condition attribute='dm_sourceentityid' 
-                                 operator='eq' value='{entity.Id}' />
+                        operator='eq' value='{entity.Id}' />
                       <condition attribute='dm_sourceentitylogicalname' 
-                                 operator='eq' value='{entity.LogicalName.ToLower()}' />
+                        operator='eq' value='{entity.LogicalName.ToLower()}' />
                     </filter>
                   </entity>
                 </fetch>";

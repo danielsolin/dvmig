@@ -1,12 +1,7 @@
 using Microsoft.Xrm.Sdk;
-using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
 using dvmig.Providers;
 using Microsoft.Xrm.Sdk.Query;
-using System.Linq;
 using Serilog;
 
 namespace dvmig.Core
@@ -26,8 +21,8 @@ namespace dvmig.Core
         private readonly IDataverseProvider _target;
         private readonly ILogger _logger;
         
-        private readonly ConcurrentDictionary<Guid, EntityReference> _mappingCache = 
-            new ConcurrentDictionary<Guid, EntityReference>();
+        private readonly ConcurrentDictionary<Guid, EntityReference>
+            _mappingCache = new ConcurrentDictionary<Guid, EntityReference>();
 
         public UserMapper(
             IDataverseProvider source, 
@@ -41,7 +36,10 @@ namespace dvmig.Core
 
         public void AddManualMapping(Guid sourceUserId, Guid targetUserId)
         {
-            _mappingCache[sourceUserId] = new EntityReference("systemuser", targetUserId);
+            _mappingCache[sourceUserId] = new EntityReference(
+                "systemuser",
+                targetUserId
+            );
         }
 
         public async Task<EntityReference?> MapUserAsync(
@@ -72,10 +70,15 @@ namespace dvmig.Core
                 return null;
             }
 
-            var email = sourceUserData.GetAttributeValue<string>("internalemailaddress");
+            var email = sourceUserData
+                .GetAttributeValue<string>("internalemailaddress");
             if (!string.IsNullOrEmpty(email))
             {
-                var mapped = await FindTargetUserAsync("internalemailaddress", email, ct);
+                var mapped = await FindTargetUserAsync(
+                    "internalemailaddress",
+                    email,
+                ct);
+
                 if (mapped != null)
                 {
                     _mappingCache[sourceUser.Id] = mapped;
@@ -84,10 +87,16 @@ namespace dvmig.Core
                 }
             }
 
-            var domainName = sourceUserData.GetAttributeValue<string>("domainname");
+            var domainName = sourceUserData
+                .GetAttributeValue<string>("domainname");
             if (!string.IsNullOrEmpty(domainName))
             {
-                var mapped = await FindTargetUserAsync("domainname", domainName, ct);
+                var mapped = await FindTargetUserAsync(
+                    "domainname",
+                   domainName,
+                   ct
+                );
+
                 if (mapped != null)
                 {
                     _mappingCache[sourceUser.Id] = mapped;
@@ -96,8 +105,11 @@ namespace dvmig.Core
                 }
             }
 
-            _logger.Warning("Could not map source user {FullName} ({Id})", 
-                sourceUserData.GetAttributeValue<string>("fullname"), sourceUser.Id);
+            _logger.Warning("" +
+                "Could not map source user {FullName} ({Id})", 
+                sourceUserData.GetAttributeValue<string>("fullname"),
+                sourceUser.Id
+            );
 
             return null;
         }
