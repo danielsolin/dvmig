@@ -1,8 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using dvmig.App.Services;
-using System;
-using System.Threading.Tasks;
 
 namespace dvmig.App.ViewModels
 {

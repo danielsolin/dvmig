@@ -3,14 +3,8 @@ using CommunityToolkit.Mvvm.Input;
 using dvmig.App.Models;
 using dvmig.App.Services;
 using dvmig.Core;
-using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Query;
-using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace dvmig.App.ViewModels
 {
@@ -19,9 +13,13 @@ namespace dvmig.App.ViewModels
         private readonly INavigationService _navigationService;
         private readonly IMigrationService _migrationService;
         private readonly ISyncEngine _syncEngine;
+        private CancellationTokenSource? _cts;
 
         [ObservableProperty]
         private SyncProgressInfo _progress = new SyncProgressInfo();
+
+        [ObservableProperty]
+        private bool _isMigrationRunning;
 
         public ObservableCollection<string> Logs { get; } = 
             new ObservableCollection<string>();
@@ -36,49 +34,81 @@ namespace dvmig.App.ViewModels
             _syncEngine = syncEngine;
         }
 
-        [RelayCommand]
+        [RelayCommand(CanExecute = nameof(CanStartMigration))]
         private async Task StartMigrationAsync()
         {
             if (_migrationService.SourceProvider == null || 
                 _migrationService.TargetProvider == null)
             {
-                Logs.Add("Error: Source or Target provider not connected.");
+                Logs.Insert(0, "Error: Source or Target provider not connected.");
                 
                 return;
             }
 
+            IsMigrationRunning = true;
+            _cts = new CancellationTokenSource();
+            
             IProgress<string> progressReporter = new Progress<string>(msg => 
             {
                 Logs.Insert(0, $"[{DateTime.Now:HH:mm:ss}] {msg}");
             });
 
-            var entitiesToMigrate = _migrationService.SelectedEntities;
-            
-            foreach (var logicalName in entitiesToMigrate)
+            try
             {
-                progressReporter.Report($"Fetching {logicalName} records from source...");
+                var entitiesToMigrate = _migrationService.SelectedEntities;
                 
-                var query = new QueryExpression(logicalName) { ColumnSet = new ColumnSet(true) };
-                var sourceRecords = await _migrationService.SourceProvider.RetrieveMultipleAsync(query);
-                
-                if (sourceRecords.Entities.Count == 0)
+                foreach (var logicalName in entitiesToMigrate)
                 {
-                    progressReporter.Report($"No records found for {logicalName}. Skipping.");
+                    _cts.Token.ThrowIfCancellationRequested();
+
+                    progressReporter.Report($"Fetching {logicalName} records...");
                     
-                    continue;
+                    var query = new QueryExpression(logicalName) { ColumnSet = new ColumnSet(true) };
+                    var sourceRecords = await _migrationService.SourceProvider.RetrieveMultipleAsync(query, _cts.Token);
+                    
+                    if (sourceRecords.Entities.Count == 0)
+                    {
+                        progressReporter.Report($"No records for {logicalName}.");
+                        
+                        continue;
+                    }
+
+                    Progress.CurrentEntity = logicalName;
+                    Progress.TotalRecords = sourceRecords.Entities.Count;
+                    Progress.Update(0, 0, 0);
+
+                    await _syncEngine.SyncAsync(
+                        sourceRecords.Entities, 
+                        new SyncOptions { UseBulk = true }, 
+                        progressReporter,
+                        _cts.Token);
                 }
 
-                Progress.CurrentEntity = logicalName;
-                Progress.TotalRecords = sourceRecords.Entities.Count;
-                Progress.Update(0, 0, 0);
-
-                await _syncEngine.SyncAsync(
-                    sourceRecords.Entities, 
-                    new SyncOptions { UseBulk = true }, 
-                    progressReporter);
+                progressReporter.Report("Migration finished.");
             }
-
-            progressReporter.Report("All selected entities processed.");
+            catch (OperationCanceledException)
+            {
+                progressReporter.Report("MIGRATION CANCELLED BY USER.");
+            }
+            catch (Exception ex)
+            {
+                progressReporter.Report($"CRITICAL ERROR: {ex.Message}");
+            }
+            finally
+            {
+                IsMigrationRunning = false;
+                _cts.Dispose();
+                _cts = null;
+            }
         }
+
+        [RelayCommand(CanExecute = nameof(IsMigrationRunning))]
+        private void CancelMigration()
+        {
+            _cts?.Cancel();
+            Logs.Insert(0, $"[{DateTime.Now:HH:mm:ss}] Cancellation requested...");
+        }
+
+        private bool CanStartMigration() => !IsMigrationRunning;
     }
 }

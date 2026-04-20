@@ -1,5 +1,4 @@
 using Microsoft.Extensions.DependencyInjection;
-using System;
 using System.Windows;
 using dvmig.App.ViewModels;
 using dvmig.App.Services;
@@ -31,10 +30,12 @@ namespace dvmig.App
                     // Fallback or empty implementation if providers aren't ready
                     // In real use, we'd ensure they are ready before resolving
                 }
+                
                 return new UserMapper(
                     migrationService.SourceProvider!, 
                     migrationService.TargetProvider!, 
-                    provider.GetRequiredService<ILogger>());
+                    provider.GetRequiredService<ILogger>()
+                );
             });
 
             services.AddTransient<IDataPreservationManager>(provider =>

@@ -50,9 +50,14 @@
         </Grid>
 
         <!-- Actions -->
-        <Button Grid.Row="2" Command="{Binding StartMigrationCommand}" 
-                Content="RUN MIGRATION" Padding="30,15" Background="#3F51B5" 
-                Foreground="White" BorderThickness="0" Margin="10" 
-                HorizontalAlignment="Center" />
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center" Margin="10">
+            <Button Command="{Binding StartMigrationCommand}" 
+                    Content="RUN MIGRATION" Padding="30,15" Background="#3F51B5" 
+                    Foreground="White" BorderThickness="0" Margin="10" />
+            
+            <Button Command="{Binding CancelMigrationCommand}" 
+                    Content="CANCEL MIGRATION" Padding="30,15" Background="#F44336" 
+                    Foreground="White" BorderThickness="0" Margin="10" />
+        </StackPanel>
     </Grid>
 </UserControl>

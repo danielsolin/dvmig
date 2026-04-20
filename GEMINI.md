@@ -10,12 +10,6 @@ This file contains foundational mandates, architectural decisions, and project-s
 ## Foundational Mandates
 1.  **Legacy Support:** The tool MUST maintain compatibility with legacy CRM OnPrem platforms (including AD/ADFS/IFD authentication).
 2.  **Graphical UI:** The UI MUST remain graphical and inviting for non-technical users (WPF-based).
-3.  **Code Style:** 
-    - No line should exceed **80 characters** in width.
-    - Follow standard C# naming conventions and clean architecture principles.
-    - No one-line if-statements; minimum is two lines (even without brackets).
-    - Always one empty line before return statements, unless the return is the 
-      single statement of an if-block.
 4.  **Resiliency:** Use `Polly` for retries on transient network errors or Dataverse throttling.
 5.  **Logging:** Use `Serilog` for structured logging (file + UI sinks).
 

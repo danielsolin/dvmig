@@ -1,7 +1,4 @@
 using dvmig.App.ViewModels;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 
 namespace dvmig.App.Services
 {
