@@ -61,12 +61,12 @@ namespace dvmig.App.Services
             }
         }
 
-        public async Task<bool> TestConnectionAsync(
+        public Task<bool> TestConnectionAsync(
             string connectionString, 
             bool isLegacy)
         {
             // Deprecated, using ConnectSource/ConnectTarget
-            return false;
+            return Task.FromResult(false);
         }
 
         public async Task<List<EntityMetadata>> GetSourceEntitiesAsync(

@@ -25,19 +25,20 @@ namespace dvmig.Providers
             set => _client.CallerId = value ?? Guid.Empty;
         }
 
-        public Task<Entity> RetrieveAsync(
+        public Task<Entity?> RetrieveAsync(
             string entityLogicalName,
             Guid id,
-            string[] columns = null,
+            string[]? columns = null,
             CancellationToken ct = default)
         {
             var columnSet = columns == null ? new ColumnSet(true) : 
                 new ColumnSet(columns);
-            return Task.FromResult(_client.Retrieve(
+            
+            return Task.FromResult<Entity?>(_client.Retrieve(
                 entityLogicalName, id, columnSet));
         }
 
-        public Task<EntityMetadata> GetEntityMetadataAsync(
+        public Task<EntityMetadata?> GetEntityMetadataAsync(
             string entityLogicalName,
             CancellationToken ct = default)
         {

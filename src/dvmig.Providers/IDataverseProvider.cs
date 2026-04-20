@@ -6,13 +6,13 @@ namespace dvmig.Providers
 {
     public interface IDataverseProvider
     {
-        Task<Entity> RetrieveAsync(
+        Task<Entity?> RetrieveAsync(
             string entityLogicalName,
             Guid id,
-            string[] columns = null,
+            string[]? columns = null,
             CancellationToken ct = default);
 
-        Task<EntityMetadata> GetEntityMetadataAsync(
+        Task<EntityMetadata?> GetEntityMetadataAsync(
             string entityLogicalName,
             CancellationToken ct = default);
 
