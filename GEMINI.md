@@ -10,22 +10,34 @@ This file contains foundational mandates, architectural decisions, and project-s
 ## Foundational Mandates
 1.  **Legacy Support:** The tool MUST maintain compatibility with legacy CRM OnPrem platforms (including AD/ADFS/IFD authentication).
 2.  **Graphical UI:** The UI MUST remain graphical and inviting for non-technical users (WPF-based).
-4.  **Resiliency:** Use `Polly` for retries on transient network errors or Dataverse throttling.
+3.  **Code Style:** 
+    - No line should exceed **80 characters** in width.
+    - Follow standard C# naming conventions and clean architecture principles.
+    - No one-line if-statements; minimum is two lines (even without brackets).
+    - Always one empty line before return statements, unless the return is the 
+      single statement of an if-block.
+    - For lists (like method arguments or initializers), either use a single line 
+      (if under 80 chars) or strictly one per line. No mixing.
+4.  **Resiliency:** Use `Polly` for retries on transient network errors or Dataverse throttling (including high-precision `8004410d` handling).
 5.  **Logging:** Use `Serilog` for structured logging (file + UI sinks).
 
 ## Key Architectural Decisions
 - **Multi-Provider Pattern:** Separate providers for Dataverse (modern) and Legacy CRM (source).
 - **Parallel Processing:** Use `SemaphoreSlim` to control the degree of parallelism.
-- **Dependency Management:** Multi-pass migration or dependency graphing to resolve lookups.
+- **Dependency Management:** Recursive "Fix and Retry" logic to resolve missing lookups on the fly.
 - **Date Preservation:** Use a custom entity (`dm_sourcedate`) and a `DatesPlugin` on the target side to override system timestamps.
+- **Secure Settings:** Local connection strings are encrypted using Windows DPAPI (`ProtectedData`) with entropy "dvmig-entropy" and stored in `%AppData%\dvmig\settings.json`.
+
+## Testing Environment
+- **Source:** `dmrndsrc.crm4.dynamics.com` (Test data environment).
+- **Target:** `dmrnd.crm22.dynamics.com` (Clean target environment).
 
 ## Tooling & Dependencies
 - **UI:** Vanilla WPF (optimized for stability and modern look without external library bloat).
 - **SDK:** `Microsoft.PowerPlatform.Dataverse.Client`.
-- **Legacy SDK:** May require older `Microsoft.Xrm.Sdk` versions for specific OnPrem auth.
+- **Legacy SDK:** `Microsoft.CrmSdk.XrmTooling.CoreAssembly` for OnPrem auth.
 - **Resiliency:** `Polly`.
 - **Logging:** `Serilog`.
-- **Progress:** `Spectre.Console` (if any CLI fallback is added) or custom WPF progress controls.
 
 ## Future Reference
 - Always check `MODERNIZATION.md` for the latest roadmap and strategy updates.
