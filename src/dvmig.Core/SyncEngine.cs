@@ -5,7 +5,12 @@ using Microsoft.Xrm.Sdk.Metadata;
 using Polly;
 using Polly.Retry;
 using Serilog;
+using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace dvmig.Core
 {
@@ -41,7 +46,9 @@ namespace dvmig.Core
 
             _retryPolicy = Policy
                 .Handle<Exception>(IsTransientError)
-                .WaitAndRetryAsync(5, GetRetryDelay, 
+                .WaitAndRetryAsync(
+                    5, 
+                    GetRetryDelay, 
                     (ex, time, count, ctx) =>
                     {
                         _logger.Warning(ex, "Throttling or transient error. " +
@@ -160,8 +167,11 @@ namespace dvmig.Core
                     }
                     else
                     {
-                        var prepared = await PrepareEntityForTargetAsync(entity, 
-                            metadata, options, ct);
+                        var prepared = await PrepareEntityForTargetAsync(
+                            entity, 
+                            metadata, 
+                            options, 
+                            ct);
                         request.Requests.Add(new CreateRequest { Target = prepared });
                     }
                 }
@@ -215,8 +225,11 @@ namespace dvmig.Core
 
                 if (options.SkipExisting)
                 {
-                    var existing = await _target.RetrieveAsync(entity.LogicalName,
-                        entity.Id, new[] { "modifiedon" }, ct);
+                    var existing = await _target.RetrieveAsync(
+                        entity.LogicalName,
+                        entity.Id, 
+                        new[] { "modifiedon" }, 
+                        ct);
                     
                     if (existing != null)
                     {
@@ -224,8 +237,11 @@ namespace dvmig.Core
                     }
                 }
 
-                var prepared = await PrepareEntityForTargetAsync(entity, 
-                    metadata, options, ct);
+                var prepared = await PrepareEntityForTargetAsync(
+                    entity, 
+                    metadata, 
+                    options, 
+                    ct);
                 
                 if (options.PreserveDates)
                 {

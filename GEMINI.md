@@ -20,7 +20,7 @@ This file contains foundational mandates, architectural decisions, and project-s
 - **Date Preservation:** Use a custom entity (`dm_sourcedate`) and a `DatesPlugin` on the target side to override system timestamps.
 
 ## Tooling & Dependencies
-- **UI:** MaterialDesignInXaml or MahApps.Metro.
+- **UI:** Vanilla WPF (optimized for stability and modern look without external library bloat).
 - **SDK:** `Microsoft.PowerPlatform.Dataverse.Client`.
 - **Legacy SDK:** May require older `Microsoft.Xrm.Sdk` versions for specific OnPrem auth.
 - **Resiliency:** `Polly`.

@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using System;
 using System.Windows;
 using dvmig.App.ViewModels;
 using dvmig.App.Services;
@@ -24,23 +25,20 @@ namespace dvmig.App
             // Core Migration Logic
             services.AddTransient<IUserMapper>(provider => 
             {
-                var migrationService = provider.GetRequiredService<IMigrationService>();
-                if (migrationService.SourceProvider == null || migrationService.TargetProvider == null)
-                {
-                    // Fallback or empty implementation if providers aren't ready
-                    // In real use, we'd ensure they are ready before resolving
-                }
+                var migrationService = provider
+                    .GetRequiredService<IMigrationService>();
                 
                 return new UserMapper(
                     migrationService.SourceProvider!, 
                     migrationService.TargetProvider!, 
-                    provider.GetRequiredService<ILogger>()
-                );
+                    provider.GetRequiredService<ILogger>());
             });
 
             services.AddTransient<IDataPreservationManager>(provider =>
             {
-                var migrationService = provider.GetRequiredService<IMigrationService>();
+                var migrationService = provider
+                    .GetRequiredService<IMigrationService>();
+                
                 return new DataPreservationManager(
                     migrationService.TargetProvider!,
                     provider.GetRequiredService<ILogger>());
@@ -48,7 +46,9 @@ namespace dvmig.App
 
             services.AddTransient<ISyncEngine>(provider =>
             {
-                var migrationService = provider.GetRequiredService<IMigrationService>();
+                var migrationService = provider
+                    .GetRequiredService<IMigrationService>();
+                
                 return new SyncEngine(
                     migrationService.SourceProvider!,
                     migrationService.TargetProvider!,
@@ -73,7 +73,10 @@ namespace dvmig.App
         protected override void OnStartup(StartupEventArgs e)
         {
             var mainWindow = new MainWindow();
-            mainWindow.DataContext = _serviceProvider.GetRequiredService<MainViewModel>();
+            
+            mainWindow.DataContext = _serviceProvider
+                .GetRequiredService<MainViewModel>();
+            
             mainWindow.Show();
             base.OnStartup(e);
         }

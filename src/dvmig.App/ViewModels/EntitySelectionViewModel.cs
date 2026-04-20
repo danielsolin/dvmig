@@ -62,8 +62,11 @@ namespace dvmig.App.ViewModels
             {
                 Application.Current.Dispatcher.Invoke(() => 
                 {
-                    MessageBox.Show($"Failed to load metadata: {ex.Message}", 
-                        "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show(
+                        $"Failed to load metadata: {ex.Message}", 
+                        "Error", 
+                        MessageBoxButton.OK, 
+                        MessageBoxImage.Error);
                 });
             }
             finally
