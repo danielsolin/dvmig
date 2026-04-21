@@ -22,6 +22,13 @@ namespace dvmig.Core
         private readonly ConcurrentDictionary<string, int> _recursionTracker =
             new ConcurrentDictionary<string, int>();
 
+        private readonly ConcurrentDictionary<string, HashSet<string>>
+            _triedDependencies =
+                new ConcurrentDictionary<string, HashSet<string>>();
+
+        private readonly ConcurrentDictionary<string, Guid> _idMappingCache =
+            new ConcurrentDictionary<string, Guid>();
+
         private readonly ConcurrentDictionary<string, EntityMetadata>
             _metadataCache = new ConcurrentDictionary<string, EntityMetadata>();
 
@@ -333,6 +340,8 @@ namespace dvmig.Core
 
                     if (existing != null)
                     {
+                        _idMappingCache[recordKey] = existing.Id;
+
                         return true;
                     }
                 }
@@ -363,7 +372,17 @@ namespace dvmig.Core
                     }
                 }
 
-                return await CreateWithFixStrategyAsync(prepared, options, ct);
+                var success = await CreateWithFixStrategyAsync(
+                    prepared,
+                    options,
+                    ct);
+
+                if (success)
+                {
+                    _idMappingCache[recordKey] = entity.Id;
+                }
+
+                return success;
             }
             catch (Exception ex)
             {
@@ -464,7 +483,8 @@ namespace dvmig.Core
             var msg = ex.Message.ToLower();
 
             if (msg.Contains("already exists") ||
-                msg.Contains("duplicate currency record"))
+                msg.Contains("duplicate currency record") ||
+                msg.Contains("duplicate key"))
             {
                 _logger.Information(
                     "{Key}:{Id} already exists on target. " +
@@ -547,47 +567,89 @@ namespace dvmig.Core
 
             if (match.Success)
             {
-                var missingType = match.Groups[1].Value;
+                var missingType = match.Groups[1].Value.ToLower();
                 var missingId = Guid.Parse(match.Groups[2].Value);
+                var recordKey = $"{entity.LogicalName}:{entity.Id}";
+                var dependencyKey = $"{missingType}:{missingId}";
 
-                _logger.Information(
-                    "Missing dependency {Type}:{Id} detected. " +
-                    "Attempting to resolve.",
-                    missingType,
-                    missingId);
+                var tried = _triedDependencies.GetOrAdd(
+                    recordKey,
+                    _ => new HashSet<string>());
 
-                var missingRecord = await _source.RetrieveAsync(
-                    missingType,
-                    missingId,
-                    null,
-                    ct);
-
-                if (missingRecord != null)
+                if (tried.Contains(dependencyKey))
                 {
-                    var success = await SyncRecordAsync(
-                        missingRecord,
-                        options,
+                    _logger.Warning(
+                        "Already tried to resolve {Dep} for {Record}. " +
+                        "Falling back to stripping logic.",
+                        dependencyKey,
+                        recordKey);
+                }
+                else
+                {
+                    tried.Add(dependencyKey);
+
+                    _logger.Information(
+                        "Missing dependency {Type}:{Id} detected. " +
+                        "Attempting to resolve.",
+                        missingType,
+                        missingId);
+
+                    var missingRecord = await _source.RetrieveAsync(
+                        missingType,
+                        missingId,
                         null,
                         ct);
 
-                    if (success)
+                    if (missingRecord != null)
                     {
-                        var metadata = await GetMetadataAsync(
-                            entity.LogicalName,
+                        // Dynamic Mapping: Try to find by business key first
+                        var targetId = await FindExistingOnTargetAsync(
+                            missingRecord,
                             ct);
 
-                        if (metadata?.IsIntersect == true)
+                        if (targetId.HasValue)
                         {
-                            return await SyncIntersectEntityAsync(
+                            _logger.Information(
+                                "Found {Type} by business key. " +
+                                "Mapping {SourceId} -> {TargetId}",
+                                missingType,
+                                missingId,
+                                targetId.Value);
+
+                            _idMappingCache[dependencyKey] = targetId.Value;
+
+                            return await CreateWithFixStrategyAsync(
                                 entity,
                                 options,
                                 ct);
                         }
 
-                        return await CreateWithFixStrategyAsync(
-                            entity,
+                        // Normal Sync: Try to sync the record over
+                        var success = await SyncRecordAsync(
+                            missingRecord,
                             options,
+                            null,
                             ct);
+
+                        if (success)
+                        {
+                            var metadata = await GetMetadataAsync(
+                                entity.LogicalName,
+                                ct);
+
+                            if (metadata?.IsIntersect == true)
+                            {
+                                return await SyncIntersectEntityAsync(
+                                    entity,
+                                    options,
+                                    ct);
+                            }
+
+                            return await CreateWithFixStrategyAsync(
+                                entity,
+                                options,
+                                ct);
+                        }
                     }
                 }
 
@@ -679,10 +741,95 @@ namespace dvmig.Core
                     }
                 }
 
+                if (attr.Value is EntityReference er)
+                {
+                    var cacheKey = $"{er.LogicalName}:{er.Id}";
+                    if (_idMappingCache.TryGetValue(cacheKey, out var targetId))
+                    {
+                        target[attr.Key] = new EntityReference(
+                            er.LogicalName,
+                            targetId);
+
+                        continue;
+                    }
+                }
+
                 target[attr.Key] = attr.Value;
             }
 
             return target;
+        }
+
+        private async Task<Guid?> FindExistingOnTargetAsync(
+            Entity sourceEntity,
+            CancellationToken ct)
+        {
+            var metadata = await GetMetadataAsync(
+                sourceEntity.LogicalName,
+                ct);
+
+            if (metadata == null)
+            {
+                return null;
+            }
+
+            // 1. Try Alternate Keys
+            if (metadata.Keys != null && metadata.Keys.Any())
+            {
+                foreach (var key in metadata.Keys)
+                {
+                    var query = new QueryExpression(sourceEntity.LogicalName);
+                    query.ColumnSet = new ColumnSet(false);
+                    var hasAllParts = true;
+
+                    foreach (var attrName in key.KeyAttributes)
+                    {
+                        if (!sourceEntity.Contains(attrName))
+                        {
+                            hasAllParts = false;
+
+                            break;
+                        }
+
+                        query.Criteria.AddCondition(
+                            attrName,
+                            ConditionOperator.Equal,
+                            sourceEntity[attrName]);
+                    }
+
+                    if (hasAllParts)
+                    {
+                        var results = await _target
+                            .RetrieveMultipleAsync(query, ct);
+
+                        if (results.Entities.Any())
+                        {
+                            return results.Entities.First().Id;
+                        }
+                    }
+                }
+            }
+
+            // 2. Fallback to Primary Name Attribute
+            var primaryAttr = metadata.PrimaryNameAttribute;
+            if (!string.IsNullOrEmpty(primaryAttr) &&
+                sourceEntity.Contains(primaryAttr))
+            {
+                var query = new QueryExpression(sourceEntity.LogicalName);
+                query.ColumnSet = new ColumnSet(false);
+                query.Criteria.AddCondition(
+                    primaryAttr,
+                    ConditionOperator.Equal,
+                    sourceEntity[primaryAttr]);
+
+                var results = await _target.RetrieveMultipleAsync(query, ct);
+                if (results.Entities.Any())
+                {
+                    return results.Entities.First().Id;
+                }
+            }
+
+            return null;
         }
 
         private async Task<EntityMetadata?> GetMetadataAsync(

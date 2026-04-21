@@ -87,7 +87,11 @@ namespace dvmig.App.ViewModels
 
                     await _syncEngine.SyncAsync(
                         sourceRecords.Entities,
-                        new SyncOptions { UseBulk = true },
+                        new SyncOptions
+                        {
+                            UseBulk = true,
+                            StripMissingDependencies = true
+                        },
                         progressReporter,
                         _cts.Token);
                 }
