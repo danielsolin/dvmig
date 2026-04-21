@@ -4,7 +4,7 @@ This file contains foundational mandates, architectural decisions, and project-s
 
 ## Project Context
 - **Objective:** Modernize and improve the legacy `CRM2CRM` migration logic.
-- **Source Projects:** Found in the `old/` directory (for reference only).
+- **Source Projects:** Found in the `old/` directory. **This directory is for reference only and MUST NOT be modified.**
 - **New Stack:** .NET 9, WPF (App), .NET Standard 2.0 (Plugins), .NET 9 (Core/Providers).
 
 ## Foundational Mandates

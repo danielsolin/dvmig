@@ -123,14 +123,19 @@ namespace dvmig.App.Services
                 .ExecuteAsync(request, ct);
 
             return response.EntityMetadata
-                .Where(e => e.IsCustomEntity == true || IsStandardEntity(e.LogicalName))
-                .OrderBy(e => e.DisplayName?.UserLocalizedLabel?.Label ?? e.LogicalName)
+                .Where(e => e.IsCustomEntity == true ||
+                            IsStandardEntity(e.LogicalName))
+                .OrderBy(e => e.DisplayName?.UserLocalizedLabel?.Label ??
+                              e.LogicalName)
                 .ToList();
         }
 
         private bool IsStandardEntity(string logicalName)
         {
-            var standard = new[] { "account", "contact", "lead", "opportunity", "task" };
+            var standard = new[]
+            {
+                "account", "contact", "lead", "opportunity", "task"
+            };
 
             return standard.Contains(logicalName.ToLower());
         }

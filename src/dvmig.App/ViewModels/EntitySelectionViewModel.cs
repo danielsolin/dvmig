@@ -51,10 +51,13 @@ namespace dvmig.App.ViewModels
                     Entities.Clear();
                     foreach (var meta in metadata)
                     {
-                        var displayName = meta.DisplayName?.UserLocalizedLabel?.Label
-                                          ?? meta.LogicalName;
+                        var displayName =
+                            meta.DisplayName?.UserLocalizedLabel?.Label ??
+                            meta.LogicalName;
 
-                        Entities.Add(new EntitySelectionItem(meta.LogicalName, displayName));
+                        Entities.Add(new EntitySelectionItem(
+                            meta.LogicalName,
+                            displayName));
                     }
                 });
             }
@@ -87,8 +90,11 @@ namespace dvmig.App.ViewModels
                 return true;
             }
 
-            return item.DisplayName.Contains(SearchText, System.StringComparison.OrdinalIgnoreCase) ||
-                   item.LogicalName.Contains(SearchText, System.StringComparison.OrdinalIgnoreCase);
+            var search = SearchText;
+            var comparison = System.StringComparison.OrdinalIgnoreCase;
+
+            return item.DisplayName.Contains(search, comparison) ||
+                   item.LogicalName.Contains(search, comparison);
         }
 
         partial void OnSearchTextChanged(string value)

@@ -32,13 +32,14 @@ namespace dvmig.Tests
                 _loggerMock.Object
             );
 
-            _userMapperMock.Setup(m => m.MapUserAsync(It.IsAny<EntityReference>(),
+            _userMapperMock.Setup(m => m.MapUserAsync(
+                It.IsAny<EntityReference>(),
                 It.IsAny<CancellationToken>()))
                 .ReturnsAsync((EntityReference r, CancellationToken ct) => r);
         }
 
         [Fact]
-        public async Task SyncRecordAsync_ShouldStripReadOnlyAttribute_WhenModificationForbidden()
+        public async Task SyncRecordAsync_StripReadOnly_OnForbidden()
         {
             // Arrange
             var accountId = Guid.NewGuid();
@@ -54,9 +55,8 @@ namespace dvmig.Tests
                 {
                     callCount++;
                     if (e.Attributes.Contains("readonlyfield"))
-                    {
-                        throw new Exception("The property 'readonlyfield' cannot be modified.");
-                    }
+                        throw new Exception(
+                            "The property 'readonlyfield' cannot be modified.");
 
                     return Task.FromResult(accountId);
                 });
@@ -72,14 +72,15 @@ namespace dvmig.Tests
         }
 
         [Fact]
-        public async Task SyncRecordAsync_ShouldRecursivelySyncDependency_WhenMissing()
+        public async Task SyncRecordAsync_SyncDependency_WhenMissing()
         {
             // Arrange
             var accountId = Guid.NewGuid();
             var contactId = Guid.NewGuid();
 
             var contact = new Entity("contact", contactId);
-            contact["parentcustomerid"] = new EntityReference("account", accountId);
+            contact["parentcustomerid"] = 
+                new EntityReference("account", accountId);
 
             var account = new Entity("account", accountId);
             account["name"] = "Test Account";
@@ -92,9 +93,8 @@ namespace dvmig.Tests
                 {
                     contactCreateCalls++;
                     if (contactCreateCalls == 1)
-                    {
-                        throw new Exception("account with Id=" + accountId + " does not exist");
-                    }
+                        throw new Exception(
+                            "account with Id=" + accountId + " does not exist");
 
                     return Task.FromResult(contactId);
                 });
@@ -122,42 +122,82 @@ namespace dvmig.Tests
         }
 
         [Fact]
-        public async Task SyncBulkAsync_ShouldShuntToSingleSync_WhenBulkItemFails()
+        public async Task SyncBulkAsync_ShuntToSingleSync_WhenBulkItemFails()
         {
             // Arrange
-            var entity1 = new Entity("account", Guid.NewGuid()) { ["name"] = "Success" };
-            var entity2 = new Entity("account", Guid.NewGuid()) { ["name"] = "Fail" };
+            var entity1 = new Entity("account", Guid.NewGuid())
+            {
+                ["name"] = "Success"
+            };
+
+            var entity2 = new Entity("account", Guid.NewGuid())
+            {
+                ["name"] = "Fail"
+            };
+
             var entities = new List<Entity> { entity1, entity2 };
 
-            var metadata = new Microsoft.Xrm.Sdk.Metadata.EntityMetadata { LogicalName = "account" };
-            _targetMock.Setup(t => t.GetEntityMetadataAsync("account", It.IsAny<CancellationToken>()))
+            var metadata = new Microsoft.Xrm.Sdk.Metadata.EntityMetadata
+            {
+                LogicalName = "account"
+            };
+
+            _targetMock.Setup(t => t.GetEntityMetadataAsync(
+                "account",
+                It.IsAny<CancellationToken>()))
                 .ReturnsAsync(metadata);
 
             var bulkResponse = new ExecuteMultipleResponse();
-            bulkResponse.Results["Responses"] = new ExecuteMultipleResponseItemCollection
+            bulkResponse.Results["Responses"] = 
+                new ExecuteMultipleResponseItemCollection
             {
-                new ExecuteMultipleResponseItem { RequestIndex = 0, Response = new CreateResponse() },
-                new ExecuteMultipleResponseItem { RequestIndex = 1, Fault = new OrganizationServiceFault { Message = "Bulk Error" } }
+                new ExecuteMultipleResponseItem
+                {
+                    RequestIndex = 0,
+                    Response = new CreateResponse()
+                },
+                new ExecuteMultipleResponseItem
+                {
+                    RequestIndex = 1,
+                    Fault = new OrganizationServiceFault
+                    {
+                        Message = "Bulk Error"
+                    }
+                }
             };
 
-            _targetMock.Setup(t => t.ExecuteAsync(It.IsAny<ExecuteMultipleRequest>(), It.IsAny<CancellationToken>()))
+            _targetMock.Setup(t => t.ExecuteAsync(
+                It.IsAny<ExecuteMultipleRequest>(),
+                It.IsAny<CancellationToken>()))
                 .ReturnsAsync(bulkResponse);
 
-            _targetMock.Setup(t => t.CreateAsync(It.Is<Entity>(e => (string)e["name"] == "Fail"), It.IsAny<CancellationToken>()))
+            _targetMock.Setup(t => t.CreateAsync(
+                It.Is<Entity>(e => (string)e["name"] == "Fail"),
+                It.IsAny<CancellationToken>()))
                 .ReturnsAsync(entity2.Id);
 
-            var options = new SyncOptions { UseBulk = true, BulkBatchSize = 10, SkipExisting = false };
+            var options = new SyncOptions
+            {
+                UseBulk = true,
+                BulkBatchSize = 10,
+                SkipExisting = false
+            };
 
             // Act
             await _engine.SyncAsync(entities, options);
 
             // Assert
-            _targetMock.Verify(t => t.ExecuteAsync(It.IsAny<ExecuteMultipleRequest>(), It.IsAny<CancellationToken>()), Times.Once);
-            _targetMock.Verify(t => t.CreateAsync(It.Is<Entity>(e => (string)e["name"] == "Fail"), It.IsAny<CancellationToken>()), Times.Once);
+            _targetMock.Verify(t => t.ExecuteAsync(
+                It.IsAny<ExecuteMultipleRequest>(),
+                It.IsAny<CancellationToken>()), Times.Once);
+
+            _targetMock.Verify(t => t.CreateAsync(
+                It.Is<Entity>(e => (string)e["name"] == "Fail"),
+                It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [Fact]
-        public async Task SyncRecordAsync_ShouldCallAssociate_WhenEntityIsIntersect()
+        public async Task SyncRecordAsync_CallAssociate_WhenEntityIsIntersect()
         {
             // Arrange
             var relName = "new_account_contact";
@@ -165,32 +205,47 @@ namespace dvmig.Tests
             var contactId = Guid.NewGuid();
 
             var intersectEntity = new Entity(relName, Guid.NewGuid());
-            intersectEntity["accountid"] = new EntityReference("account", accountId);
-            intersectEntity["contactid"] = new EntityReference("contact", contactId);
+            intersectEntity["accountid"] = 
+                new EntityReference("account", accountId);
+            intersectEntity["contactid"] = 
+                new EntityReference("contact", contactId);
 
-            var metadata = new Microsoft.Xrm.Sdk.Metadata.EntityMetadata { LogicalName = relName };
+            var metadata = new Microsoft.Xrm.Sdk.Metadata.EntityMetadata
+            {
+                LogicalName = relName
+            };
+
             typeof(Microsoft.Xrm.Sdk.Metadata.EntityMetadata)
                 .GetProperty(nameof(metadata.IsIntersect))
                 ?.SetValue(metadata, true);
 
-            _targetMock.Setup(t => t.GetEntityMetadataAsync(relName, It.IsAny<CancellationToken>()))
+            _targetMock.Setup(t => t.GetEntityMetadataAsync(
+                relName,
+                It.IsAny<CancellationToken>()))
                 .ReturnsAsync(metadata);
 
-            _targetMock.Setup(t => t.ExecuteAsync(It.IsAny<AssociateRequest>(), It.IsAny<CancellationToken>()))
+            _targetMock.Setup(t => t.ExecuteAsync(
+                It.IsAny<AssociateRequest>(),
+                It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new AssociateResponse());
 
             var options = new SyncOptions { SkipExisting = false };
 
             // Act
-            var result = await _engine.SyncRecordAsync(intersectEntity, options);
+            var result = await _engine.SyncRecordAsync(
+                intersectEntity,
+                options);
+            ...
 
             // Assert
             Assert.True(result);
-            _targetMock.Verify(t => t.ExecuteAsync(It.IsAny<AssociateRequest>(), It.IsAny<CancellationToken>()), Times.Once);
+            _targetMock.Verify(t => t.ExecuteAsync(
+                It.IsAny<AssociateRequest>(),
+                It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [Fact]
-        public async Task SyncRecordAsync_ShouldMapUser_WhenAttributeIsUserField()
+        public async Task SyncRecordAsync_MapUser_WhenAttributeIsUserField()
         {
             // Arrange
             var sourceUserId = Guid.NewGuid();
@@ -201,10 +256,14 @@ namespace dvmig.Tests
             var account = new Entity("account", Guid.NewGuid());
             account["ownerid"] = sourceUserRef;
 
-            _userMapperMock.Setup(m => m.MapUserAsync(sourceUserRef, It.IsAny<CancellationToken>()))
+            _userMapperMock.Setup(m => m.MapUserAsync(
+                sourceUserRef,
+                It.IsAny<CancellationToken>()))
                 .ReturnsAsync(targetUserRef);
 
-            _targetMock.Setup(t => t.CreateAsync(It.IsAny<Entity>(), It.IsAny<CancellationToken>()))
+            _targetMock.Setup(t => t.CreateAsync(
+                It.IsAny<Entity>(),
+                It.IsAny<CancellationToken>()))
                 .ReturnsAsync(account.Id);
 
             var options = new SyncOptions { SkipExisting = false };
@@ -213,49 +272,62 @@ namespace dvmig.Tests
             await _engine.SyncRecordAsync(account, options);
 
             // Assert
-            _targetMock.Verify(t => t.CreateAsync(It.Is<Entity>(e =>
-                ((EntityReference)e["ownerid"]).Id == targetUserId),
+            _targetMock.Verify(t => t.CreateAsync(
+                It.Is<Entity>(e =>
+                    ((EntityReference)e["ownerid"]).Id == targetUserId),
                 It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [Fact]
-        public async Task SyncRecordAsync_ShouldPreserveDates_WhenOptionIsEnabled()
+        public async Task SyncRecordAsync_PreserveDates_WhenOptionIsEnabled()
         {
             // Arrange
             var account = new Entity("account", Guid.NewGuid());
             account["name"] = "Date Test";
             account["createdon"] = DateTime.UtcNow;
 
-            _targetMock.Setup(t => t.CreateAsync(It.IsAny<Entity>(), It.IsAny<CancellationToken>()))
+            _targetMock.Setup(t => t.CreateAsync(
+                It.IsAny<Entity>(),
+                It.IsAny<CancellationToken>()))
                 .ReturnsAsync(account.Id);
 
-            var options = new SyncOptions { SkipExisting = false, PreserveDates = true };
+            var options = new SyncOptions
+            {
+                SkipExisting = false,
+                PreserveDates = true
+            };
 
             // Act
             await _engine.SyncRecordAsync(account, options);
 
             // Assert
-            _dataPreservationMock.Verify(p => p.PreserveDatesAsync(account,
+            _dataPreservationMock.Verify(p => p.PreserveDatesAsync(
+                account,
                 It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [Fact]
-        public async Task SyncRecordAsync_ShouldRetry_WhenServiceProtectionLimitReached()
+        public async Task SyncRecordAsync_Retry_OnServiceProtectionLimit()
         {
             // Arrange
             var accountId = Guid.NewGuid();
-            var account = new Entity("account", accountId) { ["name"] = "Retry Test" };
+            var account = new Entity("account", accountId)
+            {
+                ["name"] = "Retry Test"
+            };
 
             int callCount = 0;
-            _targetMock.Setup(t => t.CreateAsync(It.IsAny<Entity>(), It.IsAny<CancellationToken>()))
+            _targetMock.Setup(t => t.CreateAsync(
+                It.IsAny<Entity>(),
+                It.IsAny<CancellationToken>()))
                 .Returns<Entity, CancellationToken>((e, ct) =>
                 {
                     callCount++;
+
+                    // Simulate Service Protection Limit error
                     if (callCount == 1)
-                    {
-                        // Simulate Service Protection Limit error
-                        throw new Exception("Rate limit exceeded. Error Code: 0x8004410d");
-                    }
+                        throw new Exception(
+                            "Rate limit exceeded. Error Code: 0x8004410d");
 
                     return Task.FromResult(accountId);
                 });

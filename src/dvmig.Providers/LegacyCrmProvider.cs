@@ -65,7 +65,9 @@ namespace dvmig.Providers
             return Task.FromResult(response?.EntityMetadata);
         }
 
-        public Task<Guid> CreateAsync(Entity entity, CancellationToken ct = default)
+        public Task<Guid> CreateAsync(
+            Entity entity,
+            CancellationToken ct = default)
         {
             return Task.FromResult(_client.Create(entity));
         }

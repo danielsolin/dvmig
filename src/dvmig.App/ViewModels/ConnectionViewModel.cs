@@ -75,11 +75,14 @@ namespace dvmig.App.ViewModels
             
             try
             {
-                bool isLegacy = SourceConnectionString.Contains("AuthType=AD") ||
-                               SourceConnectionString.Contains("AuthType=IFD");
+                bool isLegacy =
+                    SourceConnectionString.Contains("AuthType=AD") ||
+                    SourceConnectionString.Contains("AuthType=IFD");
 
                 var result = await _migrationService.ConnectSourceAsync(
-                    SourceConnectionString, isLegacy, _sourceCts.Token);
+                    SourceConnectionString,
+                    isLegacy,
+                    _sourceCts.Token);
 
                 IsSourceConnected = result;
                 SourceStatus = result ? "Connected" : "Failed";
@@ -109,7 +112,9 @@ namespace dvmig.App.ViewModels
             try
             {
                 var result = await _migrationService.ConnectTargetAsync(
-                    TargetConnectionString, false, _targetCts.Token);
+                    TargetConnectionString,
+                    false,
+                    _targetCts.Token);
 
                 IsTargetConnected = result;
                 TargetStatus = result ? "Connected" : "Failed";

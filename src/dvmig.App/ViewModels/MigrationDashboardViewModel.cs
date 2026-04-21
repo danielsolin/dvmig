@@ -40,7 +40,8 @@ namespace dvmig.App.ViewModels
             if (_migrationService.SourceProvider == null ||
                 _migrationService.TargetProvider == null)
             {
-                Logs.Insert(0, "Error: Source or Target provider not connected.");
+                Logs.Insert(0,
+                    "Error: Source or Target provider not connected.");
 
                 return;
             }
@@ -61,14 +62,21 @@ namespace dvmig.App.ViewModels
                 {
                     _cts.Token.ThrowIfCancellationRequested();
 
-                    progressReporter.Report($"Fetching {logicalName} records...");
+                    progressReporter.Report(
+                        $"Fetching {logicalName} records...");
 
-                    var query = new QueryExpression(logicalName) { ColumnSet = new ColumnSet(true) };
-                    var sourceRecords = await _migrationService.SourceProvider.RetrieveMultipleAsync(query, _cts.Token);
+                    var query = new QueryExpression(logicalName)
+                    {
+                        ColumnSet = new ColumnSet(true)
+                    };
+
+                    var sourceRecords = await _migrationService.SourceProvider
+                        .RetrieveMultipleAsync(query, _cts.Token);
 
                     if (sourceRecords.Entities.Count == 0)
                     {
-                        progressReporter.Report($"No records for {logicalName}.");
+                        progressReporter.Report(
+                            $"No records for {logicalName}.");
 
                         continue;
                     }
@@ -106,7 +114,9 @@ namespace dvmig.App.ViewModels
         private void CancelMigration()
         {
             _cts?.Cancel();
-            Logs.Insert(0, $"[{DateTime.Now:HH:mm:ss}] Cancellation requested...");
+
+            var now = DateTime.Now.ToString("HH:mm:ss");
+            Logs.Insert(0, $"[{now}] Cancellation requested...");
         }
 
         private bool CanStartMigration() => !IsMigrationRunning;

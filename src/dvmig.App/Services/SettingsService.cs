@@ -21,16 +21,20 @@ namespace dvmig.App.Services
     public class SettingsService : ISettingsService
     {
         private readonly string _filePath;
-        private static readonly byte[] Entropy = Encoding.UTF8.GetBytes("dvmig-entropy");
+        private static readonly byte[] Entropy =
+            Encoding.UTF8.GetBytes("dvmig-entropy");
 
         public SettingsService()
         {
-            var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+            var appData = Environment.GetFolderPath(
+                Environment.SpecialFolder.ApplicationData);
+
             var folder = Path.Combine(appData, "dvmig");
             if (!Directory.Exists(folder))
             {
                 Directory.CreateDirectory(folder);
             }
+
             _filePath = Path.Combine(folder, "settings.json");
         }
 
@@ -44,12 +48,16 @@ namespace dvmig.App.Services
             try
             {
                 var json = File.ReadAllText(_filePath);
-                var settings = JsonSerializer.Deserialize<UserSettings>(json) ?? new UserSettings();
+                var settings = JsonSerializer.Deserialize<UserSettings>(json) ??
+                               new UserSettings();
 
                 if (settings.RememberConnections)
                 {
-                    settings.SourceConnectionString = Decrypt(settings.SourceConnectionString);
-                    settings.TargetConnectionString = Decrypt(settings.TargetConnectionString);
+                    settings.SourceConnectionString =
+                        Decrypt(settings.SourceConnectionString);
+
+                    settings.TargetConnectionString =
+                        Decrypt(settings.TargetConnectionString);
                 }
                 else
                 {
@@ -76,8 +84,11 @@ namespace dvmig.App.Services
 
                 if (settings.RememberConnections)
                 {
-                    settingsCopy.SourceConnectionString = Encrypt(settings.SourceConnectionString);
-                    settingsCopy.TargetConnectionString = Encrypt(settings.TargetConnectionString);
+                    settingsCopy.SourceConnectionString =
+                        Encrypt(settings.SourceConnectionString);
+
+                    settingsCopy.TargetConnectionString =
+                        Encrypt(settings.TargetConnectionString);
                 }
 
                 var json = JsonSerializer.Serialize(settingsCopy);
@@ -91,26 +102,48 @@ namespace dvmig.App.Services
 
         private string Encrypt(string text)
         {
-            if (string.IsNullOrEmpty(text)) return string.Empty;
+            if (string.IsNullOrEmpty(text))
+            {
+                return string.Empty;
+            }
+
             try
             {
                 var data = Encoding.UTF8.GetBytes(text);
-                var encrypted = ProtectedData.Protect(data, Entropy, DataProtectionScope.CurrentUser);
+                var encrypted = ProtectedData.Protect(
+                    data,
+                    Entropy,
+                    DataProtectionScope.CurrentUser);
+
                 return Convert.ToBase64String(encrypted);
             }
-            catch { return string.Empty; }
+            catch
+            {
+                return string.Empty;
+            }
         }
 
         private string Decrypt(string base64)
         {
-            if (string.IsNullOrEmpty(base64)) return string.Empty;
+            if (string.IsNullOrEmpty(base64))
+            {
+                return string.Empty;
+            }
+
             try
             {
                 var bytes = Convert.FromBase64String(base64);
-                var decrypted = ProtectedData.Unprotect(bytes, Entropy, DataProtectionScope.CurrentUser);
+                var decrypted = ProtectedData.Unprotect(
+                    bytes,
+                    Entropy,
+                    DataProtectionScope.CurrentUser);
+
                 return Encoding.UTF8.GetString(decrypted);
             }
-            catch { return string.Empty; }
+            catch
+            {
+                return string.Empty;
+            }
         }
     }
 }

@@ -59,7 +59,8 @@ namespace dvmig.Core
             CancellationToken ct = default)
         {
             var sourceDates = entities
-                .Where(e => e.Contains("createdon") || e.Contains("modifiedon"))
+                .Where(e => e.Contains("createdon") ||
+                            e.Contains("modifiedon"))
                 .Select(CreateSourceDateEntity)
                 .ToList();
 
@@ -68,7 +69,8 @@ namespace dvmig.Core
                 return;
             }
 
-            _logger.Information("Bulk creating {Count} source date records",
+            _logger.Information(
+                "Bulk creating {Count} source date records",
                 sourceDates.Count);
 
             var request = new ExecuteMultipleRequest
@@ -96,7 +98,9 @@ namespace dvmig.Core
         {
             var sourceDate = new Entity("dm_sourcedate");
             sourceDate["dm_sourceentityid"] = entity.Id.ToString();
-            sourceDate["dm_sourceentitylogicalname"] = entity.LogicalName.ToLower();
+
+            sourceDate["dm_sourceentitylogicalname"] =
+                entity.LogicalName.ToLower();
 
             if (entity.Contains("createdon"))
             {

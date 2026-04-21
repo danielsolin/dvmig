@@ -47,7 +47,8 @@ namespace dvmig.Plugins
                   </entity>
                 </fetch>";
 
-            var result = service.RetrieveMultiple(new FetchExpression(fetchXml));
+            var result = service.RetrieveMultiple(
+                new FetchExpression(fetchXml));
 
             if (result.Entities.Count > 0)
             {
