@@ -47,7 +47,7 @@ namespace dvmig.App.ViewModels
         {
             var settings = _settingsService.LoadSettings();
             RememberConnections = settings.RememberConnections;
-            
+
             if (RememberConnections)
             {
                 SourceConnectionString = settings.SourceConnectionString;
@@ -59,12 +59,12 @@ namespace dvmig.App.ViewModels
         private async Task TestSourceConnectionAsync()
         {
             SourceStatus = "Connecting...";
-            bool isLegacy = SourceConnectionString.Contains("AuthType=AD") || 
+            bool isLegacy = SourceConnectionString.Contains("AuthType=AD") ||
                            SourceConnectionString.Contains("AuthType=IFD");
-            
+
             var result = await _migrationService.ConnectSourceAsync(
                 SourceConnectionString, isLegacy);
-            
+
             IsSourceConnected = result;
             SourceStatus = result ? "Connected" : "Failed";
         }
@@ -75,7 +75,7 @@ namespace dvmig.App.ViewModels
             TargetStatus = "Connecting...";
             var result = await _migrationService.ConnectTargetAsync(
                 TargetConnectionString, false);
-            
+
             IsTargetConnected = result;
             TargetStatus = result ? "Connected" : "Failed";
         }

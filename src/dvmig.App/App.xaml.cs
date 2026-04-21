@@ -1,5 +1,4 @@
 using Microsoft.Extensions.DependencyInjection;
-using System;
 using System.Windows;
 using dvmig.App.ViewModels;
 using dvmig.App.Services;
@@ -23,14 +22,14 @@ namespace dvmig.App
             services.AddSingleton<ISettingsService, SettingsService>();
 
             // Core Migration Logic
-            services.AddTransient<IUserMapper>(provider => 
+            services.AddTransient<IUserMapper>(provider =>
             {
                 var migrationService = provider
                     .GetRequiredService<IMigrationService>();
-                
+
                 return new UserMapper(
-                    migrationService.SourceProvider!, 
-                    migrationService.TargetProvider!, 
+                    migrationService.SourceProvider!,
+                    migrationService.TargetProvider!,
                     provider.GetRequiredService<ILogger>());
             });
 
@@ -38,7 +37,7 @@ namespace dvmig.App
             {
                 var migrationService = provider
                     .GetRequiredService<IMigrationService>();
-                
+
                 return new DataPreservationManager(
                     migrationService.TargetProvider!,
                     provider.GetRequiredService<ILogger>());
@@ -48,7 +47,7 @@ namespace dvmig.App
             {
                 var migrationService = provider
                     .GetRequiredService<IMigrationService>();
-                
+
                 return new SyncEngine(
                     migrationService.SourceProvider!,
                     migrationService.TargetProvider!,
@@ -64,7 +63,7 @@ namespace dvmig.App
             services.AddTransient<MigrationDashboardViewModel>();
 
             // Navigation Factory
-            services.AddSingleton<Func<Type, ViewModelBase>>(provider => 
+            services.AddSingleton<Func<Type, ViewModelBase>>(provider =>
                 type => (ViewModelBase)provider.GetRequiredService(type));
 
             _serviceProvider = services.BuildServiceProvider();
@@ -73,10 +72,10 @@ namespace dvmig.App
         protected override void OnStartup(StartupEventArgs e)
         {
             var mainWindow = new MainWindow();
-            
+
             mainWindow.DataContext = _serviceProvider
                 .GetRequiredService<MainViewModel>();
-            
+
             mainWindow.Show();
             base.OnStartup(e);
         }

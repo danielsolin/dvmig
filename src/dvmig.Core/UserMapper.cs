@@ -9,7 +9,7 @@ namespace dvmig.Core
     public interface IUserMapper
     {
         Task<EntityReference?> MapUserAsync(
-            EntityReference? sourceUser, 
+            EntityReference? sourceUser,
             CancellationToken ct = default);
 
         void AddManualMapping(Guid sourceUserId, Guid targetUserId);
@@ -20,13 +20,13 @@ namespace dvmig.Core
         private readonly IDataverseProvider _source;
         private readonly IDataverseProvider _target;
         private readonly ILogger _logger;
-        
+
         private readonly ConcurrentDictionary<Guid, EntityReference>
             _mappingCache = new ConcurrentDictionary<Guid, EntityReference>();
 
         public UserMapper(
-            IDataverseProvider source, 
-            IDataverseProvider target, 
+            IDataverseProvider source,
+            IDataverseProvider target,
             ILogger logger)
         {
             _source = source;
@@ -43,7 +43,7 @@ namespace dvmig.Core
         }
 
         public async Task<EntityReference?> MapUserAsync(
-            EntityReference? sourceUser, 
+            EntityReference? sourceUser,
             CancellationToken ct = default)
         {
             if (sourceUser == null)
@@ -58,15 +58,15 @@ namespace dvmig.Core
 
             _logger.Debug("Attempting to map source user {Id}", sourceUser.Id);
 
-            var sourceUserData = await _source.RetrieveAsync("systemuser", 
-                sourceUser.Id, 
-                new[] { "internalemailaddress", "domainname", "fullname" }, 
+            var sourceUserData = await _source.RetrieveAsync("systemuser",
+                sourceUser.Id,
+                new[] { "internalemailaddress", "domainname", "fullname" },
                 ct);
 
             if (sourceUserData == null)
             {
                 _logger.Warning("Source user {Id} not found.", sourceUser.Id);
-                
+
                 return null;
             }
 
@@ -82,7 +82,7 @@ namespace dvmig.Core
                 if (mapped != null)
                 {
                     _mappingCache[sourceUser.Id] = mapped;
-                    
+
                     return mapped;
                 }
             }
@@ -100,13 +100,13 @@ namespace dvmig.Core
                 if (mapped != null)
                 {
                     _mappingCache[sourceUser.Id] = mapped;
-                    
+
                     return mapped;
                 }
             }
 
             _logger.Warning("" +
-                "Could not map source user {FullName} ({Id})", 
+                "Could not map source user {FullName} ({Id})",
                 sourceUserData.GetAttributeValue<string>("fullname"),
                 sourceUser.Id
             );
@@ -115,8 +115,8 @@ namespace dvmig.Core
         }
 
         private async Task<EntityReference?> FindTargetUserAsync(
-            string attribute, 
-            string value, 
+            string attribute,
+            string value,
             CancellationToken ct)
         {
             var query = new QueryByAttribute("systemuser")

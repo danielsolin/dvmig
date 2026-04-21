@@ -7,11 +7,11 @@ namespace dvmig.Core
     public interface IDataPreservationManager
     {
         Task PreserveDatesAsync(
-            Entity sourceEntity, 
+            Entity sourceEntity,
             CancellationToken ct = default);
 
         Task PreserveDatesBulkAsync(
-            IEnumerable<Entity> entities, 
+            IEnumerable<Entity> entities,
             CancellationToken ct = default);
     }
 
@@ -21,7 +21,7 @@ namespace dvmig.Core
         private readonly Serilog.ILogger _logger;
 
         public DataPreservationManager(
-            IDataverseProvider target, 
+            IDataverseProvider target,
             Serilog.ILogger logger)
         {
             _target = target;
@@ -29,17 +29,17 @@ namespace dvmig.Core
         }
 
         public async Task PreserveDatesAsync(
-            Entity sourceEntity, 
+            Entity sourceEntity,
             CancellationToken ct = default)
         {
-            if (!sourceEntity.Contains("createdon") && 
+            if (!sourceEntity.Contains("createdon") &&
                 !sourceEntity.Contains("modifiedon"))
             {
                 return;
             }
 
             var sourceDate = CreateSourceDateEntity(sourceEntity);
-            
+
             try
             {
                 await _target.CreateAsync(sourceDate, ct);
@@ -48,14 +48,14 @@ namespace dvmig.Core
             {
                 _logger.Warning(
                     ex,
-                    "Failed to create source date for {Entity}:{Id}", 
+                    "Failed to create source date for {Entity}:{Id}",
                     sourceEntity.LogicalName, sourceEntity.Id
                 );
             }
         }
 
         public async Task PreserveDatesBulkAsync(
-            IEnumerable<Entity> entities, 
+            IEnumerable<Entity> entities,
             CancellationToken ct = default)
         {
             var sourceDates = entities
@@ -68,7 +68,7 @@ namespace dvmig.Core
                 return;
             }
 
-            _logger.Information("Bulk creating {Count} source date records", 
+            _logger.Information("Bulk creating {Count} source date records",
                 sourceDates.Count);
 
             var request = new ExecuteMultipleRequest
@@ -83,9 +83,9 @@ namespace dvmig.Core
 
             foreach (var sd in sourceDates)
             {
-                request.Requests.Add(new CreateRequest 
-                { 
-                    Target = sd 
+                request.Requests.Add(new CreateRequest
+                {
+                    Target = sd
                 });
             }
 
@@ -97,7 +97,7 @@ namespace dvmig.Core
             var sourceDate = new Entity("dm_sourcedate");
             sourceDate["dm_sourceentityid"] = entity.Id.ToString();
             sourceDate["dm_sourceentitylogicalname"] = entity.LogicalName.ToLower();
-            
+
             if (entity.Contains("createdon"))
             {
                 sourceDate["dm_sourcecreateddate"] = entity["createdon"];
@@ -107,7 +107,7 @@ namespace dvmig.Core
             {
                 sourceDate["dm_sourcemodifieddate"] = entity["modifiedon"];
             }
-            
+
             return sourceDate;
         }
     }

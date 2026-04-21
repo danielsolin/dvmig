@@ -23,16 +23,16 @@ namespace dvmig.Tests
             _userMapperMock = new Mock<IUserMapper>();
             _dataPreservationMock = new Mock<IDataPreservationManager>();
             _loggerMock = new Mock<ILogger>();
-            
+
             _engine = new SyncEngine(
-                _sourceMock.Object, 
-                _targetMock.Object, 
+                _sourceMock.Object,
+                _targetMock.Object,
                 _userMapperMock.Object,
                 _dataPreservationMock.Object,
                 _loggerMock.Object
             );
 
-            _userMapperMock.Setup(m => m.MapUserAsync(It.IsAny<EntityReference>(), 
+            _userMapperMock.Setup(m => m.MapUserAsync(It.IsAny<EntityReference>(),
                 It.IsAny<CancellationToken>()))
                 .ReturnsAsync((EntityReference r, CancellationToken ct) => r);
         }
@@ -48,7 +48,7 @@ namespace dvmig.Tests
 
             int callCount = 0;
             _targetMock.Setup(t => t.CreateAsync(
-                It.Is<Entity>(e => e.LogicalName == "account"), 
+                It.Is<Entity>(e => e.LogicalName == "account"),
                 It.IsAny<CancellationToken>()))
                 .Returns<Entity, CancellationToken>((e, ct) =>
                 {
@@ -57,7 +57,7 @@ namespace dvmig.Tests
                     {
                         throw new Exception("The property 'readonlyfield' cannot be modified.");
                     }
-                    
+
                     return Task.FromResult(accountId);
                 });
 
@@ -86,7 +86,7 @@ namespace dvmig.Tests
 
             int contactCreateCalls = 0;
             _targetMock.Setup(t => t.CreateAsync(
-                It.Is<Entity>(e => e.LogicalName == "contact"), 
+                It.Is<Entity>(e => e.LogicalName == "contact"),
                 It.IsAny<CancellationToken>()))
                 .Returns<Entity, CancellationToken>((e, ct) =>
                 {
@@ -95,16 +95,16 @@ namespace dvmig.Tests
                     {
                         throw new Exception("account with Id=" + accountId + " does not exist");
                     }
-                    
+
                     return Task.FromResult(contactId);
                 });
 
-            _sourceMock.Setup(s => s.RetrieveAsync("account", accountId, 
+            _sourceMock.Setup(s => s.RetrieveAsync("account", accountId,
                 It.IsAny<string[]>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(account);
 
             _targetMock.Setup(t => t.CreateAsync(
-                It.Is<Entity>(e => e.LogicalName == "account"), 
+                It.Is<Entity>(e => e.LogicalName == "account"),
                 It.IsAny<CancellationToken>()))
                 .ReturnsAsync(accountId);
 
@@ -117,7 +117,7 @@ namespace dvmig.Tests
             Assert.True(result);
             Assert.Equal(2, contactCreateCalls);
             _targetMock.Verify(t => t.CreateAsync(
-                It.Is<Entity>(e => e.LogicalName == "account"), 
+                It.Is<Entity>(e => e.LogicalName == "account"),
                 It.IsAny<CancellationToken>()), Times.Once);
         }
 
@@ -213,8 +213,8 @@ namespace dvmig.Tests
             await _engine.SyncRecordAsync(account, options);
 
             // Assert
-            _targetMock.Verify(t => t.CreateAsync(It.Is<Entity>(e => 
-                ((EntityReference)e["ownerid"]).Id == targetUserId), 
+            _targetMock.Verify(t => t.CreateAsync(It.Is<Entity>(e =>
+                ((EntityReference)e["ownerid"]).Id == targetUserId),
                 It.IsAny<CancellationToken>()), Times.Once);
         }
 
@@ -235,7 +235,7 @@ namespace dvmig.Tests
             await _engine.SyncRecordAsync(account, options);
 
             // Assert
-            _dataPreservationMock.Verify(p => p.PreserveDatesAsync(account, 
+            _dataPreservationMock.Verify(p => p.PreserveDatesAsync(account,
                 It.IsAny<CancellationToken>()), Times.Once);
         }
 
@@ -256,7 +256,7 @@ namespace dvmig.Tests
                         // Simulate Service Protection Limit error
                         throw new Exception("Rate limit exceeded. Error Code: 0x8004410d");
                     }
-                    
+
                     return Task.FromResult(accountId);
                 });
 

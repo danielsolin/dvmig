@@ -31,9 +31,9 @@ namespace dvmig.Providers
             string[]? columns = null,
             CancellationToken ct = default)
         {
-            var columnSet = columns == null ? new ColumnSet(true) : 
+            var columnSet = columns == null ? new ColumnSet(true) :
                 new ColumnSet(columns);
-            
+
             return await _client.RetrieveAsync(
                 entityLogicalName, id, columnSet, ct);
         }
@@ -44,10 +44,10 @@ namespace dvmig.Providers
         {
             var response = await _client.ExecuteAsync(
                 new Microsoft.Xrm.Sdk.Messages.RetrieveEntityRequest
-            {
-                LogicalName = entityLogicalName,
-                EntityFilters = EntityFilters.Attributes
-            }, ct) as Microsoft.Xrm.Sdk.Messages.RetrieveEntityResponse;
+                {
+                    LogicalName = entityLogicalName,
+                    EntityFilters = EntityFilters.Attributes
+                }, ct) as Microsoft.Xrm.Sdk.Messages.RetrieveEntityResponse;
 
             return response?.EntityMetadata;
         }

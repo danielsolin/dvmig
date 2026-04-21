@@ -14,7 +14,7 @@ namespace dvmig.App.ViewModels
         {
             _navigationService = navigationService;
             _navigationService.OnNavigation += (vm) => CurrentViewModel = vm;
-            
+
             // Initial view
             _navigationService.NavigateTo<ConnectionViewModel>();
         }

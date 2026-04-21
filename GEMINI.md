@@ -18,6 +18,7 @@ This file contains foundational mandates, architectural decisions, and project-s
       single statement of an if-block.
     - For lists (like method arguments or initializers), either use a single line 
       (if under 80 chars) or strictly one per line. No mixing.
+    - ALWAYS check for and remove unused usings before committing.
 4.  **Resiliency:** Use `Polly` for retries on transient network errors or Dataverse throttling (including high-precision `8004410d` handling).
 5.  **Logging:** Use `Serilog` for structured logging (file + UI sinks).
 

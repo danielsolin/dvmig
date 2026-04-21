@@ -8,12 +8,12 @@ namespace dvmig.App.Services
     {
         Task<bool> ConnectSourceAsync(string connectionString, bool isLegacy);
         Task<bool> ConnectTargetAsync(string connectionString, bool isLegacy);
-        
+
         Task<List<EntityMetadata>> GetSourceEntitiesAsync(CancellationToken ct = default);
-        
+
         IDataverseProvider? SourceProvider { get; }
         IDataverseProvider? TargetProvider { get; }
-        
+
         List<string> SelectedEntities { get; }
     }
 
@@ -30,7 +30,7 @@ namespace dvmig.App.Services
                 SourceProvider = isLegacy
                     ? await Task.Run(() => new LegacyCrmProvider(connectionString))
                     : await Task.Run(() => new DataverseProvider(connectionString));
-                
+
                 return true;
             }
             catch
@@ -46,7 +46,7 @@ namespace dvmig.App.Services
                 TargetProvider = isLegacy
                     ? await Task.Run(() => new LegacyCrmProvider(connectionString))
                     : await Task.Run(() => new DataverseProvider(connectionString));
-                
+
                 return true;
             }
             catch
@@ -56,7 +56,7 @@ namespace dvmig.App.Services
         }
 
         public Task<bool> TestConnectionAsync(
-            string connectionString, 
+            string connectionString,
             bool isLegacy)
         {
             // Deprecated, using ConnectSource/ConnectTarget
@@ -89,7 +89,7 @@ namespace dvmig.App.Services
         private bool IsStandardEntity(string logicalName)
         {
             var standard = new[] { "account", "contact", "lead", "opportunity", "task" };
-            
+
             return standard.Contains(logicalName.ToLower());
         }
     }

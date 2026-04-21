@@ -11,10 +11,10 @@ namespace dvmig.Plugins
         {
             var context = (IPluginExecutionContext)serviceProvider
                 .GetService(typeof(IPluginExecutionContext));
-            
+
             var factory = (IOrganizationServiceFactory)serviceProvider
                 .GetService(typeof(IOrganizationServiceFactory));
-            
+
             var service = factory.CreateOrganizationService(context.UserId);
 
             if (context.Depth > 1)

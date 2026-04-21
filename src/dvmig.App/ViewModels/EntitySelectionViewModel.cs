@@ -21,7 +21,7 @@ namespace dvmig.App.ViewModels
         [ObservableProperty]
         private bool _isLoading;
 
-        public ObservableCollection<EntitySelectionItem> Entities { get; } = 
+        public ObservableCollection<EntitySelectionItem> Entities { get; } =
             new ObservableCollection<EntitySelectionItem>();
 
         public EntitySelectionViewModel(
@@ -30,7 +30,7 @@ namespace dvmig.App.ViewModels
         {
             _navigationService = navigationService;
             _migrationService = migrationService;
-            
+
             _entitiesView = CollectionViewSource.GetDefaultView(Entities);
             _entitiesView.Filter = FilterEntities;
 
@@ -44,28 +44,28 @@ namespace dvmig.App.ViewModels
             try
             {
                 var metadata = await _migrationService.GetSourceEntitiesAsync();
-                
+
                 // Ensure UI thread when updating collection
-                Application.Current.Dispatcher.Invoke(() => 
+                Application.Current.Dispatcher.Invoke(() =>
                 {
                     Entities.Clear();
                     foreach (var meta in metadata)
                     {
-                        var displayName = meta.DisplayName?.UserLocalizedLabel?.Label 
+                        var displayName = meta.DisplayName?.UserLocalizedLabel?.Label
                                           ?? meta.LogicalName;
-                        
+
                         Entities.Add(new EntitySelectionItem(meta.LogicalName, displayName));
                     }
                 });
             }
             catch (System.Exception ex)
             {
-                Application.Current.Dispatcher.Invoke(() => 
+                Application.Current.Dispatcher.Invoke(() =>
                 {
                     MessageBox.Show(
-                        $"Failed to load metadata: {ex.Message}", 
-                        "Error", 
-                        MessageBoxButton.OK, 
+                        $"Failed to load metadata: {ex.Message}",
+                        "Error",
+                        MessageBoxButton.OK,
                         MessageBoxImage.Error);
                 });
             }
@@ -81,7 +81,7 @@ namespace dvmig.App.ViewModels
             {
                 return false;
             }
-            
+
             if (string.IsNullOrWhiteSpace(SearchText))
             {
                 return true;
@@ -102,7 +102,7 @@ namespace dvmig.App.ViewModels
             _migrationService.SelectedEntities.Clear();
             _migrationService.SelectedEntities.AddRange(
                 Entities.Where(e => e.IsSelected).Select(e => e.LogicalName));
-            
+
             _navigationService.NavigateTo<MigrationDashboardViewModel>();
         }
     }

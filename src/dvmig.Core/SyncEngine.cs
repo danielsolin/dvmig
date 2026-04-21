@@ -5,12 +5,7 @@ using Microsoft.Xrm.Sdk.Metadata;
 using Polly;
 using Polly.Retry;
 using Serilog;
-using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace dvmig.Core
 {
@@ -26,14 +21,14 @@ namespace dvmig.Core
         private readonly ConcurrentDictionary<string, int> _recursionTracker =
             new ConcurrentDictionary<string, int>();
 
-        private readonly ConcurrentDictionary<string, EntityMetadata> 
+        private readonly ConcurrentDictionary<string, EntityMetadata>
             _metadataCache = new ConcurrentDictionary<string, EntityMetadata>();
 
         private const int MaxRecursionDepth = 3;
 
         public SyncEngine(
-            IDataverseProvider source, 
-            IDataverseProvider target, 
+            IDataverseProvider source,
+            IDataverseProvider target,
             IUserMapper userMapper,
             IDataPreservationManager dataPreservation,
             ILogger logger)
@@ -47,14 +42,14 @@ namespace dvmig.Core
             _retryPolicy = Policy
                 .Handle<Exception>(IsTransientError)
                 .WaitAndRetryAsync(
-                    5, 
-                    GetRetryDelay, 
+                    5,
+                    GetRetryDelay,
                     (ex, time, count, ctx) =>
                     {
                         _logger.Warning(ex, "Throttling or transient error. " +
                             "Retry {Count} in {Time}ms",
                             count, time.TotalMilliseconds);
-                        
+
                         return Task.CompletedTask;
                     });
         }
@@ -62,7 +57,7 @@ namespace dvmig.Core
         private bool IsTransientError(Exception ex)
         {
             var msg = ex.Message.ToLower();
-            
+
             if (msg.Contains("8004410d") || msg.Contains("too many requests"))
             {
                 return true;
@@ -78,7 +73,7 @@ namespace dvmig.Core
             {
                 _logger.Information("Service Protection Limit reached. " +
                     "Applying throttled backoff.");
-                
+
                 return TimeSpan.FromSeconds(Math.Min(Math.Pow(2, retryCount), 30));
             }
 
@@ -91,7 +86,7 @@ namespace dvmig.Core
             IProgress<string>? progress = null,
             CancellationToken ct = default)
         {
-            _logger.Information("Starting sync of {Count} entities", 
+            _logger.Information("Starting sync of {Count} entities",
                 entities.Count());
             _recursionTracker.Clear();
 
@@ -137,9 +132,9 @@ namespace dvmig.Core
 
             foreach (var batch in batches)
             {
-                _logger.Information("Processing bulk batch of {Count} records", 
+                _logger.Information("Processing bulk batch of {Count} records",
                     batch.Count);
-                
+
                 progress?.Report($"Processing batch of {batch.Count} records...");
 
                 if (options.PreserveDates)
@@ -160,7 +155,7 @@ namespace dvmig.Core
                 foreach (var entity in batch)
                 {
                     var metadata = await GetMetadataAsync(entity.LogicalName, ct);
-                    
+
                     if (metadata?.IsIntersect == true)
                     {
                         request.Requests.Add(CreateAssociateRequest(entity));
@@ -168,9 +163,9 @@ namespace dvmig.Core
                     else
                     {
                         var prepared = await PrepareEntityForTargetAsync(
-                            entity, 
-                            metadata, 
-                            options, 
+                            entity,
+                            metadata,
+                            options,
                             ct);
                         request.Requests.Add(new CreateRequest { Target = prepared });
                     }
@@ -187,9 +182,9 @@ namespace dvmig.Core
                         {
                             var failedEntity = batch[item.RequestIndex];
                             _logger.Warning("Bulk item {Index} failed: {Error}. " +
-                                "Shunting to single sync.", 
+                                "Shunting to single sync.",
                                 item.RequestIndex, item.Fault.Message);
-                            
+
                             progress?.Report($"Shunting failed record {failedEntity.LogicalName} to retry...");
                             await SyncRecordAsync(failedEntity, options, ct);
                         }
@@ -210,7 +205,7 @@ namespace dvmig.Core
             {
                 _logger.Error("Max recursion depth reached for {Key}. Skipping.",
                     recordKey);
-                
+
                 return false;
             }
 
@@ -227,10 +222,10 @@ namespace dvmig.Core
                 {
                     var existing = await _target.RetrieveAsync(
                         entity.LogicalName,
-                        entity.Id, 
-                        new[] { "modifiedon" }, 
+                        entity.Id,
+                        new[] { "modifiedon" },
                         ct);
-                    
+
                     if (existing != null)
                     {
                         return true;
@@ -238,11 +233,11 @@ namespace dvmig.Core
                 }
 
                 var prepared = await PrepareEntityForTargetAsync(
-                    entity, 
-                    metadata, 
-                    options, 
+                    entity,
+                    metadata,
+                    options,
                     ct);
-                
+
                 if (options.PreserveDates)
                 {
                     await _dataPreservation.PreserveDatesAsync(entity, ct);
@@ -253,7 +248,7 @@ namespace dvmig.Core
             catch (Exception ex)
             {
                 _logger.Error(ex, "Failed to sync {Key}", recordKey);
-                
+
                 return false;
             }
         }
@@ -272,9 +267,9 @@ namespace dvmig.Core
                 }
 
                 await _retryPolicy.ExecuteAsync(() => _target.ExecuteAsync(request, ct));
-                _logger.Information("Associated N:N relationship {Key}", 
+                _logger.Information("Associated N:N relationship {Key}",
                     entity.LogicalName);
-                
+
                 return true;
             }
             catch (Exception ex)
@@ -297,7 +292,7 @@ namespace dvmig.Core
             {
                 _logger.Warning("Intersect entity {Key} does not have " +
                     "two EntityReferences.", entity.LogicalName);
-                
+
                 return null;
             }
 
@@ -319,9 +314,9 @@ namespace dvmig.Core
             try
             {
                 await _retryPolicy.ExecuteAsync(() => _target.CreateAsync(entity, ct));
-                _logger.Information("Created {Key}:{Id}", 
+                _logger.Information("Created {Key}:{Id}",
                     entity.LogicalName, entity.Id);
-                
+
                 return true;
             }
             catch (Exception ex)
@@ -343,16 +338,16 @@ namespace dvmig.Core
                 return await ResolveMissingDependencyAsync(ex, entity, options, ct);
             }
 
-            if (msg.Contains("cannot be modified") || 
+            if (msg.Contains("cannot be modified") ||
                 msg.Contains("cannot be set on creation") ||
                 msg.Contains("outside the valid range"))
             {
                 return await StripAttributeAndRetryAsync(ex, entity, options, ct);
             }
 
-            _logger.Error(ex, "Unresolved error for {Key}:{Id}", 
+            _logger.Error(ex, "Unresolved error for {Key}:{Id}",
                 entity.LogicalName, entity.Id);
-            
+
             return false;
         }
 
@@ -362,9 +357,9 @@ namespace dvmig.Core
             SyncOptions options,
             CancellationToken ct)
         {
-            var match = System.Text.RegularExpressions.Regex.Match(ex.Message, 
+            var match = System.Text.RegularExpressions.Regex.Match(ex.Message,
                 @"'(\w+)'");
-            
+
             if (match.Success)
             {
                 var attrName = match.Groups[1].Value;
@@ -372,14 +367,14 @@ namespace dvmig.Core
                 {
                     _logger.Warning("Stripping attribute '{Attr}' for {Key}:{Id}",
                         attrName, entity.LogicalName, entity.Id);
-                    
+
                     entity.Attributes.Remove(attrName);
-                    
+
                     return await CreateWithFixStrategyAsync(entity, options, ct);
                 }
             }
-            
-            return false; 
+
+            return false;
         }
 
         private async Task<bool> ResolveMissingDependencyAsync(
@@ -388,7 +383,7 @@ namespace dvmig.Core
             SyncOptions options,
             CancellationToken ct)
         {
-            var match = System.Text.RegularExpressions.Regex.Match(ex.Message, 
+            var match = System.Text.RegularExpressions.Regex.Match(ex.Message,
                 @"(\w+) with Id=([a-fA-F0-9-]+) does not exist");
 
             if (match.Success)
@@ -414,18 +409,18 @@ namespace dvmig.Core
                     }
                 }
             }
-            
+
             return false;
         }
 
         private async Task<Entity> PrepareEntityForTargetAsync(
-            Entity entity, 
+            Entity entity,
             EntityMetadata? metadata,
-            SyncOptions options, 
+            SyncOptions options,
             CancellationToken ct)
         {
             var target = new Entity(entity.LogicalName, entity.Id);
-            
+
             foreach (var attr in entity.Attributes)
             {
                 if (IsForbiddenAttribute(attr.Key))
@@ -439,7 +434,7 @@ namespace dvmig.Core
                     if (mapped != null)
                     {
                         target[attr.Key] = mapped;
-                        
+
                         continue;
                     }
                 }
@@ -448,24 +443,24 @@ namespace dvmig.Core
                 {
                     var attrMeta = metadata.Attributes
                         .FirstOrDefault(a => a.LogicalName == attr.Key);
-                    
+
                     if (attrMeta != null && attrMeta.IsValidForCreate == false)
                     {
-                        _logger.Debug("Proactively stripping {Attr} for {Entity}", 
+                        _logger.Debug("Proactively stripping {Attr} for {Entity}",
                             attr.Key, entity.LogicalName);
-                        
+
                         continue;
                     }
                 }
 
                 target[attr.Key] = attr.Value;
             }
-            
+
             return target;
         }
 
         private async Task<EntityMetadata?> GetMetadataAsync(
-            string logicalName, 
+            string logicalName,
             CancellationToken ct)
         {
             if (_metadataCache.TryGetValue(logicalName, out var meta))
@@ -480,31 +475,31 @@ namespace dvmig.Core
                 {
                     _metadataCache[logicalName] = newMeta;
                 }
-                
+
                 return newMeta;
             }
             catch (Exception ex)
             {
-                _logger.Warning("Could not fetch metadata for {Entity}: {Msg}", 
+                _logger.Warning("Could not fetch metadata for {Entity}: {Msg}",
                     logicalName, ex.Message);
-                
+
                 return null;
             }
         }
-        
+
         private bool IsForbiddenAttribute(string attrName)
         {
-            var forbidden = new[] { 
+            var forbidden = new[] {
                 "createdon", "modifiedon", "versionnumber"
             };
-            
+
             return forbidden.Contains(attrName.ToLower());
         }
 
         private bool IsUserAttribute(string attrName)
         {
             var userFields = new[] { "ownerid", "createdby", "modifiedby" };
-            
+
             return userFields.Contains(attrName.ToLower());
         }
     }

@@ -21,7 +21,7 @@ namespace dvmig.App.ViewModels
         [ObservableProperty]
         private bool _isMigrationRunning;
 
-        public ObservableCollection<string> Logs { get; } = 
+        public ObservableCollection<string> Logs { get; } =
             new ObservableCollection<string>();
 
         public MigrationDashboardViewModel(
@@ -37,18 +37,18 @@ namespace dvmig.App.ViewModels
         [RelayCommand(CanExecute = nameof(CanStartMigration))]
         private async Task StartMigrationAsync()
         {
-            if (_migrationService.SourceProvider == null || 
+            if (_migrationService.SourceProvider == null ||
                 _migrationService.TargetProvider == null)
             {
                 Logs.Insert(0, "Error: Source or Target provider not connected.");
-                
+
                 return;
             }
 
             IsMigrationRunning = true;
             _cts = new CancellationTokenSource();
-            
-            IProgress<string> progressReporter = new Progress<string>(msg => 
+
+            IProgress<string> progressReporter = new Progress<string>(msg =>
             {
                 Logs.Insert(0, $"[{DateTime.Now:HH:mm:ss}] {msg}");
             });
@@ -56,20 +56,20 @@ namespace dvmig.App.ViewModels
             try
             {
                 var entitiesToMigrate = _migrationService.SelectedEntities;
-                
+
                 foreach (var logicalName in entitiesToMigrate)
                 {
                     _cts.Token.ThrowIfCancellationRequested();
 
                     progressReporter.Report($"Fetching {logicalName} records...");
-                    
+
                     var query = new QueryExpression(logicalName) { ColumnSet = new ColumnSet(true) };
                     var sourceRecords = await _migrationService.SourceProvider.RetrieveMultipleAsync(query, _cts.Token);
-                    
+
                     if (sourceRecords.Entities.Count == 0)
                     {
                         progressReporter.Report($"No records for {logicalName}.");
-                        
+
                         continue;
                     }
 
@@ -78,8 +78,8 @@ namespace dvmig.App.ViewModels
                     Progress.Update(0, 0, 0);
 
                     await _syncEngine.SyncAsync(
-                        sourceRecords.Entities, 
-                        new SyncOptions { UseBulk = true }, 
+                        sourceRecords.Entities,
+                        new SyncOptions { UseBulk = true },
                         progressReporter,
                         _cts.Token);
                 }
