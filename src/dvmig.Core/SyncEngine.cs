@@ -309,6 +309,8 @@ namespace dvmig.Core
                     "Max recursion depth reached for {Key}. Skipping.",
                     recordKey);
 
+                _recursionTracker.AddOrUpdate(recordKey, 0, (_, v) => v - 1);
+
                 return false;
             }
 
@@ -368,6 +370,10 @@ namespace dvmig.Core
                 _logger.Error(ex, "Failed to sync {Key}", recordKey);
 
                 return false;
+            }
+            finally
+            {
+                _recursionTracker.AddOrUpdate(recordKey, 0, (_, v) => v - 1);
             }
         }
 
