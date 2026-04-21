@@ -463,6 +463,18 @@ namespace dvmig.Core
         {
             var msg = ex.Message.ToLower();
 
+            if (msg.Contains("already exists") ||
+                msg.Contains("duplicate currency record"))
+            {
+                _logger.Information(
+                    "{Key}:{Id} already exists on target. " +
+                    "Treating as success.",
+                    entity.LogicalName,
+                    entity.Id);
+
+                return true;
+            }
+
             if (msg.Contains("does not exist"))
             {
                 return await ResolveMissingDependencyAsync(
