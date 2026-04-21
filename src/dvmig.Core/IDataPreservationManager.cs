@@ -19,6 +19,7 @@ namespace dvmig.Core
     {
         private readonly IDataverseProvider _target;
         private readonly Serilog.ILogger _logger;
+        private bool? _isSupported;
 
         public DataPreservationManager(
             IDataverseProvider target,
@@ -28,10 +29,46 @@ namespace dvmig.Core
             _logger = logger;
         }
 
+        private async Task<bool> CheckSupportAsync(CancellationToken ct)
+        {
+            if (_isSupported.HasValue)
+            {
+                return _isSupported.Value;
+            }
+
+            try
+            {
+                var meta = await _target.GetEntityMetadataAsync(
+                    "dm_sourcedate",
+                    ct);
+
+                _isSupported = meta != null;
+            }
+            catch
+            {
+                _isSupported = false;
+            }
+
+            if (_isSupported == false)
+            {
+                _logger.Warning(
+                    "Date preservation entity 'dm_sourcedate' not found " +
+                    "on target. Date preservation will be disabled " +
+                    "for this session.");
+            }
+
+            return _isSupported.Value;
+        }
+
         public async Task PreserveDatesAsync(
             Entity sourceEntity,
             CancellationToken ct = default)
         {
+            if (!await CheckSupportAsync(ct))
+            {
+                return;
+            }
+
             if (!sourceEntity.Contains("createdon") &&
                 !sourceEntity.Contains("modifiedon"))
             {
@@ -49,8 +86,8 @@ namespace dvmig.Core
                 _logger.Warning(
                     ex,
                     "Failed to create source date for {Entity}:{Id}",
-                    sourceEntity.LogicalName, sourceEntity.Id
-                );
+                    sourceEntity.LogicalName,
+                    sourceEntity.Id);
             }
         }
 
@@ -58,6 +95,11 @@ namespace dvmig.Core
             IEnumerable<Entity> entities,
             CancellationToken ct = default)
         {
+            if (!await CheckSupportAsync(ct))
+            {
+                return;
+            }
+
             var sourceDates = entities
                 .Where(e => e.Contains("createdon") ||
                             e.Contains("modifiedon"))

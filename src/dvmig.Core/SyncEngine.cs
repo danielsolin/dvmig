@@ -338,7 +338,22 @@ namespace dvmig.Core
 
                 if (options.PreserveDates)
                 {
-                    await _dataPreservation.PreserveDatesAsync(entity, ct);
+                    try
+                    {
+                        await _dataPreservation.PreserveDatesAsync(entity, ct);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.Warning(
+                            ex,
+                            "Date preservation failed for {Entity}:{Id}. " +
+                            "Continuing sync.",
+                            entity.LogicalName,
+                            entity.Id);
+
+                        progress?.Report(
+                            "Date preservation failed. Continuing...");
+                    }
                 }
 
                 return await CreateWithFixStrategyAsync(prepared, options, ct);
