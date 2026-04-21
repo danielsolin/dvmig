@@ -112,7 +112,7 @@ namespace dvmig.Core
                     await semaphore.WaitAsync(ct);
                     try
                     {
-                        await SyncRecordAsync(entity, options, ct);
+                        await SyncRecordAsync(entity, options, progress, ct);
                         progress?.Report(
                             $"Synced {entity.LogicalName}:{entity.Id}");
                     }
@@ -251,7 +251,11 @@ namespace dvmig.Core
                             progress?.Report(
                                 $"Retrying failed record " +
                                 $"{failedEntity.LogicalName}...");
-                            await SyncRecordAsync(failedEntity, options, ct);
+                            await SyncRecordAsync(
+                                failedEntity,
+                                options,
+                                progress,
+                                ct);
                         }
                     }
                 }
@@ -290,6 +294,7 @@ namespace dvmig.Core
         public async Task<bool> SyncRecordAsync(
             Entity entity,
             SyncOptions options,
+            IProgress<string>? progress = null,
             CancellationToken ct = default)
         {
             var recordKey = $"{entity.LogicalName}:{entity.Id}";
@@ -544,6 +549,7 @@ namespace dvmig.Core
                     var success = await SyncRecordAsync(
                         missingRecord,
                         options,
+                        null,
                         ct);
 
                     if (success)

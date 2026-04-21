@@ -235,7 +235,6 @@ namespace dvmig.Tests
             var result = await _engine.SyncRecordAsync(
                 intersectEntity,
                 options);
-            ...
 
             // Assert
             Assert.True(result);

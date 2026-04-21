@@ -19,6 +19,7 @@ namespace dvmig.Core
         Task<bool> SyncRecordAsync(
             Entity entity,
             SyncOptions options,
+            IProgress<string>? progress = null,
             CancellationToken cancellationToken = default);
     }
 
