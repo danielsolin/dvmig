@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using System.IO;
 using System.Windows;
 using dvmig.App.ViewModels;
 using dvmig.App.Services;
@@ -13,6 +14,16 @@ namespace dvmig.App
 
         public App()
         {
+            var appData = Environment.GetFolderPath(
+                Environment.SpecialFolder.ApplicationData);
+            var logPath = Path.Combine(appData, "dvmig", "logs", "log.txt");
+
+            Log.Logger = new LoggerConfiguration()
+                .MinimumLevel.Debug()
+                .WriteTo.Debug()
+                .WriteTo.File(logPath, rollingInterval: RollingInterval.Day)
+                .CreateLogger();
+
             var services = new ServiceCollection();
 
             // Infrastructure

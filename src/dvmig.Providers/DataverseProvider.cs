@@ -31,11 +31,25 @@ namespace dvmig.Providers
             string[]? columns = null,
             CancellationToken ct = default)
         {
-            var columnSet = columns == null ? new ColumnSet(true) :
-                new ColumnSet(columns);
+            try
+            {
+                var columnSet = columns == null ? new ColumnSet(true) :
+                    new ColumnSet(columns);
 
-            return await _client.RetrieveAsync(
-                entityLogicalName, id, columnSet, ct);
+                return await _client.RetrieveAsync(
+                    entityLogicalName, id, columnSet, ct);
+            }
+            catch (System.ServiceModel.FaultException ex)
+            {
+                // 0x80040217 = Object does not exist
+                if (ex.Message.Contains("80040217") || 
+                    ex.Message.Contains("Does Not Exist"))
+                {
+                    return null;
+                }
+
+                throw;
+            }
         }
 
         public async Task<EntityMetadata?> GetEntityMetadataAsync(

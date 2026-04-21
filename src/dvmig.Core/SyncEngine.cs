@@ -5,6 +5,7 @@ using Microsoft.Xrm.Sdk.Metadata;
 using Polly;
 using Polly.Retry;
 using Serilog;
+using Microsoft.Xrm.Sdk.Query;
 using System.Collections.Concurrent;
 
 namespace dvmig.Core
@@ -132,14 +133,42 @@ namespace dvmig.Core
 
             foreach (var batch in batches)
             {
-                _logger.Information("Processing bulk batch of {Count} records",
-                    batch.Count);
+                var entitiesToProcess = batch;
+                if (options.SkipExisting)
+                {
+                    var existingIds = await CheckExistingIdsAsync(batch, ct);
+                    if (existingIds.Any())
+                    {
+                        _logger.Information("Skipping {Count} already existing records in batch.", 
+                            existingIds.Count);
 
-                progress?.Report($"Processing batch of {batch.Count} records...");
+                        entitiesToProcess = batch.Where(e => !existingIds.Contains(e.Id)).ToList();
+                    }
+                }
+
+                if (!entitiesToProcess.Any())
+                {
+                    continue;
+                }
+
+                _logger.Information("Processing bulk batch of {Count} records", 
+                    entitiesToProcess.Count);
+
+                progress?.Report($"Processing batch of {entitiesToProcess.Count} records...");
 
                 if (options.PreserveDates)
                 {
-                    await _dataPreservation.PreserveDatesBulkAsync(batch, ct);
+                    try
+                    {
+                        await _dataPreservation.PreserveDatesBulkAsync(entitiesToProcess, ct);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.Warning(ex, "Bulk date preservation failed. " +
+                            "Continuing without date preservation.");
+                        
+                        progress?.Report("Date preservation failed. Continuing...");
+                    }
                 }
 
                 var request = new ExecuteMultipleRequest
@@ -152,7 +181,7 @@ namespace dvmig.Core
                     Requests = new OrganizationRequestCollection()
                 };
 
-                foreach (var entity in batch)
+                foreach (var entity in entitiesToProcess)
                 {
                     var metadata = await GetMetadataAsync(entity.LogicalName, ct);
 
@@ -163,9 +192,9 @@ namespace dvmig.Core
                     else
                     {
                         var prepared = await PrepareEntityForTargetAsync(
-                            entity,
-                            metadata,
-                            options,
+                            entity, 
+                            metadata, 
+                            options, 
                             ct);
                         request.Requests.Add(new CreateRequest { Target = prepared });
                     }
@@ -180,17 +209,44 @@ namespace dvmig.Core
                     {
                         if (item.Fault != null)
                         {
-                            var failedEntity = batch[item.RequestIndex];
+                            var failedEntity = entitiesToProcess[item.RequestIndex];
+                            var errorMsg = item.Fault?.Message ?? "Unknown error";
                             _logger.Warning("Bulk item {Index} failed: {Error}. " +
-                                "Shunting to single sync.",
-                                item.RequestIndex, item.Fault.Message);
+                                "Shunting {Entity}:{Id} to single sync.",
+                                item.RequestIndex, errorMsg, 
+                                failedEntity.LogicalName, failedEntity.Id);
 
-                            progress?.Report($"Shunting failed record {failedEntity.LogicalName} to retry...");
+                            progress?.Report($"Retrying failed record {failedEntity.LogicalName}...");
                             await SyncRecordAsync(failedEntity, options, ct);
                         }
                     }
                 }
             }
+        }
+
+        private async Task<HashSet<Guid>> CheckExistingIdsAsync(
+            IEnumerable<Entity> entities, 
+            CancellationToken ct)
+        {
+            var first = entities.FirstOrDefault();
+            if (first == null) return new HashSet<Guid>();
+
+            var logicalName = first.LogicalName;
+            var ids = entities.Select(e => e.Id).ToList();
+            
+            var query = new QueryExpression(logicalName)
+            {
+                ColumnSet = new ColumnSet(false), // No columns needed
+                NoLock = true
+            };
+            
+            query.Criteria.AddCondition(
+                logicalName + "id", 
+                ConditionOperator.In, 
+                ids.Select(id => (object)id).ToArray());
+
+            var existing = await _target.RetrieveMultipleAsync(query, ct);
+            return new HashSet<Guid>(existing.Entities.Select(e => e.Id));
         }
 
         public async Task<bool> SyncRecordAsync(
@@ -383,13 +439,22 @@ namespace dvmig.Core
             SyncOptions options,
             CancellationToken ct)
         {
-            var match = System.Text.RegularExpressions.Regex.Match(ex.Message,
-                @"(\w+) with Id=([a-fA-F0-9-]+) does not exist");
+            // More robust regex to handle both:
+            // "Account with Id=GUID does not exist"
+            // "Entity 'transactioncurrency' With Id = GUID Does Not Exist"
+            var pattern = @"(?:Entity )?'?(\w+)'? [Ww]ith Id\s*=\s*([a-fA-F0-9-]+)";
+            var match = System.Text.RegularExpressions.Regex.Match(ex.Message, 
+                pattern, 
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase);
 
             if (match.Success)
             {
                 var missingType = match.Groups[1].Value;
                 var missingId = Guid.Parse(match.Groups[2].Value);
+                
+                _logger.Information("Missing dependency {Type}:{Id} detected. " +
+                    "Attempting to resolve.", 
+                    missingType, missingId);
 
                 var missingRecord = await _source.RetrieveAsync(
                     missingType, missingId, null, ct);
@@ -404,6 +469,27 @@ namespace dvmig.Core
                         {
                             return await SyncIntersectEntityAsync(entity, options, ct);
                         }
+
+                        return await CreateWithFixStrategyAsync(entity, options, ct);
+                    }
+                }
+
+                // Fallback: If auto-sync of dependency failed (or record not found), 
+                // strip the attribute and retry the parent record.
+                if (options.StripMissingDependencies)
+                {
+                    var attrToStrip = entity.Attributes
+                        .FirstOrDefault(a => a.Value is EntityReference er && 
+                                            er.LogicalName == missingType && 
+                                            er.Id == missingId).Key;
+
+                    if (!string.IsNullOrEmpty(attrToStrip))
+                    {
+                        _logger.Warning("Dependency resolution failed for {Type}:{Id}. " +
+                            "Stripping attribute '{Attr}' from {ParentType}:{ParentId} and retrying.",
+                            missingType, missingId, attrToStrip, entity.LogicalName, entity.Id);
+
+                        entity.Attributes.Remove(attrToStrip);
 
                         return await CreateWithFixStrategyAsync(entity, options, ct);
                     }
@@ -434,9 +520,16 @@ namespace dvmig.Core
                     if (mapped != null)
                     {
                         target[attr.Key] = mapped;
-
+                        
                         continue;
                     }
+
+                    // Mapping failed. Do NOT send original user ID to target
+                    _logger.Warning("Skipping user attribute '{Attr}' for {Key}:{Id} " +
+                        "because source user could not be mapped.",
+                        attr.Key, entity.LogicalName, entity.Id);
+                    
+                    continue;
                 }
 
                 if (metadata?.Attributes != null)
@@ -490,7 +583,10 @@ namespace dvmig.Core
         private bool IsForbiddenAttribute(string attrName)
         {
             var forbidden = new[] {
-                "createdon", "modifiedon", "versionnumber"
+                "createdon", "modifiedon", "versionnumber",
+                "createdby", "modifiedby", "createdonbehalfby", "modifiedonbehalfby",
+                "overriddencreatedon", "importsequencenumber",
+                "address1_addressid", "address2_addressid"
             };
 
             return forbidden.Contains(attrName.ToLower());

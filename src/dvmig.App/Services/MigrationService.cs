@@ -6,10 +6,18 @@ namespace dvmig.App.Services
 {
     public interface IMigrationService
     {
-        Task<bool> ConnectSourceAsync(string connectionString, bool isLegacy);
-        Task<bool> ConnectTargetAsync(string connectionString, bool isLegacy);
+        Task<bool> ConnectSourceAsync(
+            string connectionString, 
+            bool isLegacy, 
+            CancellationToken ct = default);
 
-        Task<List<EntityMetadata>> GetSourceEntitiesAsync(CancellationToken ct = default);
+        Task<bool> ConnectTargetAsync(
+            string connectionString, 
+            bool isLegacy, 
+            CancellationToken ct = default);
+
+        Task<List<EntityMetadata>> GetSourceEntitiesAsync(
+            CancellationToken ct = default);
 
         IDataverseProvider? SourceProvider { get; }
         IDataverseProvider? TargetProvider { get; }
@@ -23,15 +31,32 @@ namespace dvmig.App.Services
         public IDataverseProvider? TargetProvider { get; private set; }
         public List<string> SelectedEntities { get; } = new List<string>();
 
-        public async Task<bool> ConnectSourceAsync(string connectionString, bool isLegacy)
+        public async Task<bool> ConnectSourceAsync(
+            string connectionString, 
+            bool isLegacy, 
+            CancellationToken ct = default)
         {
             try
             {
                 SourceProvider = isLegacy
-                    ? await Task.Run(() => new LegacyCrmProvider(connectionString))
-                    : await Task.Run(() => new DataverseProvider(connectionString));
+                    ? await Task.Run(() => 
+                    {
+                        ct.ThrowIfCancellationRequested();
+                        
+                        return new LegacyCrmProvider(connectionString);
+                    }, ct)
+                    : await Task.Run(() => 
+                    {
+                        ct.ThrowIfCancellationRequested();
+                        
+                        return new DataverseProvider(connectionString);
+                    }, ct);
 
                 return true;
+            }
+            catch (OperationCanceledException)
+            {
+                return false;
             }
             catch
             {
@@ -39,15 +64,32 @@ namespace dvmig.App.Services
             }
         }
 
-        public async Task<bool> ConnectTargetAsync(string connectionString, bool isLegacy)
+        public async Task<bool> ConnectTargetAsync(
+            string connectionString, 
+            bool isLegacy, 
+            CancellationToken ct = default)
         {
             try
             {
                 TargetProvider = isLegacy
-                    ? await Task.Run(() => new LegacyCrmProvider(connectionString))
-                    : await Task.Run(() => new DataverseProvider(connectionString));
+                    ? await Task.Run(() => 
+                    {
+                        ct.ThrowIfCancellationRequested();
+                        
+                        return new LegacyCrmProvider(connectionString);
+                    }, ct)
+                    : await Task.Run(() => 
+                    {
+                        ct.ThrowIfCancellationRequested();
+                        
+                        return new DataverseProvider(connectionString);
+                    }, ct);
 
                 return true;
+            }
+            catch (OperationCanceledException)
+            {
+                return false;
             }
             catch
             {

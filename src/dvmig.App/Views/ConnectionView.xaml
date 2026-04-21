@@ -26,9 +26,22 @@
                     <TextBlock Text="{Binding SourceStatus}" HorizontalAlignment="Center" 
                                FontWeight="SemiBold" Margin="0,0,0,20" />
 
-                    <Button Command="{Binding TestSourceConnectionCommand}" 
-                            Content="TEST CONNECTION" Padding="10,5" 
-                            Background="#3F51B5" Foreground="White" BorderThickness="0" />
+                    <Button Padding="10,5" Foreground="White" BorderThickness="0">
+                        <Button.Style>
+                            <Style TargetType="Button">
+                                <Setter Property="Background" Value="#3F51B5" />
+                                <Setter Property="Content" Value="TEST CONNECTION" />
+                                <Setter Property="Command" Value="{Binding TestSourceConnectionCommand}" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsSourceConnecting}" Value="True">
+                                        <Setter Property="Content" Value="CANCEL" />
+                                        <Setter Property="Command" Value="{Binding CancelSourceConnectionCommand}" />
+                                        <Setter Property="Background" Value="#F44336" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
                 </StackPanel>
             </Border>
 
@@ -46,9 +59,22 @@
                     <TextBlock Text="{Binding TargetStatus}" HorizontalAlignment="Center" 
                                FontWeight="SemiBold" Margin="0,0,0,20" />
 
-                    <Button Command="{Binding TestTargetConnectionCommand}" 
-                            Content="TEST CONNECTION" Padding="10,5" 
-                            Background="#009688" Foreground="White" BorderThickness="0" />
+                    <Button Padding="10,5" Foreground="White" BorderThickness="0">
+                        <Button.Style>
+                            <Style TargetType="Button">
+                                <Setter Property="Background" Value="#009688" />
+                                <Setter Property="Content" Value="TEST CONNECTION" />
+                                <Setter Property="Command" Value="{Binding TestTargetConnectionCommand}" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsTargetConnecting}" Value="True">
+                                        <Setter Property="Content" Value="CANCEL" />
+                                        <Setter Property="Command" Value="{Binding CancelTargetConnectionCommand}" />
+                                        <Setter Property="Background" Value="#F44336" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
                 </StackPanel>
             </Border>
         </UniformGrid>

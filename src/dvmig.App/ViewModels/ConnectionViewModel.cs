@@ -23,6 +23,12 @@ namespace dvmig.App.ViewModels
         private bool _isTargetConnected;
 
         [ObservableProperty]
+        private bool _isSourceConnecting;
+
+        [ObservableProperty]
+        private bool _isTargetConnecting;
+
+        [ObservableProperty]
         private string _sourceStatus = "Not Connected";
 
         [ObservableProperty]
@@ -30,6 +36,9 @@ namespace dvmig.App.ViewModels
 
         [ObservableProperty]
         private bool _rememberConnections;
+
+        private CancellationTokenSource? _sourceCts;
+        private CancellationTokenSource? _targetCts;
 
         public ConnectionViewModel(
             INavigationService navigationService,
@@ -58,26 +67,64 @@ namespace dvmig.App.ViewModels
         [RelayCommand]
         private async Task TestSourceConnectionAsync()
         {
+            _sourceCts?.Cancel();
+            _sourceCts = new CancellationTokenSource();
+            
+            IsSourceConnecting = true;
             SourceStatus = "Connecting...";
-            bool isLegacy = SourceConnectionString.Contains("AuthType=AD") ||
-                           SourceConnectionString.Contains("AuthType=IFD");
+            
+            try
+            {
+                bool isLegacy = SourceConnectionString.Contains("AuthType=AD") ||
+                               SourceConnectionString.Contains("AuthType=IFD");
 
-            var result = await _migrationService.ConnectSourceAsync(
-                SourceConnectionString, isLegacy);
+                var result = await _migrationService.ConnectSourceAsync(
+                    SourceConnectionString, isLegacy, _sourceCts.Token);
 
-            IsSourceConnected = result;
-            SourceStatus = result ? "Connected" : "Failed";
+                IsSourceConnected = result;
+                SourceStatus = result ? "Connected" : "Failed";
+            }
+            finally
+            {
+                IsSourceConnecting = false;
+            }
+        }
+
+        [RelayCommand]
+        private void CancelSourceConnection()
+        {
+            _sourceCts?.Cancel();
+            SourceStatus = "Cancelled";
         }
 
         [RelayCommand]
         private async Task TestTargetConnectionAsync()
         {
+            _targetCts?.Cancel();
+            _targetCts = new CancellationTokenSource();
+            
+            IsTargetConnecting = true;
             TargetStatus = "Connecting...";
-            var result = await _migrationService.ConnectTargetAsync(
-                TargetConnectionString, false);
+            
+            try
+            {
+                var result = await _migrationService.ConnectTargetAsync(
+                    TargetConnectionString, false, _targetCts.Token);
 
-            IsTargetConnected = result;
-            TargetStatus = result ? "Connected" : "Failed";
+                IsTargetConnected = result;
+                TargetStatus = result ? "Connected" : "Failed";
+            }
+            finally
+            {
+                IsTargetConnecting = false;
+            }
+        }
+
+        [RelayCommand]
+        private void CancelTargetConnection()
+        {
+            _targetCts?.Cancel();
+            TargetStatus = "Cancelled";
         }
 
         [RelayCommand]
