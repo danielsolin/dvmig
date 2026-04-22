@@ -89,7 +89,6 @@ namespace dvmig.App.ViewModels
                         sourceRecords.Entities,
                         new SyncOptions
                         {
-                            UseBulk = true,
                             StripMissingDependencies = true
                         },
                         progressReporter,

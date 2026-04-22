@@ -105,197 +105,29 @@ namespace dvmig.Core
             progress?.Report(
                 $"Starting migration of {entities.Count()} records...");
 
-            if (options.UseBulk)
+            foreach (var entity in entities)
             {
-                await SyncBulkAsync(entities, options, progress, ct);
-            }
-            else
-            {
-                var semaphore = new SemaphoreSlim(
-                    options.MaxDegreeOfParallelism);
+                ct.ThrowIfCancellationRequested();
 
-                var tasks = entities.Select(async entity =>
+                try
                 {
-                    await semaphore.WaitAsync(ct);
-                    try
-                    {
-                        await SyncRecordAsync(entity, options, progress, ct);
-                        progress?.Report(
-                            $"Synced {entity.LogicalName}:{entity.Id}");
-                    }
-                    finally
-                    {
-                        semaphore.Release();
-                    }
-                });
-
-                await Task.WhenAll(tasks);
+                    await SyncRecordAsync(entity, options, progress, ct);
+                    
+                    progress?.Report(
+                        $"Synced {entity.LogicalName}:{entity.Id}");
+                }
+                catch (Exception ex)
+                {
+                    _logger.Error(
+                        ex,
+                        "Error syncing {Entity}:{Id}",
+                        entity.LogicalName,
+                        entity.Id);
+                }
             }
 
             _logger.Information("Sync completed");
             progress?.Report("Migration completed successfully.");
-        }
-
-        public async Task SyncBulkAsync(
-            IEnumerable<Entity> entities,
-            SyncOptions options,
-            IProgress<string>? progress = null,
-            CancellationToken ct = default)
-        {
-            var batches = entities
-                .Select((e, i) => new { Entity = e, Index = i })
-                .GroupBy(x => x.Index / options.BulkBatchSize)
-                .Select(g => g.Select(x => x.Entity).ToList());
-
-            foreach (var batch in batches)
-            {
-                var entitiesToProcess = batch;
-                if (options.SkipExisting)
-                {
-                    var existingIds = await CheckExistingIdsAsync(batch, ct);
-                    if (existingIds.Any())
-                    {
-                        _logger.Information(
-                            "Skipping {Count} already existing records " +
-                            "in batch.",
-                            existingIds.Count);
-
-                        entitiesToProcess = batch
-                            .Where(e => !existingIds.Contains(e.Id))
-                            .ToList();
-                    }
-                }
-
-                if (!entitiesToProcess.Any())
-                {
-                    continue;
-                }
-
-                _logger.Information(
-                    "Processing bulk batch of {Count} records",
-                    entitiesToProcess.Count);
-
-                progress?.Report(
-                    $"Processing batch of {entitiesToProcess.Count} " +
-                    "records...");
-
-                if (options.PreserveDates)
-                {
-                    try
-                    {
-                        await _dataPreservation.PreserveDatesBulkAsync(
-                            entitiesToProcess,
-                            ct);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.Warning(
-                            ex,
-                            "Bulk date preservation failed. " +
-                            "Continuing without date preservation.");
-
-                        progress?.Report(
-                            "Date preservation failed. Continuing...");
-                    }
-                }
-
-                var request = new ExecuteMultipleRequest
-                {
-                    Settings = new ExecuteMultipleSettings
-                    {
-                        ContinueOnError = true,
-                        ReturnResponses = true
-                    },
-                    Requests = new OrganizationRequestCollection()
-                };
-
-                foreach (var entity in entitiesToProcess)
-                {
-                    var metadata = await GetMetadataAsync(
-                        entity.LogicalName,
-                        ct);
-
-                    if (metadata?.IsIntersect == true)
-                    {
-                        request.Requests.Add(CreateAssociateRequest(entity));
-                    }
-                    else
-                    {
-                        var prepared = await PrepareEntityForTargetAsync(
-                            entity,
-                            metadata,
-                            options,
-                            ct);
-
-                        request.Requests.Add(
-                            new CreateRequest { Target = prepared });
-                    }
-                }
-
-                var response = (ExecuteMultipleResponse)await _retryPolicy
-                    .ExecuteAsync(() => _target.ExecuteAsync(request, ct));
-
-                if (response.Responses != null)
-                {
-                    foreach (var item in response.Responses)
-                    {
-                        if (item.Fault != null)
-                        {
-                            var failedEntity = entitiesToProcess[
-                                item.RequestIndex];
-
-                            var errorMsg = item.Fault?.Message ??
-                                "Unknown error";
-
-                            _logger.Warning(
-                                "Bulk item {Index} failed: {Error}. " +
-                                "Shunting {Entity}:{Id} to single sync.",
-                                item.RequestIndex,
-                                errorMsg,
-                                failedEntity.LogicalName,
-                                failedEntity.Id);
-
-                            progress?.Report(
-                                $"Retrying failed record " +
-                                $"{failedEntity.LogicalName}...");
-                            await SyncRecordAsync(
-                                failedEntity,
-                                options,
-                                progress,
-                                ct);
-                        }
-                    }
-                }
-            }
-        }
-
-        private async Task<HashSet<Guid>> CheckExistingIdsAsync(
-            IEnumerable<Entity> entities,
-            CancellationToken ct)
-        {
-            var first = entities.FirstOrDefault();
-            if (first == null)
-            {
-                return new HashSet<Guid>();
-            }
-
-            var logicalName = first.LogicalName;
-            var ids = entities.Select(e => e.Id).ToList();
-
-            var query = new QueryExpression(logicalName)
-            {
-                ColumnSet = new ColumnSet(false), // No columns needed
-                NoLock = true
-            };
-
-            query.Criteria.AddCondition(
-                logicalName + "id",
-                ConditionOperator.In,
-                ids.Select(id => (object)id).ToArray());
-
-            var existing = await _target.RetrieveMultipleAsync(query, ct);
-
-            return new HashSet<Guid>(existing.Entities.Select(e => e.Id));
         }
 
         public async Task<bool> SyncRecordAsync(
@@ -605,7 +437,8 @@ namespace dvmig.Core
                         // Dynamic Mapping: Try to find by business key first
                         var targetId = await FindExistingOnTargetAsync(
                             missingRecord,
-                            ct);
+                            ct
+                        );
 
                         if (targetId.HasValue)
                         {
@@ -621,7 +454,8 @@ namespace dvmig.Core
                             return await CreateWithFixStrategyAsync(
                                 entity,
                                 options,
-                                ct);
+                                ct
+                            );
                         }
 
                         // Normal Sync: Try to sync the record over
@@ -629,26 +463,30 @@ namespace dvmig.Core
                             missingRecord,
                             options,
                             null,
-                            ct);
+                            ct
+                        );
 
                         if (success)
                         {
                             var metadata = await GetMetadataAsync(
                                 entity.LogicalName,
-                                ct);
+                                ct
+                            );
 
                             if (metadata?.IsIntersect == true)
                             {
                                 return await SyncIntersectEntityAsync(
                                     entity,
                                     options,
-                                    ct);
+                                    ct
+                                );
                             }
 
                             return await CreateWithFixStrategyAsync(
                                 entity,
                                 options,
-                                ct);
+                                ct
+                            );
                         }
                     }
                 }
@@ -766,7 +604,8 @@ namespace dvmig.Core
         {
             var metadata = await GetMetadataAsync(
                 sourceEntity.LogicalName,
-                ct);
+                ct
+            );
 
             if (metadata == null)
             {
@@ -802,9 +641,18 @@ namespace dvmig.Core
                         var results = await _target
                             .RetrieveMultipleAsync(query, ct);
 
-                        if (results.Entities.Any())
+                        if (results.Entities.Count == 1)
                         {
                             return results.Entities.First().Id;
+                        }
+                        
+                        if (results.Entities.Count > 1)
+                        {
+                            _logger.Warning(
+                                "Ambiguous alternate key match for {Entity}. " +
+                                "Found {Count} records. Skipping mapping.",
+                                sourceEntity.LogicalName,
+                                results.Entities.Count);
                         }
                     }
                 }
@@ -823,9 +671,19 @@ namespace dvmig.Core
                     sourceEntity[primaryAttr]);
 
                 var results = await _target.RetrieveMultipleAsync(query, ct);
-                if (results.Entities.Any())
+                if (results.Entities.Count == 1)
                 {
                     return results.Entities.First().Id;
+                }
+
+                if (results.Entities.Count > 1)
+                {
+                    _logger.Warning(
+                        "Ambiguous primary name match for {Entity} '{Name}'. " +
+                        "Found {Count} records. Skipping mapping.",
+                        sourceEntity.LogicalName,
+                        sourceEntity[primaryAttr],
+                        results.Entities.Count);
                 }
             }
 

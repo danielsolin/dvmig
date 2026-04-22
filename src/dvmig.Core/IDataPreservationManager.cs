@@ -1,5 +1,4 @@
 using Microsoft.Xrm.Sdk;
-using Microsoft.Xrm.Sdk.Messages;
 using dvmig.Providers;
 
 namespace dvmig.Core
@@ -8,10 +7,6 @@ namespace dvmig.Core
     {
         Task PreserveDatesAsync(
             Entity sourceEntity,
-            CancellationToken ct = default);
-
-        Task PreserveDatesBulkAsync(
-            IEnumerable<Entity> entities,
             CancellationToken ct = default);
     }
 
@@ -89,51 +84,6 @@ namespace dvmig.Core
                     sourceEntity.LogicalName,
                     sourceEntity.Id);
             }
-        }
-
-        public async Task PreserveDatesBulkAsync(
-            IEnumerable<Entity> entities,
-            CancellationToken ct = default)
-        {
-            if (!await CheckSupportAsync(ct))
-            {
-                return;
-            }
-
-            var sourceDates = entities
-                .Where(e => e.Contains("createdon") ||
-                            e.Contains("modifiedon"))
-                .Select(CreateSourceDateEntity)
-                .ToList();
-
-            if (!sourceDates.Any())
-            {
-                return;
-            }
-
-            _logger.Information(
-                "Bulk creating {Count} source date records",
-                sourceDates.Count);
-
-            var request = new ExecuteMultipleRequest
-            {
-                Settings = new ExecuteMultipleSettings
-                {
-                    ContinueOnError = true,
-                    ReturnResponses = false
-                },
-                Requests = new OrganizationRequestCollection()
-            };
-
-            foreach (var sd in sourceDates)
-            {
-                request.Requests.Add(new CreateRequest
-                {
-                    Target = sd
-                });
-            }
-
-            await _target.ExecuteAsync(request, ct);
         }
 
         private Entity CreateSourceDateEntity(Entity entity)
