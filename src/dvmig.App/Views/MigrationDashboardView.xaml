@@ -55,29 +55,27 @@
 
         <!-- Actions -->
         <Grid Grid.Row="2" Margin="10">
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                <Button Command="{Binding GoBackCommand}" 
-                        Content="← BACK" Padding="30,15" 
-                        Background="#9E9E9E" Foreground="White" 
-                        BorderThickness="0" Margin="10" />
+            <Button Command="{Binding GoBackCommand}" 
+                    Content="← BACK" Padding="30,15" 
+                    Background="#9E9E9E" Foreground="White" 
+                    BorderThickness="0" HorizontalAlignment="Left" />
 
-                <Button Padding="30,15" Foreground="White" BorderThickness="0" Margin="10">
-                    <Button.Style>
-                        <Style TargetType="Button">
-                            <Setter Property="Background" Value="#3F51B5" />
-                            <Setter Property="Content" Value="START" />
-                            <Setter Property="Command" Value="{Binding StartMigrationCommand}" />
-                            <Style.Triggers>
-                                <DataTrigger Binding="{Binding IsMigrationRunning}" Value="True">
-                                    <Setter Property="Content" Value="STOP" />
-                                    <Setter Property="Command" Value="{Binding CancelMigrationCommand}" />
-                                    <Setter Property="Background" Value="#F44336" />
-                                </DataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </Button.Style>
-                </Button>
-            </StackPanel>
+            <Button Padding="30,15" Foreground="White" BorderThickness="0" HorizontalAlignment="Center">
+                <Button.Style>
+                    <Style TargetType="Button">
+                        <Setter Property="Background" Value="#3F51B5" />
+                        <Setter Property="Content" Value="START" />
+                        <Setter Property="Command" Value="{Binding StartMigrationCommand}" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsMigrationRunning}" Value="True">
+                                <Setter Property="Content" Value="STOP" />
+                                <Setter Property="Command" Value="{Binding CancelMigrationCommand}" />
+                                <Setter Property="Background" Value="#F44336" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Button.Style>
+            </Button>
         </Grid>
     </Grid>
 </UserControl>
