@@ -2,6 +2,7 @@ using dvmig.Providers;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Messages;
 using Microsoft.Xrm.Sdk.Metadata;
+using Microsoft.Crm.Sdk.Messages;
 using Polly;
 using Polly.Retry;
 using Serilog;
@@ -340,17 +341,28 @@ namespace dvmig.Core
                 {
                     if (options.PreserveDates)
                     {
-                        // Recreate the source date record because it may have 
-                        // been deleted by the nested creation sync.
                         await _dataPreservation.PreserveDatesAsync(entity, ct);
                     }
 
+                    // Try standard update first
                     await _target.UpdateAsync(entity, ct);
 
                     return true;
                 }
                 catch (Exception updateEx)
                 {
+                    // If update fails due to state/status, fall through to 
+                    // the status handling logic.
+                    if (updateEx.Message.ToLower().Contains(
+                        "is not a valid status code"))
+                    {
+                        return await HandleStatusTransitionAsync(
+                            entity,
+                            options,
+                            ct
+                        );
+                    }
+
                     _logger.Warning(
                         "Update failed for existing record {Key}:{Id}: {Msg}",
                         entity.LogicalName,
@@ -360,6 +372,11 @@ namespace dvmig.Core
 
                     return true;
                 }
+            }
+
+            if (msg.Contains("is not a valid status code"))
+            {
+                return await HandleStatusTransitionAsync(entity, options, ct);
             }
 
             if (msg.Contains("does not exist"))
@@ -380,6 +397,120 @@ namespace dvmig.Core
                 entity.LogicalName, entity.Id);
 
             return false;
+        }
+
+        private async Task<bool> HandleStatusTransitionAsync(
+            Entity entity,
+            SyncOptions options,
+            CancellationToken ct)
+        {
+            var recordKey = $"{entity.LogicalName}:{entity.Id}";
+            _logger.Information(
+                "Handling state/status transition for {Key}",
+                recordKey);
+
+            var stateValue = entity.Contains("statecode") ?
+                entity["statecode"] : null;
+            var statusValue = entity.Contains("statuscode") ?
+                entity["statuscode"] : null;
+
+            _logger.Debug(
+                "Transition values for {Key} - State: {State}, Status: {Status}",
+                recordKey,
+                stateValue ?? "NULL",
+                statusValue ?? "NULL");
+
+            // Remove status/state to allow basic creation/update
+            entity.Attributes.Remove("statecode");
+            entity.Attributes.Remove("statuscode");
+
+            var success = await CreateWithFixStrategyAsync(
+                entity,
+                options,
+                ct
+            );
+
+            if (success && (stateValue != null || statusValue != null))
+            {
+                try
+                {
+                    // Ensure we have OptionSetValue objects
+                    var stateOsv = ToOptionSetValue(stateValue);
+                    var statusOsv = ToOptionSetValue(statusValue);
+
+                    if (stateOsv != null)
+                    {
+                        _logger.Information(
+                            "Applying SetState for {Key} (State: {State}, Status: {Status})",
+                            recordKey,
+                            stateOsv.Value,
+                            statusOsv?.Value.ToString() ?? "Default");
+
+                        var stateReq = new OrganizationRequest("SetState");
+                        stateReq.Parameters["EntityMoniker"] = new EntityReference(
+                            entity.LogicalName,
+                            entity.Id
+                        );
+                        stateReq.Parameters["State"] = stateOsv;
+                        stateReq.Parameters["Status"] = statusOsv ?? new OptionSetValue(-1);
+
+                        await _target.ExecuteAsync(stateReq, ct);
+                    }
+                    else
+                    {
+                        _logger.Warning(
+                            "Cannot apply SetState for {Key}: State is null. " +
+                            "Trying fallback Update for status only.",
+                            recordKey);
+                        
+                        // Throw to trigger the fallback logic in catch block
+                        throw new InvalidOperationException("State is null");
+                    }
+                }
+                catch (Exception stateEx)
+                {
+                    _logger.Warning(
+                        "SetState failed for {Key}: {Msg}",
+                        recordKey,
+                        stateEx.Message);
+
+                    // Fallback: Modern Update with only state/status
+                    try
+                    {
+                        var transitionUpdate = new Entity(
+                            entity.LogicalName,
+                            entity.Id);
+                        
+                        if (stateValue != null)
+                            transitionUpdate["statecode"] = stateValue;
+                        if (statusValue != null)
+                            transitionUpdate["statuscode"] = statusValue;
+
+                        await _target.UpdateAsync(transitionUpdate, ct);
+                        _logger.Information(
+                            "Applied transition via fallback Update for {Key}",
+                            recordKey);
+                    }
+                    catch (Exception finalEx)
+                    {
+                        _logger.Warning(
+                            "All transition attempts failed for {Key}: {Msg}",
+                            recordKey,
+                            finalEx.Message);
+                    }
+                }
+            }
+
+            return success;
+        }
+
+        private OptionSetValue? ToOptionSetValue(object? value)
+        {
+            if (value == null) return null;
+            if (value is OptionSetValue osv) return osv;
+            if (value is int i) return new OptionSetValue(i);
+            
+            return null;
         }
 
         private async Task<bool> StripAttributeAndRetryAsync(
@@ -603,7 +734,10 @@ namespace dvmig.Core
                     var attrMeta = metadata.Attributes
                         .FirstOrDefault(a => a.LogicalName == attr.Key);
 
-                    if (attrMeta != null && attrMeta.IsValidForCreate == false)
+                    if (attrMeta != null &&
+                        attrMeta.IsValidForCreate == false &&
+                        attr.Key != "statecode" &&
+                        attr.Key != "statuscode")
                     {
                         _logger.Debug(
                             "Proactively stripping {Attr} for {Entity}",

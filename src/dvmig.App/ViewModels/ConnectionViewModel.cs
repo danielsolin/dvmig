@@ -115,14 +115,28 @@ namespace dvmig.App.ViewModels
                     SourceConnectionString = settings.SourceConnectionString;
                     TargetConnectionString = settings.TargetConnectionString;
 
+                    if (_migrationService.SourceProvider != null)
+                    {
+                        IsSourceConnected = true;
+                        SourceStatus = "Connected";
+                    }
+
+                    if (_migrationService.TargetProvider != null)
+                    {
+                        IsTargetConnected = true;
+                        TargetStatus = "Connected";
+                    }
+
                     if (AutoConnect)
                     {
-                        if (!string.IsNullOrEmpty(SourceConnectionString))
+                        if (_migrationService.SourceProvider == null &&
+                            !string.IsNullOrEmpty(SourceConnectionString))
                         {
                             _ = TestSourceConnectionAsync();
                         }
 
-                        if (!string.IsNullOrEmpty(TargetConnectionString))
+                        if (_migrationService.TargetProvider == null &&
+                            !string.IsNullOrEmpty(TargetConnectionString))
                         {
                             _ = TestTargetConnectionAsync();
                         }

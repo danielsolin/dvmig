@@ -56,12 +56,18 @@ namespace dvmig.App.ViewModels
                             meta.DisplayName?.UserLocalizedLabel?.Label ??
                             meta.LogicalName;
 
-                        Entities.Add(
-                            new EntitySelectionItem(
-                                meta.LogicalName,
-                                displayName
-                            )
+                        var item = new EntitySelectionItem(
+                            meta.LogicalName,
+                            displayName
                         );
+
+                        if (_migrationService.SelectedEntities.Contains(
+                            meta.LogicalName))
+                        {
+                            item.IsSelected = true;
+                        }
+
+                        Entities.Add(item);
                     }
                 });
             }
@@ -120,6 +126,10 @@ namespace dvmig.App.ViewModels
         [RelayCommand]
         private void GoBack()
         {
+            _migrationService.SelectedEntities.Clear();
+            _migrationService.SelectedEntities.AddRange(
+                Entities.Where(e => e.IsSelected).Select(e => e.LogicalName));
+
             _navigationService.NavigateTo<ConnectionViewModel>();
         }
     }

@@ -144,7 +144,7 @@
                           VerticalAlignment="Center" Margin="0,0,20,0" />
                 
                 <Button Command="{Binding ProceedToSelectionCommand}" 
-                        Content="PROCEED TO SELECTION →" 
+                        Content="NEXT →" 
                         Padding="20,10" Background="#3F51B5" Foreground="White" 
                         BorderThickness="0" />
             </StackPanel>

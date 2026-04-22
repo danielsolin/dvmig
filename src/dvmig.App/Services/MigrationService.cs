@@ -32,11 +32,17 @@ namespace dvmig.App.Services
 
     public class MigrationService : IMigrationService
     {
+        private List<EntityMetadata>? _cachedMetadata;
         public IDataverseProvider? SourceProvider { get; private set; }
         public IDataverseProvider? TargetProvider { get; private set; }
         public List<string> SelectedEntities { get; } = new List<string>();
 
-        public void DisconnectSource() => SourceProvider = null;
+        public void DisconnectSource()
+        {
+            SourceProvider = null;
+            _cachedMetadata = null;
+        }
+
         public void DisconnectTarget() => TargetProvider = null;
 
         public async Task<bool> ConnectSourceAsync(
@@ -135,6 +141,11 @@ namespace dvmig.App.Services
                 return new List<EntityMetadata>();
             }
 
+            if (_cachedMetadata != null)
+            {
+                return _cachedMetadata;
+            }
+
             var request = new RetrieveAllEntitiesRequest
             {
                 EntityFilters = EntityFilters.Entity,
@@ -144,7 +155,7 @@ namespace dvmig.App.Services
             var response = (RetrieveAllEntitiesResponse)await SourceProvider
                 .ExecuteAsync(request, ct);
 
-            return response.EntityMetadata
+            _cachedMetadata = response.EntityMetadata
                 .Where(
                     e => e.IsCustomEntity == true ||
                          IsStandardEntity(e.LogicalName)
@@ -154,6 +165,8 @@ namespace dvmig.App.Services
                          e.LogicalName
                 )
                 .ToList();
+
+            return _cachedMetadata;
         }
 
         private bool IsStandardEntity(string logicalName)
