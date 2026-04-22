@@ -21,6 +21,7 @@ namespace dvmig.App.ViewModels
         [ObservableProperty]
         [NotifyCanExecuteChangedFor(nameof(StartMigrationCommand))]
         [NotifyCanExecuteChangedFor(nameof(CancelMigrationCommand))]
+        [NotifyCanExecuteChangedFor(nameof(GoBackCommand))]
         private bool _isMigrationRunning;
 
         public ObservableCollection<string> Logs { get; } =
@@ -146,6 +147,12 @@ namespace dvmig.App.ViewModels
 
             var now = DateTime.Now.ToString("HH:mm:ss");
             Logs.Add($"[{now}] Cancellation requested...");
+        }
+
+        [RelayCommand(CanExecute = nameof(CanStartMigration))]
+        private void GoBack()
+        {
+            _navigationService.NavigateTo<EntitySelectionViewModel>();
         }
 
         private bool CanStartMigration() => !IsMigrationRunning;

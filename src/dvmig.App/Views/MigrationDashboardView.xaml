@@ -18,14 +18,14 @@
 
         <!-- Status Stats -->
         <UniformGrid Columns="3">
-            <Border Margin="10" Padding="15" Background="#E8F5E9" CornerRadius="5">
+            <Border Margin="10" Padding="15" Background="#E8F5E9" CornerRadius="8">
                 <StackPanel HorizontalAlignment="Center">
                     <TextBlock Text="Success" Foreground="#2E7D32" FontWeight="Bold" />
                     <TextBlock Text="{Binding Progress.SuccessCount}" FontSize="36" FontWeight="Bold" Foreground="#2E7D32" HorizontalAlignment="Center" />
                 </StackPanel>
             </Border>
 
-            <Border Margin="10" Padding="15" Background="White" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="5">
+            <Border Margin="10" Padding="15" Background="White" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="8">
                 <StackPanel HorizontalAlignment="Center">
                     <TextBlock Text="Progress" FontWeight="Bold" HorizontalAlignment="Center" />
                     <ProgressBar Value="{Binding Progress.ProgressPercentage}" Height="20" Width="150" Margin="0,15,0,0" />
@@ -33,7 +33,7 @@
                 </StackPanel>
             </Border>
 
-            <Border Margin="10" Padding="15" Background="#FFEBEE" CornerRadius="5">
+            <Border Margin="10" Padding="15" Background="#FFEBEE" CornerRadius="8">
                 <StackPanel HorizontalAlignment="Center">
                     <TextBlock Text="Failures" Foreground="#C62828" FontWeight="Bold" />
                     <TextBlock Text="{Binding Progress.FailureCount}" FontSize="36" FontWeight="Bold" Foreground="#C62828" HorizontalAlignment="Center" />
@@ -48,7 +48,7 @@
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
             <TextBlock Text="Migration Log" FontWeight="Bold" Margin="0,0,0,10" />
-            <Border Grid.Row="1" Background="White" BorderBrush="#E0E0E0" BorderThickness="1">
+            <Border Grid.Row="1" Background="White" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="8">
                 <ListBox x:Name="LogList" ItemsSource="{Binding Logs}" FontFamily="Consolas" FontSize="12" />
             </Border>
         </Grid>
@@ -56,6 +56,11 @@
         <!-- Actions -->
         <Grid Grid.Row="2" Margin="10">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                <Button Command="{Binding GoBackCommand}" 
+                        Content="← BACK" Padding="30,15" 
+                        Background="#9E9E9E" Foreground="White" 
+                        BorderThickness="0" Margin="10" />
+
                 <Button Padding="30,15" Foreground="White" BorderThickness="0" Margin="10">
                     <Button.Style>
                         <Style TargetType="Button">
