@@ -156,9 +156,12 @@ namespace dvmig.App.Services
                 .ExecuteAsync(request, ct);
 
             _cachedMetadata = response.EntityMetadata
-                .Where(
-                    e => e.IsCustomEntity == true ||
-                         IsStandardEntity(e.LogicalName)
+                .Where(e =>
+                    (e.IsCustomEntity == true || IsStandardEntity(e.LogicalName)) &&
+                    e.IsIntersect == false &&
+                    e.IsValidForAdvancedFind == true &&
+                    !string.IsNullOrEmpty(
+                        e.DisplayName?.UserLocalizedLabel?.Label)
                 )
                 .OrderBy(
                     e => e.DisplayName?.UserLocalizedLabel?.Label ??
@@ -177,7 +180,20 @@ namespace dvmig.App.Services
                 "contact",
                 "lead",
                 "opportunity",
-                "task"
+                "task",
+                "phonecall",
+                "email",
+                "appointment",
+                "incident",
+                "product",
+                "pricelevel",
+                "quote",
+                "salesorder",
+                "invoice",
+                "competitor",
+                "equipment",
+                "businessunit",
+                "team"
             };
 
             return standard.Contains(logicalName.ToLower());

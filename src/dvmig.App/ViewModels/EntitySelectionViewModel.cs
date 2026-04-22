@@ -67,8 +67,11 @@ namespace dvmig.App.ViewModels
                             item.IsSelected = true;
                         }
 
+                        item.PropertyChanged += OnItemPropertyChanged;
                         Entities.Add(item);
                     }
+
+                    StartMigrationCommand.NotifyCanExecuteChanged();
                 });
             }
             catch (System.Exception ex)
@@ -113,7 +116,7 @@ namespace dvmig.App.ViewModels
             _entitiesView.Refresh();
         }
 
-        [RelayCommand]
+        [RelayCommand(CanExecute = nameof(CanStartMigration))]
         private void StartMigration()
         {
             _migrationService.SelectedEntities.Clear();
@@ -121,6 +124,16 @@ namespace dvmig.App.ViewModels
                 Entities.Where(e => e.IsSelected).Select(e => e.LogicalName));
 
             _navigationService.NavigateTo<MigrationDashboardViewModel>();
+        }
+
+        private bool CanStartMigration() => Entities.Any(e => e.IsSelected);
+
+        private void OnItemPropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(EntitySelectionItem.IsSelected))
+            {
+                StartMigrationCommand.NotifyCanExecuteChanged();
+            }
         }
 
         [RelayCommand]
