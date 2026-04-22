@@ -48,6 +48,32 @@ namespace dvmig.App.ViewModels
         private bool _rememberConnections;
 
         [ObservableProperty]
+        private bool _autoConnect;
+
+        private bool _isSettingsLoading;
+
+        partial void OnRememberConnectionsChanged(bool value) => SaveCurrentSettings();
+        partial void OnAutoConnectChanged(bool value) => SaveCurrentSettings();
+
+        private void SaveCurrentSettings()
+        {
+            if (_isSettingsLoading)
+            {
+                return;
+            }
+
+            _settingsService.SaveSettings(
+                new UserSettings
+                {
+                    RememberConnections = RememberConnections,
+                    AutoConnect = AutoConnect,
+                    SourceConnectionString = SourceConnectionString,
+                    TargetConnectionString = TargetConnectionString
+                }
+            );
+        }
+
+        [ObservableProperty]
         private bool _isEnvironmentReady = true;
 
         [ObservableProperty]
@@ -76,13 +102,36 @@ namespace dvmig.App.ViewModels
 
         private void LoadSavedSettings()
         {
-            var settings = _settingsService.LoadSettings();
-            RememberConnections = settings.RememberConnections;
+            _isSettingsLoading = true;
 
-            if (RememberConnections)
+            try
             {
-                SourceConnectionString = settings.SourceConnectionString;
-                TargetConnectionString = settings.TargetConnectionString;
+                var settings = _settingsService.LoadSettings();
+                RememberConnections = settings.RememberConnections;
+                AutoConnect = settings.AutoConnect;
+
+                if (RememberConnections)
+                {
+                    SourceConnectionString = settings.SourceConnectionString;
+                    TargetConnectionString = settings.TargetConnectionString;
+
+                    if (AutoConnect)
+                    {
+                        if (!string.IsNullOrEmpty(SourceConnectionString))
+                        {
+                            _ = TestSourceConnectionAsync();
+                        }
+
+                        if (!string.IsNullOrEmpty(TargetConnectionString))
+                        {
+                            _ = TestTargetConnectionAsync();
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                _isSettingsLoading = false;
             }
         }
 
@@ -124,6 +173,14 @@ namespace dvmig.App.ViewModels
         }
 
         [RelayCommand]
+        private void DisconnectSource()
+        {
+            _migrationService.DisconnectSource();
+            IsSourceConnected = false;
+            SourceStatus = "Not Connected";
+        }
+
+        [RelayCommand]
         private async Task TestTargetConnectionAsync()
         {
             _targetCts?.Cancel();
@@ -162,6 +219,14 @@ namespace dvmig.App.ViewModels
         {
             _targetCts?.Cancel();
             TargetStatus = "Cancelled";
+        }
+
+        [RelayCommand]
+        private void DisconnectTarget()
+        {
+            _migrationService.DisconnectTarget();
+            IsTargetConnected = false;
+            TargetStatus = "Not Connected";
         }
 
         [RelayCommand]
@@ -234,29 +299,10 @@ namespace dvmig.App.ViewModels
         [RelayCommand(CanExecute = nameof(CanProceed))]
         private void ProceedToSelection()
         {
-            if (RememberConnections)
-            {
-                _settingsService.SaveSettings(
-                    new UserSettings
-                    {
-                        SourceConnectionString = SourceConnectionString,
-                        TargetConnectionString = TargetConnectionString,
-                        RememberConnections = true
-                    }
-                );
-            }
-            else
-            {
-                _settingsService.SaveSettings(
-                    new UserSettings
-                    {
-                        RememberConnections = false
-                    }
-                );
-            }
-
+            SaveCurrentSettings();
             _navigationService.NavigateTo<EntitySelectionViewModel>();
         }
+
 
         private bool CanProceed() => IsSourceConnected && IsTargetConnected;
     }

@@ -49,23 +49,29 @@
             </Grid.RowDefinitions>
             <TextBlock Text="Migration Log" FontWeight="Bold" Margin="0,0,0,10" />
             <Border Grid.Row="1" Background="White" BorderBrush="#E0E0E0" BorderThickness="1">
-                <ListBox ItemsSource="{Binding Logs}" FontFamily="Consolas" FontSize="12" />
+                <ListBox x:Name="LogList" ItemsSource="{Binding Logs}" FontFamily="Consolas" FontSize="12" />
             </Border>
         </Grid>
 
         <!-- Actions -->
         <Grid Grid.Row="2" Margin="10">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                <Button Command="{Binding StartMigrationCommand}" 
-                        Content="RUN MIGRATION" Padding="30,15" 
-                        Background="#3F51B5" Foreground="White" 
-                        BorderThickness="0" Margin="10" />
-
-                <Button Command="{Binding CancelMigrationCommand}" 
-                        Content="CANCEL MIGRATION" Padding="30,15" 
-                        Background="#F44336" Foreground="White" 
-                        BorderThickness="0" Margin="10"
-                        Visibility="{Binding IsMigrationRunning, Converter={StaticResource BoolToVis}}" />
+                <Button Padding="30,15" Foreground="White" BorderThickness="0" Margin="10">
+                    <Button.Style>
+                        <Style TargetType="Button">
+                            <Setter Property="Background" Value="#3F51B5" />
+                            <Setter Property="Content" Value="START" />
+                            <Setter Property="Command" Value="{Binding StartMigrationCommand}" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsMigrationRunning}" Value="True">
+                                    <Setter Property="Content" Value="STOP" />
+                                    <Setter Property="Command" Value="{Binding CancelMigrationCommand}" />
+                                    <Setter Property="Background" Value="#F44336" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                </Button>
             </StackPanel>
         </Grid>
     </Grid>

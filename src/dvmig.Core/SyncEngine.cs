@@ -178,24 +178,6 @@ namespace dvmig.Core
                     return await SyncIntersectEntityAsync(entity, options, ct);
                 }
 
-                if (options.SkipExisting)
-                {
-                    var existing = await _target.RetrieveAsync(
-                        entity.LogicalName,
-                        entity.Id,
-                        new[] { "modifiedon" },
-                        ct);
-
-                    if (existing != null)
-                    {
-                        _idMappingCache[recordKey] = existing.Id;
-                        progress?.Report(
-                            $"Skipped {entity.LogicalName}:{entity.Id} (Already exists)");
-
-                        return true;
-                    }
-                }
-
                 var prepared = await PrepareEntityForTargetAsync(
                     entity,
                     metadata,

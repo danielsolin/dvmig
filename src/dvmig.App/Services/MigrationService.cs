@@ -21,6 +21,9 @@ namespace dvmig.App.Services
         Task<List<EntityMetadata>> GetSourceEntitiesAsync(
             CancellationToken ct = default);
 
+        void DisconnectSource();
+        void DisconnectTarget();
+
         IDataverseProvider? SourceProvider { get; }
         IDataverseProvider? TargetProvider { get; }
 
@@ -32,6 +35,9 @@ namespace dvmig.App.Services
         public IDataverseProvider? SourceProvider { get; private set; }
         public IDataverseProvider? TargetProvider { get; private set; }
         public List<string> SelectedEntities { get; } = new List<string>();
+
+        public void DisconnectSource() => SourceProvider = null;
+        public void DisconnectTarget() => TargetProvider = null;
 
         public async Task<bool> ConnectSourceAsync(
             string connectionString,

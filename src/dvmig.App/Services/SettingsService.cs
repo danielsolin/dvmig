@@ -10,6 +10,7 @@ namespace dvmig.App.Services
         public string SourceConnectionString { get; set; } = string.Empty;
         public string TargetConnectionString { get; set; } = string.Empty;
         public bool RememberConnections { get; set; }
+        public bool AutoConnect { get; set; }
     }
 
     public interface ISettingsService
@@ -79,7 +80,8 @@ namespace dvmig.App.Services
             {
                 var settingsCopy = new UserSettings
                 {
-                    RememberConnections = settings.RememberConnections
+                    RememberConnections = settings.RememberConnections,
+                    AutoConnect = settings.AutoConnect
                 };
 
                 if (settings.RememberConnections)

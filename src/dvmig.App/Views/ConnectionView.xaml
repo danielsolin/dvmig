@@ -25,19 +25,21 @@
                         <TextBox Text="{Binding SourceConnectionString, UpdateSourceTrigger=PropertyChanged}" 
                                  Height="80" TextWrapping="Wrap" AcceptsReturn="True" Margin="0,0,0,15" />
 
-                        <TextBlock Text="{Binding SourceStatus}" HorizontalAlignment="Center" 
-                                   FontWeight="SemiBold" Margin="0,0,0,15" />
-
                         <Button Padding="10,5" Foreground="White" BorderThickness="0">
                             <Button.Style>
                                 <Style TargetType="Button">
                                     <Setter Property="Background" Value="#3F51B5" />
-                                    <Setter Property="Content" Value="TEST CONNECTION" />
+                                    <Setter Property="Content" Value="CONNECT" />
                                     <Setter Property="Command" Value="{Binding TestSourceConnectionCommand}" />
                                     <Style.Triggers>
                                         <DataTrigger Binding="{Binding IsSourceConnecting}" Value="True">
                                             <Setter Property="Content" Value="CANCEL" />
                                             <Setter Property="Command" Value="{Binding CancelSourceConnectionCommand}" />
+                                            <Setter Property="Background" Value="#F44336" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding IsSourceConnected}" Value="True">
+                                            <Setter Property="Content" Value="DISCONNECT" />
+                                            <Setter Property="Command" Value="{Binding DisconnectSourceCommand}" />
                                             <Setter Property="Background" Value="#F44336" />
                                         </DataTrigger>
                                     </Style.Triggers>
@@ -58,19 +60,21 @@
                         <TextBox Text="{Binding TargetConnectionString, UpdateSourceTrigger=PropertyChanged}" 
                                  Height="80" TextWrapping="Wrap" AcceptsReturn="True" Margin="0,0,0,15" />
 
-                        <TextBlock Text="{Binding TargetStatus}" HorizontalAlignment="Center" 
-                                   FontWeight="SemiBold" Margin="0,0,0,15" />
-
                         <Button Padding="10,5" Foreground="White" BorderThickness="0" Margin="0,0,0,10">
                             <Button.Style>
                                 <Style TargetType="Button">
                                     <Setter Property="Background" Value="#009688" />
-                                    <Setter Property="Content" Value="TEST CONNECTION" />
+                                    <Setter Property="Content" Value="CONNECT" />
                                     <Setter Property="Command" Value="{Binding TestTargetConnectionCommand}" />
                                     <Style.Triggers>
                                         <DataTrigger Binding="{Binding IsTargetConnecting}" Value="True">
                                             <Setter Property="Content" Value="CANCEL" />
                                             <Setter Property="Command" Value="{Binding CancelTargetConnectionCommand}" />
+                                            <Setter Property="Background" Value="#F44336" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding IsTargetConnected}" Value="True">
+                                            <Setter Property="Content" Value="DISCONNECT" />
+                                            <Setter Property="Command" Value="{Binding DisconnectTargetCommand}" />
                                             <Setter Property="Background" Value="#F44336" />
                                         </DataTrigger>
                                     </Style.Triggers>
@@ -131,6 +135,10 @@
         <!-- Navigation Bar (Always Visible at Bottom) -->
         <Border Grid.Row="1" Background="#EEEEEE" Margin="-10,10,-10,-10" Padding="20,10">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <CheckBox Content="Auto-connect at startup" 
+                          IsChecked="{Binding AutoConnect}" 
+                          VerticalAlignment="Center" Margin="0,0,20,0" />
+                
                 <CheckBox Content="Remember Connections (Encrypted)" 
                           IsChecked="{Binding RememberConnections}" 
                           VerticalAlignment="Center" Margin="0,0,20,0" />
