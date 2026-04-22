@@ -9,7 +9,7 @@ This file contains foundational mandates, architectural decisions, and project-s
 
 ## Foundational Mandates
 1.  **Legacy Support:** The tool MUST maintain compatibility with legacy CRM OnPrem platforms (including AD/ADFS/IFD authentication).
-2.  **Graphical UI:** The UI MUST remain graphical and inviting for non-technical users (WPF-based).
+2.  **Dual UI Strategy:** The project MUST support two separate interfaces: a simplified graphical UI (WPF-based) for non-technical users, and an advanced Terminal User Interface (TUI) for technical power users.
 3.  **Code Style:** Adhere strictly to the rules defined in the global `GEMINI.md`.
 4.  **Resiliency:** Use `Polly` for retries on transient network errors or Dataverse throttling (including high-precision `8004410d` handling).
 5.  **Logging:** Use `Serilog` for structured logging (file + UI sinks).
@@ -26,7 +26,7 @@ This file contains foundational mandates, architectural decisions, and project-s
 - **Target:** `dmrnd.crm22.dynamics.com` (Clean target environment).
 
 ## Tooling & Dependencies
-- **UI:** Vanilla WPF (optimized for stability and modern look without external library bloat).
+- **UI:** Vanilla WPF for standard application; Spectre.Console for the advanced TUI.
 - **SDK:** `Microsoft.PowerPlatform.Dataverse.Client`.
 - **Legacy SDK:** `Microsoft.CrmSdk.XrmTooling.CoreAssembly` for OnPrem auth.
 - **Resiliency:** `Polly`.
@@ -35,4 +35,6 @@ This file contains foundational mandates, architectural decisions, and project-s
 ## Future Reference
 - Always check `MODERNIZATION.md` for the latest roadmap and strategy updates.
 - Refer to `old/CRM2CRM/Core/SyncEngine.cs` for original migration logic.
+- Refer to `old/CRM2CRM.Plugins/DatesPlugin.cs` for the original date preservation logic.
+or original migration logic.
 - Refer to `old/CRM2CRM.Plugins/DatesPlugin.cs` for the original date preservation logic.
