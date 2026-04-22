@@ -5,91 +5,141 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800">
-    <Grid Margin="20">
+    <Grid Margin="10">
         <Grid.RowDefinitions>
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <UniformGrid Columns="2">
-            <!-- Source Panel -->
-            <Border Margin="10" Padding="20" Background="White" 
-                    BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="5">
-                <StackPanel>
-                    <TextBlock Text="Source Environment" FontSize="18" FontWeight="Bold" 
-                               Margin="0,0,0,20" Foreground="#3F51B5" />
-                    
-                    <TextBlock Text="Connection String:" Margin="0,0,0,5" />
-                    <TextBox Text="{Binding SourceConnectionString, UpdateSourceTrigger=PropertyChanged}" 
-                             Height="80" TextWrapping="Wrap" AcceptsReturn="True" Margin="0,0,0,20" />
+        <!-- Main Content (Scrollable) -->
+        <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto" BorderThickness="0">
+            <UniformGrid Columns="2" VerticalAlignment="Top">
+                <!-- Source Panel -->
+                <Border Margin="5" Padding="15" Background="White" 
+                        BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="5">
+                    <StackPanel>
+                        <TextBlock Text="Source Environment" FontSize="18" FontWeight="Bold" 
+                                   Margin="0,0,0,15" Foreground="#3F51B5" />
+                        
+                        <TextBlock Text="Connection String:" Margin="0,0,0,5" />
+                        <TextBox Text="{Binding SourceConnectionString, UpdateSourceTrigger=PropertyChanged}" 
+                                 Height="80" TextWrapping="Wrap" AcceptsReturn="True" Margin="0,0,0,15" />
 
-                    <TextBlock Text="{Binding SourceStatus}" HorizontalAlignment="Center" 
-                               FontWeight="SemiBold" Margin="0,0,0,20" />
+                        <TextBlock Text="{Binding SourceStatus}" HorizontalAlignment="Center" 
+                                   FontWeight="SemiBold" Margin="0,0,0,15" />
 
-                    <Button Padding="10,5" Foreground="White" BorderThickness="0">
-                        <Button.Style>
-                            <Style TargetType="Button">
-                                <Setter Property="Background" Value="#3F51B5" />
-                                <Setter Property="Content" Value="TEST CONNECTION" />
-                                <Setter Property="Command" Value="{Binding TestSourceConnectionCommand}" />
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding IsSourceConnecting}" Value="True">
-                                        <Setter Property="Content" Value="CANCEL" />
-                                        <Setter Property="Command" Value="{Binding CancelSourceConnectionCommand}" />
-                                        <Setter Property="Background" Value="#F44336" />
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </Button.Style>
-                    </Button>
-                </StackPanel>
-            </Border>
+                        <Button Padding="10,5" Foreground="White" BorderThickness="0">
+                            <Button.Style>
+                                <Style TargetType="Button">
+                                    <Setter Property="Background" Value="#3F51B5" />
+                                    <Setter Property="Content" Value="TEST CONNECTION" />
+                                    <Setter Property="Command" Value="{Binding TestSourceConnectionCommand}" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsSourceConnecting}" Value="True">
+                                            <Setter Property="Content" Value="CANCEL" />
+                                            <Setter Property="Command" Value="{Binding CancelSourceConnectionCommand}" />
+                                            <Setter Property="Background" Value="#F44336" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                        </Button>
+                    </StackPanel>
+                </Border>
 
-            <!-- Target Panel -->
-            <Border Margin="10" Padding="20" Background="White" 
-                    BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="5">
-                <StackPanel>
-                    <TextBlock Text="Target Dataverse" FontSize="18" FontWeight="Bold" 
-                               Margin="0,0,0,20" Foreground="#009688" />
-                    
-                    <TextBlock Text="Connection String:" Margin="0,0,0,5" />
-                    <TextBox Text="{Binding TargetConnectionString, UpdateSourceTrigger=PropertyChanged}" 
-                             Height="80" TextWrapping="Wrap" AcceptsReturn="True" Margin="0,0,0,20" />
+                <!-- Target Panel -->
+                <Border Margin="5" Padding="15" Background="White" 
+                        BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="5">
+                    <StackPanel>
+                        <TextBlock Text="Target Dataverse" FontSize="18" FontWeight="Bold" 
+                                   Margin="0,0,0,15" Foreground="#009688" />
+                        
+                        <TextBlock Text="Connection String:" Margin="0,0,0,5" />
+                        <TextBox Text="{Binding TargetConnectionString, UpdateSourceTrigger=PropertyChanged}" 
+                                 Height="80" TextWrapping="Wrap" AcceptsReturn="True" Margin="0,0,0,15" />
 
-                    <TextBlock Text="{Binding TargetStatus}" HorizontalAlignment="Center" 
-                               FontWeight="SemiBold" Margin="0,0,0,20" />
+                        <TextBlock Text="{Binding TargetStatus}" HorizontalAlignment="Center" 
+                                   FontWeight="SemiBold" Margin="0,0,0,15" />
 
-                    <Button Padding="10,5" Foreground="White" BorderThickness="0">
-                        <Button.Style>
-                            <Style TargetType="Button">
-                                <Setter Property="Background" Value="#009688" />
-                                <Setter Property="Content" Value="TEST CONNECTION" />
-                                <Setter Property="Command" Value="{Binding TestTargetConnectionCommand}" />
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding IsTargetConnecting}" Value="True">
-                                        <Setter Property="Content" Value="CANCEL" />
-                                        <Setter Property="Command" Value="{Binding CancelTargetConnectionCommand}" />
-                                        <Setter Property="Background" Value="#F44336" />
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </Button.Style>
-                    </Button>
-                </StackPanel>
-            </Border>
-        </UniformGrid>
+                        <Button Padding="10,5" Foreground="White" BorderThickness="0" Margin="0,0,0,10">
+                            <Button.Style>
+                                <Style TargetType="Button">
+                                    <Setter Property="Background" Value="#009688" />
+                                    <Setter Property="Content" Value="TEST CONNECTION" />
+                                    <Setter Property="Command" Value="{Binding TestTargetConnectionCommand}" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsTargetConnecting}" Value="True">
+                                            <Setter Property="Content" Value="CANCEL" />
+                                            <Setter Property="Command" Value="{Binding CancelTargetConnectionCommand}" />
+                                            <Setter Property="Background" Value="#F44336" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                        </Button>
 
-        <!-- Navigation and Settings -->
-        <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="10">
-            <CheckBox Content="Remember Connections (Encrypted)" 
-                      IsChecked="{Binding RememberConnections}" 
-                      VerticalAlignment="Center" Margin="0,0,20,0" />
-            
-            <Button Command="{Binding ProceedToSelectionCommand}" 
-                    IsEnabled="{Binding IsTargetConnected}"
-                    Content="PROCEED TO SELECTION →" 
-                    Padding="20,10" Background="#3F51B5" Foreground="White" 
-                    BorderThickness="0" />
-        </StackPanel>
+                        <Button Content="INITIALIZE ENVIRONMENT" Command="{Binding InitializeEnvironmentCommand}" 
+                                Padding="10,5" Background="#FF9800" Foreground="White" BorderThickness="0">
+                            <Button.Style>
+                                <Style TargetType="Button">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                    <Style.Triggers>
+                                        <MultiDataTrigger>
+                                            <MultiDataTrigger.Conditions>
+                                                <Condition Binding="{Binding IsEnvironmentReady}" Value="False" />
+                                                <Condition Binding="{Binding IsTargetConnected}" Value="True" />
+                                                <Condition Binding="{Binding IsInitializing}" Value="False" />
+                                            </MultiDataTrigger.Conditions>
+                                            <Setter Property="Visibility" Value="Visible" />
+                                        </MultiDataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                        </Button>
+
+                        <ProgressBar IsIndeterminate="True" Height="5" Margin="0,10,0,0">
+                            <ProgressBar.Style>
+                                <Style TargetType="ProgressBar">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsInitializing}" Value="True">
+                                            <Setter Property="Visibility" Value="Visible" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </ProgressBar.Style>
+                        </ProgressBar>
+                        
+                        <TextBlock Text="{Binding InitializationStatus}" HorizontalAlignment="Center" 
+                                   FontSize="11" Foreground="#666666" Margin="0,5,0,0" TextWrapping="Wrap">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsInitializing}" Value="True">
+                                            <Setter Property="Visibility" Value="Visible" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </StackPanel>
+                </Border>
+            </UniformGrid>
+        </ScrollViewer>
+
+        <!-- Navigation Bar (Always Visible at Bottom) -->
+        <Border Grid.Row="1" Background="#EEEEEE" Margin="-10,10,-10,-10" Padding="20,10">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <CheckBox Content="Remember Connections (Encrypted)" 
+                          IsChecked="{Binding RememberConnections}" 
+                          VerticalAlignment="Center" Margin="0,0,20,0" />
+                
+                <Button Command="{Binding ProceedToSelectionCommand}" 
+                        Content="PROCEED TO SELECTION →" 
+                        Padding="20,10" Background="#3F51B5" Foreground="White" 
+                        BorderThickness="0" />
+            </StackPanel>
+        </Border>
     </Grid>
 </UserControl>

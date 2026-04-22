@@ -58,18 +58,28 @@ namespace dvmig.Providers
 
         public async Task<EntityMetadata?> GetEntityMetadataAsync(
             string entityLogicalName,
-            CancellationToken ct = default)
+            CancellationToken ct = default
+        )
         {
-            var response = await _client.ExecuteAsync(
-                new Microsoft.Xrm.Sdk.Messages.RetrieveEntityRequest
-                {
-                    LogicalName = entityLogicalName,
-                    EntityFilters = EntityFilters.Attributes
-                },
-                ct
-            ) as Microsoft.Xrm.Sdk.Messages.RetrieveEntityResponse;
+            try
+            {
+                var response = await _client.ExecuteAsync(
+                    new Microsoft.Xrm.Sdk.Messages.RetrieveEntityRequest
+                    {
+                        LogicalName = entityLogicalName,
+                        EntityFilters = EntityFilters.Attributes
+                    },
+                    ct
+                ) as Microsoft.Xrm.Sdk.Messages.RetrieveEntityResponse;
 
-            return response?.EntityMetadata;
+                return response?.EntityMetadata;
+            }
+            catch
+            {
+                // If entity doesn't exist, RetrieveEntityRequest throws.
+                // We return null to indicate missing metadata.
+                return null;
+            }
         }
 
         public async Task<Guid> CreateAsync(Entity entity,

@@ -18,7 +18,7 @@ This file contains foundational mandates, architectural decisions, and project-s
 - **Multi-Provider Pattern:** Separate providers for Dataverse (modern) and Legacy CRM (source).
 - **Parallel Processing:** Use `SemaphoreSlim` to control the degree of parallelism.
 - **Dependency Management:** Recursive "Fix and Retry" logic to resolve missing lookups on the fly.
-- **Date Preservation:** Use a custom entity (`dm_sourcedate`) and a `DatesPlugin` on the target side to override system timestamps.
+- **Date Preservation:** Use a custom entity (`dm_sourcedate`) and a `DMPlugin` on the target side to override system timestamps.
 - **Secure Settings:** Local connection strings are encrypted using Windows DPAPI (`ProtectedData`) with entropy "dvmig-entropy" and stored in `%AppData%\dvmig\settings.json`.
 
 ## Testing Environment

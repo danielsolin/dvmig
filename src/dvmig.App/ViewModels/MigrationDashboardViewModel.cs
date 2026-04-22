@@ -19,6 +19,8 @@ namespace dvmig.App.ViewModels
         private SyncProgressInfo _progress = new SyncProgressInfo();
 
         [ObservableProperty]
+        [NotifyCanExecuteChangedFor(nameof(StartMigrationCommand))]
+        [NotifyCanExecuteChangedFor(nameof(CancelMigrationCommand))]
         private bool _isMigrationRunning;
 
         public ObservableCollection<string> Logs { get; } =

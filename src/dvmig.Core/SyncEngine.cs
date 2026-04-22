@@ -128,9 +128,6 @@ namespace dvmig.Core
                         ct
                     );
                     recordProgress?.Report(success);
-                    
-                    progress?.Report(
-                        $"Synced {entity.LogicalName}:{entity.Id}");
                 }
                 catch (Exception ex)
                 {
@@ -192,6 +189,8 @@ namespace dvmig.Core
                     if (existing != null)
                     {
                         _idMappingCache[recordKey] = existing.Id;
+                        progress?.Report(
+                            $"Skipped {entity.LogicalName}:{entity.Id} (Already exists)");
 
                         return true;
                     }
@@ -226,11 +225,23 @@ namespace dvmig.Core
                 var success = await CreateWithFixStrategyAsync(
                     prepared,
                     options,
-                    ct);
+                    ct
+                );
 
                 if (success)
                 {
                     _idMappingCache[recordKey] = entity.Id;
+                    progress?.Report(
+                        $"Synced {entity.LogicalName}:{entity.Id}");
+
+                    if (options.PreserveDates)
+                    {
+                        await _dataPreservation.DeleteSourceDateAsync(
+                            entity.LogicalName,
+                            entity.Id,
+                            ct
+                        );
+                    }
                 }
 
                 return success;
@@ -345,6 +356,13 @@ namespace dvmig.Core
 
                 try
                 {
+                    if (options.PreserveDates)
+                    {
+                        // Recreate the source date record because it may have 
+                        // been deleted by the nested creation sync.
+                        await _dataPreservation.PreserveDatesAsync(entity, ct);
+                    }
+
                     await _target.UpdateAsync(entity, ct);
 
                     return true;
@@ -654,8 +672,10 @@ namespace dvmig.Core
             {
                 foreach (var key in metadata.Keys)
                 {
-                    var query = new QueryExpression(sourceEntity.LogicalName);
-                    query.ColumnSet = new ColumnSet(false);
+                    var query = new QueryExpression(sourceEntity.LogicalName)
+                    {
+                        ColumnSet = new ColumnSet(false)
+                    };
                     var hasAllParts = true;
 
                     foreach (var attrName in key.KeyAttributes)
@@ -767,8 +787,6 @@ namespace dvmig.Core
         {
             var forbidden = new[]
             {
-                "createdon",
-                "modifiedon",
                 "versionnumber",
                 "createdby",
                 "modifiedby",

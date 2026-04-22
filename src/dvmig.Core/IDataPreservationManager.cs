@@ -1,5 +1,7 @@
 using Microsoft.Xrm.Sdk;
+using Microsoft.Xrm.Sdk.Query;
 using dvmig.Providers;
+using System.Linq;
 
 namespace dvmig.Core
 {
@@ -7,7 +9,14 @@ namespace dvmig.Core
     {
         Task PreserveDatesAsync(
             Entity sourceEntity,
-            CancellationToken ct = default);
+            CancellationToken ct = default
+        );
+
+        Task DeleteSourceDateAsync(
+            string logicalName,
+            Guid entityId,
+            CancellationToken ct = default
+        );
     }
 
     public class DataPreservationManager : IDataPreservationManager
@@ -18,7 +27,8 @@ namespace dvmig.Core
 
         public DataPreservationManager(
             IDataverseProvider target,
-            Serilog.ILogger logger)
+            Serilog.ILogger logger
+        )
         {
             _target = target;
             _logger = logger;
@@ -105,6 +115,58 @@ namespace dvmig.Core
             }
 
             return sourceDate;
+        }
+
+        public async Task DeleteSourceDateAsync(
+            string logicalName,
+            Guid entityId,
+            CancellationToken ct = default
+        )
+        {
+            if (!await CheckSupportAsync(ct))
+            {
+                return;
+            }
+
+            try
+            {
+                var fetchXml = $@"
+                    <fetch version='1.0' output-format='xml-platform' 
+                           mapping='logical' distinct='false' count='1'>
+                      <entity name='dm_sourcedate'>
+                        <attribute name='dm_sourcedateid' />
+                        <filter type='and'>
+                          <condition attribute='dm_sourceentityid' 
+                            operator='eq' value='{entityId}' />
+                          <condition attribute='dm_sourceentitylogicalname' 
+                            operator='eq' value='{logicalName.ToLower()}' />
+                        </filter>
+                      </entity>
+                    </fetch>";
+
+                var result = await _target.RetrieveMultipleAsync(
+                    new FetchExpression(fetchXml),
+                    ct
+                );
+
+                if (result.Entities.Any())
+                {
+                    await _target.DeleteAsync(
+                        "dm_sourcedate",
+                        result.Entities[0].Id,
+                        ct
+                    );
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Warning(
+                    ex,
+                    "Failed to delete source date record for {Entity}:{Id}",
+                    logicalName,
+                    entityId
+                );
+            }
         }
     }
 }

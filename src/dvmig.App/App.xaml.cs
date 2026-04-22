@@ -34,6 +34,7 @@ namespace dvmig.App
             services.AddSingleton<INavigationService, NavigationService>();
             services.AddSingleton<IMigrationService, MigrationService>();
             services.AddSingleton<ISettingsService, SettingsService>();
+            services.AddSingleton<ISetupService, SetupService>();
 
             // Core Migration Logic
             services.AddTransient<IUserMapper>(provider =>
