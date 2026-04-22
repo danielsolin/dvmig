@@ -96,6 +96,7 @@ namespace dvmig.Core
             IEnumerable<Entity> entities,
             SyncOptions options,
             IProgress<string>? progress = null,
+            IProgress<bool>? recordProgress = null,
             CancellationToken ct = default)
         {
             _logger.Information("Starting sync of {Count} entities",
@@ -111,7 +112,8 @@ namespace dvmig.Core
 
                 try
                 {
-                    await SyncRecordAsync(entity, options, progress, ct);
+                    var success = await SyncRecordAsync(entity, options, progress, ct);
+                    recordProgress?.Report(success);
                     
                     progress?.Report(
                         $"Synced {entity.LogicalName}:{entity.Id}");
@@ -123,6 +125,8 @@ namespace dvmig.Core
                         "Error syncing {Entity}:{Id}",
                         entity.LogicalName,
                         entity.Id);
+
+                    recordProgress?.Report(false);
                 }
             }
 
@@ -320,11 +324,26 @@ namespace dvmig.Core
             {
                 _logger.Information(
                     "{Key}:{Id} already exists on target. " +
-                    "Treating as success.",
+                    "Attempting update to ensure all fields are set.",
                     entity.LogicalName,
                     entity.Id);
 
-                return true;
+                try
+                {
+                    await _target.UpdateAsync(entity, ct);
+
+                    return true;
+                }
+                catch (Exception updateEx)
+                {
+                    _logger.Warning(
+                        "Update failed for existing record {Key}:{Id}: {Msg}",
+                        entity.LogicalName,
+                        entity.Id,
+                        updateEx.Message);
+
+                    return true;
+                }
             }
 
             if (msg.Contains("does not exist"))
@@ -573,7 +592,8 @@ namespace dvmig.Core
                         _logger.Debug(
                             "Proactively stripping {Attr} for {Entity}",
                             attr.Key,
-                            entity.LogicalName);
+                            entity.LogicalName
+                        );
 
                         continue;
                     }
@@ -586,7 +606,8 @@ namespace dvmig.Core
                     {
                         target[attr.Key] = new EntityReference(
                             er.LogicalName,
-                            targetId);
+                            targetId
+                        );
 
                         continue;
                     }
@@ -633,7 +654,8 @@ namespace dvmig.Core
                         query.Criteria.AddCondition(
                             attrName,
                             ConditionOperator.Equal,
-                            sourceEntity[attrName]);
+                            sourceEntity[attrName]
+                        );
                     }
 
                     if (hasAllParts)
@@ -652,7 +674,8 @@ namespace dvmig.Core
                                 "Ambiguous alternate key match for {Entity}. " +
                                 "Found {Count} records. Skipping mapping.",
                                 sourceEntity.LogicalName,
-                                results.Entities.Count);
+                                results.Entities.Count
+                            );
                         }
                     }
                 }
@@ -668,7 +691,8 @@ namespace dvmig.Core
                 query.Criteria.AddCondition(
                     primaryAttr,
                     ConditionOperator.Equal,
-                    sourceEntity[primaryAttr]);
+                    sourceEntity[primaryAttr]
+                );
 
                 var results = await _target.RetrieveMultipleAsync(query, ct);
                 if (results.Entities.Count == 1)
@@ -713,8 +737,11 @@ namespace dvmig.Core
             }
             catch (Exception ex)
             {
-                _logger.Warning("Could not fetch metadata for {Entity}: {Msg}",
-                    logicalName, ex.Message);
+                _logger.Warning(
+                    "Could not fetch metadata for {Entity}: {Msg}",
+                    logicalName,
+                    ex.Message
+                );
 
                 return null;
             }
@@ -722,12 +749,19 @@ namespace dvmig.Core
 
         private bool IsForbiddenAttribute(string attrName)
         {
-            var forbidden = new[] {
-                "createdon", "modifiedon", "versionnumber",
-                "createdby", "modifiedby",
-                "createdonbehalfby", "modifiedonbehalfby",
-                "overriddencreatedon", "importsequencenumber",
-                "address1_addressid", "address2_addressid"
+            var forbidden = new[]
+            {
+                "createdon",
+                "modifiedon",
+                "versionnumber",
+                "createdby",
+                "modifiedby",
+                "createdonbehalfby",
+                "modifiedonbehalfby",
+                "overriddencreatedon",
+                "importsequencenumber",
+                "address1_addressid",
+                "address2_addressid"
             };
 
             return forbidden.Contains(attrName.ToLower());

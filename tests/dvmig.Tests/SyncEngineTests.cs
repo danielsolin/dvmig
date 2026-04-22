@@ -231,6 +231,45 @@ namespace dvmig.Tests
         }
 
         [Fact]
+        public async Task SyncRecordAsync_UpdateExisting_WhenCreateFailsWithDuplicate()
+        {
+            // Arrange
+            var accountId = Guid.NewGuid();
+            var account = new Entity("account", accountId)
+            {
+                ["name"] = "Existing Account",
+                ["telephone1"] = "12345"
+            };
+
+            int createCalls = 0;
+            _targetMock.Setup(t => t.CreateAsync(
+                It.IsAny<Entity>(),
+                It.IsAny<CancellationToken>()))
+                .Returns<Entity, CancellationToken>((e, ct) =>
+                {
+                    createCalls++;
+                    throw new Exception("A record with this ID already exists.");
+                });
+
+            _targetMock.Setup(t => t.UpdateAsync(
+                It.Is<Entity>(e => e.Id == accountId),
+                It.IsAny<CancellationToken>()))
+                .Returns(Task.CompletedTask);
+
+            var options = new SyncOptions { SkipExisting = false };
+
+            // Act
+            var result = await _engine.SyncRecordAsync(account, options);
+
+            // Assert
+            Assert.True(result);
+            Assert.Equal(1, createCalls);
+            _targetMock.Verify(t => t.UpdateAsync(
+                It.Is<Entity>(e => (string)e["telephone1"] == "12345"),
+                It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [Fact]
         public async Task SyncRecordAsync_Retry_OnServiceProtectionLimit()
         {
             // Arrange

@@ -40,8 +40,9 @@ namespace dvmig.App.ViewModels
             if (_migrationService.SourceProvider == null ||
                 _migrationService.TargetProvider == null)
             {
-                Logs.Insert(0,
-                    "Error: Source or Target provider not connected.");
+                Logs.Add(
+                    "Error: Source or Target provider not connected."
+                );
 
                 return;
             }
@@ -51,7 +52,9 @@ namespace dvmig.App.ViewModels
 
             IProgress<string> progressReporter = new Progress<string>(msg =>
             {
-                Logs.Insert(0, $"[{DateTime.Now:HH:mm:ss}] {msg}");
+                Logs.Add(
+                    $"[{DateTime.Now:HH:mm:ss}] {msg}"
+                );
             });
 
             try
@@ -85,6 +88,17 @@ namespace dvmig.App.ViewModels
                     Progress.TotalRecords = sourceRecords.Entities.Count;
                     Progress.Update(0, 0, 0);
 
+                    var processedCount = 0;
+                    var successCount = 0;
+                    var failureCount = 0;
+
+                    var recordProgress = new Progress<bool>(success =>
+                    {
+                        processedCount++;
+                        if (success) successCount++; else failureCount++;
+                        Progress.Update(processedCount, successCount, failureCount);
+                    });
+
                     await _syncEngine.SyncAsync(
                         sourceRecords.Entities,
                         new SyncOptions
@@ -92,6 +106,7 @@ namespace dvmig.App.ViewModels
                             StripMissingDependencies = true
                         },
                         progressReporter,
+                        recordProgress,
                         _cts.Token);
                 }
 
@@ -119,7 +134,7 @@ namespace dvmig.App.ViewModels
             _cts?.Cancel();
 
             var now = DateTime.Now.ToString("HH:mm:ss");
-            Logs.Insert(0, $"[{now}] Cancellation requested...");
+            Logs.Add($"[{now}] Cancellation requested...");
         }
 
         private bool CanStartMigration() => !IsMigrationRunning;

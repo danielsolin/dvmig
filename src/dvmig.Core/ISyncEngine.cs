@@ -8,6 +8,7 @@ namespace dvmig.Core
             IEnumerable<Entity> entities,
             SyncOptions options,
             IProgress<string>? progress = null,
+            IProgress<bool>? recordProgress = null,
             CancellationToken cancellationToken = default);
 
         Task<bool> SyncRecordAsync(
