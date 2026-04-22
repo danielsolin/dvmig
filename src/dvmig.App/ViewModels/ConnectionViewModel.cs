@@ -82,7 +82,8 @@ namespace dvmig.App.ViewModels
                 var result = await _migrationService.ConnectSourceAsync(
                     SourceConnectionString,
                     isLegacy,
-                    _sourceCts.Token);
+                    _sourceCts.Token
+                );
 
                 IsSourceConnected = result;
                 SourceStatus = result ? "Connected" : "Failed";
@@ -114,7 +115,8 @@ namespace dvmig.App.ViewModels
                 var result = await _migrationService.ConnectTargetAsync(
                     TargetConnectionString,
                     false,
-                    _targetCts.Token);
+                    _targetCts.Token
+                );
 
                 IsTargetConnected = result;
                 TargetStatus = result ? "Connected" : "Failed";
@@ -137,19 +139,23 @@ namespace dvmig.App.ViewModels
         {
             if (RememberConnections)
             {
-                _settingsService.SaveSettings(new UserSettings
-                {
-                    SourceConnectionString = SourceConnectionString,
-                    TargetConnectionString = TargetConnectionString,
-                    RememberConnections = true
-                });
+                _settingsService.SaveSettings(
+                    new UserSettings
+                    {
+                        SourceConnectionString = SourceConnectionString,
+                        TargetConnectionString = TargetConnectionString,
+                        RememberConnections = true
+                    }
+                );
             }
             else
             {
-                _settingsService.SaveSettings(new UserSettings
-                {
-                    RememberConnections = false
-                });
+                _settingsService.SaveSettings(
+                    new UserSettings
+                    {
+                        RememberConnections = false
+                    }
+                );
             }
 
             _navigationService.NavigateTo<EntitySelectionViewModel>();

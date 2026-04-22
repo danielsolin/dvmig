@@ -34,7 +34,8 @@ namespace dvmig.Tests
 
             _userMapperMock.Setup(m => m.MapUserAsync(
                 It.IsAny<EntityReference>(),
-                It.IsAny<CancellationToken>()))
+                It.IsAny<CancellationToken>()
+            ))
                 .ReturnsAsync((EntityReference r, CancellationToken ct) => r);
         }
 
@@ -50,13 +51,17 @@ namespace dvmig.Tests
             int callCount = 0;
             _targetMock.Setup(t => t.CreateAsync(
                 It.Is<Entity>(e => e.LogicalName == "account"),
-                It.IsAny<CancellationToken>()))
+                It.IsAny<CancellationToken>()
+            ))
                 .Returns<Entity, CancellationToken>((e, ct) =>
                 {
                     callCount++;
                     if (e.Attributes.Contains("readonlyfield"))
+                    {
                         throw new Exception(
-                            "The property 'readonlyfield' cannot be modified.");
+                            "The property 'readonlyfield' cannot be modified."
+                        );
+                    }
 
                     return Task.FromResult(accountId);
                 });
@@ -88,24 +93,33 @@ namespace dvmig.Tests
             int contactCreateCalls = 0;
             _targetMock.Setup(t => t.CreateAsync(
                 It.Is<Entity>(e => e.LogicalName == "contact"),
-                It.IsAny<CancellationToken>()))
+                It.IsAny<CancellationToken>()
+            ))
                 .Returns<Entity, CancellationToken>((e, ct) =>
                 {
                     contactCreateCalls++;
                     if (contactCreateCalls == 1)
+                    {
                         throw new Exception(
-                            "account with Id=" + accountId + " does not exist");
+                            "account with Id=" + accountId + " does not exist"
+                        );
+                    }
 
                     return Task.FromResult(contactId);
                 });
 
-            _sourceMock.Setup(s => s.RetrieveAsync("account", accountId,
-                It.IsAny<string[]>(), It.IsAny<CancellationToken>()))
+            _sourceMock.Setup(s => s.RetrieveAsync(
+                "account",
+                accountId,
+                It.IsAny<string[]>(),
+                It.IsAny<CancellationToken>()
+            ))
                 .ReturnsAsync(account);
 
             _targetMock.Setup(t => t.CreateAsync(
                 It.Is<Entity>(e => e.LogicalName == "account"),
-                It.IsAny<CancellationToken>()))
+                It.IsAny<CancellationToken>()
+            ))
                 .ReturnsAsync(accountId);
 
             var options = new SyncOptions { SkipExisting = false };
@@ -116,9 +130,13 @@ namespace dvmig.Tests
             // Assert
             Assert.True(result);
             Assert.Equal(2, contactCreateCalls);
-            _targetMock.Verify(t => t.CreateAsync(
-                It.Is<Entity>(e => e.LogicalName == "account"),
-                It.IsAny<CancellationToken>()), Times.Once);
+            _targetMock.Verify(
+                t => t.CreateAsync(
+                    It.Is<Entity>(e => e.LogicalName == "account"),
+                    It.IsAny<CancellationToken>()
+                ),
+                Times.Once
+            );
         }
 
         [Fact]
@@ -146,12 +164,14 @@ namespace dvmig.Tests
 
             _targetMock.Setup(t => t.GetEntityMetadataAsync(
                 relName,
-                It.IsAny<CancellationToken>()))
+                It.IsAny<CancellationToken>()
+            ))
                 .ReturnsAsync(metadata);
 
             _targetMock.Setup(t => t.ExecuteAsync(
                 It.IsAny<AssociateRequest>(),
-                It.IsAny<CancellationToken>()))
+                It.IsAny<CancellationToken>()
+            ))
                 .ReturnsAsync(new AssociateResponse());
 
             var options = new SyncOptions { SkipExisting = false };
@@ -159,13 +179,18 @@ namespace dvmig.Tests
             // Act
             var result = await _engine.SyncRecordAsync(
                 intersectEntity,
-                options);
+                options
+            );
 
             // Assert
             Assert.True(result);
-            _targetMock.Verify(t => t.ExecuteAsync(
-                It.IsAny<AssociateRequest>(),
-                It.IsAny<CancellationToken>()), Times.Once);
+            _targetMock.Verify(
+                t => t.ExecuteAsync(
+                    It.IsAny<AssociateRequest>(),
+                    It.IsAny<CancellationToken>()
+                ),
+                Times.Once
+            );
         }
 
         [Fact]
@@ -182,12 +207,14 @@ namespace dvmig.Tests
 
             _userMapperMock.Setup(m => m.MapUserAsync(
                 sourceUserRef,
-                It.IsAny<CancellationToken>()))
+                It.IsAny<CancellationToken>()
+            ))
                 .ReturnsAsync(targetUserRef);
 
             _targetMock.Setup(t => t.CreateAsync(
                 It.IsAny<Entity>(),
-                It.IsAny<CancellationToken>()))
+                It.IsAny<CancellationToken>()
+            ))
                 .ReturnsAsync(account.Id);
 
             var options = new SyncOptions { SkipExisting = false };
@@ -196,10 +223,14 @@ namespace dvmig.Tests
             await _engine.SyncRecordAsync(account, options);
 
             // Assert
-            _targetMock.Verify(t => t.CreateAsync(
-                It.Is<Entity>(e =>
-                    ((EntityReference)e["ownerid"]).Id == targetUserId),
-                It.IsAny<CancellationToken>()), Times.Once);
+            _targetMock.Verify(
+                t => t.CreateAsync(
+                    It.Is<Entity>(e =>
+                        ((EntityReference)e["ownerid"]).Id == targetUserId),
+                    It.IsAny<CancellationToken>()
+                ),
+                Times.Once
+            );
         }
 
         [Fact]
@@ -212,7 +243,8 @@ namespace dvmig.Tests
 
             _targetMock.Setup(t => t.CreateAsync(
                 It.IsAny<Entity>(),
-                It.IsAny<CancellationToken>()))
+                It.IsAny<CancellationToken>()
+            ))
                 .ReturnsAsync(account.Id);
 
             var options = new SyncOptions
@@ -225,9 +257,13 @@ namespace dvmig.Tests
             await _engine.SyncRecordAsync(account, options);
 
             // Assert
-            _dataPreservationMock.Verify(p => p.PreserveDatesAsync(
-                account,
-                It.IsAny<CancellationToken>()), Times.Once);
+            _dataPreservationMock.Verify(
+                p => p.PreserveDatesAsync(
+                    account,
+                    It.IsAny<CancellationToken>()
+                ),
+                Times.Once
+            );
         }
 
         [Fact]
@@ -244,16 +280,19 @@ namespace dvmig.Tests
             int createCalls = 0;
             _targetMock.Setup(t => t.CreateAsync(
                 It.IsAny<Entity>(),
-                It.IsAny<CancellationToken>()))
+                It.IsAny<CancellationToken>()
+            ))
                 .Returns<Entity, CancellationToken>((e, ct) =>
                 {
                     createCalls++;
+
                     throw new Exception("A record with this ID already exists.");
                 });
 
             _targetMock.Setup(t => t.UpdateAsync(
                 It.Is<Entity>(e => e.Id == accountId),
-                It.IsAny<CancellationToken>()))
+                It.IsAny<CancellationToken>()
+            ))
                 .Returns(Task.CompletedTask);
 
             var options = new SyncOptions { SkipExisting = false };
@@ -264,9 +303,13 @@ namespace dvmig.Tests
             // Assert
             Assert.True(result);
             Assert.Equal(1, createCalls);
-            _targetMock.Verify(t => t.UpdateAsync(
-                It.Is<Entity>(e => (string)e["telephone1"] == "12345"),
-                It.IsAny<CancellationToken>()), Times.Once);
+            _targetMock.Verify(
+                t => t.UpdateAsync(
+                    It.Is<Entity>(e => (string)e["telephone1"] == "12345"),
+                    It.IsAny<CancellationToken>()
+                ),
+                Times.Once
+            );
         }
 
         [Fact]
@@ -282,15 +325,19 @@ namespace dvmig.Tests
             int callCount = 0;
             _targetMock.Setup(t => t.CreateAsync(
                 It.IsAny<Entity>(),
-                It.IsAny<CancellationToken>()))
+                It.IsAny<CancellationToken>()
+            ))
                 .Returns<Entity, CancellationToken>((e, ct) =>
                 {
                     callCount++;
 
                     // Simulate Service Protection Limit error
                     if (callCount == 1)
+                    {
                         throw new Exception(
-                            "Rate limit exceeded. Error Code: 0x8004410d");
+                            "Rate limit exceeded. Error Code: 0x8004410d"
+                        );
+                    }
 
                     return Task.FromResult(accountId);
                 });

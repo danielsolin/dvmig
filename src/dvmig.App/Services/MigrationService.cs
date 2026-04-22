@@ -7,14 +7,16 @@ namespace dvmig.App.Services
     public interface IMigrationService
     {
         Task<bool> ConnectSourceAsync(
-            string connectionString, 
-            bool isLegacy, 
-            CancellationToken ct = default);
+            string connectionString,
+            bool isLegacy,
+            CancellationToken ct = default
+        );
 
         Task<bool> ConnectTargetAsync(
-            string connectionString, 
-            bool isLegacy, 
-            CancellationToken ct = default);
+            string connectionString,
+            bool isLegacy,
+            CancellationToken ct = default
+        );
 
         Task<List<EntityMetadata>> GetSourceEntitiesAsync(
             CancellationToken ct = default);
@@ -32,25 +34,32 @@ namespace dvmig.App.Services
         public List<string> SelectedEntities { get; } = new List<string>();
 
         public async Task<bool> ConnectSourceAsync(
-            string connectionString, 
-            bool isLegacy, 
-            CancellationToken ct = default)
+            string connectionString,
+            bool isLegacy,
+            CancellationToken ct = default
+        )
         {
             try
             {
                 SourceProvider = isLegacy
-                    ? await Task.Run(() => 
-                    {
-                        ct.ThrowIfCancellationRequested();
-                        
-                        return new LegacyCrmProvider(connectionString);
-                    }, ct)
-                    : await Task.Run(() => 
-                    {
-                        ct.ThrowIfCancellationRequested();
-                        
-                        return new DataverseProvider(connectionString);
-                    }, ct);
+                    ? await Task.Run(
+                        () =>
+                        {
+                            ct.ThrowIfCancellationRequested();
+
+                            return new LegacyCrmProvider(connectionString);
+                        },
+                        ct
+                    )
+                    : await Task.Run(
+                        () =>
+                        {
+                            ct.ThrowIfCancellationRequested();
+
+                            return new DataverseProvider(connectionString);
+                        },
+                        ct
+                    );
 
                 return true;
             }
@@ -65,25 +74,32 @@ namespace dvmig.App.Services
         }
 
         public async Task<bool> ConnectTargetAsync(
-            string connectionString, 
-            bool isLegacy, 
-            CancellationToken ct = default)
+            string connectionString,
+            bool isLegacy,
+            CancellationToken ct = default
+        )
         {
             try
             {
                 TargetProvider = isLegacy
-                    ? await Task.Run(() => 
-                    {
-                        ct.ThrowIfCancellationRequested();
-                        
-                        return new LegacyCrmProvider(connectionString);
-                    }, ct)
-                    : await Task.Run(() => 
-                    {
-                        ct.ThrowIfCancellationRequested();
-                        
-                        return new DataverseProvider(connectionString);
-                    }, ct);
+                    ? await Task.Run(
+                        () =>
+                        {
+                            ct.ThrowIfCancellationRequested();
+
+                            return new LegacyCrmProvider(connectionString);
+                        },
+                        ct
+                    )
+                    : await Task.Run(
+                        () =>
+                        {
+                            ct.ThrowIfCancellationRequested();
+
+                            return new DataverseProvider(connectionString);
+                        },
+                        ct
+                    );
 
                 return true;
             }
@@ -123,10 +139,14 @@ namespace dvmig.App.Services
                 .ExecuteAsync(request, ct);
 
             return response.EntityMetadata
-                .Where(e => e.IsCustomEntity == true ||
-                            IsStandardEntity(e.LogicalName))
-                .OrderBy(e => e.DisplayName?.UserLocalizedLabel?.Label ??
-                              e.LogicalName)
+                .Where(
+                    e => e.IsCustomEntity == true ||
+                         IsStandardEntity(e.LogicalName)
+                )
+                .OrderBy(
+                    e => e.DisplayName?.UserLocalizedLabel?.Label ??
+                         e.LogicalName
+                )
                 .ToList();
         }
 
@@ -134,7 +154,11 @@ namespace dvmig.App.Services
         {
             var standard = new[]
             {
-                "account", "contact", "lead", "opportunity", "task"
+                "account",
+                "contact",
+                "lead",
+                "opportunity",
+                "task"
             };
 
             return standard.Contains(logicalName.ToLower());

@@ -21,7 +21,10 @@ namespace dvmig.App
             Log.Logger = new LoggerConfiguration()
                 .MinimumLevel.Debug()
                 .WriteTo.Debug()
-                .WriteTo.File(logPath, rollingInterval: RollingInterval.Day)
+                .WriteTo.File(
+                    logPath,
+                    rollingInterval: RollingInterval.Day
+                )
                 .CreateLogger();
 
             var services = new ServiceCollection();
@@ -41,7 +44,8 @@ namespace dvmig.App
                 return new UserMapper(
                     migrationService.SourceProvider!,
                     migrationService.TargetProvider!,
-                    provider.GetRequiredService<ILogger>());
+                    provider.GetRequiredService<ILogger>()
+                );
             });
 
             services.AddTransient<IDataPreservationManager>(provider =>
@@ -51,7 +55,8 @@ namespace dvmig.App
 
                 return new DataPreservationManager(
                     migrationService.TargetProvider!,
-                    provider.GetRequiredService<ILogger>());
+                    provider.GetRequiredService<ILogger>()
+                );
             });
 
             services.AddTransient<ISyncEngine>(provider =>
@@ -64,7 +69,8 @@ namespace dvmig.App
                     migrationService.TargetProvider!,
                     provider.GetRequiredService<IUserMapper>(),
                     provider.GetRequiredService<IDataPreservationManager>(),
-                    provider.GetRequiredService<ILogger>());
+                    provider.GetRequiredService<ILogger>()
+                );
             });
 
             // ViewModels

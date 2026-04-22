@@ -58,10 +58,12 @@ namespace dvmig.Core
 
             _logger.Debug("Attempting to map source user {Id}", sourceUser.Id);
 
-            var sourceUserData = await _source.RetrieveAsync("systemuser",
+            var sourceUserData = await _source.RetrieveAsync(
+                "systemuser",
                 sourceUser.Id,
                 new[] { "internalemailaddress", "domainname", "fullname" },
-                ct);
+                ct
+            );
 
             if (sourceUserData == null)
             {
@@ -77,7 +79,8 @@ namespace dvmig.Core
                 var mapped = await FindTargetUserAsync(
                     "internalemailaddress",
                     email,
-                ct);
+                    ct
+                );
 
                 if (mapped != null)
                 {
@@ -93,8 +96,8 @@ namespace dvmig.Core
             {
                 var mapped = await FindTargetUserAsync(
                     "domainname",
-                   domainName,
-                   ct
+                    domainName,
+                    ct
                 );
 
                 if (mapped != null)

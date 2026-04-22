@@ -95,8 +95,16 @@ namespace dvmig.App.ViewModels
                     var recordProgress = new Progress<bool>(success =>
                     {
                         processedCount++;
-                        if (success) successCount++; else failureCount++;
-                        Progress.Update(processedCount, successCount, failureCount);
+                        if (success)
+                            successCount++;
+                        else
+                            failureCount++;
+
+                        Progress.Update(
+                            processedCount,
+                            successCount,
+                            failureCount
+                        );
                     });
 
                     await _syncEngine.SyncAsync(
@@ -107,7 +115,8 @@ namespace dvmig.App.ViewModels
                         },
                         progressReporter,
                         recordProgress,
-                        _cts.Token);
+                        _cts.Token
+                    );
                 }
 
                 progressReporter.Report("Migration finished.");

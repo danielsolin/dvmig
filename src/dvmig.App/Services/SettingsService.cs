@@ -113,7 +113,8 @@ namespace dvmig.App.Services
                 var encrypted = ProtectedData.Protect(
                     data,
                     Entropy,
-                    DataProtectionScope.CurrentUser);
+                    DataProtectionScope.CurrentUser
+                );
 
                 return Convert.ToBase64String(encrypted);
             }
@@ -136,7 +137,8 @@ namespace dvmig.App.Services
                 var decrypted = ProtectedData.Unprotect(
                     bytes,
                     Entropy,
-                    DataProtectionScope.CurrentUser);
+                    DataProtectionScope.CurrentUser
+                );
 
                 return Encoding.UTF8.GetString(decrypted);
             }

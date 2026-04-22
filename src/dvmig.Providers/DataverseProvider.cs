@@ -37,7 +37,11 @@ namespace dvmig.Providers
                     new ColumnSet(columns);
 
                 return await _client.RetrieveAsync(
-                    entityLogicalName, id, columnSet, ct);
+                    entityLogicalName,
+                    id,
+                    columnSet,
+                    ct
+                );
             }
             catch (System.ServiceModel.FaultException ex)
             {
@@ -61,7 +65,9 @@ namespace dvmig.Providers
                 {
                     LogicalName = entityLogicalName,
                     EntityFilters = EntityFilters.Attributes
-                }, ct) as Microsoft.Xrm.Sdk.Messages.RetrieveEntityResponse;
+                },
+                ct
+            ) as Microsoft.Xrm.Sdk.Messages.RetrieveEntityResponse;
 
             return response?.EntityMetadata;
         }

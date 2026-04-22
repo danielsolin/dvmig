@@ -10,15 +10,7 @@ This file contains foundational mandates, architectural decisions, and project-s
 ## Foundational Mandates
 1.  **Legacy Support:** The tool MUST maintain compatibility with legacy CRM OnPrem platforms (including AD/ADFS/IFD authentication).
 2.  **Graphical UI:** The UI MUST remain graphical and inviting for non-technical users (WPF-based).
-3.  **Code Style:** 
-    - No line should exceed **80 characters** in width.
-    - Follow standard C# naming conventions and clean architecture principles.
-    - No one-line if-statements; minimum is two lines (even without brackets).
-    - Always one empty line before return statements, unless the return is the 
-      single statement of an if-block.
-    - For lists (like method arguments or initializers), either use a single line 
-      (if under 80 chars) or strictly one per line. No mixing.
-    - ALWAYS check for and remove unused usings before committing.
+3.  **Code Style:** Adhere strictly to the rules defined in the global `GEMINI.md`.
 4.  **Resiliency:** Use `Polly` for retries on transient network errors or Dataverse throttling (including high-precision `8004410d` handling).
 5.  **Logging:** Use `Serilog` for structured logging (file + UI sinks).
 

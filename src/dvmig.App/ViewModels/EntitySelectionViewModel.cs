@@ -55,9 +55,12 @@ namespace dvmig.App.ViewModels
                             meta.DisplayName?.UserLocalizedLabel?.Label ??
                             meta.LogicalName;
 
-                        Entities.Add(new EntitySelectionItem(
-                            meta.LogicalName,
-                            displayName));
+                        Entities.Add(
+                            new EntitySelectionItem(
+                                meta.LogicalName,
+                                displayName
+                            )
+                        );
                     }
                 });
             }
@@ -69,7 +72,8 @@ namespace dvmig.App.ViewModels
                         $"Failed to load metadata: {ex.Message}",
                         "Error",
                         MessageBoxButton.OK,
-                        MessageBoxImage.Error);
+                        MessageBoxImage.Error
+                    );
                 });
             }
             finally

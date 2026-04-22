@@ -54,12 +54,17 @@ namespace dvmig.Core
                     GetRetryDelay,
                     (ex, time, count, ctx) =>
                     {
-                        _logger.Warning(ex, "Throttling or transient error. " +
+                        _logger.Warning(
+                            ex,
+                            "Throttling or transient error. " +
                             "Retry {Count} in {Time}ms",
-                            count, time.TotalMilliseconds);
+                            count,
+                            time.TotalMilliseconds
+                        );
 
                         return Task.CompletedTask;
-                    });
+                    }
+                );
         }
 
         private bool IsTransientError(Exception ex)
@@ -82,8 +87,10 @@ namespace dvmig.Core
         {
             if (ex.Message.Contains("8004410d"))
             {
-                _logger.Information("Service Protection Limit reached. " +
-                    "Applying throttled backoff.");
+                _logger.Information(
+                    "Service Protection Limit reached. " +
+                    "Applying throttled backoff."
+                );
 
                 return TimeSpan.FromSeconds(
                     Math.Min(Math.Pow(2, retryCount), 30));
@@ -99,8 +106,10 @@ namespace dvmig.Core
             IProgress<bool>? recordProgress = null,
             CancellationToken ct = default)
         {
-            _logger.Information("Starting sync of {Count} entities",
-                entities.Count());
+            _logger.Information(
+                "Starting sync of {Count} entities",
+                entities.Count()
+            );
             _recursionTracker.Clear();
 
             progress?.Report(
@@ -112,7 +121,12 @@ namespace dvmig.Core
 
                 try
                 {
-                    var success = await SyncRecordAsync(entity, options, progress, ct);
+                    var success = await SyncRecordAsync(
+                        entity,
+                        options,
+                        progress,
+                        ct
+                    );
                     recordProgress?.Report(success);
                     
                     progress?.Report(
@@ -124,7 +138,8 @@ namespace dvmig.Core
                         ex,
                         "Error syncing {Entity}:{Id}",
                         entity.LogicalName,
-                        entity.Id);
+                        entity.Id
+                    );
 
                     recordProgress?.Report(false);
                 }
@@ -340,7 +355,8 @@ namespace dvmig.Core
                         "Update failed for existing record {Key}:{Id}: {Msg}",
                         entity.LogicalName,
                         entity.Id,
-                        updateEx.Message);
+                        updateEx.Message
+                    );
 
                     return true;
                 }

@@ -36,8 +36,13 @@ namespace dvmig.Providers
                 var columnSet = columns == null ? new ColumnSet(true) :
                     new ColumnSet(columns);
 
-                return Task.FromResult<Entity?>(_client.Retrieve(
-                    entityLogicalName, id, columnSet));
+                return Task.FromResult<Entity?>(
+                    _client.Retrieve(
+                        entityLogicalName,
+                        id,
+                        columnSet
+                    )
+                );
             }
             catch (System.ServiceModel.FaultException ex)
             {
@@ -60,7 +65,8 @@ namespace dvmig.Providers
                 {
                     LogicalName = entityLogicalName,
                     EntityFilters = EntityFilters.Attributes
-                }) as Microsoft.Xrm.Sdk.Messages.RetrieveEntityResponse;
+                }
+            ) as Microsoft.Xrm.Sdk.Messages.RetrieveEntityResponse;
 
             return Task.FromResult(response?.EntityMetadata);
         }
@@ -75,6 +81,7 @@ namespace dvmig.Providers
         public Task UpdateAsync(Entity entity, CancellationToken ct = default)
         {
             _client.Update(entity);
+
             return Task.CompletedTask;
         }
 
@@ -84,6 +91,7 @@ namespace dvmig.Providers
             CancellationToken ct = default)
         {
             _client.Delete(entityLogicalName, id);
+
             return Task.CompletedTask;
         }
 
@@ -95,7 +103,12 @@ namespace dvmig.Providers
             CancellationToken ct = default)
         {
             _client.Associate(
-                entityLogicalName, entityId, relationship, relatedEntities);
+                entityLogicalName,
+                entityId,
+                relationship,
+                relatedEntities
+            );
+
             return Task.CompletedTask;
         }
 
