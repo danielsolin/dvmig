@@ -25,6 +25,8 @@ namespace dvmig.App.ViewModels
         public ObservableCollection<EntitySelectionItem> Entities { get; } =
             new ObservableCollection<EntitySelectionItem>();
 
+        public ICollectionView SelectedEntitiesView { get; }
+
         public EntitySelectionViewModel(
             INavigationService navigationService,
             IMigrationService migrationService)
@@ -34,6 +36,9 @@ namespace dvmig.App.ViewModels
 
             _entitiesView = CollectionViewSource.GetDefaultView(Entities);
             _entitiesView.Filter = FilterEntities;
+
+            SelectedEntitiesView = new ListCollectionView(Entities);
+            SelectedEntitiesView.Filter = FilterSelectedEntities;
 
             // Load on start
             _ = LoadEntitiesAsync();
@@ -99,6 +104,12 @@ namespace dvmig.App.ViewModels
                 return false;
             }
 
+            // Mutual exclusivity: only show if NOT selected
+            if (item.IsSelected)
+            {
+                return false;
+            }
+
             if (string.IsNullOrWhiteSpace(SearchText))
             {
                 return true;
@@ -111,9 +122,25 @@ namespace dvmig.App.ViewModels
                    item.LogicalName.Contains(search, comparison);
         }
 
+        private bool FilterSelectedEntities(object obj)
+        {
+            if (obj is not EntitySelectionItem item)
+            {
+                return false;
+            }
+
+            return item.IsSelected;
+        }
+
         partial void OnSearchTextChanged(string value)
         {
             _entitiesView.Refresh();
+        }
+
+        [RelayCommand]
+        private void ToggleSelection(EntitySelectionItem item)
+        {
+            item.IsSelected = !item.IsSelected;
         }
 
         [RelayCommand(CanExecute = nameof(CanStartMigration))]
@@ -132,6 +159,8 @@ namespace dvmig.App.ViewModels
         {
             if (e.PropertyName == nameof(EntitySelectionItem.IsSelected))
             {
+                _entitiesView.Refresh();
+                SelectedEntitiesView.Refresh();
                 StartMigrationCommand.NotifyCanExecuteChanged();
             }
         }
