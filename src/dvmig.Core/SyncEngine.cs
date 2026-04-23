@@ -68,6 +68,12 @@ namespace dvmig.Core
                 );
         }
 
+        /// <summary>
+        /// Determines if an exception represents a transient error that 
+        /// should trigger a retry attempt (e.g., throttling, timeout).
+        /// </summary>
+        /// <param name="ex">The exception to evaluate.</param>
+        /// <returns>True if the error is transient; otherwise, false.</returns>
         private bool IsTransientError(Exception ex)
         {
             var msg = ex.Message.ToLower();
@@ -81,10 +87,20 @@ namespace dvmig.Core
                    msg.Contains("timeout");
         }
 
+        /// <summary>
+        /// Calculates the delay before the next retry attempt, applying 
+        /// exponential backoff. Caps the delay for Dataverse Service 
+        /// Protection Limits (8004410d).
+        /// </summary>
+        /// <param name="retryCount">The current retry attempt number.</param>
+        /// <param name="ex">The exception that triggered the retry.</param>
+        /// <param name="ctx">The Polly execution context.</param>
+        /// <returns>The duration to wait before retrying.</returns>
         private TimeSpan GetRetryDelay(
             int retryCount,
             Exception ex,
-            Context ctx)
+            Context ctx
+        )
         {
             if (ex.Message.Contains("8004410d"))
             {
@@ -101,12 +117,14 @@ namespace dvmig.Core
             return TimeSpan.FromSeconds(Math.Pow(2, retryCount));
         }
 
+        /// <inheritdoc />
         public async Task SyncAsync(
             IEnumerable<Entity> entities,
             SyncOptions options,
             IProgress<string>? progress = null,
             IProgress<bool>? recordProgress = null,
-            CancellationToken ct = default)
+            CancellationToken ct = default
+        )
         {
             _logger.Information(
                 "Starting sync of {Count} entities",
@@ -150,11 +168,13 @@ namespace dvmig.Core
             progress?.Report("Migration completed successfully.");
         }
 
+        /// <inheritdoc />
         public async Task<bool> SyncRecordAsync(
             Entity entity,
             SyncOptions options,
             IProgress<string>? progress = null,
-            CancellationToken ct = default)
+            CancellationToken ct = default
+        )
         {
             var recordKey = $"{entity.LogicalName}:{entity.Id}";
             var depth = _recursionTracker.AddOrUpdate(
@@ -372,12 +392,24 @@ namespace dvmig.Core
                 }
                 catch (Exception updateEx)
                 {
+                    var updateMsg = updateEx.Message.ToLower();
+
                     // If update fails due to state/status, fall through to 
                     // the status handling logic.
-                    if (updateEx.Message.ToLower().Contains(
-                        "is not a valid status code"))
+                    if (updateMsg.Contains("is not a valid status code"))
                     {
                         return await HandleStatusTransitionAsync(
+                            entity,
+                            options,
+                            ct
+                        );
+                    }
+
+                    if (updateMsg.Contains("conflicted with the foreign key constraint") ||
+                        updateMsg.Contains("conflicted with a constraint"))
+                    {
+                        return await ResolveSqlDependencyAsync(
+                            updateEx.Message,
                             entity,
                             options,
                             ct
@@ -391,7 +423,7 @@ namespace dvmig.Core
                         updateEx.Message
                     );
 
-                    return true;
+                    return false;
                 }
             }
 
@@ -404,6 +436,16 @@ namespace dvmig.Core
             {
                 return await ResolveMissingDependencyAsync(
                     ex,
+                    entity,
+                    options,
+                    ct
+                );
+            }
+
+            if (msg.Contains("conflicted with the foreign key constraint"))
+            {
+                return await ResolveSqlDependencyAsync(
+                    ex.Message,
                     entity,
                     options,
                     ct
@@ -573,6 +615,114 @@ namespace dvmig.Core
             return null;
         }
 
+        private async Task<bool> ResolveSqlDependencyAsync(
+            string message,
+            Entity entity,
+            SyncOptions options,
+            CancellationToken ct
+        )
+        {
+            // Extract column name from message (e.g., column 'TransactionCurrencyId')
+            var match = Regex.Match(message, @"column '(\w+)'");
+            if (!match.Success)
+            {
+                return false;
+            }
+
+            var columnName = match.Groups[1].Value.ToLower();
+
+            // Find the attribute in the entity
+            var attr = entity.Attributes
+                .FirstOrDefault(a => a.Key.ToLower() == columnName);
+
+            if (attr.Value is EntityReference er)
+            {
+                _logger.Information(
+                    "Detected missing SQL dependency for {Attr} on {Entity}. " +
+                    "Attempting to resolve {DepType}:{DepId}",
+                    columnName,
+                    entity.LogicalName,
+                    er.LogicalName,
+                    er.Id
+                );
+
+                var missingRecord = await _source.RetrieveAsync(
+                    er.LogicalName,
+                    er.Id,
+                    null,
+                    ct
+                );
+
+                if (missingRecord != null)
+                {
+                    // Dynamic Mapping: Try to find by business key first
+                    var targetId = await FindExistingOnTargetAsync(
+                        missingRecord,
+                        ct
+                    );
+
+                    if (targetId.HasValue)
+                    {
+                        _logger.Information(
+                            "Found {Type} by business key. " +
+                            "Mapping {SourceId} -> {TargetId}",
+                            er.LogicalName,
+                            er.Id,
+                            targetId.Value
+                        );
+
+                        _idMappingCache[$"{er.LogicalName}:{er.Id}"] = targetId.Value;
+
+                        return await RetryEntityAsync(entity, options, ct);
+                    }
+
+                    // Re-use the existing logic to sync the missing record
+                    var success = await SyncRecordAsync(
+                        missingRecord,
+                        options,
+                        null,
+                        ct
+                    );
+
+                    if (success)
+                    {
+                        return await RetryEntityAsync(entity, options, ct);
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        private async Task<bool> RetryEntityAsync(
+            Entity entity,
+            SyncOptions options,
+            CancellationToken ct)
+        {
+            var metadata = await GetMetadataAsync(entity.LogicalName, ct);
+            var prepared = await PrepareEntityForTargetAsync(
+                entity,
+                metadata,
+                options,
+                ct
+            );
+
+            if (metadata?.IsIntersect == true)
+            {
+                return await SyncIntersectEntityAsync(
+                    prepared,
+                    options,
+                    ct
+                );
+            }
+
+            return await CreateWithFixStrategyAsync(
+                prepared,
+                options,
+                ct
+            );
+        }
+
         private async Task<bool> StripAttributeAndRetryAsync(
             Exception ex,
             Entity entity,
@@ -686,11 +836,7 @@ namespace dvmig.Core
 
                             _idMappingCache[dependencyKey] = targetId.Value;
 
-                            return await CreateWithFixStrategyAsync(
-                                entity,
-                                options,
-                                ct
-                            );
+                            return await RetryEntityAsync(entity, options, ct);
                         }
 
                         // Normal Sync: Try to sync the record over
@@ -703,25 +849,7 @@ namespace dvmig.Core
 
                         if (success)
                         {
-                            var metadata = await GetMetadataAsync(
-                                entity.LogicalName,
-                                ct
-                            );
-
-                            if (metadata?.IsIntersect == true)
-                            {
-                                return await SyncIntersectEntityAsync(
-                                    entity,
-                                    options,
-                                    ct
-                                );
-                            }
-
-                            return await CreateWithFixStrategyAsync(
-                                entity,
-                                options,
-                                ct
-                            );
+                            return await RetryEntityAsync(entity, options, ct);
                         }
                     }
                 }
@@ -911,8 +1039,10 @@ namespace dvmig.Core
             if (!string.IsNullOrEmpty(primaryAttr) &&
                 sourceEntity.Contains(primaryAttr))
             {
-                var query = new QueryExpression(sourceEntity.LogicalName);
-                query.ColumnSet = new ColumnSet(false);
+                var query = new QueryExpression(sourceEntity.LogicalName)
+                {
+                    ColumnSet = new ColumnSet(false)
+                };
                 query.Criteria.AddCondition(
                     primaryAttr,
                     ConditionOperator.Equal,
@@ -934,6 +1064,27 @@ namespace dvmig.Core
                         sourceEntity[primaryAttr],
                         results.Entities.Count
                     );
+                }
+            }
+
+            // 3. Fallback for specific entities with unique constraints but no alternate keys
+            if (sourceEntity.LogicalName == "transactioncurrency" && 
+                sourceEntity.Contains("isocurrencycode"))
+            {
+                var query = new QueryExpression(sourceEntity.LogicalName)
+                {
+                    ColumnSet = new ColumnSet(false)
+                };
+                query.Criteria.AddCondition(
+                    "isocurrencycode",
+                    ConditionOperator.Equal,
+                    sourceEntity["isocurrencycode"]
+                );
+
+                var results = await _target.RetrieveMultipleAsync(query, ct);
+                if (results.Entities.Count == 1)
+                {
+                    return results.Entities.First().Id;
                 }
             }
 

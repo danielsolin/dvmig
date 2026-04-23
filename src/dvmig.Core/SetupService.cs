@@ -8,18 +8,28 @@ using Serilog;
 
 namespace dvmig.Core
 {
+    /// <summary>
+    /// Service responsible for preparing the target Dataverse environment for 
+    /// migration, including schema creation and plugin deployment.
+    /// </summary>
     public class SetupService : ISetupService
     {
         private readonly ILogger _logger;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="SetupService"/> class.
+        /// </summary>
+        /// <param name="logger">The logger instance.</param>
         public SetupService(ILogger logger)
         {
             _logger = logger;
         }
 
+        /// <inheritdoc />
         public async Task<bool> IsEnvironmentReadyAsync(
             IDataverseProvider target,
-            CancellationToken ct = default)
+            CancellationToken ct = default
+        )
         {
             try
             {
@@ -85,10 +95,12 @@ namespace dvmig.Core
             }
         }
 
+        /// <inheritdoc />
         public async Task CreateSchemaAsync(
             IDataverseProvider target,
             IProgress<string>? progress = null,
-            CancellationToken ct = default)
+            CancellationToken ct = default
+        )
         {
             var existingMeta = await target.GetEntityMetadataAsync(
                 "dm_sourcedate",
@@ -214,6 +226,17 @@ namespace dvmig.Core
             progress?.Report("Schema creation completed.");
         }
 
+        /// <summary>
+        /// Creates an attribute on the 'dm_sourcedate' entity if it does not 
+        /// already exist in the provided entity metadata.
+        /// </summary>
+        /// <param name="target">The target Dataverse provider.</param>
+        /// <param name="entityMeta">The existing entity metadata.</param>
+        /// <param name="schemaName">The schema name of the attribute.</param>
+        /// <param name="displayName">The display name of the attribute.</param>
+        /// <param name="isString">True to create a string attribute; false for datetime.</param>
+        /// <param name="progress">An optional progress reporter.</param>
+        /// <param name="ct">A cancellation token.</param>
         private async Task CreateAttributeIfMissingAsync(
             IDataverseProvider target,
             EntityMetadata entityMeta,
@@ -221,7 +244,8 @@ namespace dvmig.Core
             string displayName,
             bool isString,
             IProgress<string>? progress,
-            CancellationToken ct)
+            CancellationToken ct
+        )
         {
             if (entityMeta.Attributes.Any(a => a.LogicalName == schemaName))
             {
@@ -254,11 +278,13 @@ namespace dvmig.Core
             await target.ExecuteAsync(req, ct);
         }
 
+        /// <inheritdoc />
         public async Task DeployPluginAsync(
             IDataverseProvider target,
             string pluginAssemblyPath,
             IProgress<string>? progress = null,
-            CancellationToken ct = default)
+            CancellationToken ct = default
+        )
         {
             if (!File.Exists(pluginAssemblyPath))
             {
@@ -316,11 +342,20 @@ namespace dvmig.Core
             await RegisterPluginStepAsync(target, assemblyId, progress, ct);
         }
 
+        /// <summary>
+        /// Registers the plugin type and its corresponding execution steps 
+        /// (Create and Update) for the newly deployed assembly.
+        /// </summary>
+        /// <param name="target">The target Dataverse provider.</param>
+        /// <param name="assemblyId">The ID of the deployed assembly.</param>
+        /// <param name="progress">An optional progress reporter.</param>
+        /// <param name="ct">A cancellation token.</param>
         private async Task RegisterPluginStepAsync(
             IDataverseProvider target,
             Guid assemblyId,
             IProgress<string>? progress,
-            CancellationToken ct)
+            CancellationToken ct
+        )
         {
             _logger.Information("Registering plugin type and step...");
             progress?.Report("Registering plugin type and step...");
@@ -377,12 +412,22 @@ namespace dvmig.Core
             );
         }
 
+        /// <summary>
+        /// Registers a specific SDK message processing step (e.g., Create, Update) 
+        /// for the plugin type to execute synchronously in the Pre-operation stage.
+        /// </summary>
+        /// <param name="target">The target Dataverse provider.</param>
+        /// <param name="typeId">The ID of the plugin type.</param>
+        /// <param name="messageName">The name of the SDK message.</param>
+        /// <param name="progress">An optional progress reporter.</param>
+        /// <param name="ct">A cancellation token.</param>
         private async Task RegisterStepForMessageAsync(
             IDataverseProvider target,
             Guid typeId,
             string messageName,
             IProgress<string>? progress,
-            CancellationToken ct)
+            CancellationToken ct
+        )
         {
             // 1. Find Message ID
             var msgQuery = new QueryByAttribute("sdkmessage")

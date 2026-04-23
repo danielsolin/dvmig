@@ -15,6 +15,12 @@ namespace dvmig.Core
         void AddManualMapping(Guid sourceUserId, Guid targetUserId);
     }
 
+    /// <summary>
+    /// Maps user references from a source Dataverse environment to a target 
+    /// environment. This resolves differences in systemuser GUIDs between 
+    /// environments by matching users based on their internal email address 
+    /// or domain name.
+    /// </summary>
     public class UserMapper : IUserMapper
     {
         private readonly IDataverseProvider _source;
@@ -27,14 +33,28 @@ namespace dvmig.Core
         public UserMapper(
             IDataverseProvider source,
             IDataverseProvider target,
-            ILogger logger)
+            ILogger logger
+        )
         {
             _source = source;
             _target = target;
             _logger = logger;
         }
 
-        public void AddManualMapping(Guid sourceUserId, Guid targetUserId)
+        /// <summary>
+        /// Manually adds a user mapping to the cache, bypassing the automatic 
+        /// lookup. Useful for handling known edge cases or system accounts.
+        /// </summary>
+        /// <param name="sourceUserId">
+        /// The GUID of the user in the source environment.
+        /// </param>
+        /// <param name="targetUserId">
+        /// The GUID of the corresponding user in the target environment.
+        /// </param>
+        public void AddManualMapping(
+            Guid sourceUserId,
+            Guid targetUserId
+        )
         {
             _mappingCache[sourceUserId] = new EntityReference(
                 "systemuser",
@@ -42,9 +62,27 @@ namespace dvmig.Core
             );
         }
 
+        /// <summary>
+        /// Asynchronously maps a source user reference to the corresponding 
+        /// target user reference. Queries the source environment for the 
+        /// user's email or domain name, and then searches the target 
+        /// environment for a matching user. Results are cached to improve 
+        /// performance.
+        /// </summary>
+        /// <param name="sourceUser">
+        /// The entity reference of the user from the source environment.
+        /// </param>
+        /// <param name="ct">
+        /// A cancellation token that can be used to cancel the operation.
+        /// </param>
+        /// <returns>
+        /// An entity reference for the mapped user in the target environment, 
+        /// or null if mapping fails.
+        /// </returns>
         public async Task<EntityReference?> MapUserAsync(
             EntityReference? sourceUser,
-            CancellationToken ct = default)
+            CancellationToken ct = default
+        )
         {
             if (sourceUser == null)
             {

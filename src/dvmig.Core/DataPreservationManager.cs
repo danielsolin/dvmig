@@ -5,20 +5,44 @@ using Serilog;
 
 namespace dvmig.Core
 {
+    /// <summary>
+    /// Manages the preservation of original creation and modification dates 
+    /// from a source environment during record migration. This is achieved 
+    /// by creating temporary 'dm_sourcedate' side-car records in the target 
+    /// environment, which a target-side plugin then uses to override the 
+    /// system-generated dates.
+    /// </summary>
     public class DataPreservationManager : IDataPreservationManager
     {
         private readonly IDataverseProvider _target;
         private readonly ILogger _logger;
         private bool? _isSupported;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DataPreservationManager"/> class.
+        /// </summary>
+        /// <param name="target">The target Dataverse provider.</param>
+        /// <param name="logger">The logger instance.</param>
         public DataPreservationManager(
             IDataverseProvider target,
-            ILogger logger)
+            ILogger logger
+        )
         {
             _target = target;
             _logger = logger;
         }
 
+        /// <summary>
+        /// Checks whether the target environment supports date preservation 
+        /// by verifying the existence of the 'dm_sourcedate' custom entity.
+        /// The result is cached for the lifetime of the manager instance.
+        /// </summary>
+        /// <param name="ct">
+        /// A cancellation token that can be used to cancel the operation.
+        /// </param>
+        /// <returns>
+        /// True if date preservation is supported; otherwise, false.
+        /// </returns>
         private async Task<bool> CheckSupportAsync(CancellationToken ct)
         {
             if (_isSupported.HasValue)
@@ -52,9 +76,11 @@ namespace dvmig.Core
             return _isSupported.Value;
         }
 
+        /// <inheritdoc />
         public async Task PreserveDatesAsync(
             Entity sourceEntity,
-            CancellationToken ct = default)
+            CancellationToken ct = default
+        )
         {
             if (!await CheckSupportAsync(ct))
             {
@@ -84,6 +110,12 @@ namespace dvmig.Core
             }
         }
 
+        /// <summary>
+        /// Creates a 'dm_sourcedate' entity instance populated with the 
+        /// original dates and identifying information from the source entity.
+        /// </summary>
+        /// <param name="entity">The source entity.</param>
+        /// <returns>A populated 'dm_sourcedate' entity.</returns>
         private Entity CreateSourceDateEntity(Entity entity)
         {
             var sourceDate = new Entity("dm_sourcedate");
@@ -106,10 +138,12 @@ namespace dvmig.Core
             return sourceDate;
         }
 
+        /// <inheritdoc />
         public async Task DeleteSourceDateAsync(
             string logicalName,
             Guid entityId,
-            CancellationToken ct = default)
+            CancellationToken ct = default
+        )
         {
             if (!await CheckSupportAsync(ct))
             {
