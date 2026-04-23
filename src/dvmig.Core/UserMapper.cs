@@ -120,7 +120,8 @@ namespace dvmig.Core
         private async Task<EntityReference?> FindTargetUserAsync(
             string attribute,
             string value,
-            CancellationToken ct)
+            CancellationToken ct
+        )
         {
             var query = new QueryByAttribute("systemuser")
             {

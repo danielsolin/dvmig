@@ -69,21 +69,25 @@ namespace dvmig.Plugins
                     {
                         if (sourceDate.Contains("dm_sourcecreateddate"))
                         {
-                            var createdDate = sourceDate["dm_sourcecreateddate"];
+                            var createdDate = 
+                                sourceDate["dm_sourcecreateddate"];
+                            
                             entity["createdon"] = createdDate;
                             entity["overriddencreatedon"] = createdDate;
                         }
 
                         if (sourceDate.Contains("dm_sourcemodifieddate"))
                         {
-                            entity["modifiedon"] = sourceDate["dm_sourcemodifieddate"];
+                            entity["modifiedon"] = 
+                                sourceDate["dm_sourcemodifieddate"];
                         }
                     }
                     else if (messageName == "update")
                     {
                         if (sourceDate.Contains("dm_sourcemodifieddate"))
                         {
-                            entity["modifiedon"] = sourceDate["dm_sourcemodifieddate"];
+                            entity["modifiedon"] = 
+                                sourceDate["dm_sourcemodifieddate"];
                         }
                     }
                 }

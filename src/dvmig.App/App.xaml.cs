@@ -1,10 +1,11 @@
+using dvmig.App.Services;
+using dvmig.App.ViewModels;
+using dvmig.Core;
 using Microsoft.Extensions.DependencyInjection;
+using Serilog;
+using System;
 using System.IO;
 using System.Windows;
-using dvmig.App.ViewModels;
-using dvmig.App.Services;
-using dvmig.Core;
-using Serilog;
 
 namespace dvmig.App
 {
@@ -15,7 +16,8 @@ namespace dvmig.App
         public App()
         {
             var appData = Environment.GetFolderPath(
-                Environment.SpecialFolder.ApplicationData);
+                Environment.SpecialFolder.ApplicationData
+            );
             var logPath = Path.Combine(appData, "dvmig", "logs", "log.txt");
 
             Log.Logger = new LoggerConfiguration()
@@ -82,7 +84,9 @@ namespace dvmig.App
 
             // Navigation Factory
             services.AddSingleton<Func<Type, ViewModelBase>>(provider =>
-                type => (ViewModelBase)provider.GetRequiredService(type));
+            {
+                return type => (ViewModelBase)provider.GetRequiredService(type);
+            });
 
             _serviceProvider = services.BuildServiceProvider();
         }
@@ -95,6 +99,7 @@ namespace dvmig.App
                 .GetRequiredService<MainViewModel>();
 
             mainWindow.Show();
+            
             base.OnStartup(e);
         }
     }

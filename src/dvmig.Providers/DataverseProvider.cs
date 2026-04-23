@@ -1,7 +1,12 @@
 using Microsoft.PowerPlatform.Dataverse.Client;
 using Microsoft.Xrm.Sdk;
+using Microsoft.Xrm.Sdk.Messages;
 using Microsoft.Xrm.Sdk.Metadata;
 using Microsoft.Xrm.Sdk.Query;
+using System;
+using System.ServiceModel;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace dvmig.Providers
 {
@@ -15,14 +20,21 @@ namespace dvmig.Providers
             if (!_client.IsReady)
             {
                 throw new Exception(
-                    $"Dataverse connection failed: {_client.LastError}");
+                    $"Dataverse connection failed: {_client.LastError}"
+                );
             }
         }
 
         public Guid? CallerId
         {
-            get => _client.CallerId;
-            set => _client.CallerId = value ?? Guid.Empty;
+            get
+            {
+                return _client.CallerId;
+            }
+            set
+            {
+                _client.CallerId = value ?? Guid.Empty;
+            }
         }
 
         public async Task<Entity?> RetrieveAsync(
@@ -33,8 +45,9 @@ namespace dvmig.Providers
         {
             try
             {
-                var columnSet = columns == null ? new ColumnSet(true) :
-                    new ColumnSet(columns);
+                var columnSet = columns == null 
+                    ? new ColumnSet(true) 
+                    : new ColumnSet(columns);
 
                 return await _client.RetrieveAsync(
                     entityLogicalName,
@@ -43,7 +56,7 @@ namespace dvmig.Providers
                     ct
                 );
             }
-            catch (System.ServiceModel.FaultException ex)
+            catch (FaultException ex)
             {
                 // 0x80040217 = Object does not exist
                 if (ex.Message.Contains("80040217") || 
@@ -58,19 +71,18 @@ namespace dvmig.Providers
 
         public async Task<EntityMetadata?> GetEntityMetadataAsync(
             string entityLogicalName,
-            CancellationToken ct = default
-        )
+            CancellationToken ct = default)
         {
             try
             {
                 var response = await _client.ExecuteAsync(
-                    new Microsoft.Xrm.Sdk.Messages.RetrieveEntityRequest
+                    new RetrieveEntityRequest
                     {
                         LogicalName = entityLogicalName,
                         EntityFilters = EntityFilters.Attributes
                     },
                     ct
-                ) as Microsoft.Xrm.Sdk.Messages.RetrieveEntityResponse;
+                ) as RetrieveEntityResponse;
 
                 return response?.EntityMetadata;
             }
@@ -82,13 +94,15 @@ namespace dvmig.Providers
             }
         }
 
-        public async Task<Guid> CreateAsync(Entity entity,
+        public async Task<Guid> CreateAsync(
+            Entity entity,
             CancellationToken ct = default)
         {
             return await _client.CreateAsync(entity, ct);
         }
 
-        public async Task UpdateAsync(Entity entity,
+        public async Task UpdateAsync(
+            Entity entity,
             CancellationToken ct = default)
         {
             await _client.UpdateAsync(entity, ct);

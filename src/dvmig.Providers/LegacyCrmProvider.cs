@@ -1,7 +1,12 @@
 using Microsoft.Xrm.Sdk;
+using Microsoft.Xrm.Sdk.Messages;
 using Microsoft.Xrm.Sdk.Metadata;
 using Microsoft.Xrm.Sdk.Query;
 using Microsoft.Xrm.Tooling.Connector;
+using System;
+using System.ServiceModel;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace dvmig.Providers
 {
@@ -15,14 +20,21 @@ namespace dvmig.Providers
             if (!_client.IsReady)
             {
                 throw new Exception(
-                    $"Legacy CRM connection failed: {_client.LastCrmError}");
+                    $"Legacy CRM connection failed: {_client.LastCrmError}"
+                );
             }
         }
 
         public Guid? CallerId
         {
-            get => _client.CallerId;
-            set => _client.CallerId = value ?? Guid.Empty;
+            get
+            {
+                return _client.CallerId;
+            }
+            set
+            {
+                _client.CallerId = value ?? Guid.Empty;
+            }
         }
 
         public Task<Entity?> RetrieveAsync(
@@ -33,8 +45,9 @@ namespace dvmig.Providers
         {
             try
             {
-                var columnSet = columns == null ? new ColumnSet(true) :
-                    new ColumnSet(columns);
+                var columnSet = columns == null 
+                    ? new ColumnSet(true) 
+                    : new ColumnSet(columns);
 
                 return Task.FromResult<Entity?>(
                     _client.Retrieve(
@@ -44,7 +57,7 @@ namespace dvmig.Providers
                     )
                 );
             }
-            catch (System.ServiceModel.FaultException ex)
+            catch (FaultException ex)
             {
                 if (ex.Message.Contains("80040217") || 
                     ex.Message.Contains("Does Not Exist"))
@@ -61,12 +74,12 @@ namespace dvmig.Providers
             CancellationToken ct = default)
         {
             var response = _client.Execute(
-                new Microsoft.Xrm.Sdk.Messages.RetrieveEntityRequest
+                new RetrieveEntityRequest
                 {
                     LogicalName = entityLogicalName,
                     EntityFilters = EntityFilters.Attributes
                 }
-            ) as Microsoft.Xrm.Sdk.Messages.RetrieveEntityResponse;
+            ) as RetrieveEntityResponse;
 
             return Task.FromResult(response?.EntityMetadata);
         }
@@ -78,7 +91,9 @@ namespace dvmig.Providers
             return Task.FromResult(_client.Create(entity));
         }
 
-        public Task UpdateAsync(Entity entity, CancellationToken ct = default)
+        public Task UpdateAsync(
+            Entity entity,
+            CancellationToken ct = default)
         {
             _client.Update(entity);
 

@@ -22,11 +22,16 @@ namespace dvmig.App.Models
         [ObservableProperty]
         private double _progressPercentage;
 
-        public void Update(int processed, int success, int failure)
+        public void Update(
+            int processed,
+            int success,
+            int failure
+        )
         {
             ProcessedRecords = processed;
             SuccessCount = success;
             FailureCount = failure;
+
             if (TotalRecords > 0)
             {
                 ProgressPercentage = (double)processed / TotalRecords * 100;

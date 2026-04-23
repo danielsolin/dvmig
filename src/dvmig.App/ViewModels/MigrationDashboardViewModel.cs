@@ -4,7 +4,10 @@ using dvmig.App.Models;
 using dvmig.App.Services;
 using dvmig.Core;
 using Microsoft.Xrm.Sdk.Query;
+using System;
 using System.Collections.ObjectModel;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace dvmig.App.ViewModels
 {
@@ -43,9 +46,7 @@ namespace dvmig.App.ViewModels
             if (_migrationService.SourceProvider == null ||
                 _migrationService.TargetProvider == null)
             {
-                Logs.Add(
-                    "Error: Source or Target provider not connected."
-                );
+                Logs.Add("Error: Source or Target provider not connected.");
 
                 return;
             }
@@ -55,9 +56,7 @@ namespace dvmig.App.ViewModels
 
             IProgress<string> progressReporter = new Progress<string>(msg =>
             {
-                Logs.Add(
-                    $"[{DateTime.Now:HH:mm:ss}] {msg}"
-                );
+                Logs.Add($"[{DateTime.Now:HH:mm:ss}] {msg}");
             });
 
             try
@@ -69,7 +68,8 @@ namespace dvmig.App.ViewModels
                     _cts.Token.ThrowIfCancellationRequested();
 
                     progressReporter.Report(
-                        $"Fetching {logicalName} records...");
+                        $"Fetching {logicalName} records..."
+                    );
 
                     var query = new QueryExpression(logicalName)
                     {
@@ -82,7 +82,8 @@ namespace dvmig.App.ViewModels
                     if (sourceRecords.Entities.Count == 0)
                     {
                         progressReporter.Report(
-                            $"No records for {logicalName}.");
+                            $"No records for {logicalName}."
+                        );
 
                         continue;
                     }
@@ -99,9 +100,13 @@ namespace dvmig.App.ViewModels
                     {
                         processedCount++;
                         if (success)
+                        {
                             successCount++;
+                        }
                         else
+                        {
                             failureCount++;
+                        }
 
                         Progress.Update(
                             processedCount,
@@ -155,6 +160,9 @@ namespace dvmig.App.ViewModels
             _navigationService.NavigateTo<EntitySelectionViewModel>();
         }
 
-        private bool CanStartMigration() => !IsMigrationRunning;
+        private bool CanStartMigration()
+        {
+            return !IsMigrationRunning;
+        }
     }
 }

@@ -9,13 +9,15 @@ namespace dvmig.Core
             SyncOptions options,
             IProgress<string>? progress = null,
             IProgress<bool>? recordProgress = null,
-            CancellationToken cancellationToken = default);
+            CancellationToken cancellationToken = default
+        );
 
         Task<bool> SyncRecordAsync(
             Entity entity,
             SyncOptions options,
             IProgress<string>? progress = null,
-            CancellationToken cancellationToken = default);
+            CancellationToken cancellationToken = default
+        );
     }
 
     public class SyncOptions

@@ -1,3 +1,4 @@
+using System;
 using System.IO;
 using System.Security.Cryptography;
 using System.Text;
@@ -8,29 +9,36 @@ namespace dvmig.App.Services
     public class UserSettings
     {
         public string SourceConnectionString { get; set; } = string.Empty;
+        
         public string TargetConnectionString { get; set; } = string.Empty;
+        
         public bool RememberConnections { get; set; }
+        
         public bool AutoConnect { get; set; }
     }
 
     public interface ISettingsService
     {
         UserSettings LoadSettings();
+        
         void SaveSettings(UserSettings settings);
     }
 
     public class SettingsService : ISettingsService
     {
         private readonly string _filePath;
+        
         private static readonly byte[] Entropy =
             Encoding.UTF8.GetBytes("dvmig-entropy");
 
         public SettingsService()
         {
             var appData = Environment.GetFolderPath(
-                Environment.SpecialFolder.ApplicationData);
+                Environment.SpecialFolder.ApplicationData
+            );
 
             var folder = Path.Combine(appData, "dvmig");
+            
             if (!Directory.Exists(folder))
             {
                 Directory.CreateDirectory(folder);

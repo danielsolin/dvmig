@@ -1,12 +1,9 @@
 using dvmig.Core;
 using dvmig.Providers;
-using Microsoft.Xrm.Sdk;
 using Microsoft.Crm.Sdk.Messages;
 using Microsoft.Xrm.Sdk.Messages;
-using Microsoft.Xrm.Sdk.Metadata;
-using Spectre.Console;
 using Serilog;
-using System.Collections.Concurrent;
+using Spectre.Console;
 
 namespace dvmig.Cli
 {
@@ -20,18 +17,25 @@ namespace dvmig.Cli
         {
             AnsiConsole.Write(
                 new FigletText("DVMIG")
-                    .Color(Color.Blue));
+                    .Color(Color.Blue)
+            );
 
             AnsiConsole.MarkupLine("[bold]Dataverse Migrator - Technical UI[/]");
             AnsiConsole.WriteLine();
 
             // 1. Source Connection
             _source = await ConnectAsync("Source");
-            if (_source == null) return;
+            if (_source == null)
+            {
+                return;
+            }
 
             // 2. Target Connection
             _target = await ConnectAsync("Target");
-            if (_target == null) return;
+            if (_target == null)
+            {
+                return;
+            }
 
             // 3. Initialize Engine
             var logger = Serilog.Log.Logger = new Serilog.LoggerConfiguration()
@@ -40,20 +44,27 @@ namespace dvmig.Cli
 
             // Minimal UserMapper for now (no mapping)
             var userMapper = new UserMapper(_source, _target, logger);
-            var dataPreservation = new DataPreservationManager(_target, logger);
+            var dataPreservation = new DataPreservationManager(
+                _target,
+                logger
+            );
             
             _engine = new SyncEngine(
-                _source, 
-                _target, 
-                userMapper, 
-                dataPreservation, 
-                logger);
+                _source,
+                _target,
+                userMapper,
+                dataPreservation,
+                logger
+            );
 
             // 4. Entity Selection
             var selectedEntities = await SelectEntitiesAsync();
             if (selectedEntities == null || selectedEntities.Count == 0)
             {
-                AnsiConsole.MarkupLine("[yellow]No entities selected. Exiting.[/]");
+                AnsiConsole.MarkupLine(
+                    "[yellow]No entities selected. Exiting.[/]"
+                );
+
                 return;
             }
 
@@ -65,10 +76,17 @@ namespace dvmig.Cli
             Console.ReadKey();
         }
 
-        private static async Task<IDataverseProvider?> ConnectAsync(string label)
+        private static async Task<IDataverseProvider?> ConnectAsync(
+            string label)
         {
-            var connStr = AnsiConsole.Ask<string>($"Enter [bold blue]{label}[/] Connection String:");
-            var isLegacy = AnsiConsole.Confirm($"Is [bold blue]{label}[/] Legacy CRM (OnPrem)?", false);
+            var connStr = AnsiConsole.Ask<string>(
+                $"Enter [bold blue]{label}[/] Connection String:"
+            );
+
+            var isLegacy = AnsiConsole.Confirm(
+                $"Is [bold blue]{label}[/] Legacy CRM (OnPrem)?",
+                false
+            );
 
             return await AnsiConsole.Status()
                 .StartAsync($"Connecting to {label}...", async ctx =>
@@ -80,13 +98,24 @@ namespace dvmig.Cli
                             : new DataverseProvider(connStr);
                         
                         // Test connection
-                        await provider.ExecuteAsync(new WhoAmIRequest(), default);
-                        AnsiConsole.MarkupLine($"[green]✓[/] Connected to {label}");
+                        await provider.ExecuteAsync(
+                            new WhoAmIRequest(),
+                            default
+                        );
+
+                        AnsiConsole.MarkupLine(
+                            $"[green]✓[/] Connected to {label}"
+                        );
+
                         return provider;
                     }
                     catch (Exception ex)
                     {
-                        AnsiConsole.MarkupLine($"[red]×[/] Failed to connect to {label}: {ex.Message}");
+                        AnsiConsole.MarkupLine(
+                            $"[red]×[/] Failed to connect to {label}: " +
+                            $"{ex.Message}"
+                        );
+
                         return null;
                     }
                 });
@@ -101,27 +130,36 @@ namespace dvmig.Cli
                     {
                         var request = new RetrieveAllEntitiesRequest
                         {
-                            EntityFilters = EntityFilters.Entity,
+                            EntityFilters = Microsoft.Xrm.Sdk.Metadata.EntityFilters.Entity,
                             RetrieveAsIfPublished = true
                         };
 
-                        var response = (RetrieveAllEntitiesResponse)await _source!.ExecuteAsync(request, default);
+                        var response = (RetrieveAllEntitiesResponse)await 
+                            _source!.ExecuteAsync(request, default);
                         
                         var entities = response.EntityMetadata
-                            .Where(e => (e.IsCustomEntity == true || IsStandardEntity(e.LogicalName)) &&
-                                        e.IsIntersect == false &&
-                                        e.IsValidForAdvancedFind == true &&
-                                        !string.IsNullOrEmpty(e.DisplayName?.UserLocalizedLabel?.Label))
-                            .OrderBy(e => e.DisplayName?.UserLocalizedLabel?.Label ?? e.LogicalName)
+                            .Where(e => 
+                                (e.IsCustomEntity == true || 
+                                 IsStandardEntity(e.LogicalName)) &&
+                                e.IsIntersect == false &&
+                                e.IsValidForAdvancedFind == true &&
+                                !string.IsNullOrEmpty(
+                                    e.DisplayName?.UserLocalizedLabel?.Label))
+                            .OrderBy(e => 
+                                e.DisplayName?.UserLocalizedLabel?.Label ?? 
+                                e.LogicalName)
                             .ToList();
 
                         var prompt = new MultiSelectionPrompt<string>()
                             .Title("Select [green]Entities[/] to migrate:")
                             .PageSize(15)
-                            .MoreChoicesText("[grey](Move up and down to reveal more entities)[/]")
+                            .MoreChoicesText(
+                                "[grey](Move up and down to reveal more)[/]"
+                            )
                             .InstructionsText(
-                                "[grey](Press [blue]<space>[/] to toggle an entity, " +
-                                "[green]<enter>[/] to accept)[/]");
+                                "[grey](Press [blue]<space>[/] to toggle, " +
+                                "[green]<enter>[/] to accept)[/]"
+                            );
 
                         foreach (var entity in entities)
                         {
@@ -132,7 +170,10 @@ namespace dvmig.Cli
                     }
                     catch (Exception ex)
                     {
-                        AnsiConsole.MarkupLine($"[red]×[/] Failed to fetch metadata: {ex.Message}");
+                        AnsiConsole.MarkupLine(
+                            $"[red]×[/] Failed to fetch metadata: {ex.Message}"
+                        );
+
                         return null;
                     }
                 });
@@ -142,11 +183,26 @@ namespace dvmig.Cli
         {
             var standard = new[]
             {
-                "account", "contact", "lead", "opportunity", "task",
-                "phonecall", "email", "appointment", "incident", "product",
-                "pricelevel", "quote", "salesorder", "invoice", "competitor",
-                "equipment", "businessunit", "team"
+                "account",
+                "contact",
+                "lead",
+                "opportunity",
+                "task",
+                "phonecall",
+                "email",
+                "appointment",
+                "incident",
+                "product",
+                "pricelevel",
+                "quote",
+                "salesorder",
+                "invoice",
+                "competitor",
+                "equipment",
+                "businessunit",
+                "team"
             };
+
             return standard.Contains(logicalName.ToLower());
         }
 
@@ -154,25 +210,39 @@ namespace dvmig.Cli
         {
             foreach (var logicalName in entities)
             {
-                AnsiConsole.MarkupLine($"[bold yellow]Migrating {logicalName}...[/]");
+                AnsiConsole.MarkupLine(
+                    $"[bold yellow]Migrating {logicalName}...[/]"
+                );
 
-                var query = new Microsoft.Xrm.Sdk.Query.QueryExpression(logicalName)
+                var query = new Microsoft.Xrm.Sdk.Query.QueryExpression(
+                    logicalName
+                )
                 {
                     ColumnSet = new Microsoft.Xrm.Sdk.Query.ColumnSet(true)
                 };
 
-                var sourceRecords = await _source!.RetrieveMultipleAsync(query, default);
+                var sourceRecords = await _source!.RetrieveMultipleAsync(
+                    query,
+                    default
+                );
                 
                 if (sourceRecords.Entities.Count == 0)
                 {
-                    AnsiConsole.MarkupLine($"[grey]No records found for {logicalName}.[/]");
+                    AnsiConsole.MarkupLine(
+                        $"[grey]No records found for {logicalName}.[/]"
+                    );
+
                     continue;
                 }
 
                 await AnsiConsole.Progress()
                     .StartAsync(async ctx =>
                     {
-                        var task = ctx.AddTask($"Syncing {logicalName}", true, sourceRecords.Entities.Count);
+                        var task = ctx.AddTask(
+                            $"Syncing {logicalName}",
+                            true,
+                            sourceRecords.Entities.Count
+                        );
                         
                         var recordProgress = new Progress<bool>(success =>
                         {
@@ -184,7 +254,8 @@ namespace dvmig.Cli
                             new SyncOptions { StripMissingDependencies = true },
                             null,
                             recordProgress,
-                            default);
+                            default
+                        );
                     });
             }
         }

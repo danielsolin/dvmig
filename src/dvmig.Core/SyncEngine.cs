@@ -2,12 +2,17 @@ using dvmig.Providers;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Messages;
 using Microsoft.Xrm.Sdk.Metadata;
-using Microsoft.Crm.Sdk.Messages;
+using Microsoft.Xrm.Sdk.Query;
 using Polly;
 using Polly.Retry;
 using Serilog;
-using Microsoft.Xrm.Sdk.Query;
+using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text.RegularExpressions;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace dvmig.Core
 {
@@ -94,7 +99,8 @@ namespace dvmig.Core
                 );
 
                 return TimeSpan.FromSeconds(
-                    Math.Min(Math.Pow(2, retryCount), 30));
+                    Math.Min(Math.Pow(2, retryCount), 30)
+                );
             }
 
             return TimeSpan.FromSeconds(Math.Pow(2, retryCount));
@@ -111,10 +117,12 @@ namespace dvmig.Core
                 "Starting sync of {Count} entities",
                 entities.Count()
             );
+
             _recursionTracker.Clear();
 
             progress?.Report(
-                $"Starting migration of {entities.Count()} records...");
+                $"Starting migration of {entities.Count()} records..."
+            );
 
             foreach (var entity in entities)
             {
@@ -157,13 +165,15 @@ namespace dvmig.Core
             var depth = _recursionTracker.AddOrUpdate(
                 recordKey,
                 1,
-                (_, v) => v + 1);
+                (_, v) => v + 1
+            );
 
             if (depth > MaxRecursionDepth)
             {
                 _logger.Error(
                     "Max recursion depth reached for {Key}. Skipping.",
-                    recordKey);
+                    recordKey
+                );
 
                 _recursionTracker.AddOrUpdate(recordKey, 0, (_, v) => v - 1);
 
@@ -183,7 +193,8 @@ namespace dvmig.Core
                     entity,
                     metadata,
                     options,
-                    ct);
+                    ct
+                );
 
                 if (options.PreserveDates)
                 {
@@ -198,10 +209,12 @@ namespace dvmig.Core
                             "Date preservation failed for {Entity}:{Id}. " +
                             "Continuing sync.",
                             entity.LogicalName,
-                            entity.Id);
+                            entity.Id
+                        );
 
                         progress?.Report(
-                            "Date preservation failed. Continuing...");
+                            "Date preservation failed. Continuing..."
+                        );
                     }
                 }
 
@@ -215,7 +228,8 @@ namespace dvmig.Core
                 {
                     _idMappingCache[recordKey] = entity.Id;
                     progress?.Report(
-                        $"Synced {entity.LogicalName}:{entity.Id}");
+                        $"Synced {entity.LogicalName}:{entity.Id}"
+                    );
 
                     if (options.PreserveDates)
                     {
@@ -255,9 +269,13 @@ namespace dvmig.Core
                 }
 
                 await _retryPolicy.ExecuteAsync(
-                    () => _target.ExecuteAsync(request, ct));
-                _logger.Information("Associated N:N relationship {Key}",
-                    entity.LogicalName);
+                    () => _target.ExecuteAsync(request, ct)
+                );
+
+                _logger.Information(
+                    "Associated N:N relationship {Key}",
+                    entity.LogicalName
+                );
 
                 return true;
             }
@@ -279,8 +297,11 @@ namespace dvmig.Core
 
             if (references.Count < 2)
             {
-                _logger.Warning("Intersect entity {Key} does not have " +
-                    "two EntityReferences.", entity.LogicalName);
+                _logger.Warning(
+                    "Intersect entity {Key} does not have " +
+                    "two EntityReferences.",
+                    entity.LogicalName
+                );
 
                 return null;
             }
@@ -306,10 +327,14 @@ namespace dvmig.Core
             try
             {
                 await _retryPolicy.ExecuteAsync(
-                    () => _target.CreateAsync(entity, ct));
+                    () => _target.CreateAsync(entity, ct)
+                );
 
-                _logger.Information("Created {Key}:{Id}",
-                    entity.LogicalName, entity.Id);
+                _logger.Information(
+                    "Created {Key}:{Id}",
+                    entity.LogicalName,
+                    entity.Id
+                );
 
                 return true;
             }
@@ -335,7 +360,8 @@ namespace dvmig.Core
                     "{Key}:{Id} already exists on target. " +
                     "Attempting update to ensure all fields are set.",
                     entity.LogicalName,
-                    entity.Id);
+                    entity.Id
+                );
 
                 try
                 {
@@ -382,7 +408,11 @@ namespace dvmig.Core
             if (msg.Contains("does not exist"))
             {
                 return await ResolveMissingDependencyAsync(
-                    ex, entity, options, ct);
+                    ex,
+                    entity,
+                    options,
+                    ct
+                );
             }
 
             if (msg.Contains("cannot be modified") ||
@@ -390,11 +420,19 @@ namespace dvmig.Core
                 msg.Contains("outside the valid range"))
             {
                 return await StripAttributeAndRetryAsync(
-                    ex, entity, options, ct);
+                    ex,
+                    entity,
+                    options,
+                    ct
+                );
             }
 
-            _logger.Error(ex, "Unresolved error for {Key}:{Id}",
-                entity.LogicalName, entity.Id);
+            _logger.Error(
+                ex,
+                "Unresolved error for {Key}:{Id}",
+                entity.LogicalName,
+                entity.Id
+            );
 
             return false;
         }
@@ -407,18 +445,22 @@ namespace dvmig.Core
             var recordKey = $"{entity.LogicalName}:{entity.Id}";
             _logger.Information(
                 "Handling state/status transition for {Key}",
-                recordKey);
+                recordKey
+            );
 
-            var stateValue = entity.Contains("statecode") ?
-                entity["statecode"] : null;
-            var statusValue = entity.Contains("statuscode") ?
-                entity["statuscode"] : null;
+            var stateValue = entity.Contains("statecode") 
+                ? entity["statecode"] 
+                : null;
+            var statusValue = entity.Contains("statuscode") 
+                ? entity["statuscode"] 
+                : null;
 
             _logger.Debug(
-                "Transition values for {Key} - State: {State}, Status: {Status}",
+                "Transition for {Key} - State: {State}, Status: {Status}",
                 recordKey,
                 stateValue ?? "NULL",
-                statusValue ?? "NULL");
+                statusValue ?? "NULL"
+            );
 
             // Remove status/state to allow basic creation/update
             entity.Attributes.Remove("statecode");
@@ -441,18 +483,20 @@ namespace dvmig.Core
                     if (stateOsv != null)
                     {
                         _logger.Information(
-                            "Applying SetState for {Key} (State: {State}, Status: {Status})",
+                            "Applying SetState for {Key} (State: {State})",
                             recordKey,
-                            stateOsv.Value,
-                            statusOsv?.Value.ToString() ?? "Default");
+                            stateOsv.Value
+                        );
 
                         var stateReq = new OrganizationRequest("SetState");
-                        stateReq.Parameters["EntityMoniker"] = new EntityReference(
-                            entity.LogicalName,
-                            entity.Id
-                        );
+                        stateReq.Parameters["EntityMoniker"] = 
+                            new EntityReference(
+                                entity.LogicalName,
+                                entity.Id
+                            );
                         stateReq.Parameters["State"] = stateOsv;
-                        stateReq.Parameters["Status"] = statusOsv ?? new OptionSetValue(-1);
+                        stateReq.Parameters["Status"] = 
+                            statusOsv ?? new OptionSetValue(-1);
 
                         await _target.ExecuteAsync(stateReq, ct);
                     }
@@ -461,7 +505,8 @@ namespace dvmig.Core
                         _logger.Warning(
                             "Cannot apply SetState for {Key}: State is null. " +
                             "Trying fallback Update for status only.",
-                            recordKey);
+                            recordKey
+                        );
                         
                         // Throw to trigger the fallback logic in catch block
                         throw new InvalidOperationException("State is null");
@@ -472,31 +517,40 @@ namespace dvmig.Core
                     _logger.Warning(
                         "SetState failed for {Key}: {Msg}",
                         recordKey,
-                        stateEx.Message);
+                        stateEx.Message
+                    );
 
                     // Fallback: Modern Update with only state/status
                     try
                     {
                         var transitionUpdate = new Entity(
                             entity.LogicalName,
-                            entity.Id);
+                            entity.Id
+                        );
                         
                         if (stateValue != null)
+                        {
                             transitionUpdate["statecode"] = stateValue;
+                        }
+
                         if (statusValue != null)
+                        {
                             transitionUpdate["statuscode"] = statusValue;
+                        }
 
                         await _target.UpdateAsync(transitionUpdate, ct);
                         _logger.Information(
                             "Applied transition via fallback Update for {Key}",
-                            recordKey);
+                            recordKey
+                        );
                     }
                     catch (Exception finalEx)
                     {
                         _logger.Warning(
                             "All transition attempts failed for {Key}: {Msg}",
                             recordKey,
-                            finalEx.Message);
+                            finalEx.Message
+                        );
                     }
                 }
             }
@@ -506,9 +560,20 @@ namespace dvmig.Core
 
         private OptionSetValue? ToOptionSetValue(object? value)
         {
-            if (value == null) return null;
-            if (value is OptionSetValue osv) return osv;
-            if (value is int i) return new OptionSetValue(i);
+            if (value == null)
+            {
+                return null;
+            }
+
+            if (value is OptionSetValue osv)
+            {
+                return osv;
+            }
+
+            if (value is int i)
+            {
+                return new OptionSetValue(i);
+            }
             
             return null;
         }
@@ -519,9 +584,10 @@ namespace dvmig.Core
             SyncOptions options,
             CancellationToken ct)
         {
-            var match = System.Text.RegularExpressions.Regex.Match(
+            var match = Regex.Match(
                 ex.Message,
-                @"'(\w+)'");
+                @"'(\w+)'"
+            );
 
             if (match.Success)
             {
@@ -532,14 +598,16 @@ namespace dvmig.Core
                         "Stripping attribute '{Attr}' for {Key}:{Id}",
                         attrName,
                         entity.LogicalName,
-                        entity.Id);
+                        entity.Id
+                    );
 
                     entity.Attributes.Remove(attrName);
 
                     return await CreateWithFixStrategyAsync(
                         entity,
                         options,
-                        ct);
+                        ct
+                    );
                 }
             }
 
@@ -558,10 +626,11 @@ namespace dvmig.Core
             var pattern =
                 @"(?:Entity )?'?(\w+)'? [Ww]ith Id\s*=\s*([a-fA-F0-9-]+)";
 
-            var match = System.Text.RegularExpressions.Regex.Match(
+            var match = Regex.Match(
                 ex.Message,
                 pattern,
-                System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                RegexOptions.IgnoreCase
+            );
 
             if (match.Success)
             {
@@ -572,7 +641,8 @@ namespace dvmig.Core
 
                 var tried = _triedDependencies.GetOrAdd(
                     recordKey,
-                    _ => new HashSet<string>());
+                    _ => new HashSet<string>()
+                );
 
                 if (tried.Contains(dependencyKey))
                 {
@@ -580,7 +650,8 @@ namespace dvmig.Core
                         "Already tried to resolve {Dep} for {Record}. " +
                         "Falling back to stripping logic.",
                         dependencyKey,
-                        recordKey);
+                        recordKey
+                    );
                 }
                 else
                 {
@@ -590,13 +661,15 @@ namespace dvmig.Core
                         "Missing dependency {Type}:{Id} detected. " +
                         "Attempting to resolve.",
                         missingType,
-                        missingId);
+                        missingId
+                    );
 
                     var missingRecord = await _source.RetrieveAsync(
                         missingType,
                         missingId,
                         null,
-                        ct);
+                        ct
+                    );
 
                     if (missingRecord != null)
                     {
@@ -613,7 +686,8 @@ namespace dvmig.Core
                                 "Mapping {SourceId} -> {TargetId}",
                                 missingType,
                                 missingId,
-                                targetId.Value);
+                                targetId.Value
+                            );
 
                             _idMappingCache[dependencyKey] = targetId.Value;
 
@@ -665,7 +739,8 @@ namespace dvmig.Core
                         .FirstOrDefault(a =>
                             a.Value is EntityReference er &&
                             er.LogicalName == missingType &&
-                            er.Id == missingId).Key;
+                            er.Id == missingId
+                        ).Key;
 
                     if (!string.IsNullOrEmpty(attrToStrip))
                     {
@@ -677,14 +752,16 @@ namespace dvmig.Core
                             missingId,
                             attrToStrip,
                             entity.LogicalName,
-                            entity.Id);
+                            entity.Id
+                        );
 
                         entity.Attributes.Remove(attrToStrip);
 
                         return await CreateWithFixStrategyAsync(
                             entity,
                             options,
-                            ct);
+                            ct
+                        );
                     }
                 }
             }
@@ -724,7 +801,8 @@ namespace dvmig.Core
                         "because source user could not be mapped.",
                         attr.Key,
                         entity.LogicalName,
-                        entity.Id);
+                        entity.Id
+                    );
 
                     continue;
                 }
@@ -859,7 +937,8 @@ namespace dvmig.Core
                         "Found {Count} records. Skipping mapping.",
                         sourceEntity.LogicalName,
                         sourceEntity[primaryAttr],
-                        results.Entities.Count);
+                        results.Entities.Count
+                    );
                 }
             }
 

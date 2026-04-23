@@ -1,0 +1,16 @@
+2026-04-22 22:19:00.896 +02:00 [INF] Starting sync of 10 entities
+2026-04-22 22:19:02.049 +02:00 [INF] Missing dependency transactioncurrency:"5bfd0160-a435-f111-88b3-7ced8d77d9f9" detected. Attempting to resolve.
+2026-04-22 22:19:02.301 +02:00 [INF] Found transactioncurrency by business key. Mapping "5bfd0160-a435-f111-88b3-7ced8d77d9f9" -> "0b933d6e-7031-f111-88b5-6045bdac9189"
+2026-04-22 22:19:02.371 +02:00 [WRN] Already tried to resolve transactioncurrency:5bfd0160-a435-f111-88b3-7ced8d77d9f9 for account:955bf53b-aa35-f111-88b3-7ced8d416e70. Falling back to stripping logic.
+2026-04-22 22:19:02.372 +02:00 [WRN] Dependency resolution failed for transactioncurrency:"5bfd0160-a435-f111-88b3-7ced8d77d9f9". Stripping attribute 'transactioncurrencyid' from account:"955bf53b-aa35-f111-88b3-7ced8d416e70" and retrying.
+2026-04-22 22:19:02.546 +02:00 [INF] account:"955bf53b-aa35-f111-88b3-7ced8d416e70" already exists on target. Attempting update to ensure all fields are set.
+2026-04-22 22:19:04.305 +02:00 [INF] account:"975bf53b-aa35-f111-88b3-7ced8d416e70" already exists on target. Attempting update to ensure all fields are set.
+2026-04-22 22:19:05.047 +02:00 [INF] account:"995bf53b-aa35-f111-88b3-7ced8d416e70" already exists on target. Attempting update to ensure all fields are set.
+2026-04-22 22:19:05.768 +02:00 [INF] account:"9b5bf53b-aa35-f111-88b3-7ced8d416e70" already exists on target. Attempting update to ensure all fields are set.
+2026-04-22 22:19:06.392 +02:00 [INF] account:"9d5bf53b-aa35-f111-88b3-7ced8d416e70" already exists on target. Attempting update to ensure all fields are set.
+2026-04-22 22:19:06.953 +02:00 [INF] account:"9f5bf53b-aa35-f111-88b3-7ced8d416e70" already exists on target. Attempting update to ensure all fields are set.
+2026-04-22 22:19:07.548 +02:00 [INF] account:"a15bf53b-aa35-f111-88b3-7ced8d416e70" already exists on target. Attempting update to ensure all fields are set.
+2026-04-22 22:19:08.200 +02:00 [INF] account:"a35bf53b-aa35-f111-88b3-7ced8d416e70" already exists on target. Attempting update to ensure all fields are set.
+2026-04-22 22:19:08.756 +02:00 [INF] account:"a55bf53b-aa35-f111-88b3-7ced8d416e70" already exists on target. Attempting update to ensure all fields are set.
+2026-04-22 22:19:09.300 +02:00 [INF] account:"a75bf53b-aa35-f111-88b3-7ced8d416e70" already exists on target. Attempting update to ensure all fields are set.
+2026-04-22 22:19:09.667 +02:00 [INF] Sync completed

@@ -1,8 +1,9 @@
+using dvmig.App.ViewModels;
+using System;
 using System.Collections.Specialized;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
-using dvmig.App.ViewModels;
 
 namespace dvmig.App.Views
 {
@@ -16,8 +17,7 @@ namespace dvmig.App.Views
 
         private void OnDataContextChanged(
             object sender,
-            DependencyPropertyChangedEventArgs e
-        )
+            DependencyPropertyChangedEventArgs e)
         {
             if (e.OldValue is MigrationDashboardViewModel oldVm)
             {
@@ -32,21 +32,27 @@ namespace dvmig.App.Views
 
         private void OnLogsCollectionChanged(
             object? sender,
-            NotifyCollectionChangedEventArgs e
-        )
+            NotifyCollectionChangedEventArgs e)
         {
             if (e.Action == NotifyCollectionChangedAction.Add)
             {
                 // Wrap in Dispatcher.BeginInvoke to ensure the UI has finished
                 // updating the ItemsControl before we attempt to scroll.
                 // This prevents 'ItemsControl is inconsistent' exceptions.
-                Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(() =>
-                {
-                    if (LogList.Items.Count > 0)
+                Dispatcher.BeginInvoke(
+                    DispatcherPriority.Background,
+                    new Action(() =>
                     {
-                        LogList.ScrollIntoView(LogList.Items[LogList.Items.Count - 1]);
-                    }
-                }));
+                        if (LogList.Items.Count > 0)
+                        {
+                            var lastItem = LogList.Items[
+                                LogList.Items.Count - 1
+                            ];
+                            
+                            LogList.ScrollIntoView(lastItem);
+                        }
+                    })
+                );
             }
         }
     }

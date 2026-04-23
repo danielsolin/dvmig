@@ -4,7 +4,6 @@ using dvmig.App.Services;
 using dvmig.Core;
 using System;
 using System.IO;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -52,8 +51,15 @@ namespace dvmig.App.ViewModels
 
         private bool _isSettingsLoading;
 
-        partial void OnRememberConnectionsChanged(bool value) => SaveCurrentSettings();
-        partial void OnAutoConnectChanged(bool value) => SaveCurrentSettings();
+        partial void OnRememberConnectionsChanged(bool value)
+        {
+            SaveCurrentSettings();
+        }
+        
+        partial void OnAutoConnectChanged(bool value)
+        {
+            SaveCurrentSettings();
+        }
 
         private void SaveCurrentSettings()
         {
@@ -89,8 +95,7 @@ namespace dvmig.App.ViewModels
             INavigationService navigationService,
             IMigrationService migrationService,
             ISettingsService settingsService,
-            ISetupService setupService
-        )
+            ISetupService setupService)
         {
             _navigationService = navigationService;
             _migrationService = migrationService;
@@ -216,10 +221,11 @@ namespace dvmig.App.ViewModels
 
                 if (result)
                 {
-                    IsEnvironmentReady = await _setupService.IsEnvironmentReadyAsync(
-                        _migrationService.TargetProvider!,
-                        _targetCts.Token
-                    );
+                    IsEnvironmentReady = await _setupService
+                        .IsEnvironmentReadyAsync(
+                            _migrationService.TargetProvider!,
+                            _targetCts.Token
+                        );
                 }
             }
             finally
@@ -317,7 +323,9 @@ namespace dvmig.App.ViewModels
             _navigationService.NavigateTo<EntitySelectionViewModel>();
         }
 
-
-        private bool CanProceed() => IsSourceConnected && IsTargetConnected;
+        private bool CanProceed()
+        {
+            return IsSourceConnected && IsTargetConnected;
+        }
     }
 }

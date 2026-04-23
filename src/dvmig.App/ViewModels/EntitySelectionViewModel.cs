@@ -2,6 +2,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using dvmig.App.Models;
 using dvmig.App.Services;
+using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
@@ -79,7 +80,7 @@ namespace dvmig.App.ViewModels
                     StartMigrationCommand.NotifyCanExecuteChanged();
                 });
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
                 Application.Current.Dispatcher.Invoke(() =>
                 {
@@ -116,7 +117,7 @@ namespace dvmig.App.ViewModels
             }
 
             var search = SearchText;
-            var comparison = System.StringComparison.OrdinalIgnoreCase;
+            var comparison = StringComparison.OrdinalIgnoreCase;
 
             return item.DisplayName.Contains(search, comparison) ||
                    item.LogicalName.Contains(search, comparison);
@@ -148,14 +149,22 @@ namespace dvmig.App.ViewModels
         {
             _migrationService.SelectedEntities.Clear();
             _migrationService.SelectedEntities.AddRange(
-                Entities.Where(e => e.IsSelected).Select(e => e.LogicalName));
+                Entities
+                    .Where(e => e.IsSelected)
+                    .Select(e => e.LogicalName)
+            );
 
             _navigationService.NavigateTo<MigrationDashboardViewModel>();
         }
 
-        private bool CanStartMigration() => Entities.Any(e => e.IsSelected);
+        private bool CanStartMigration()
+        {
+            return Entities.Any(e => e.IsSelected);
+        }
 
-        private void OnItemPropertyChanged(object? sender, PropertyChangedEventArgs e)
+        private void OnItemPropertyChanged(
+            object? sender,
+            PropertyChangedEventArgs e)
         {
             if (e.PropertyName == nameof(EntitySelectionItem.IsSelected))
             {
@@ -170,7 +179,10 @@ namespace dvmig.App.ViewModels
         {
             _migrationService.SelectedEntities.Clear();
             _migrationService.SelectedEntities.AddRange(
-                Entities.Where(e => e.IsSelected).Select(e => e.LogicalName));
+                Entities
+                    .Where(e => e.IsSelected)
+                    .Select(e => e.LogicalName)
+            );
 
             _navigationService.NavigateTo<ConnectionViewModel>();
         }
