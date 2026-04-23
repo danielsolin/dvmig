@@ -121,7 +121,7 @@ namespace dvmig.App.Services
                 var data = Encoding.UTF8.GetBytes(text);
                 var encrypted = ProtectedData.Protect(
                     data,
-                    null,
+                    LegacyEntropy,
                     DataProtectionScope.CurrentUser
                 );
 
@@ -146,10 +146,10 @@ namespace dvmig.App.Services
 
                 try
                 {
-                    // Try decrypting with no entropy (new format)
+                    // Try mandated decryption with legacy entropy
                     var decrypted = ProtectedData.Unprotect(
                         bytes,
-                        null,
+                        LegacyEntropy,
                         DataProtectionScope.CurrentUser
                     );
 
@@ -157,10 +157,10 @@ namespace dvmig.App.Services
                 }
                 catch (CryptographicException)
                 {
-                    // Fallback: try decrypting with legacy entropy
+                    // Fallback: try Jules' "no-entropy" format just in case
                     var decrypted = ProtectedData.Unprotect(
                         bytes,
-                        LegacyEntropy,
+                        null,
                         DataProtectionScope.CurrentUser
                     );
 
