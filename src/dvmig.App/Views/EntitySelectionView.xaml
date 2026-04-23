@@ -12,26 +12,26 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <!-- Search -->
+        <!-- Search & Filter -->
         <Border Padding="10" Background="White" BorderBrush="#E0E0E0" 
                 BorderThickness="1" CornerRadius="8" Margin="0,0,0,10">
             <DockPanel>
-                <TextBlock Text="Search:" VerticalAlignment="Center" Margin="0,0,10,0" />
+                <TextBlock Text="Search Entities:" VerticalAlignment="Center" Margin="0,0,10,0" />
                 <CheckBox Content="Show System Entities" IsChecked="{Binding ShowSystemEntities}" 
                           VerticalAlignment="Center" DockPanel.Dock="Right" Margin="20,0,0,0" />
                 <TextBox Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" />
             </DockPanel>
         </Border>
 
-        <!-- Entity Lists -->
+        <!-- Master-Detail Content -->
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="20" />
+                <ColumnDefinition Width="300" />
+                <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
 
-            <!-- Left List: Available Entities -->
+            <!-- Master: Entity List -->
             <Border Grid.Column="0" Background="White" BorderBrush="#E0E0E0" 
                     BorderThickness="1" CornerRadius="8">
                 <Grid>
@@ -40,65 +40,157 @@
                         <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
                     <TextBlock Text="Available Entities" FontWeight="Bold" Margin="10,10,10,5" Foreground="#757575" />
-                    <ListBox Grid.Row="1" ItemsSource="{Binding Entities}" HorizontalContentAlignment="Stretch" BorderThickness="0">
+                    <ListBox Grid.Row="1" ItemsSource="{Binding Entities}" 
+                             SelectedItem="{Binding ActiveEntity}"
+                             HorizontalContentAlignment="Stretch" BorderThickness="0">
+                        <ListBox.ItemContainerStyle>
+                            <Style TargetType="ListBoxItem">
+                                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                <Setter Property="Padding" Value="0" />
+                            </Style>
+                        </ListBox.ItemContainerStyle>
                         <ListBox.ItemTemplate>
                             <DataTemplate>
-                                <Border BorderBrush="#F5F5F5" BorderThickness="0,0,0,1" Padding="10">
-                                    <DockPanel LastChildFill="True">
-                                        <Button DockPanel.Dock="Right" 
-                                                Command="{Binding DataContext.ToggleSelectionCommand, RelativeSource={RelativeSource AncestorType=ListBox}}"
-                                                CommandParameter="{Binding}"
-                                                Content="ADD →" 
-                                                Padding="10,5" FontSize="10" 
-                                                Background="#4CAF50" Foreground="White" BorderThickness="0" />
-                                        
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <Border Grid.ColumnSpan="2" BorderBrush="#F5F5F5" BorderThickness="0,0,0,1" />
+
+                                    <!-- Explicit CheckBox Column -->
+                                    <CheckBox IsChecked="{Binding IsSelected}" 
+                                              VerticalAlignment="Center" 
+                                              Margin="10,0,0,0"
+                                              Grid.Column="0" />
+
+                                    <!-- Row Selection Button Column -->
+                                    <Button Grid.Column="1"
+                                            Command="{Binding DataContext.SelectEntityCommand, RelativeSource={RelativeSource AncestorType=ListBox}}"
+                                            CommandParameter="{Binding}"
+                                            Background="Transparent" BorderThickness="0"
+                                            HorizontalContentAlignment="Left">
+                                        <Button.Template>
+                                            <ControlTemplate TargetType="Button">
+                                                <Border Background="{TemplateBinding Background}" Padding="10">
+                                                    <ContentPresenter />
+                                                </Border>
+                                            </ControlTemplate>
+                                        </Button.Template>
                                         <StackPanel VerticalAlignment="Center">
                                             <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" />
-                                            <TextBlock Text="{Binding LogicalName}" FontSize="12" Foreground="Gray" />
+                                            <TextBlock Text="{Binding LogicalName}" FontSize="11" Foreground="Gray" />
                                         </StackPanel>
-                                    </DockPanel>
-                                </Border>
+                                    </Button>
+                                </Grid>
                             </DataTemplate>
                         </ListBox.ItemTemplate>
                     </ListBox>
                 </Grid>
             </Border>
 
-            <!-- Right List: Selected Entities -->
+            <!-- Splitter -->
+            <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Center" 
+                          VerticalAlignment="Stretch" Background="Transparent" />
+
+            <!-- Detail: Record Selection -->
             <Border Grid.Column="2" Background="White" BorderBrush="#E0E0E0" 
-                    BorderThickness="1" CornerRadius="8">
+                    BorderThickness="1" CornerRadius="8" Margin="10,0,0,0">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
                         <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
-                    <TextBlock Text="Selected Entities" FontWeight="Bold" Margin="10,10,10,5" Foreground="#757575" />
-                    <ListBox Grid.Row="1" ItemsSource="{Binding SelectedEntitiesView}" HorizontalContentAlignment="Stretch" BorderThickness="0">
-                        <ListBox.ItemTemplate>
-                            <DataTemplate>
-                                <Border BorderBrush="#F5F5F5" BorderThickness="0,0,0,1" Padding="10">
-                                    <DockPanel LastChildFill="True">
-                                        <Button DockPanel.Dock="Left" 
-                                                Command="{Binding DataContext.ToggleSelectionCommand, RelativeSource={RelativeSource AncestorType=ListBox}}"
-                                                CommandParameter="{Binding}"
-                                                Content="← REMOVE" 
-                                                Padding="10,5" FontSize="10" 
-                                                Background="#F44336" Foreground="White" BorderThickness="0" 
-                                                Margin="0,0,10,0"/>
 
-                                        <StackPanel VerticalAlignment="Center">
-                                            <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" />
-                                            <TextBlock Text="{Binding LogicalName}" FontSize="12" Foreground="Gray" />
-                                        </StackPanel>
-                                    </DockPanel>
-                                </Border>
-                            </DataTemplate>
-                        </ListBox.ItemTemplate>
-                    </ListBox>
+                    <TextBlock Text="{Binding ActiveEntity.DisplayName, StringFormat='Records for {0}'}" 
+                               FontWeight="Bold" Margin="10,10,10,5" Foreground="#757575" />
+
+                    <!-- Record Controls -->
+                    <StackPanel Grid.Row="1" Margin="10,5" Visibility="{Binding ActiveEntity, Converter={StaticResource NullToVisibilityConverter}}">
+                        <CheckBox Content="Sync All Records" IsChecked="{Binding ActiveEntity.SyncAllRecords}" Margin="0,0,0,10" />
+                        
+                        <DockPanel IsEnabled="{Binding ActiveEntity.SyncAllRecords, Converter={StaticResource InverseBooleanConverter}}">
+                            <TextBlock Text="Search Records:" VerticalAlignment="Center" Margin="0,0,10,0" />
+                            <TextBox Text="{Binding RecordSearchText, UpdateSourceTrigger=PropertyChanged}" />
+                        </DockPanel>
+                    </StackPanel>
+
+                    <!-- Record List -->
+                    <Grid Grid.Row="2" Visibility="{Binding ActiveEntity, Converter={StaticResource NullToVisibilityConverter}}">
+                        <ListBox ItemsSource="{Binding Records}" HorizontalContentAlignment="Stretch" BorderThickness="0"
+                                 IsEnabled="{Binding ActiveEntity.SyncAllRecords, Converter={StaticResource InverseBooleanConverter}}">
+                            <ListBox.ItemContainerStyle>
+                                <Style TargetType="ListBoxItem">
+                                    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                    <Setter Property="Padding" Value="0" />
+                                </Style>
+                            </ListBox.ItemContainerStyle>
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+
+                                        <Border Grid.ColumnSpan="2" BorderBrush="#F5F5F5" BorderThickness="0,0,0,1" />
+
+                                        <!-- Explicit CheckBox Column -->
+                                        <CheckBox IsChecked="{Binding IsSelected}" 
+                                                  VerticalAlignment="Center" 
+                                                  Margin="10,0,0,0"
+                                                  Grid.Column="0" />
+
+                                        <!-- Row Selection Button Column -->
+                                        <Button Grid.Column="1"
+                                                Command="{Binding DataContext.SelectRecordCommand, RelativeSource={RelativeSource AncestorType=ListBox}}"
+                                                CommandParameter="{Binding}"
+                                                Background="Transparent" BorderThickness="0"
+                                                HorizontalContentAlignment="Left">
+                                            <Button.Template>
+                                                <ControlTemplate TargetType="Button">
+                                                    <Border Background="{TemplateBinding Background}" Padding="10">
+                                                        <ContentPresenter />
+                                                    </Border>
+                                                </ControlTemplate>
+                                            </Button.Template>
+                                            <StackPanel>
+                                                <TextBlock Text="{Binding Name}" FontWeight="Medium" />
+                                                <TextBlock Text="{Binding Id}" FontSize="10" Foreground="Gray" />
+                                            </StackPanel>
+                                        </Button>
+                                    </Grid>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+
+                        <!-- Record Loading Overlay -->
+                        <Border Background="#80FFFFFF" Visibility="{Binding IsLoadingRecords, Converter={StaticResource BooleanToVisibilityConverter}}">
+                            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <TextBlock Text="Loading Records..." FontWeight="SemiBold" />
+                            </StackPanel>
+                        </Border>
+
+                        <!-- All Records Placeholder -->
+                        <Border Background="#F9F9F9" Visibility="{Binding ActiveEntity.SyncAllRecords, Converter={StaticResource BooleanToVisibilityConverter}}">
+                            <TextBlock Text="All records will be synchronized." 
+                                       HorizontalAlignment="Center" VerticalAlignment="Center" 
+                                       Foreground="#9E9E9E" FontStyle="Italic" />
+                        </Border>
+                    </Grid>
+
+                    <!-- No Selection Placeholder -->
+                    <Border Grid.RowSpan="3" Background="White" Visibility="{Binding ActiveEntity, Converter={StaticResource NullToVisibilityConverter}, ConverterParameter=Inverse}">
+                        <TextBlock Text="Select an entity to configure record selection" 
+                                   HorizontalAlignment="Center" VerticalAlignment="Center" 
+                                   Foreground="#9E9E9E" />
+                    </Border>
                 </Grid>
             </Border>
 
-            <!-- Loading Overlay -->
+            <!-- Metadata Loading Overlay -->
             <Border Grid.ColumnSpan="3" Background="#80FFFFFF" Visibility="{Binding IsLoading, Converter={StaticResource BooleanToVisibilityConverter}}">
                 <TextBlock Text="Loading Metadata..." HorizontalAlignment="Center" 
                            VerticalAlignment="Center" FontWeight="Bold" />

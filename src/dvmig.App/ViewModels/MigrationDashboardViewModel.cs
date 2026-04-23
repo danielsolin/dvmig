@@ -59,13 +59,40 @@ namespace dvmig.App.ViewModels
             try
             {
                 var entitiesToMigrate = _migrationService.SelectedEntities;
+                var sourceMetadata = await _migrationService
+                    .GetSourceEntitiesAsync(_cts.Token);
 
-                foreach (var logicalName in entitiesToMigrate)
+                // Calculate total records for overall progress
+                int overallTotal = 0;
+                foreach (var config in entitiesToMigrate)
                 {
+                    if (config.SyncAllRecords)
+                    {
+                        overallTotal += (int)await _migrationService
+                            .GetRecordCountAsync(config.LogicalName, _cts.Token);
+                    }
+                    else
+                    {
+                        overallTotal += config.SelectedRecordIds.Count;
+                    }
+                }
+
+                Progress.TotalRecords = overallTotal;
+                Progress.Update(0, 0, 0);
+                StatusText = $"Migrating {overallTotal} records...";
+
+                int cumulativeProcessed = 0;
+                int cumulativeSuccess = 0;
+                int cumulativeFailure = 0;
+
+                foreach (var config in entitiesToMigrate)
+                {
+                    var logicalName = config.LogicalName;
                     _cts.Token.ThrowIfCancellationRequested();
 
+                    Progress.CurrentEntity = logicalName;
                     progressReporter.Report(
-                        $"Fetching {logicalName} records..."
+                        $"Processing {logicalName}..."
                     );
 
                     var query = new QueryExpression(logicalName)
@@ -73,42 +100,66 @@ namespace dvmig.App.ViewModels
                         ColumnSet = new ColumnSet(true)
                     };
 
+                    if (!config.SyncAllRecords)
+                    {
+                        if (!config.SelectedRecordIds.Any())
+                        {
+                            progressReporter.Report(
+                                $"Skipping {logicalName}: No records selected."
+                            );
+
+                            continue;
+                        }
+
+                        var meta = sourceMetadata.FirstOrDefault(m =>
+                            m.LogicalName == logicalName
+                        );
+
+                        var primaryId = meta?.PrimaryIdAttribute ??
+                                        $"{logicalName}id";
+
+                        query.Criteria.AddCondition(
+                            primaryId,
+                            ConditionOperator.In,
+                            config.SelectedRecordIds
+                                .Select(id => (object)id)
+                                .ToArray()
+                        );
+                    }
+
                     var sourceRecords = await _migrationService.SourceProvider
                         .RetrieveMultipleAsync(query, _cts.Token);
 
                     if (sourceRecords.Entities.Count == 0)
                     {
                         progressReporter.Report(
-                            $"No records for {logicalName}."
+                            $"No records found for {logicalName}."
                         );
 
                         continue;
                     }
 
-                    Progress.CurrentEntity = logicalName;
-                    Progress.TotalRecords = sourceRecords.Entities.Count;
-                    Progress.Update(0, 0, 0);
-
-                    var processedCount = 0;
-                    var successCount = 0;
-                    var failureCount = 0;
+                    progressReporter.Report(
+                        $"Starting migration of {sourceRecords.Entities.Count} " +
+                        $"{logicalName} records..."
+                    );
 
                     var recordProgress = new Progress<bool>(success =>
                     {
-                        processedCount++;
+                        cumulativeProcessed++;
                         if (success)
                         {
-                            successCount++;
+                            cumulativeSuccess++;
                         }
                         else
                         {
-                            failureCount++;
+                            cumulativeFailure++;
                         }
 
                         Progress.Update(
-                            processedCount,
-                            successCount,
-                            failureCount
+                            cumulativeProcessed,
+                            cumulativeSuccess,
+                            cumulativeFailure
                         );
                     });
 
@@ -125,14 +176,17 @@ namespace dvmig.App.ViewModels
                 }
 
                 progressReporter.Report("Migration finished.");
+                StatusText = "Migration completed.";
             }
             catch (OperationCanceledException)
             {
                 progressReporter.Report("MIGRATION CANCELLED BY USER.");
+                StatusText = "Migration cancelled.";
             }
             catch (Exception ex)
             {
                 progressReporter.Report($"CRITICAL ERROR: {ex.Message}");
+                StatusText = "Migration failed.";
             }
             finally
             {

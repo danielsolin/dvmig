@@ -1,6 +1,9 @@
+using dvmig.App.Models;
 using dvmig.Providers;
+using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Messages;
 using Microsoft.Xrm.Sdk.Metadata;
+using Microsoft.Xrm.Sdk.Query;
 
 namespace dvmig.App.Services
 {
@@ -22,6 +25,17 @@ namespace dvmig.App.Services
             CancellationToken ct = default
         );
 
+        Task<long> GetRecordCountAsync(
+            string logicalName,
+            CancellationToken ct = default
+        );
+
+        Task<List<RecordSelectionItem>> GetRecordsAsync(
+            string logicalName,
+            string? searchText = null,
+            CancellationToken ct = default
+        );
+
         void DisconnectSource();
 
         void DisconnectTarget();
@@ -29,7 +43,7 @@ namespace dvmig.App.Services
         IDataverseProvider? SourceProvider { get; }
         IDataverseProvider? TargetProvider { get; }
 
-        List<string> SelectedEntities { get; }
+        List<EntitySyncConfiguration> SelectedEntities { get; }
 
         bool IsStandardEntity(string logicalName);
     }
@@ -42,7 +56,8 @@ namespace dvmig.App.Services
 
         public IDataverseProvider? TargetProvider { get; private set; }
 
-        public List<string> SelectedEntities { get; } = new List<string>();
+        public List<EntitySyncConfiguration> SelectedEntities { get; } = 
+            new List<EntitySyncConfiguration>();
 
         public void DisconnectSource()
         {
@@ -171,6 +186,103 @@ namespace dvmig.App.Services
                 .ToList();
 
             return _cachedMetadata;
+        }
+
+        public async Task<long> GetRecordCountAsync(
+            string logicalName,
+            CancellationToken ct = default)
+        {
+            if (SourceProvider == null)
+            {
+                return 0;
+            }
+
+            var metadata = await GetSourceEntitiesAsync(ct);
+            var entityMeta = metadata.FirstOrDefault(e => 
+                e.LogicalName == logicalName
+            );
+
+            if (entityMeta == null)
+            {
+                return 0;
+            }
+
+            var primaryId = entityMeta.PrimaryIdAttribute;
+
+            var fetchXml = $@"
+                <fetch aggregate='true'>
+                  <entity name='{logicalName}'>
+                    <attribute name='{primaryId}' alias='count' aggregate='count' />
+                  </entity>
+                </fetch>";
+
+            var response = await SourceProvider.RetrieveMultipleAsync(
+                new FetchExpression(fetchXml),
+                ct
+            );
+
+            if (response.Entities.Count > 0 && 
+                response.Entities[0].Contains("count"))
+            {
+                var aliasedValue = (AliasedValue)response.Entities[0]["count"];
+                return (int)aliasedValue.Value;
+            }
+
+            return 0;
+        }
+
+        public async Task<List<RecordSelectionItem>> GetRecordsAsync(
+            string logicalName,
+            string? searchText = null,
+            CancellationToken ct = default)
+        {
+            if (SourceProvider == null)
+            {
+                return new List<RecordSelectionItem>();
+            }
+
+            var metadata = await GetSourceEntitiesAsync(ct);
+            var entityMeta = metadata.FirstOrDefault(e => 
+                e.LogicalName == logicalName
+            );
+
+            if (entityMeta == null)
+            {
+                return new List<RecordSelectionItem>();
+            }
+
+            var primaryId = entityMeta.PrimaryIdAttribute;
+            var primaryName = entityMeta.PrimaryNameAttribute;
+
+            var query = new QueryExpression(logicalName)
+            {
+                ColumnSet = new ColumnSet(primaryId, primaryName),
+                TopCount = 100
+            };
+
+            if (!string.IsNullOrWhiteSpace(searchText))
+            {
+                query.Criteria.AddCondition(
+                    primaryName, 
+                    ConditionOperator.Like, 
+                    $"%{searchText}%"
+                );
+            }
+
+            var results = await SourceProvider.RetrieveMultipleAsync(
+                query, 
+                ct
+            );
+
+            var config = SelectedEntities.FirstOrDefault(c => 
+                c.LogicalName == logicalName
+            );
+
+            return results.Entities.Select(e => new RecordSelectionItem(
+                e.Id,
+                e.Contains(primaryName) ? e[primaryName].ToString()! : e.Id.ToString(),
+                config?.SelectedRecordIds.Contains(e.Id) ?? false
+            )).ToList();
         }
 
         public bool IsStandardEntity(string logicalName)

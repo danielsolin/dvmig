@@ -14,6 +14,7 @@ namespace dvmig.App.ViewModels
         private readonly INavigationService _navigationService;
         private readonly IMigrationService _migrationService;
         private readonly ICollectionView _entitiesView;
+        private CancellationTokenSource? _recordCts;
 
         [ObservableProperty]
         private string _searchText = string.Empty;
@@ -24,10 +25,20 @@ namespace dvmig.App.ViewModels
         [ObservableProperty]
         private bool _isLoading;
 
+        [ObservableProperty]
+        private EntitySelectionItem? _activeEntity;
+
+        [ObservableProperty]
+        private string _recordSearchText = string.Empty;
+
+        [ObservableProperty]
+        private bool _isLoadingRecords;
+
         public ObservableCollection<EntitySelectionItem> Entities { get; } =
             new ObservableCollection<EntitySelectionItem>();
 
-        public ICollectionView SelectedEntitiesView { get; }
+        public ObservableCollection<RecordSelectionItem> Records { get; } =
+            new ObservableCollection<RecordSelectionItem>();
 
         public EntitySelectionViewModel(
             INavigationService navigationService,
@@ -38,9 +49,6 @@ namespace dvmig.App.ViewModels
 
             _entitiesView = CollectionViewSource.GetDefaultView(Entities);
             _entitiesView.Filter = FilterEntities;
-
-            SelectedEntitiesView = new ListCollectionView(Entities);
-            SelectedEntitiesView.Filter = FilterSelectedEntities;
 
             // Load on start
             _ = LoadEntitiesAsync();
@@ -68,10 +76,17 @@ namespace dvmig.App.ViewModels
                             displayName
                         );
 
-                        if (_migrationService.SelectedEntities.Contains(
-                            meta.LogicalName))
+                        var existing = _migrationService.SelectedEntities
+                            .FirstOrDefault(e => e.LogicalName == meta.LogicalName);
+
+                        if (existing != null)
                         {
                             item.IsSelected = true;
+                            item.SyncAllRecords = existing.SyncAllRecords;
+                            foreach (var id in existing.SelectedRecordIds)
+                            {
+                                item.SelectedRecordIds.Add(id);
+                            }
                         }
 
                         item.PropertyChanged += OnItemPropertyChanged;
@@ -79,6 +94,7 @@ namespace dvmig.App.ViewModels
                     }
 
                     StartMigrationCommand.NotifyCanExecuteChanged();
+                    _ = UpdateSyncCountAsync();
                 });
             }
             catch (Exception ex)
@@ -106,12 +122,6 @@ namespace dvmig.App.ViewModels
                 return false;
             }
 
-            // Mutual exclusivity: only show if NOT selected
-            if (item.IsSelected)
-            {
-                return false;
-            }
-
             // Filter out non-standard entities if toggle is off
             if (!ShowSystemEntities)
             {
@@ -133,16 +143,6 @@ namespace dvmig.App.ViewModels
                    item.LogicalName.Contains(search, comparison);
         }
 
-        private bool FilterSelectedEntities(object obj)
-        {
-            if (obj is not EntitySelectionItem item)
-            {
-                return false;
-            }
-
-            return item.IsSelected;
-        }
-
         partial void OnSearchTextChanged(string value)
         {
             _entitiesView.Refresh();
@@ -151,6 +151,110 @@ namespace dvmig.App.ViewModels
         partial void OnShowSystemEntitiesChanged(bool value)
         {
             _entitiesView.Refresh();
+        }
+
+        partial void OnActiveEntityChanged(EntitySelectionItem? value)
+        {
+            SaveConfiguration();
+            RecordSearchText = string.Empty;
+            _ = LoadRecordsAsync();
+            StartMigrationCommand.NotifyCanExecuteChanged();
+        }
+
+        partial void OnRecordSearchTextChanged(string value)
+        {
+            _ = LoadRecordsAsync();
+        }
+
+        private async Task LoadRecordsAsync()
+        {
+            if (ActiveEntity == null)
+            {
+                Records.Clear();
+                return;
+            }
+
+            _recordCts?.Cancel();
+            _recordCts = new CancellationTokenSource();
+            var token = _recordCts.Token;
+
+            IsLoadingRecords = true;
+            try
+            {
+                // Add a small delay for debounce
+                await Task.Delay(300, token);
+
+                var records = await _migrationService.GetRecordsAsync(
+                    ActiveEntity.LogicalName,
+                    RecordSearchText,
+                    token
+                );
+
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    Records.Clear();
+                    foreach (var record in records)
+                    {
+                        record.PropertyChanged += OnRecordPropertyChanged;
+                        Records.Add(record);
+                    }
+                    
+                    // Trigger validation after records are loaded
+                    StartMigrationCommand.NotifyCanExecuteChanged();
+                });
+            }
+            catch (OperationCanceledException)
+            {
+                // Ignore
+            }
+            finally
+            {
+                if (!token.IsCancellationRequested)
+                {
+                    IsLoadingRecords = false;
+                }
+            }
+        }
+
+        private void OnRecordPropertyChanged(
+            object? sender,
+            PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(RecordSelectionItem.IsSelected) &&
+                sender is RecordSelectionItem record &&
+                ActiveEntity != null)
+            {
+                if (record.IsSelected)
+                {
+                    ActiveEntity.SelectedRecordIds.Add(record.Id);
+                    // Automatically select the entity if a record is chosen
+                    ActiveEntity.IsSelected = true;
+                }
+                else
+                {
+                    ActiveEntity.SelectedRecordIds.Remove(record.Id);
+                }
+
+                StartMigrationCommand.NotifyCanExecuteChanged();
+                _ = UpdateSyncCountAsync();
+            }
+        }
+
+        [RelayCommand]
+        private void SelectEntity(EntitySelectionItem item)
+        {
+            ActiveEntity = item;
+            item.IsSelected = true;
+            StartMigrationCommand.NotifyCanExecuteChanged();
+            _ = UpdateSyncCountAsync();
+        }
+
+        [RelayCommand]
+        private void SelectRecord(RecordSelectionItem record)
+        {
+            record.IsSelected = true;
+            StartMigrationCommand.NotifyCanExecuteChanged();
+            _ = UpdateSyncCountAsync();
         }
 
         [RelayCommand]
@@ -162,19 +266,121 @@ namespace dvmig.App.ViewModels
         [RelayCommand(CanExecute = nameof(CanStartMigration))]
         private void StartMigration()
         {
-            _migrationService.SelectedEntities.Clear();
-            _migrationService.SelectedEntities.AddRange(
-                Entities
-                    .Where(e => e.IsSelected)
-                    .Select(e => e.LogicalName)
-            );
-
+            SaveConfiguration();
             _navigationService.NavigateTo<MigrationDashboardViewModel>();
+        }
+
+        private void SaveConfiguration()
+        {
+            foreach (var item in Entities)
+            {
+                var existing = _migrationService.SelectedEntities
+                    .FirstOrDefault(e => e.LogicalName == item.LogicalName);
+
+                if (item.IsSelected)
+                {
+                    if (existing == null)
+                    {
+                        existing = new EntitySyncConfiguration(item.LogicalName);
+                        _migrationService.SelectedEntities.Add(existing);
+                    }
+
+                    existing.SyncAllRecords = item.SyncAllRecords;
+                    existing.SelectedRecordIds.Clear();
+                    foreach (var id in item.SelectedRecordIds)
+                    {
+                        existing.SelectedRecordIds.Add(id);
+                    }
+                }
+                else if (existing != null)
+                {
+                    _migrationService.SelectedEntities.Remove(existing);
+                }
+            }
         }
 
         private bool CanStartMigration()
         {
-            return Entities.Any(e => e.IsSelected);
+            var selected = Entities.Where(e => e.IsSelected).ToList();
+
+            // Allow proceeding if at least one selected entity is valid.
+            // Invalid entities (SyncAll=false and 0 records) will be skipped.
+            return selected.Any(e => 
+                e.SyncAllRecords || e.SelectedRecordIds.Any()
+            );
+        }
+
+        private Task UpdateSyncCountAsync()
+        {
+            var selectedEntities = Entities.Where(e => e.IsSelected).ToList();
+            long total = 0;
+            bool pendingCount = false;
+            int selectedCount = selectedEntities.Count;
+
+            foreach (var item in selectedEntities)
+            {
+                if (item.SyncAllRecords)
+                {
+                    if (!item.IsRecordCountFetched)
+                    {
+                        pendingCount = true;
+                        if (!item.IsFetchingRecordCount)
+                        {
+                            item.IsFetchingRecordCount = true;
+                            // Fetch count in background
+                            _ = FetchRecordCountBackgroundAsync(item);
+                        }
+                    }
+                    else
+                    {
+                        total += item.RecordCount;
+                    }
+                }
+                else
+                {
+                    total += item.SelectedRecordIds.Count;
+                }
+            }
+
+            if (selectedCount == 0)
+            {
+                StatusText = "Ready";
+            }
+            else
+            {
+                StatusText = pendingCount 
+                    ? $"Records to sync: {total}+ (fetching counts... {selectedCount} entities)" 
+                    : $"Records to sync: {total} ({selectedCount} entities selected)";
+            }
+
+            return Task.CompletedTask;
+        }
+
+        private async Task FetchRecordCountBackgroundAsync(
+            EntitySelectionItem item)
+        {
+            try
+            {
+                var count = await _migrationService.GetRecordCountAsync(
+                    item.LogicalName
+                );
+                
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    item.RecordCount = count;
+                    item.IsRecordCountFetched = true;
+                    _ = UpdateSyncCountAsync();
+                });
+            }
+            catch
+            {
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    item.RecordCount = 0;
+                    item.IsRecordCountFetched = true;
+                    _ = UpdateSyncCountAsync();
+                });
+            }
         }
 
         private void OnItemPropertyChanged(
@@ -183,22 +389,27 @@ namespace dvmig.App.ViewModels
         {
             if (e.PropertyName == nameof(EntitySelectionItem.IsSelected))
             {
-                _entitiesView.Refresh();
-                SelectedEntitiesView.Refresh();
                 StartMigrationCommand.NotifyCanExecuteChanged();
+                _ = UpdateSyncCountAsync();
+            }
+            else if (e.PropertyName == nameof(EntitySelectionItem.SyncAllRecords) &&
+                     sender is EntitySelectionItem item)
+            {
+                if (item.SyncAllRecords)
+                {
+                    // If "Sync All" is toggled on, ensure the entity is selected
+                    item.IsSelected = true;
+                }
+
+                StartMigrationCommand.NotifyCanExecuteChanged();
+                _ = UpdateSyncCountAsync();
             }
         }
 
         [RelayCommand]
         private void GoBack()
         {
-            _migrationService.SelectedEntities.Clear();
-            _migrationService.SelectedEntities.AddRange(
-                Entities
-                    .Where(e => e.IsSelected)
-                    .Select(e => e.LogicalName)
-            );
-
+            SaveConfiguration();
             _navigationService.NavigateTo<ConnectionViewModel>();
         }
     }

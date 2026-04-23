@@ -46,7 +46,7 @@
         <Border Grid.Row="2" Background="#E0E0E0" BorderBrush="#BDBDBD" BorderThickness="0,1,0,0">
             <StatusBar Background="Transparent">
                 <StatusBarItem>
-                    <TextBlock Text="Ready" FontSize="12" Foreground="#616161" />
+                    <TextBlock Text="{Binding CurrentViewModel.StatusText}" FontSize="12" Foreground="#616161" />
                 </StatusBarItem>
             </StatusBar>
         </Border>
