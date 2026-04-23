@@ -48,7 +48,7 @@ namespace dvmig.Cli
                 _target,
                 logger
             );
-            
+
             _engine = new SyncEngine(
                 _source,
                 _target,
@@ -93,10 +93,10 @@ namespace dvmig.Cli
                 {
                     try
                     {
-                        IDataverseProvider provider = isLegacy 
-                            ? new LegacyCrmProvider(connStr) 
+                        IDataverseProvider provider = isLegacy
+                            ? new LegacyCrmProvider(connStr)
                             : new DataverseProvider(connStr);
-                        
+
                         // Test connection
                         await provider.ExecuteAsync(
                             new WhoAmIRequest(),
@@ -134,19 +134,19 @@ namespace dvmig.Cli
                             RetrieveAsIfPublished = true
                         };
 
-                        var response = (RetrieveAllEntitiesResponse)await 
+                        var response = (RetrieveAllEntitiesResponse)await
                             _source!.ExecuteAsync(request, default);
-                        
+
                         var entities = response.EntityMetadata
-                            .Where(e => 
-                                (e.IsCustomEntity == true || 
+                            .Where(e =>
+                                (e.IsCustomEntity == true ||
                                  IsStandardEntity(e.LogicalName)) &&
                                 e.IsIntersect == false &&
                                 e.IsValidForAdvancedFind == true &&
                                 !string.IsNullOrEmpty(
                                     e.DisplayName?.UserLocalizedLabel?.Label))
-                            .OrderBy(e => 
-                                e.DisplayName?.UserLocalizedLabel?.Label ?? 
+                            .OrderBy(e =>
+                                e.DisplayName?.UserLocalizedLabel?.Label ??
                                 e.LogicalName)
                             .ToList();
 
@@ -225,7 +225,7 @@ namespace dvmig.Cli
                     query,
                     default
                 );
-                
+
                 if (sourceRecords.Entities.Count == 0)
                 {
                     AnsiConsole.MarkupLine(
@@ -243,7 +243,7 @@ namespace dvmig.Cli
                             true,
                             sourceRecords.Entities.Count
                         );
-                        
+
                         var recordProgress = new Progress<bool>(success =>
                         {
                             task.Increment(1);

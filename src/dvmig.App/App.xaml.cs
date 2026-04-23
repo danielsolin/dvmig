@@ -1,11 +1,10 @@
+using System.IO;
+using System.Windows;
 using dvmig.App.Services;
 using dvmig.App.ViewModels;
 using dvmig.Core;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
-using System;
-using System.IO;
-using System.Windows;
 
 namespace dvmig.App
 {
@@ -99,7 +98,7 @@ namespace dvmig.App
                 .GetRequiredService<MainViewModel>();
 
             mainWindow.Show();
-            
+
             base.OnStartup(e);
         }
     }

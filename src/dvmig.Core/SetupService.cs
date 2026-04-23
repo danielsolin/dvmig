@@ -5,11 +5,6 @@ using Microsoft.Xrm.Sdk.Messages;
 using Microsoft.Xrm.Sdk.Metadata;
 using Microsoft.Xrm.Sdk.Query;
 using Serilog;
-using System;
-using System.IO;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace dvmig.Core
 {
@@ -47,7 +42,7 @@ namespace dvmig.Core
 
                 var assemblies = await target.RetrieveMultipleAsync(query, ct);
                 var assembly = assemblies.Entities.FirstOrDefault();
-                
+
                 if (assembly == null)
                 {
                     return false;
@@ -66,7 +61,7 @@ namespace dvmig.Core
 
                 var types = await target.RetrieveMultipleAsync(typeQuery, ct);
                 var pluginType = types.Entities.FirstOrDefault();
-                
+
                 if (pluginType == null)
                 {
                     return false;
@@ -78,7 +73,7 @@ namespace dvmig.Core
                     ColumnSet = new ColumnSet("sdkmessageprocessingstepid")
                 };
                 stepQuery.AddAttributeValue("plugintypeid", pluginType.Id);
-                
+
                 var steps = await target.RetrieveMultipleAsync(stepQuery, ct);
 
                 // We require both Create and Update steps to be registered
@@ -105,7 +100,7 @@ namespace dvmig.Core
                 _logger.Information(
                     "Creating 'dm_sourcedate' entity schema..."
                 );
-                
+
                 progress?.Report("Creating 'dm_sourcedate' entity schema...");
 
                 var entityReq = new CreateEntityRequest
@@ -140,13 +135,13 @@ namespace dvmig.Core
                 };
 
                 await target.ExecuteAsync(entityReq, ct);
-                
+
                 _logger.Information(
                     "Entity created. Waiting for metadata propagation..."
                 );
-                
+
                 progress?.Report("Waiting for metadata propagation...");
-                
+
                 // Mandatory wait for Dataverse Online metadata propagation
                 await Task.Delay(5000, ct);
 
@@ -160,7 +155,7 @@ namespace dvmig.Core
                 _logger.Information(
                     "'dm_sourcedate' entity already exists. Checking attributes."
                 );
-                
+
                 progress?.Report(
                     "'dm_sourcedate' already exists. Checking attributes."
                 );
@@ -212,7 +207,7 @@ namespace dvmig.Core
 
             _logger.Information("Publishing changes...");
             progress?.Report("Publishing changes...");
-            
+
             await target.ExecuteAsync(new PublishAllXmlRequest(), ct);
 
             _logger.Information("Schema creation completed.");
@@ -275,7 +270,7 @@ namespace dvmig.Core
 
             _logger.Information("Deploying plugin assembly...");
             progress?.Report("Deploying plugin assembly...");
-            
+
             var assemblyBytes = await File.ReadAllBytesAsync(
                 pluginAssemblyPath,
                 ct
@@ -296,7 +291,7 @@ namespace dvmig.Core
                 ColumnSet = new ColumnSet("pluginassemblyid")
             };
             query.AddAttributeValue("name", "dvmig.Plugins");
-            
+
             var existing = await target.RetrieveMultipleAsync(query, ct);
             Guid assemblyId;
 
@@ -304,16 +299,16 @@ namespace dvmig.Core
             {
                 assemblyId = existing.Entities.First().Id;
                 assembly.Id = assemblyId;
-                
+
                 await target.UpdateAsync(assembly, ct);
-                
+
                 _logger.Information("Updated existing plugin assembly.");
                 progress?.Report("Updated existing plugin assembly.");
             }
             else
             {
                 assemblyId = await target.CreateAsync(assembly, ct);
-                
+
                 _logger.Information("Created new plugin assembly.");
                 progress?.Report("Created new plugin assembly.");
             }
@@ -344,7 +339,7 @@ namespace dvmig.Core
             if (types.Entities.Any())
             {
                 typeId = types.Entities.First().Id;
-                
+
                 _logger.Information("Plugin type already registered.");
                 progress?.Report("Plugin type already registered.");
             }
@@ -358,9 +353,9 @@ namespace dvmig.Core
                 type["typename"] = "dvmig.Plugins.DMPlugin";
                 type["name"] = "dvmig.Plugins.DMPlugin";
                 type["friendlyname"] = "DMPlugin";
-                
+
                 typeId = await target.CreateAsync(type, ct);
-                
+
                 _logger.Information("Registered plugin type.");
                 progress?.Report("Registered plugin type.");
             }
@@ -395,14 +390,14 @@ namespace dvmig.Core
                 ColumnSet = new ColumnSet("sdkmessageid")
             };
             msgQuery.AddAttributeValue("name", messageName);
-            
+
             var msgs = await target.RetrieveMultipleAsync(msgQuery, ct);
-            
+
             if (!msgs.Entities.Any())
             {
                 throw new Exception($"SdkMessage '{messageName}' not found.");
             }
-            
+
             var messageId = msgs.Entities.First().Id;
 
             // 2. Define Step
@@ -440,12 +435,12 @@ namespace dvmig.Core
             {
                 step.Id = existingSteps.Entities.First().Id;
                 await target.UpdateAsync(step, ct);
-                
+
                 _logger.Information(
                     "Updated existing plugin step for {0}.",
                     messageName
                 );
-                
+
                 progress?.Report(
                     $"Updated existing plugin step for {messageName}."
                 );
@@ -453,12 +448,12 @@ namespace dvmig.Core
             else
             {
                 await target.CreateAsync(step, ct);
-                
+
                 _logger.Information(
                     "Created new plugin step for {0}.",
                     messageName
                 );
-                
+
                 progress?.Report(
                     $"Created new plugin step for {messageName}."
                 );

@@ -1,7 +1,4 @@
 using dvmig.Providers;
-using System;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace dvmig.Core
 {

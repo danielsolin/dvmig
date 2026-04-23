@@ -1,3 +1,5 @@
+using System.Collections.Concurrent;
+using System.Text.RegularExpressions;
 using dvmig.Providers;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Messages;
@@ -6,13 +8,6 @@ using Microsoft.Xrm.Sdk.Query;
 using Polly;
 using Polly.Retry;
 using Serilog;
-using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text.RegularExpressions;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace dvmig.Core
 {
@@ -448,11 +443,11 @@ namespace dvmig.Core
                 recordKey
             );
 
-            var stateValue = entity.Contains("statecode") 
-                ? entity["statecode"] 
+            var stateValue = entity.Contains("statecode")
+                ? entity["statecode"]
                 : null;
-            var statusValue = entity.Contains("statuscode") 
-                ? entity["statuscode"] 
+            var statusValue = entity.Contains("statuscode")
+                ? entity["statuscode"]
                 : null;
 
             _logger.Debug(
@@ -489,13 +484,13 @@ namespace dvmig.Core
                         );
 
                         var stateReq = new OrganizationRequest("SetState");
-                        stateReq.Parameters["EntityMoniker"] = 
+                        stateReq.Parameters["EntityMoniker"] =
                             new EntityReference(
                                 entity.LogicalName,
                                 entity.Id
                             );
                         stateReq.Parameters["State"] = stateOsv;
-                        stateReq.Parameters["Status"] = 
+                        stateReq.Parameters["Status"] =
                             statusOsv ?? new OptionSetValue(-1);
 
                         await _target.ExecuteAsync(stateReq, ct);
@@ -507,7 +502,7 @@ namespace dvmig.Core
                             "Trying fallback Update for status only.",
                             recordKey
                         );
-                        
+
                         // Throw to trigger the fallback logic in catch block
                         throw new InvalidOperationException("State is null");
                     }
@@ -527,7 +522,7 @@ namespace dvmig.Core
                             entity.LogicalName,
                             entity.Id
                         );
-                        
+
                         if (stateValue != null)
                         {
                             transitionUpdate["statecode"] = stateValue;
@@ -574,7 +569,7 @@ namespace dvmig.Core
             {
                 return new OptionSetValue(i);
             }
-            
+
             return null;
         }
 
@@ -897,7 +892,7 @@ namespace dvmig.Core
                         {
                             return results.Entities.First().Id;
                         }
-                        
+
                         if (results.Entities.Count > 1)
                         {
                             _logger.Warning(

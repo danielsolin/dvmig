@@ -1,6 +1,6 @@
-using Microsoft.Xrm.Sdk;
 using System.Collections.Concurrent;
 using dvmig.Providers;
+using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Query;
 using Serilog;
 

@@ -2,10 +2,6 @@ using dvmig.Providers;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Query;
 using Serilog;
-using System;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace dvmig.Core
 {
@@ -91,7 +87,7 @@ namespace dvmig.Core
         private Entity CreateSourceDateEntity(Entity entity)
         {
             var sourceDate = new Entity("dm_sourcedate");
-            
+
             sourceDate["dm_sourceentityid"] = entity.Id.ToString();
 
             sourceDate["dm_sourceentitylogicalname"] =

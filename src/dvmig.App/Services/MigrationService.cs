@@ -1,11 +1,6 @@
 using dvmig.Providers;
 using Microsoft.Xrm.Sdk.Messages;
 using Microsoft.Xrm.Sdk.Metadata;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace dvmig.App.Services
 {
@@ -40,11 +35,11 @@ namespace dvmig.App.Services
     public class MigrationService : IMigrationService
     {
         private List<EntityMetadata>? _cachedMetadata;
-        
+
         public IDataverseProvider? SourceProvider { get; private set; }
-        
+
         public IDataverseProvider? TargetProvider { get; private set; }
-        
+
         public List<string> SelectedEntities { get; } = new List<string>();
 
         public void DisconnectSource()
@@ -168,14 +163,14 @@ namespace dvmig.App.Services
 
             _cachedMetadata = response.EntityMetadata
                 .Where(e =>
-                    (e.IsCustomEntity == true || 
+                    (e.IsCustomEntity == true ||
                      IsStandardEntity(e.LogicalName)) &&
                     e.IsIntersect == false &&
                     e.IsValidForAdvancedFind == true &&
                     !string.IsNullOrEmpty(
                         e.DisplayName?.UserLocalizedLabel?.Label)
                 )
-                .OrderBy(e => 
+                .OrderBy(e =>
                     e.DisplayName?.UserLocalizedLabel?.Label ??
                     e.LogicalName
                 )

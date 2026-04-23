@@ -84,7 +84,7 @@ namespace dvmig.Tests
             var contactId = Guid.NewGuid();
 
             var contact = new Entity("contact", contactId);
-            contact["parentcustomerid"] = 
+            contact["parentcustomerid"] =
                 new EntityReference("account", accountId);
 
             var account = new Entity("account", accountId);
@@ -148,9 +148,9 @@ namespace dvmig.Tests
             var contactId = Guid.NewGuid();
 
             var intersectEntity = new Entity(relName, Guid.NewGuid());
-            intersectEntity["accountid"] = 
+            intersectEntity["accountid"] =
                 new EntityReference("account", accountId);
-            intersectEntity["contactid"] = 
+            intersectEntity["contactid"] =
                 new EntityReference("contact", contactId);
 
             var metadata = new Microsoft.Xrm.Sdk.Metadata.EntityMetadata

@@ -1,13 +1,10 @@
+using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using dvmig.App.Models;
 using dvmig.App.Services;
 using dvmig.Core;
 using Microsoft.Xrm.Sdk.Query;
-using System;
-using System.Collections.ObjectModel;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace dvmig.App.ViewModels
 {

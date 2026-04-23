@@ -1,9 +1,8 @@
-using dvmig.App.ViewModels;
-using System;
 using System.Collections.Specialized;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
+using dvmig.App.ViewModels;
 
 namespace dvmig.App.Views
 {
@@ -48,7 +47,7 @@ namespace dvmig.App.Views
                             var lastItem = LogList.Items[
                                 LogList.Items.Count - 1
                             ];
-                            
+
                             LogList.ScrollIntoView(lastItem);
                         }
                     })

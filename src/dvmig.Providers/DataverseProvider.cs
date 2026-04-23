@@ -1,12 +1,9 @@
+using System.ServiceModel;
 using Microsoft.PowerPlatform.Dataverse.Client;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Messages;
 using Microsoft.Xrm.Sdk.Metadata;
 using Microsoft.Xrm.Sdk.Query;
-using System;
-using System.ServiceModel;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace dvmig.Providers
 {
@@ -45,8 +42,8 @@ namespace dvmig.Providers
         {
             try
             {
-                var columnSet = columns == null 
-                    ? new ColumnSet(true) 
+                var columnSet = columns == null
+                    ? new ColumnSet(true)
                     : new ColumnSet(columns);
 
                 return await _client.RetrieveAsync(
@@ -59,7 +56,7 @@ namespace dvmig.Providers
             catch (FaultException ex)
             {
                 // 0x80040217 = Object does not exist
-                if (ex.Message.Contains("80040217") || 
+                if (ex.Message.Contains("80040217") ||
                     ex.Message.Contains("Does Not Exist"))
                 {
                     return null;

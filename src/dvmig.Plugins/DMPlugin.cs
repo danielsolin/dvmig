@@ -1,6 +1,6 @@
+using System;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Query;
-using System;
 
 namespace dvmig.Plugins
 {
@@ -64,21 +64,21 @@ namespace dvmig.Plugins
                 if (result.Entities.Count > 0)
                 {
                     var sourceDate = result.Entities[0];
-                    
+
                     if (messageName == "create")
                     {
                         if (sourceDate.Contains("dm_sourcecreateddate"))
                         {
-                            var createdDate = 
+                            var createdDate =
                                 sourceDate["dm_sourcecreateddate"];
-                            
+
                             entity["createdon"] = createdDate;
                             entity["overriddencreatedon"] = createdDate;
                         }
 
                         if (sourceDate.Contains("dm_sourcemodifieddate"))
                         {
-                            entity["modifiedon"] = 
+                            entity["modifiedon"] =
                                 sourceDate["dm_sourcemodifieddate"];
                         }
                     }
@@ -86,7 +86,7 @@ namespace dvmig.Plugins
                     {
                         if (sourceDate.Contains("dm_sourcemodifieddate"))
                         {
-                            entity["modifiedon"] = 
+                            entity["modifiedon"] =
                                 sourceDate["dm_sourcemodifieddate"];
                         }
                     }

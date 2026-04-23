@@ -18,3 +18,8 @@ dotnet_style_qualification_for_event = false:suggestion
 
 # Standardize line length for C# files
 guidelines = 80
+
+# Using directives
+dotnet_sort_system_usings_first = true
+dotnet_separate_import_directive_groups = false
+dotnet_diagnostic.IDE0005.severity = warning

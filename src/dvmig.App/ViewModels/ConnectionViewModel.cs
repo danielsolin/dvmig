@@ -1,12 +1,9 @@
+using System.IO;
+using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using dvmig.App.Services;
 using dvmig.Core;
-using System;
-using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Windows;
 
 namespace dvmig.App.ViewModels
 {
@@ -55,7 +52,7 @@ namespace dvmig.App.ViewModels
         {
             SaveCurrentSettings();
         }
-        
+
         partial void OnAutoConnectChanged(bool value)
         {
             SaveCurrentSettings();
