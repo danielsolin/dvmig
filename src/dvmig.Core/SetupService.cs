@@ -23,66 +23,75 @@ namespace dvmig.Core
         {
             try
             {
-                var meta = await target.GetEntityMetadataAsync(
-                    "dm_sourcedate",
-                    ct
-                );
+                if (!await IsEntitySchemaReadyAsync(target, ct)) return false;
 
-                if (meta == null)
-                {
-                    return false;
-                }
+                var assemblyId = await GetPluginAssemblyIdAsync(target, ct);
+                if (assemblyId == null) return false;
 
-                // 1. Check for plugin assembly
-                var query = new QueryByAttribute("pluginassembly")
-                {
-                    ColumnSet = new ColumnSet("pluginassemblyid")
-                };
-                query.AddAttributeValue("name", "dvmig.Plugins");
+                var pluginTypeId = await GetPluginTypeIdAsync(target, assemblyId.Value, ct);
+                if (pluginTypeId == null) return false;
 
-                var assemblies = await target.RetrieveMultipleAsync(query, ct);
-                var assembly = assemblies.Entities.FirstOrDefault();
-
-                if (assembly == null)
-                {
-                    return false;
-                }
-
-                // 2. Check for plugin type
-                var typeQuery = new QueryByAttribute("plugintype")
-                {
-                    ColumnSet = new ColumnSet("plugintypeid")
-                };
-                typeQuery.AddAttributeValue("pluginassemblyid", assembly.Id);
-                typeQuery.AddAttributeValue(
-                    "typename",
-                    "dvmig.Plugins.DMPlugin"
-                );
-
-                var types = await target.RetrieveMultipleAsync(typeQuery, ct);
-                var pluginType = types.Entities.FirstOrDefault();
-
-                if (pluginType == null)
-                {
-                    return false;
-                }
-
-                // 3. Check for plugin step
-                var stepQuery = new QueryByAttribute("sdkmessageprocessingstep")
-                {
-                    ColumnSet = new ColumnSet("sdkmessageprocessingstepid")
-                };
-                stepQuery.AddAttributeValue("plugintypeid", pluginType.Id);
-
-                var steps = await target.RetrieveMultipleAsync(stepQuery, ct);
-
-                // We require both Create and Update steps to be registered
-                return steps.Entities.Count >= 2;
+                return await HasRequiredPluginStepsAsync(target, pluginTypeId.Value, ct);
             }
             catch
             {
                 return false;
             }
+        }
+
+        private async Task<bool> IsEntitySchemaReadyAsync(
+            IDataverseProvider target,
+            CancellationToken ct)
+        {
+            var meta = await target.GetEntityMetadataAsync("dm_sourcedate", ct);
+            return meta != null;
+        }
+
+        private async Task<Guid?> GetPluginAssemblyIdAsync(
+            IDataverseProvider target,
+            CancellationToken ct)
+        {
+            var query = new QueryByAttribute("pluginassembly")
+            {
+                ColumnSet = new ColumnSet("pluginassemblyid")
+            };
+            query.AddAttributeValue("name", "dvmig.Plugins");
+
+            var assemblies = await target.RetrieveMultipleAsync(query, ct);
+            return assemblies.Entities.FirstOrDefault()?.Id;
+        }
+
+        private async Task<Guid?> GetPluginTypeIdAsync(
+            IDataverseProvider target,
+            Guid assemblyId,
+            CancellationToken ct)
+        {
+            var typeQuery = new QueryByAttribute("plugintype")
+            {
+                ColumnSet = new ColumnSet("plugintypeid")
+            };
+            typeQuery.AddAttributeValue("pluginassemblyid", assemblyId);
+            typeQuery.AddAttributeValue("typename", "dvmig.Plugins.DMPlugin");
+
+            var types = await target.RetrieveMultipleAsync(typeQuery, ct);
+            return types.Entities.FirstOrDefault()?.Id;
+        }
+
+        private async Task<bool> HasRequiredPluginStepsAsync(
+            IDataverseProvider target,
+            Guid pluginTypeId,
+            CancellationToken ct)
+        {
+            var stepQuery = new QueryByAttribute("sdkmessageprocessingstep")
+            {
+                ColumnSet = new ColumnSet("sdkmessageprocessingstepid")
+            };
+            stepQuery.AddAttributeValue("plugintypeid", pluginTypeId);
+
+            var steps = await target.RetrieveMultipleAsync(stepQuery, ct);
+
+            // We require both Create and Update steps to be registered
+            return steps.Entities.Count >= 2;
         }
 
         public async Task CreateSchemaAsync(
