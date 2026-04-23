@@ -112,11 +112,10 @@ namespace dvmig.App.ViewModels
                 return false;
             }
 
-            // Filter out system/custom entities (contain underscore) 
-            // if toggle is off
+            // Filter out non-standard entities if toggle is off
             if (!ShowSystemEntities)
             {
-                if (item.LogicalName.Contains("_"))
+                if (!_migrationService.IsStandardEntity(item.LogicalName))
                 {
                     return false;
                 }

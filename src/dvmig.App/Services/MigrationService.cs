@@ -30,6 +30,8 @@ namespace dvmig.App.Services
         IDataverseProvider? TargetProvider { get; }
 
         List<string> SelectedEntities { get; }
+
+        bool IsStandardEntity(string logicalName);
     }
 
     public class MigrationService : IMigrationService
@@ -162,14 +164,6 @@ namespace dvmig.App.Services
                 .ExecuteAsync(request, ct);
 
             _cachedMetadata = response.EntityMetadata
-                .Where(e =>
-                    (e.IsCustomEntity == true ||
-                     IsStandardEntity(e.LogicalName)) &&
-                    e.IsIntersect == false &&
-                    e.IsValidForAdvancedFind == true &&
-                    !string.IsNullOrEmpty(
-                        e.DisplayName?.UserLocalizedLabel?.Label)
-                )
                 .OrderBy(e =>
                     e.DisplayName?.UserLocalizedLabel?.Label ??
                     e.LogicalName
@@ -179,28 +173,62 @@ namespace dvmig.App.Services
             return _cachedMetadata;
         }
 
-        private bool IsStandardEntity(string logicalName)
+        public bool IsStandardEntity(string logicalName)
         {
             var standard = new[]
             {
                 "account",
-                "contact",
-                "lead",
-                "opportunity",
-                "task",
-                "phonecall",
-                "email",
+                "activitypointer",
                 "appointment",
+                "assettable",
+                "bookableresource",
+                "bookableresourcebooking",
+                "businessunit",
+                "campaign",
+                "category",
+                "competitor",
+                "contact",
+                "custtable",
+                "email",
+                "entitlement",
+                "equipment",
+                "goal",
                 "incident",
-                "product",
+                "inventlocation",
+                "inventsite",
+                "inventtable",
+                "invoice",
+                "kbarticle",
+                "knowledgearticle",
+                "lead",
+                "list",
+                "mainaccount",
+                "msdyn_agreement",
+                "msdyn_customerasset",
+                "msdyn_expense",
+                "msdyn_project",
+                "msdyn_projecttask",
+                "msdyn_timeentry",
+                "msdyn_workorder",
+                "msdyncrm_customerjourney",
+                "msdyncrm_marketingemail",
+                "msdyncrm_segment",
+                "msevtmgt_event",
+                "opportunity",
+                "phonecall",
                 "pricelevel",
+                "product",
+                "purchtable",
+                "queue",
                 "quote",
                 "salesorder",
-                "invoice",
-                "competitor",
-                "equipment",
-                "businessunit",
-                "team"
+                "salestable",
+                "sla",
+                "subject",
+                "systemuser",
+                "task",
+                "team",
+                "vendtable"
             };
 
             return standard.Contains(logicalName.ToLower());
