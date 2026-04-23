@@ -19,6 +19,9 @@ namespace dvmig.App.ViewModels
         private string _searchText = string.Empty;
 
         [ObservableProperty]
+        private bool _showSystemEntities;
+
+        [ObservableProperty]
         private bool _isLoading;
 
         public ObservableCollection<EntitySelectionItem> Entities { get; } =
@@ -109,6 +112,15 @@ namespace dvmig.App.ViewModels
                 return false;
             }
 
+            // Filter out system/custom entities (contain underscore) if toggle is off
+            if (!ShowSystemEntities)
+            {
+                if (item.LogicalName.Contains("_"))
+                {
+                    return false;
+                }
+            }
+
             if (string.IsNullOrWhiteSpace(SearchText))
             {
                 return true;
@@ -132,6 +144,11 @@ namespace dvmig.App.ViewModels
         }
 
         partial void OnSearchTextChanged(string value)
+        {
+            _entitiesView.Refresh();
+        }
+
+        partial void OnShowSystemEntitiesChanged(bool value)
         {
             _entitiesView.Refresh();
         }
