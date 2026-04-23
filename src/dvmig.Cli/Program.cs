@@ -44,10 +44,11 @@ namespace dvmig.Cli
 
             // Minimal UserMapper for now (no mapping)
             var userMapper = new UserMapper(_source, _target, logger);
-            var dataPreservation = new DataPreservationManager(
-                _target,
-                logger
-            );
+            var dataPreservation = new DataPreservationManager(_target, logger);
+            var envValidator = new EnvironmentValidator();
+            var schemaManager = new SchemaManager(logger);
+            var pluginDeployer = new PluginDeployer(logger);
+            var setupService = new SetupService(envValidator, schemaManager, pluginDeployer, logger);
 
             _engine = new SyncEngine(
                 _source,

@@ -1,9 +1,4 @@
 using dvmig.Providers;
-using Microsoft.Crm.Sdk.Messages;
-using Microsoft.Xrm.Sdk;
-using Microsoft.Xrm.Sdk.Messages;
-using Microsoft.Xrm.Sdk.Metadata;
-using Microsoft.Xrm.Sdk.Query;
 using Serilog;
 
 namespace dvmig.Core
@@ -14,14 +9,28 @@ namespace dvmig.Core
     /// </summary>
     public class SetupService : ISetupService
     {
+        private readonly IEnvironmentValidator _validator;
+        private readonly ISchemaManager _schemaManager;
+        private readonly IPluginDeployer _pluginDeployer;
         private readonly ILogger _logger;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SetupService"/> class.
         /// </summary>
+        /// <param name="validator">The environment validator.</param>
+        /// <param name="schemaManager">The schema manager.</param>
+        /// <param name="pluginDeployer">The plugin deployer.</param>
         /// <param name="logger">The logger instance.</param>
-        public SetupService(ILogger logger)
+        public SetupService(
+            IEnvironmentValidator validator,
+            ISchemaManager schemaManager,
+            IPluginDeployer pluginDeployer,
+            ILogger logger
+        )
         {
+            _validator = validator;
+            _schemaManager = schemaManager;
+            _pluginDeployer = pluginDeployer;
             _logger = logger;
         }
 
@@ -31,68 +40,7 @@ namespace dvmig.Core
             CancellationToken ct = default
         )
         {
-            try
-            {
-                var meta = await target.GetEntityMetadataAsync(
-                    "dm_sourcedate",
-                    ct
-                );
-
-                if (meta == null)
-                {
-                    return false;
-                }
-
-                // 1. Check for plugin assembly
-                var query = new QueryByAttribute("pluginassembly")
-                {
-                    ColumnSet = new ColumnSet("pluginassemblyid")
-                };
-                query.AddAttributeValue("name", "dvmig.Plugins");
-
-                var assemblies = await target.RetrieveMultipleAsync(query, ct);
-                var assembly = assemblies.Entities.FirstOrDefault();
-
-                if (assembly == null)
-                {
-                    return false;
-                }
-
-                // 2. Check for plugin type
-                var typeQuery = new QueryByAttribute("plugintype")
-                {
-                    ColumnSet = new ColumnSet("plugintypeid")
-                };
-                typeQuery.AddAttributeValue("pluginassemblyid", assembly.Id);
-                typeQuery.AddAttributeValue(
-                    "typename",
-                    "dvmig.Plugins.DMPlugin"
-                );
-
-                var types = await target.RetrieveMultipleAsync(typeQuery, ct);
-                var pluginType = types.Entities.FirstOrDefault();
-
-                if (pluginType == null)
-                {
-                    return false;
-                }
-
-                // 3. Check for plugin step
-                var stepQuery = new QueryByAttribute("sdkmessageprocessingstep")
-                {
-                    ColumnSet = new ColumnSet("sdkmessageprocessingstepid")
-                };
-                stepQuery.AddAttributeValue("plugintypeid", pluginType.Id);
-
-                var steps = await target.RetrieveMultipleAsync(stepQuery, ct);
-
-                // We require both Create and Update steps to be registered
-                return steps.Entities.Count >= 2;
-            }
-            catch
-            {
-                return false;
-            }
+            return await _validator.IsEnvironmentReadyAsync(target, ct);
         }
 
         /// <inheritdoc />
@@ -102,180 +50,7 @@ namespace dvmig.Core
             CancellationToken ct = default
         )
         {
-            var existingMeta = await target.GetEntityMetadataAsync(
-                "dm_sourcedate",
-                ct
-            );
-
-            if (existingMeta == null)
-            {
-                _logger.Information(
-                    "Creating 'dm_sourcedate' entity schema..."
-                );
-
-                progress?.Report("Creating 'dm_sourcedate' entity schema...");
-
-                var entityReq = new CreateEntityRequest
-                {
-                    Entity = new EntityMetadata
-                    {
-                        SchemaName = "dm_sourcedate",
-                        LogicalName = "dm_sourcedate",
-                        DisplayName = new Label(
-                            "Source Date Preservation",
-                            1033
-                        ),
-                        DisplayCollectionName = new Label(
-                            "Source Dates",
-                            1033
-                        ),
-                        OwnershipType = OwnershipTypes.UserOwned,
-                        IsActivity = false,
-                        HasNotes = false,
-                        HasActivities = false
-                    },
-                    PrimaryAttribute = new StringAttributeMetadata
-                    {
-                        SchemaName = "dm_name",
-                        LogicalName = "dm_name",
-                        DisplayName = new Label("Name", 1033),
-                        RequiredLevel = new AttributeRequiredLevelManagedProperty(
-                            AttributeRequiredLevel.None
-                        ),
-                        MaxLength = 100
-                    }
-                };
-
-                await target.ExecuteAsync(entityReq, ct);
-
-                _logger.Information(
-                    "Entity created. Waiting for metadata propagation..."
-                );
-
-                progress?.Report("Waiting for metadata propagation...");
-
-                // Mandatory wait for Dataverse Online metadata propagation
-                await Task.Delay(5000, ct);
-
-                existingMeta = await target.GetEntityMetadataAsync(
-                    "dm_sourcedate",
-                    ct
-                );
-            }
-            else
-            {
-                _logger.Information(
-                    "'dm_sourcedate' entity already exists. Checking attributes."
-                );
-
-                progress?.Report(
-                    "'dm_sourcedate' already exists. Checking attributes."
-                );
-            }
-
-            await CreateAttributeIfMissingAsync(
-                target,
-                existingMeta!,
-                "dm_sourceentityid",
-                "Source Entity ID",
-                true,
-                progress,
-                ct
-            );
-            await Task.Delay(2000, ct);
-
-            await CreateAttributeIfMissingAsync(
-                target,
-                existingMeta!,
-                "dm_sourceentitylogicalname",
-                "Source Entity Logical Name",
-                true,
-                progress,
-                ct
-            );
-            await Task.Delay(2000, ct);
-
-            await CreateAttributeIfMissingAsync(
-                target,
-                existingMeta!,
-                "dm_sourcecreateddate",
-                "Source Created Date",
-                false,
-                progress,
-                ct
-            );
-            await Task.Delay(2000, ct);
-
-            await CreateAttributeIfMissingAsync(
-                target,
-                existingMeta!,
-                "dm_sourcemodifieddate",
-                "Source Modified Date",
-                false,
-                progress,
-                ct
-            );
-            await Task.Delay(2000, ct);
-
-            _logger.Information("Publishing changes...");
-            progress?.Report("Publishing changes...");
-
-            await target.ExecuteAsync(new PublishAllXmlRequest(), ct);
-
-            _logger.Information("Schema creation completed.");
-            progress?.Report("Schema creation completed.");
-        }
-
-        /// <summary>
-        /// Creates an attribute on the 'dm_sourcedate' entity if it does not 
-        /// already exist in the provided entity metadata.
-        /// </summary>
-        /// <param name="target">The target Dataverse provider.</param>
-        /// <param name="entityMeta">The existing entity metadata.</param>
-        /// <param name="schemaName">The schema name of the attribute.</param>
-        /// <param name="displayName">The display name of the attribute.</param>
-        /// <param name="isString">True to create a string attribute; false for datetime.</param>
-        /// <param name="progress">An optional progress reporter.</param>
-        /// <param name="ct">A cancellation token.</param>
-        private async Task CreateAttributeIfMissingAsync(
-            IDataverseProvider target,
-            EntityMetadata entityMeta,
-            string schemaName,
-            string displayName,
-            bool isString,
-            IProgress<string>? progress,
-            CancellationToken ct
-        )
-        {
-            if (entityMeta.Attributes.Any(a => a.LogicalName == schemaName))
-            {
-                return;
-            }
-
-            _logger.Information("Creating attribute {Attr}...", schemaName);
-            progress?.Report($"Creating attribute {schemaName}...");
-
-            var req = new CreateAttributeRequest
-            {
-                EntityName = "dm_sourcedate",
-                Attribute = isString
-                    ? (AttributeMetadata)new StringAttributeMetadata
-                    {
-                        SchemaName = schemaName,
-                        LogicalName = schemaName.ToLower(),
-                        DisplayName = new Label(displayName, 1033),
-                        MaxLength = 100
-                    }
-                    : new DateTimeAttributeMetadata
-                    {
-                        SchemaName = schemaName,
-                        LogicalName = schemaName.ToLower(),
-                        DisplayName = new Label(displayName, 1033),
-                        Format = DateTimeFormat.DateAndTime
-                    }
-            };
-
-            await target.ExecuteAsync(req, ct);
+            await _schemaManager.CreateSchemaAsync(target, progress, ct);
         }
 
         /// <inheritdoc />
@@ -286,223 +61,12 @@ namespace dvmig.Core
             CancellationToken ct = default
         )
         {
-            if (!File.Exists(pluginAssemblyPath))
-            {
-                throw new FileNotFoundException(
-                    "Plugin assembly DLL not found.",
-                    pluginAssemblyPath
-                );
-            }
-
-            _logger.Information("Deploying plugin assembly...");
-            progress?.Report("Deploying plugin assembly...");
-
-            var assemblyBytes = await File.ReadAllBytesAsync(
+            await _pluginDeployer.DeployPluginAsync(
+                target,
                 pluginAssemblyPath,
-                ct
-            );
-
-            var assembly = new Entity("pluginassembly");
-            assembly["name"] = "dvmig.Plugins";
-            assembly["content"] = Convert.ToBase64String(assemblyBytes);
-            assembly["isolationmode"] = new OptionSetValue(2); // Sandbox
-            assembly["sourcetype"] = new OptionSetValue(0);    // Database
-            assembly["publickeytoken"] = "397f674bbcd3d607";
-            assembly["version"] = "1.0.0.0";
-            assembly["culture"] = "neutral";
-
-            // Check if exists for update vs create
-            var query = new QueryByAttribute("pluginassembly")
-            {
-                ColumnSet = new ColumnSet("pluginassemblyid")
-            };
-            query.AddAttributeValue("name", "dvmig.Plugins");
-
-            var existing = await target.RetrieveMultipleAsync(query, ct);
-            Guid assemblyId;
-
-            if (existing.Entities.Any())
-            {
-                assemblyId = existing.Entities.First().Id;
-                assembly.Id = assemblyId;
-
-                await target.UpdateAsync(assembly, ct);
-
-                _logger.Information("Updated existing plugin assembly.");
-                progress?.Report("Updated existing plugin assembly.");
-            }
-            else
-            {
-                assemblyId = await target.CreateAsync(assembly, ct);
-
-                _logger.Information("Created new plugin assembly.");
-                progress?.Report("Created new plugin assembly.");
-            }
-
-            await RegisterPluginStepAsync(target, assemblyId, progress, ct);
-        }
-
-        /// <summary>
-        /// Registers the plugin type and its corresponding execution steps 
-        /// (Create and Update) for the newly deployed assembly.
-        /// </summary>
-        /// <param name="target">The target Dataverse provider.</param>
-        /// <param name="assemblyId">The ID of the deployed assembly.</param>
-        /// <param name="progress">An optional progress reporter.</param>
-        /// <param name="ct">A cancellation token.</param>
-        private async Task RegisterPluginStepAsync(
-            IDataverseProvider target,
-            Guid assemblyId,
-            IProgress<string>? progress,
-            CancellationToken ct
-        )
-        {
-            _logger.Information("Registering plugin type and step...");
-            progress?.Report("Registering plugin type and step...");
-
-            // 1. Ensure Plugin Type exists
-            var typeQuery = new QueryByAttribute("plugintype")
-            {
-                ColumnSet = new ColumnSet("plugintypeid")
-            };
-            typeQuery.AddAttributeValue("pluginassemblyid", assemblyId);
-            typeQuery.AddAttributeValue("typename", "dvmig.Plugins.DMPlugin");
-
-            var types = await target.RetrieveMultipleAsync(typeQuery, ct);
-            Guid typeId;
-
-            if (types.Entities.Any())
-            {
-                typeId = types.Entities.First().Id;
-
-                _logger.Information("Plugin type already registered.");
-                progress?.Report("Plugin type already registered.");
-            }
-            else
-            {
-                var type = new Entity("plugintype");
-                type["pluginassemblyid"] = new EntityReference(
-                    "pluginassembly",
-                    assemblyId
-                );
-                type["typename"] = "dvmig.Plugins.DMPlugin";
-                type["name"] = "dvmig.Plugins.DMPlugin";
-                type["friendlyname"] = "DMPlugin";
-
-                typeId = await target.CreateAsync(type, ct);
-
-                _logger.Information("Registered plugin type.");
-                progress?.Report("Registered plugin type.");
-            }
-
-            await RegisterStepForMessageAsync(
-                target,
-                typeId,
-                "Create",
                 progress,
                 ct
             );
-
-            await RegisterStepForMessageAsync(
-                target,
-                typeId,
-                "Update",
-                progress,
-                ct
-            );
-        }
-
-        /// <summary>
-        /// Registers a specific SDK message processing step (e.g., Create, Update) 
-        /// for the plugin type to execute synchronously in the Pre-operation stage.
-        /// </summary>
-        /// <param name="target">The target Dataverse provider.</param>
-        /// <param name="typeId">The ID of the plugin type.</param>
-        /// <param name="messageName">The name of the SDK message.</param>
-        /// <param name="progress">An optional progress reporter.</param>
-        /// <param name="ct">A cancellation token.</param>
-        private async Task RegisterStepForMessageAsync(
-            IDataverseProvider target,
-            Guid typeId,
-            string messageName,
-            IProgress<string>? progress,
-            CancellationToken ct
-        )
-        {
-            // 1. Find Message ID
-            var msgQuery = new QueryByAttribute("sdkmessage")
-            {
-                ColumnSet = new ColumnSet("sdkmessageid")
-            };
-            msgQuery.AddAttributeValue("name", messageName);
-
-            var msgs = await target.RetrieveMultipleAsync(msgQuery, ct);
-
-            if (!msgs.Entities.Any())
-            {
-                throw new Exception($"SdkMessage '{messageName}' not found.");
-            }
-
-            var messageId = msgs.Entities.First().Id;
-
-            // 2. Define Step
-            var step = new Entity("sdkmessageprocessingstep");
-            step["name"] = $"dvmig.Plugins.DMPlugin: {messageName}";
-            step["configuration"] = "";
-            step["invocationsource"] = new OptionSetValue(0); // Internal
-            step["sdkmessageid"] = new EntityReference(
-                "sdkmessage",
-                messageId
-            );
-            step["plugintypeid"] = new EntityReference(
-                "plugintype",
-                typeId
-            );
-            step["stage"] = new OptionSetValue(20);           // Pre-operation
-            step["supporteddeployment"] = new OptionSetValue(0); // Server
-            step["rank"] = 1;
-            step["mode"] = new OptionSetValue(0);             // Synchronous
-
-            // 3. Check if exists
-            var stepQuery = new QueryByAttribute("sdkmessageprocessingstep")
-            {
-                ColumnSet = new ColumnSet("sdkmessageprocessingstepid")
-            };
-            stepQuery.AddAttributeValue("plugintypeid", typeId);
-            stepQuery.AddAttributeValue("sdkmessageid", messageId);
-
-            var existingSteps = await target.RetrieveMultipleAsync(
-                stepQuery,
-                ct
-            );
-
-            if (existingSteps.Entities.Any())
-            {
-                step.Id = existingSteps.Entities.First().Id;
-                await target.UpdateAsync(step, ct);
-
-                _logger.Information(
-                    "Updated existing plugin step for {0}.",
-                    messageName
-                );
-
-                progress?.Report(
-                    $"Updated existing plugin step for {messageName}."
-                );
-            }
-            else
-            {
-                await target.CreateAsync(step, ct);
-
-                _logger.Information(
-                    "Created new plugin step for {0}.",
-                    messageName
-                );
-
-                progress?.Report(
-                    $"Created new plugin step for {messageName}."
-                );
-            }
         }
     }
 }
