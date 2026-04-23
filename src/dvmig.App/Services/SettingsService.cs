@@ -27,7 +27,7 @@ namespace dvmig.App.Services
     {
         private readonly string _filePath;
 
-        private static readonly byte[] Entropy =
+        private static readonly byte[] LegacyEntropy =
             Encoding.UTF8.GetBytes("dvmig-entropy");
 
         public SettingsService()
@@ -121,7 +121,7 @@ namespace dvmig.App.Services
                 var data = Encoding.UTF8.GetBytes(text);
                 var encrypted = ProtectedData.Protect(
                     data,
-                    Entropy,
+                    null,
                     DataProtectionScope.CurrentUser
                 );
 
@@ -143,13 +143,29 @@ namespace dvmig.App.Services
             try
             {
                 var bytes = Convert.FromBase64String(base64);
-                var decrypted = ProtectedData.Unprotect(
-                    bytes,
-                    Entropy,
-                    DataProtectionScope.CurrentUser
-                );
 
-                return Encoding.UTF8.GetString(decrypted);
+                try
+                {
+                    // Try decrypting with no entropy (new format)
+                    var decrypted = ProtectedData.Unprotect(
+                        bytes,
+                        null,
+                        DataProtectionScope.CurrentUser
+                    );
+
+                    return Encoding.UTF8.GetString(decrypted);
+                }
+                catch (CryptographicException)
+                {
+                    // Fallback: try decrypting with legacy entropy
+                    var decrypted = ProtectedData.Unprotect(
+                        bytes,
+                        LegacyEntropy,
+                        DataProtectionScope.CurrentUser
+                    );
+
+                    return Encoding.UTF8.GetString(decrypted);
+                }
             }
             catch
             {
