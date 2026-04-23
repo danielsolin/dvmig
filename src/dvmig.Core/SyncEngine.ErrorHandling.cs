@@ -1,5 +1,4 @@
 using System.Text.RegularExpressions;
-using Microsoft.Crm.Sdk.Messages;
 using Microsoft.Xrm.Sdk;
 
 namespace dvmig.Core
@@ -52,7 +51,8 @@ namespace dvmig.Core
                         );
                     }
 
-                    if (updateMsg.Contains("conflicted with the foreign key constraint") ||
+                    if (updateMsg.Contains(
+                            "conflicted with the foreign key constraint") ||
                         updateMsg.Contains("conflicted with a constraint"))
                     {
                         return await ResolveSqlDependencyAsync(
@@ -269,7 +269,8 @@ namespace dvmig.Core
             CancellationToken ct
         )
         {
-            // Extract column name from message (e.g., column 'TransactionCurrencyId')
+            // Extract column name from message (e.g., column
+            // 'TransactionCurrencyId')
             var match = Regex.Match(message, @"column '(\w+)'");
             if (!match.Success)
             {
@@ -318,7 +319,8 @@ namespace dvmig.Core
                             targetId.Value
                         );
 
-                        _idMappingCache[$"{er.LogicalName}:{er.Id}"] = targetId.Value;
+                        _idMappingCache[$"{er.LogicalName}:{er.Id}"] =
+                            targetId.Value;
 
                         return await RetryEntityAsync(entity, options, ct);
                     }
@@ -501,7 +503,8 @@ namespace dvmig.Core
                     }
                 }
 
-                // Fallback: If auto-sync of dependency failed (or not found),
+                // Fallback: If auto-sync of dependency failed 
+                // (or not found),
                 // strip the attribute and retry the parent record.
                 if (options.StripMissingDependencies)
                 {
@@ -540,3 +543,4 @@ namespace dvmig.Core
         }
     }
 }
+

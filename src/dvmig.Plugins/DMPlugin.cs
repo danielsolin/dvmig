@@ -52,7 +52,8 @@ namespace dvmig.Plugins
                           <condition attribute='dm_sourceentityid' 
                             operator='eq' value='{entity.Id}' />
                           <condition attribute='dm_sourceentitylogicalname' 
-                            operator='eq' value='{entity.LogicalName.ToLower()}' />
+                            operator='eq' 
+                            value='{entity.LogicalName.ToLower()}' />
                         </filter>
                       </entity>
                     </fetch>";

@@ -18,7 +18,7 @@ namespace dvmig.Tests
         {
             _loggerMock = new Mock<ILogger>();
             _targetMock = new Mock<IDataverseProvider>();
-            
+
             var validator = new EnvironmentValidator();
             var schemaManager = new SchemaManager(_loggerMock.Object);
             var pluginDeployer = new PluginDeployer(_loggerMock.Object);

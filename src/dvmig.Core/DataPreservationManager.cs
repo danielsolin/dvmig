@@ -19,7 +19,8 @@ namespace dvmig.Core
         private bool? _isSupported;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="DataPreservationManager"/> class.
+        /// Initializes a new instance of the 
+        /// <see cref="DataPreservationManager"/> class.
         /// </summary>
         /// <param name="target">The target Dataverse provider.</param>
         /// <param name="logger">The logger instance.</param>

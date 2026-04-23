@@ -8,13 +8,15 @@ using Serilog;
 namespace dvmig.Core
 {
     /// <summary>
-    /// Defines the contract for managing schema creation in the target environment.
+    /// Defines the contract for managing schema creation in the target
+    /// environment.
     /// </summary>
     public interface ISchemaManager
     {
         /// <summary>
         /// Creates the 'dm_sourcedate' entity schema and its required 
-        /// attributes in the target environment if they do not already exist.
+        /// attributes in the target environment if they do not already 
+        /// exist.
         /// </summary>
         /// <param name="target">The target Dataverse provider.</param>
         /// <param name="progress">An optional progress reporter.</param>
@@ -87,7 +89,8 @@ namespace dvmig.Core
                         SchemaName = "dm_name",
                         LogicalName = "dm_name",
                         DisplayName = new Label("Name", 1033),
-                        RequiredLevel = new AttributeRequiredLevelManagedProperty(
+                        RequiredLevel =
+                            new AttributeRequiredLevelManagedProperty(
                             AttributeRequiredLevel.None
                         ),
                         MaxLength = 100
@@ -113,7 +116,8 @@ namespace dvmig.Core
             else
             {
                 _logger.Information(
-                    "'dm_sourcedate' entity already exists. Checking attributes."
+                    "'dm_sourcedate' entity already exists. " +
+                    "Checking attributes."
                 );
 
                 progress?.Report(
@@ -182,7 +186,8 @@ namespace dvmig.Core
         /// <param name="entityMeta">The existing entity metadata.</param>
         /// <param name="schemaName">The schema name of the attribute.</param>
         /// <param name="displayName">The display name of the attribute.</param>
-        /// <param name="isString">True to create a string attribute; false for datetime.</param>
+        /// <param name="isString">True to create a string attribute; false
+        /// for datetime.</param>
         /// <param name="progress">An optional progress reporter.</param>
         /// <param name="ct">A cancellation token.</param>
         private async Task CreateAttributeIfMissingAsync(

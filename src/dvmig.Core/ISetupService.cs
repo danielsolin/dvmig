@@ -16,7 +16,9 @@ namespace dvmig.Core
         /// </summary>
         /// <param name="target">The target Dataverse provider.</param>
         /// <param name="ct">A cancellation token.</param>
-        /// <returns>True if the environment is ready; otherwise, false.</returns>
+        /// <returns>
+        /// True if the environment is ready; otherwise, false.
+        /// </returns>
         Task<bool> IsEnvironmentReadyAsync(
             IDataverseProvider target,
             CancellationToken ct = default
@@ -41,7 +43,9 @@ namespace dvmig.Core
         /// environment and registers the necessary execution steps.
         /// </summary>
         /// <param name="target">The target Dataverse provider.</param>
-        /// <param name="pluginAssemblyPath">The local path to the plugin DLL.</param>
+        /// <param name="pluginAssemblyPath">
+        /// The local path to the plugin DLL.
+        /// </param>
         /// <param name="progress">An optional progress reporter.</param>
         /// <param name="ct">A cancellation token.</param>
         /// <returns>A task representing the asynchronous deployment.</returns>

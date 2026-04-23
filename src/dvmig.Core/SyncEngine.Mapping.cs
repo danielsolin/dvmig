@@ -181,8 +181,9 @@ namespace dvmig.Core
                 }
             }
 
-            // 3. Fallback for specific entities with unique constraints but no alternate keys
-            if (sourceEntity.LogicalName == "transactioncurrency" && 
+            // 3. Fallback for specific entities with unique constraints 
+            // but no alternate keys
+            if (sourceEntity.LogicalName == "transactioncurrency" &&
                 sourceEntity.Contains("isocurrencycode"))
             {
                 var query = new QueryExpression(sourceEntity.LogicalName)

@@ -2,12 +2,12 @@ using dvmig.Providers;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Query;
 using Serilog;
-using System.IO;
 
 namespace dvmig.Core
 {
     /// <summary>
-    /// Defines the contract for deploying and registering plugins in the target environment.
+    /// Defines the contract for deploying and registering plugins in the
+    /// target environment.
     /// </summary>
     public interface IPluginDeployer
     {
@@ -16,7 +16,8 @@ namespace dvmig.Core
         /// environment and registers the necessary execution steps.
         /// </summary>
         /// <param name="target">The target Dataverse provider.</param>
-        /// <param name="pluginAssemblyPath">The local path to the plugin DLL.</param>
+        /// <param name="pluginAssemblyPath">The local path to the plugin DLL.
+        /// </param>
         /// <param name="progress">An optional progress reporter.</param>
         /// <param name="ct">A cancellation token.</param>
         /// <returns>A task representing the asynchronous deployment.</returns>
@@ -36,7 +37,8 @@ namespace dvmig.Core
         private readonly ILogger _logger;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="PluginDeployer"/> class.
+        /// Initializes a new instance of the <see cref="PluginDeployer"/>
+        /// class.
         /// </summary>
         /// <param name="logger">The logger instance.</param>
         public PluginDeployer(ILogger logger)
@@ -179,8 +181,9 @@ namespace dvmig.Core
         }
 
         /// <summary>
-        /// Registers a specific SDK message processing step (e.g., Create, Update) 
-        /// for the plugin type to execute synchronously in the Pre-operation stage.
+        /// Registers a specific SDK message processing step (e.g., Create, 
+        /// Update) for the plugin type to execute synchronously in the 
+        /// Pre-operation stage.
         /// </summary>
         /// <param name="target">The target Dataverse provider.</param>
         /// <param name="typeId">The ID of the plugin type.</param>

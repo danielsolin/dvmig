@@ -20,7 +20,9 @@ namespace dvmig.Cli
                     .Color(Color.Blue)
             );
 
-            AnsiConsole.MarkupLine("[bold]Dataverse Migrator - Technical UI[/]");
+            AnsiConsole.MarkupLine(
+                "[bold]Dataverse Migrator - Technical UI[/]"
+            );
             AnsiConsole.WriteLine();
 
             // 1. Source Connection
@@ -48,7 +50,12 @@ namespace dvmig.Cli
             var envValidator = new EnvironmentValidator();
             var schemaManager = new SchemaManager(logger);
             var pluginDeployer = new PluginDeployer(logger);
-            var setupService = new SetupService(envValidator, schemaManager, pluginDeployer, logger);
+            var setupService = new SetupService(
+                envValidator,
+                schemaManager,
+                pluginDeployer,
+                logger
+            );
 
             _engine = new SyncEngine(
                 _source,
@@ -78,7 +85,8 @@ namespace dvmig.Cli
         }
 
         private static async Task<IDataverseProvider?> ConnectAsync(
-            string label)
+            string label
+        )
         {
             var connStr = AnsiConsole.Ask<string>(
                 $"Enter [bold blue]{label}[/] Connection String:"
@@ -131,7 +139,8 @@ namespace dvmig.Cli
                     {
                         var request = new RetrieveAllEntitiesRequest
                         {
-                            EntityFilters = Microsoft.Xrm.Sdk.Metadata.EntityFilters.Entity,
+                            EntityFilters = Microsoft.Xrm.Sdk.Metadata
+                                .EntityFilters.Entity,
                             RetrieveAsIfPublished = true
                         };
 

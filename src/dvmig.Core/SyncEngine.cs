@@ -10,9 +10,9 @@ using Serilog;
 namespace dvmig.Core
 {
     /// <summary>
-    /// Core engine responsible for synchronizing entities from the source to the target 
-    /// Dataverse environment. Handles dependency resolution, retries, and data transformations.
-    /// </summary>
+    /// Core engine responsible for synchronizing entities from the source
+    /// to the target Dataverse environment. Handles dependency resolution,
+    /// retries, and data transformations.    /// </summary>
     public partial class SyncEngine : ISyncEngine
     {
         private readonly IDataverseProvider _source;
@@ -43,7 +43,9 @@ namespace dvmig.Core
         /// <param name="source">The source Dataverse provider.</param>
         /// <param name="target">The target Dataverse provider.</param>
         /// <param name="userMapper">The user mapping service.</param>
-        /// <param name="dataPreservation">The data preservation manager.</param>
+        /// <param name="dataPreservation">
+        /// The data preservation manager.
+        /// </param>
         /// <param name="logger">The logger instance.</param>
         public SyncEngine(
             IDataverseProvider source,

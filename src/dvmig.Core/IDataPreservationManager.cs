@@ -21,7 +21,9 @@ namespace dvmig.Core
         /// <param name="ct">
         /// A cancellation token that can be used to cancel the operation.
         /// </param>
-        /// <returns>A task that represents the asynchronous operation.</returns>
+        /// <returns>
+        /// A task that represents the asynchronous operation.
+        /// </returns>
         Task PreserveDatesAsync(
             Entity sourceEntity,
             CancellationToken ct = default

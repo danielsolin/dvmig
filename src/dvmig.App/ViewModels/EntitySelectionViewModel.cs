@@ -112,7 +112,8 @@ namespace dvmig.App.ViewModels
                 return false;
             }
 
-            // Filter out system/custom entities (contain underscore) if toggle is off
+            // Filter out system/custom entities (contain underscore) 
+            // if toggle is off
             if (!ShowSystemEntities)
             {
                 if (item.LogicalName.Contains("_"))

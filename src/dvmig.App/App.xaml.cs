@@ -35,7 +35,10 @@ namespace dvmig.App
             services.AddSingleton<INavigationService, NavigationService>();
             services.AddSingleton<IMigrationService, MigrationService>();
             services.AddSingleton<ISettingsService, SettingsService>();
-            services.AddSingleton<IEnvironmentValidator, EnvironmentValidator>();
+            services.AddSingleton<
+                IEnvironmentValidator, 
+                EnvironmentValidator
+            >();
             services.AddSingleton<ISchemaManager, SchemaManager>();
             services.AddSingleton<IPluginDeployer, PluginDeployer>();
             services.AddSingleton<ISetupService, SetupService>();
