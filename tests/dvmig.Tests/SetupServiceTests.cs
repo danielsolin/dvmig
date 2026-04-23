@@ -5,12 +5,6 @@ using Microsoft.Xrm.Sdk.Metadata;
 using Microsoft.Xrm.Sdk.Query;
 using Moq;
 using Serilog;
-using System;
-using System.IO;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-using Xunit;
 
 namespace dvmig.Tests
 {
@@ -31,7 +25,7 @@ namespace dvmig.Tests
         public async Task IsEnvironmentReadyAsync_ReturnsFalse_WhenSchemaNotFound()
         {
             _targetMock.Setup(t => t.GetEntityMetadataAsync("dm_sourcedate", It.IsAny<CancellationToken>()))
-                       .ReturnsAsync((EntityMetadata)null);
+                       .ReturnsAsync((EntityMetadata?)null);
 
             var result = await _service.IsEnvironmentReadyAsync(_targetMock.Object);
 
@@ -109,7 +103,7 @@ namespace dvmig.Tests
                        .ReturnsAsync(entityMetadata);
 
             _targetMock.SetupSequence(t => t.GetEntityMetadataAsync("dm_sourcedate", It.IsAny<CancellationToken>()))
-                       .ReturnsAsync((EntityMetadata)null)
+                       .ReturnsAsync((EntityMetadata?)null)
                        .ReturnsAsync(entityMetadata);
 
             await _service.CreateSchemaAsync(_targetMock.Object, null);

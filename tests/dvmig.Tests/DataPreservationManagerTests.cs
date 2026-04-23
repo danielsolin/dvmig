@@ -5,11 +5,6 @@ using Microsoft.Xrm.Sdk.Metadata;
 using Microsoft.Xrm.Sdk.Query;
 using Moq;
 using Serilog;
-using System;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-using Xunit;
 
 namespace dvmig.Tests
 {
@@ -33,7 +28,7 @@ namespace dvmig.Tests
             entity["createdon"] = DateTime.UtcNow;
 
             _targetMock.Setup(t => t.GetEntityMetadataAsync("dm_sourcedate", It.IsAny<CancellationToken>()))
-                       .ReturnsAsync((EntityMetadata)null);
+                       .ReturnsAsync((EntityMetadata?)null);
 
             await _manager.PreserveDatesAsync(entity);
 
@@ -81,7 +76,7 @@ namespace dvmig.Tests
         public async Task DeleteSourceDateAsync_DoesNothing_WhenNotSupported()
         {
             _targetMock.Setup(t => t.GetEntityMetadataAsync("dm_sourcedate", It.IsAny<CancellationToken>()))
-                       .ReturnsAsync((EntityMetadata)null);
+                       .ReturnsAsync((EntityMetadata?)null);
 
             await _manager.DeleteSourceDateAsync("account", Guid.NewGuid());
 

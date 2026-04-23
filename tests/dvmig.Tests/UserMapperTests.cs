@@ -4,10 +4,6 @@ using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Query;
 using Moq;
 using Serilog;
-using System;
-using System.Threading;
-using System.Threading.Tasks;
-using Xunit;
 
 namespace dvmig.Tests
 {
@@ -56,7 +52,7 @@ namespace dvmig.Tests
             var sourceRef = new EntityReference("systemuser", sourceId);
 
             _sourceMock.Setup(s => s.RetrieveAsync("systemuser", sourceId, It.IsAny<string[]>(), It.IsAny<CancellationToken>()))
-                       .ReturnsAsync((Entity)null);
+                       .ReturnsAsync((Entity?)null);
 
             var result = await _mapper.MapUserAsync(sourceRef);
 
