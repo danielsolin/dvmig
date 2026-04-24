@@ -23,6 +23,7 @@ namespace dvmig.Core.Synchronization
             Exception ex,
             Entity entity,
             SyncOptions options,
+            IProgress<string>? progress,
             CancellationToken ct)
         {
             var msg = ex.Message.ToLower();
@@ -61,6 +62,7 @@ namespace dvmig.Core.Synchronization
                         return await HandleStatusTransitionAsync(
                             entity,
                             options,
+                            progress,
                             ct
                         );
                     }
@@ -73,6 +75,7 @@ namespace dvmig.Core.Synchronization
                             updateEx.Message,
                             entity,
                             options,
+                            progress,
                             ct
                         );
                     }
@@ -90,7 +93,12 @@ namespace dvmig.Core.Synchronization
 
             if (msg.Contains("is not a valid status code"))
             {
-                return await HandleStatusTransitionAsync(entity, options, ct);
+                return await HandleStatusTransitionAsync(
+                    entity, 
+                    options, 
+                    progress, 
+                    ct
+                );
             }
 
             if (msg.Contains("does not exist"))
@@ -99,6 +107,7 @@ namespace dvmig.Core.Synchronization
                     ex,
                     entity,
                     options,
+                    progress,
                     ct
                 );
             }
@@ -109,6 +118,7 @@ namespace dvmig.Core.Synchronization
                     ex.Message,
                     entity,
                     options,
+                    progress,
                     ct
                 );
             }
@@ -121,6 +131,7 @@ namespace dvmig.Core.Synchronization
                     ex,
                     entity,
                     options,
+                    progress,
                     ct
                 );
             }
@@ -130,6 +141,10 @@ namespace dvmig.Core.Synchronization
                 "Unresolved error for {Key}:{Id}",
                 entity.LogicalName,
                 entity.Id
+            );
+
+            progress?.Report(
+                $"FAILED {entity.LogicalName}:{entity.Id} - {ex.Message}"
             );
 
             return false;
@@ -142,6 +157,7 @@ namespace dvmig.Core.Synchronization
         /// </summary>
         /// <param name="entity">The entity record.</param>
         /// <param name="options">The synchronization configuration.</param>
+        /// <param name="progress">The progress reporter.</param>
         /// <param name="ct">A cancellation token.</param>
         /// <returns>
         /// True if the entity was successfully synchronized and its status 
@@ -150,6 +166,7 @@ namespace dvmig.Core.Synchronization
         private async Task<bool> HandleStatusTransitionAsync(
             Entity entity,
             SyncOptions options,
+            IProgress<string>? progress,
             CancellationToken ct)
         {
             var recordKey = $"{entity.LogicalName}:{entity.Id}";
@@ -179,6 +196,7 @@ namespace dvmig.Core.Synchronization
             var success = await CreateWithFixStrategyAsync(
                 entity,
                 options,
+                progress,
                 ct
             );
 
@@ -313,6 +331,7 @@ namespace dvmig.Core.Synchronization
             string message,
             Entity entity,
             SyncOptions options,
+            IProgress<string>? progress,
             CancellationToken ct
         )
         {
@@ -339,6 +358,10 @@ namespace dvmig.Core.Synchronization
                     entity.LogicalName,
                     er.LogicalName,
                     er.Id
+                );
+
+                progress?.Report(
+                    $"Resolving SQL dependency: {er.LogicalName}:{er.Id}"
                 );
 
                 var missingRecord = await _source.RetrieveAsync(
@@ -369,20 +392,30 @@ namespace dvmig.Core.Synchronization
                         _idMappingCache[$"{er.LogicalName}:{er.Id}"] =
                             targetId.Value;
 
-                        return await RetryEntityAsync(entity, options, ct);
+                        return await RetryEntityAsync(
+                            entity, 
+                            options, 
+                            progress, 
+                            ct
+                        );
                     }
 
                     // Re-use the existing logic to sync the missing record
                     var success = await SyncRecordAsync(
                         missingRecord,
                         options,
-                        null,
+                        progress,
                         ct
                     );
 
                     if (success)
                     {
-                        return await RetryEntityAsync(entity, options, ct);
+                        return await RetryEntityAsync(
+                            entity, 
+                            options, 
+                            progress, 
+                            ct
+                        );
                     }
                 }
             }
@@ -402,6 +435,7 @@ namespace dvmig.Core.Synchronization
         private async Task<bool> RetryEntityAsync(
             Entity entity,
             SyncOptions options,
+            IProgress<string>? progress,
             CancellationToken ct)
         {
             var metadata = await GetMetadataAsync(entity.LogicalName, ct);
@@ -417,6 +451,7 @@ namespace dvmig.Core.Synchronization
                 return await SyncIntersectEntityAsync(
                     prepared,
                     options,
+                    progress,
                     ct
                 );
             }
@@ -424,6 +459,7 @@ namespace dvmig.Core.Synchronization
             return await CreateWithFixStrategyAsync(
                 prepared,
                 options,
+                progress,
                 ct
             );
         }
@@ -435,6 +471,7 @@ namespace dvmig.Core.Synchronization
         /// <param name="ex">The exception that occurred.</param>
         /// <param name="entity">The entity record.</param>
         /// <param name="options">The synchronization configuration.</param>
+        /// <param name="progress">The progress reporter.</param>
         /// <param name="ct">A cancellation token.</param>
         /// <returns>
         /// True if the attribute was stripped and the retry was successful; 
@@ -444,6 +481,7 @@ namespace dvmig.Core.Synchronization
             Exception ex,
             Entity entity,
             SyncOptions options,
+            IProgress<string>? progress,
             CancellationToken ct)
         {
             var match = Regex.Match(
@@ -463,11 +501,16 @@ namespace dvmig.Core.Synchronization
                         entity.Id
                     );
 
+                    progress?.Report(
+                        $"Stripping attribute '{attrName}' and retrying..."
+                    );
+
                     entity.Attributes.Remove(attrName);
 
                     return await CreateWithFixStrategyAsync(
                         entity,
                         options,
+                        progress,
                         ct
                     );
                 }
@@ -493,6 +536,7 @@ namespace dvmig.Core.Synchronization
             Exception ex,
             Entity entity,
             SyncOptions options,
+            IProgress<string>? progress,
             CancellationToken ct)
         {
             // More robust regex to handle both:
@@ -539,6 +583,10 @@ namespace dvmig.Core.Synchronization
                         missingId
                     );
 
+                    progress?.Report(
+                        $"Resolving missing dependency: {missingType}:{missingId}"
+                    );
+
                     var missingRecord = await _source.RetrieveAsync(
                         missingType,
                         missingId,
@@ -566,20 +614,30 @@ namespace dvmig.Core.Synchronization
 
                             _idMappingCache[dependencyKey] = targetId.Value;
 
-                            return await RetryEntityAsync(entity, options, ct);
+                            return await RetryEntityAsync(
+                                entity, 
+                                options, 
+                                progress, 
+                                ct
+                            );
                         }
 
                         // Normal Sync: Try to sync the record over
                         var success = await SyncRecordAsync(
                             missingRecord,
                             options,
-                            null,
+                            progress,
                             ct
                         );
 
                         if (success)
                         {
-                            return await RetryEntityAsync(entity, options, ct);
+                            return await RetryEntityAsync(
+                                entity, 
+                                options, 
+                                progress, 
+                                ct
+                            );
                         }
                     }
                 }
@@ -609,11 +667,16 @@ namespace dvmig.Core.Synchronization
                             entity.Id
                         );
 
+                        progress?.Report(
+                            $"Dependency resolution failed. Stripping '{attrToStrip}' and retrying..."
+                        );
+
                         entity.Attributes.Remove(attrToStrip);
 
                         return await CreateWithFixStrategyAsync(
                             entity,
                             options,
+                            progress,
                             ct
                         );
                     }

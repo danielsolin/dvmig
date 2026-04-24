@@ -216,7 +216,12 @@ namespace dvmig.Core.Synchronization
 
                 if (metadata?.IsIntersect == true)
                 {
-                    return await SyncIntersectEntityAsync(entity, options, ct);
+                    return await SyncIntersectEntityAsync(
+                        entity, 
+                        options, 
+                        progress, 
+                        ct
+                    );
                 }
 
                 var prepared = await PrepareEntityForTargetAsync(
@@ -251,6 +256,7 @@ namespace dvmig.Core.Synchronization
                 var success = await CreateWithFixStrategyAsync(
                     prepared,
                     options,
+                    progress,
                     ct
                 );
 
@@ -276,6 +282,9 @@ namespace dvmig.Core.Synchronization
             catch (Exception ex)
             {
                 _logger.Error(ex, "Failed to sync {Key}", recordKey);
+                progress?.Report(
+                    $"FAILED {entity.LogicalName}:{entity.Id} - {ex.Message}"
+                );
 
                 return false;
             }
@@ -288,6 +297,7 @@ namespace dvmig.Core.Synchronization
         private async Task<bool> SyncIntersectEntityAsync(
             Entity entity,
             SyncOptions options,
+            IProgress<string>? progress,
             CancellationToken ct)
         {
             try
@@ -316,7 +326,13 @@ namespace dvmig.Core.Synchronization
                     return true;
                 }
 
-                return await HandleSyncExceptionAsync(ex, entity, options, ct);
+                return await HandleSyncExceptionAsync(
+                    ex, 
+                    entity, 
+                    options, 
+                    progress, 
+                    ct
+                );
             }
         }
 
@@ -352,6 +368,7 @@ namespace dvmig.Core.Synchronization
         private async Task<bool> CreateWithFixStrategyAsync(
             Entity entity,
             SyncOptions options,
+            IProgress<string>? progress,
             CancellationToken ct)
         {
             try
@@ -370,7 +387,13 @@ namespace dvmig.Core.Synchronization
             }
             catch (Exception ex)
             {
-                return await HandleSyncExceptionAsync(ex, entity, options, ct);
+                return await HandleSyncExceptionAsync(
+                    ex, 
+                    entity, 
+                    options, 
+                    progress, 
+                    ct
+                );
             }
         }
     }
