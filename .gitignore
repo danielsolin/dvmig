@@ -14,3 +14,4 @@ _ReSharper*/
 *.userosscache
 *.sln.docstates
 TestResults/
+*.swp
