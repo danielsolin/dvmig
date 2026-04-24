@@ -2,7 +2,9 @@ using System.IO;
 using System.Windows;
 using dvmig.App.Services;
 using dvmig.App.ViewModels;
-using dvmig.Core;
+using dvmig.Core.DataPreservation;
+using dvmig.Core.Provisioning;
+using dvmig.Core.Synchronization;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 
@@ -36,7 +38,7 @@ namespace dvmig.App
             services.AddSingleton<IMigrationService, MigrationService>();
             services.AddSingleton<ISettingsService, SettingsService>();
             services.AddSingleton<
-                IEnvironmentValidator, 
+                IEnvironmentValidator,
                 EnvironmentValidator
             >();
             services.AddSingleton<ISchemaManager, SchemaManager>();

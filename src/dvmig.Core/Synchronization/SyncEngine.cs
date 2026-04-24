@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using dvmig.Core.DataPreservation;
 using dvmig.Providers;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Messages;
@@ -7,12 +8,13 @@ using Polly;
 using Polly.Retry;
 using Serilog;
 
-namespace dvmig.Core
+namespace dvmig.Core.Synchronization
 {
     /// <summary>
     /// Core engine responsible for synchronizing entities from the source
     /// to the target Dataverse environment. Handles dependency resolution,
-    /// retries, and data transformations.    /// </summary>
+    /// retries, and data transformations.
+    /// </summary>
     public partial class SyncEngine : ISyncEngine
     {
         private readonly IDataverseProvider _source;

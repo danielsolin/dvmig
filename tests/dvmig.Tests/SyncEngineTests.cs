@@ -1,4 +1,5 @@
-using dvmig.Core;
+using dvmig.Core.DataPreservation;
+using dvmig.Core.Synchronization;
 using dvmig.Providers;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Messages;

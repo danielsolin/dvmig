@@ -2,7 +2,7 @@ using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Metadata;
 using Microsoft.Xrm.Sdk.Query;
 
-namespace dvmig.Core
+namespace dvmig.Core.Synchronization
 {
     public partial class SyncEngine
     {

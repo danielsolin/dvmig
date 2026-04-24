@@ -4,17 +4,8 @@ using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Query;
 using Serilog;
 
-namespace dvmig.Core
+namespace dvmig.Core.Synchronization
 {
-    public interface IUserMapper
-    {
-        Task<EntityReference?> MapUserAsync(
-            EntityReference? sourceUser,
-            CancellationToken ct = default);
-
-        void AddManualMapping(Guid sourceUserId, Guid targetUserId);
-    }
-
     /// <summary>
     /// Maps user references from a source Dataverse environment to a target 
     /// environment. This resolves differences in systemuser GUIDs between 
@@ -146,7 +137,7 @@ namespace dvmig.Core
                 }
             }
 
-            _logger.Warning("" +
+            _logger.Warning(
                 "Could not map source user {FullName} ({Id})",
                 sourceUserData.GetAttributeValue<string>("fullname"),
                 sourceUser.Id

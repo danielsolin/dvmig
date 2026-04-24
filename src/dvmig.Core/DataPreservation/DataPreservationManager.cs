@@ -3,7 +3,7 @@ using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Query;
 using Serilog;
 
-namespace dvmig.Core
+namespace dvmig.Core.DataPreservation
 {
     /// <summary>
     /// Manages the preservation of original creation and modification dates 

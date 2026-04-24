@@ -1,4 +1,4 @@
-using dvmig.Core;
+using dvmig.Core.DataPreservation;
 using dvmig.Providers;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Metadata;
@@ -18,7 +18,10 @@ namespace dvmig.Tests
         {
             _targetMock = new Mock<IDataverseProvider>();
             _loggerMock = new Mock<ILogger>();
-            _manager = new DataPreservationManager(_targetMock.Object, _loggerMock.Object);
+            _manager = new DataPreservationManager(
+                _targetMock.Object,
+                _loggerMock.Object
+            );
         }
 
         [Fact]
@@ -27,12 +30,17 @@ namespace dvmig.Tests
             var entity = new Entity("account", Guid.NewGuid());
             entity["createdon"] = DateTime.UtcNow;
 
-            _targetMock.Setup(t => t.GetEntityMetadataAsync("dm_sourcedate", It.IsAny<CancellationToken>()))
-                       .ReturnsAsync((EntityMetadata?)null);
+            _targetMock.Setup(t => t.GetEntityMetadataAsync(
+                "dm_sourcedate",
+                It.IsAny<CancellationToken>())
+            ).ReturnsAsync((EntityMetadata?)null);
 
             await _manager.PreserveDatesAsync(entity);
 
-            _targetMock.Verify(t => t.CreateAsync(It.IsAny<Entity>(), It.IsAny<CancellationToken>()), Times.Never);
+            _targetMock.Verify(t => t.CreateAsync(
+                It.IsAny<Entity>(),
+                It.IsAny<CancellationToken>()), Times.Never
+            );
         }
 
         [Fact]
@@ -40,12 +48,17 @@ namespace dvmig.Tests
         {
             var entity = new Entity("account", Guid.NewGuid());
 
-            _targetMock.Setup(t => t.GetEntityMetadataAsync("dm_sourcedate", It.IsAny<CancellationToken>()))
-                       .ReturnsAsync(new EntityMetadata());
+            _targetMock.Setup(t => t.GetEntityMetadataAsync(
+                "dm_sourcedate",
+                It.IsAny<CancellationToken>())
+            ).ReturnsAsync(new EntityMetadata());
 
             await _manager.PreserveDatesAsync(entity);
 
-            _targetMock.Verify(t => t.CreateAsync(It.IsAny<Entity>(), It.IsAny<CancellationToken>()), Times.Never);
+            _targetMock.Verify(t => t.CreateAsync(
+                It.IsAny<Entity>(),
+                It.IsAny<CancellationToken>()), Times.Never
+            );
         }
 
         [Fact]
@@ -58,8 +71,10 @@ namespace dvmig.Tests
             entity["createdon"] = createdOn;
             entity["modifiedon"] = modifiedOn;
 
-            _targetMock.Setup(t => t.GetEntityMetadataAsync("dm_sourcedate", It.IsAny<CancellationToken>()))
-                       .ReturnsAsync(new EntityMetadata());
+            _targetMock.Setup(t => t.GetEntityMetadataAsync(
+                "dm_sourcedate",
+                It.IsAny<CancellationToken>())
+            ).ReturnsAsync(new EntityMetadata());
 
             await _manager.PreserveDatesAsync(entity);
 
@@ -75,12 +90,18 @@ namespace dvmig.Tests
         [Fact]
         public async Task DeleteSourceDateAsync_DoesNothing_WhenNotSupported()
         {
-            _targetMock.Setup(t => t.GetEntityMetadataAsync("dm_sourcedate", It.IsAny<CancellationToken>()))
-                       .ReturnsAsync((EntityMetadata?)null);
+            _targetMock.Setup(t => t.GetEntityMetadataAsync(
+                "dm_sourcedate",
+                It.IsAny<CancellationToken>())
+            ).ReturnsAsync((EntityMetadata?)null);
 
             await _manager.DeleteSourceDateAsync("account", Guid.NewGuid());
 
-            _targetMock.Verify(t => t.DeleteAsync(It.IsAny<string>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
+            _targetMock.Verify(t => t.DeleteAsync(
+                It.IsAny<string>(),
+                It.IsAny<Guid>(),
+                It.IsAny<CancellationToken>()), Times.Never
+            );
         }
 
         [Fact]
@@ -89,16 +110,26 @@ namespace dvmig.Tests
             var entityId = Guid.NewGuid();
             var sourceDateId = Guid.NewGuid();
 
-            _targetMock.Setup(t => t.GetEntityMetadataAsync("dm_sourcedate", It.IsAny<CancellationToken>()))
-                       .ReturnsAsync(new EntityMetadata());
+            _targetMock.Setup(t => t.GetEntityMetadataAsync(
+                "dm_sourcedate",
+                It.IsAny<CancellationToken>())
+            ).ReturnsAsync(new EntityMetadata());
 
-            var fetchResult = new EntityCollection(new[] { new Entity("dm_sourcedate", sourceDateId) });
-            _targetMock.Setup(t => t.RetrieveMultipleAsync(It.IsAny<FetchExpression>(), It.IsAny<CancellationToken>()))
-                       .ReturnsAsync(fetchResult);
+            var fetchResult = new EntityCollection(
+                new[] { new Entity("dm_sourcedate", sourceDateId) }
+            );
+            _targetMock.Setup(t => t.RetrieveMultipleAsync(
+                It.IsAny<FetchExpression>(),
+                It.IsAny<CancellationToken>())
+            ).ReturnsAsync(fetchResult);
 
             await _manager.DeleteSourceDateAsync("account", entityId);
 
-            _targetMock.Verify(t => t.DeleteAsync("dm_sourcedate", sourceDateId, It.IsAny<CancellationToken>()), Times.Once);
+            _targetMock.Verify(t => t.DeleteAsync(
+                "dm_sourcedate",
+                sourceDateId,
+                It.IsAny<CancellationToken>()), Times.Once
+            );
         }
 
         [Fact]
@@ -106,16 +137,24 @@ namespace dvmig.Tests
         {
             var entityId = Guid.NewGuid();
 
-            _targetMock.Setup(t => t.GetEntityMetadataAsync("dm_sourcedate", It.IsAny<CancellationToken>()))
-                       .ReturnsAsync(new EntityMetadata());
+            _targetMock.Setup(t => t.GetEntityMetadataAsync(
+                "dm_sourcedate",
+                It.IsAny<CancellationToken>())
+            ).ReturnsAsync(new EntityMetadata());
 
             var fetchResult = new EntityCollection();
-            _targetMock.Setup(t => t.RetrieveMultipleAsync(It.IsAny<FetchExpression>(), It.IsAny<CancellationToken>()))
-                       .ReturnsAsync(fetchResult);
+            _targetMock.Setup(t => t.RetrieveMultipleAsync(
+                It.IsAny<FetchExpression>(),
+                It.IsAny<CancellationToken>())
+            ).ReturnsAsync(fetchResult);
 
             await _manager.DeleteSourceDateAsync("account", entityId);
 
-            _targetMock.Verify(t => t.DeleteAsync(It.IsAny<string>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
+            _targetMock.Verify(t => t.DeleteAsync(
+                It.IsAny<string>(),
+                It.IsAny<Guid>(),
+                It.IsAny<CancellationToken>()), Times.Never
+            );
         }
     }
 }

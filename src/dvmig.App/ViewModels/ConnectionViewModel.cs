@@ -3,7 +3,7 @@ using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using dvmig.App.Services;
-using dvmig.Core;
+using dvmig.Core.Provisioning;
 
 namespace dvmig.App.ViewModels
 {

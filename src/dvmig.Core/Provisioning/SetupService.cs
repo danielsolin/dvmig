@@ -1,7 +1,7 @@
 using dvmig.Providers;
 using Serilog;
 
-namespace dvmig.Core
+namespace dvmig.Core.Provisioning
 {
     /// <summary>
     /// Service responsible for preparing the target Dataverse environment for 

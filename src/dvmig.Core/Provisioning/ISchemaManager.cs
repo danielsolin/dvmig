@@ -1,0 +1,26 @@
+using dvmig.Providers;
+
+namespace dvmig.Core.Provisioning
+{
+    /// <summary>
+    /// Defines the contract for managing schema creation in the target
+    /// environment.
+    /// </summary>
+    public interface ISchemaManager
+    {
+        /// <summary>
+        /// Creates the 'dm_sourcedate' entity schema and its required 
+        /// attributes in the target environment if they do not already 
+        /// exist.
+        /// </summary>
+        /// <param name="target">The target Dataverse provider.</param>
+        /// <param name="progress">An optional progress reporter.</param>
+        /// <param name="ct">A cancellation token.</param>
+        /// <returns>A task representing the asynchronous operation.</returns>
+        Task CreateSchemaAsync(
+            IDataverseProvider target,
+            IProgress<string>? progress = null,
+            CancellationToken ct = default
+        );
+    }
+}

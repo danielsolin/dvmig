@@ -1,6 +1,6 @@
 using Microsoft.Xrm.Sdk;
 
-namespace dvmig.Core
+namespace dvmig.Core.DataPreservation
 {
     /// <summary>
     /// Defines the contract for a manager that handles the preservation of 

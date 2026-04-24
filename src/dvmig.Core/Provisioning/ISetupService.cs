@@ -1,6 +1,6 @@
 using dvmig.Providers;
 
-namespace dvmig.Core
+namespace dvmig.Core.Provisioning
 {
     /// <summary>
     /// Defines the contract for a service that prepares a target Dataverse 

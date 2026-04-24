@@ -1,7 +1,7 @@
 using System.Text.RegularExpressions;
 using Microsoft.Xrm.Sdk;
 
-namespace dvmig.Core
+namespace dvmig.Core.Synchronization
 {
     public partial class SyncEngine
     {
@@ -543,4 +543,3 @@ namespace dvmig.Core
         }
     }
 }
-
