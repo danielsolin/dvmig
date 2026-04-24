@@ -1,6 +1,3 @@
-using System;
-using System.Linq;
-
 namespace dvmig.Core.Metadata
 {
     public static class EntityMetadataHelper
@@ -10,7 +7,6 @@ namespace dvmig.Core.Metadata
             "account",
             "activitypointer",
             "appointment",
-            "assettable",
             "bookableresource",
             "bookableresourcebooking",
             "businessunit",
@@ -18,21 +14,16 @@ namespace dvmig.Core.Metadata
             "category",
             "competitor",
             "contact",
-            "custtable",
             "email",
             "entitlement",
             "equipment",
             "goal",
             "incident",
-            "inventlocation",
-            "inventsite",
-            "inventtable",
             "invoice",
             "kbarticle",
             "knowledgearticle",
             "lead",
             "list",
-            "mainaccount",
             "msdyn_agreement",
             "msdyn_customerasset",
             "msdyn_expense",
@@ -48,17 +39,14 @@ namespace dvmig.Core.Metadata
             "phonecall",
             "pricelevel",
             "product",
-            "purchtable",
             "queue",
             "quote",
             "salesorder",
-            "salestable",
             "sla",
             "subject",
             "systemuser",
             "task",
-            "team",
-            "vendtable"
+            "team"
         };
 
         public static bool IsStandardEntity(string logicalName)
