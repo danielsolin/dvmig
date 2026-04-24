@@ -7,10 +7,21 @@ using Microsoft.Xrm.Tooling.Connector;
 
 namespace dvmig.Providers
 {
+    /// <summary>
+    /// Implementation of <see cref="IDataverseProvider"/> using the legacy 
+    /// <see cref="CrmServiceClient"/> from the XrmTooling.Connector SDK. 
+    /// Required for OnPrem (AD/IFD) authentication support.
+    /// </summary>
     public class LegacyCrmProvider : IDataverseProvider, IDisposable
     {
         private readonly CrmServiceClient _client;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="LegacyCrmProvider"/> class.
+        /// </summary>
+        /// <param name="connectionString">
+        /// The connection string to the legacy CRM environment.
+        /// </param>
         public LegacyCrmProvider(string connectionString)
         {
             _client = new CrmServiceClient(connectionString);
@@ -22,6 +33,7 @@ namespace dvmig.Providers
             }
         }
 
+        /// <inheritdoc />
         public Guid? CallerId
         {
             get
@@ -34,6 +46,7 @@ namespace dvmig.Providers
             }
         }
 
+        /// <inheritdoc />
         public Task<Entity?> RetrieveAsync(
             string entityLogicalName,
             Guid id,
@@ -66,6 +79,7 @@ namespace dvmig.Providers
             }
         }
 
+        /// <inheritdoc />
         public Task<EntityMetadata?> GetEntityMetadataAsync(
             string entityLogicalName,
             CancellationToken ct = default)
@@ -81,6 +95,7 @@ namespace dvmig.Providers
             return Task.FromResult(response?.EntityMetadata);
         }
 
+        /// <inheritdoc />
         public Task<Guid> CreateAsync(
             Entity entity,
             CancellationToken ct = default)
@@ -88,6 +103,7 @@ namespace dvmig.Providers
             return Task.FromResult(_client.Create(entity));
         }
 
+        /// <inheritdoc />
         public Task UpdateAsync(
             Entity entity,
             CancellationToken ct = default)
@@ -97,6 +113,7 @@ namespace dvmig.Providers
             return Task.CompletedTask;
         }
 
+        /// <inheritdoc />
         public Task DeleteAsync(
             string entityLogicalName,
             Guid id,
@@ -107,6 +124,7 @@ namespace dvmig.Providers
             return Task.CompletedTask;
         }
 
+        /// <inheritdoc />
         public Task AssociateAsync(
             string entityLogicalName,
             Guid entityId,
@@ -124,6 +142,7 @@ namespace dvmig.Providers
             return Task.CompletedTask;
         }
 
+        /// <inheritdoc />
         public Task<EntityCollection> RetrieveMultipleAsync(
             QueryBase query,
             CancellationToken ct = default)
@@ -131,6 +150,7 @@ namespace dvmig.Providers
             return Task.FromResult(_client.RetrieveMultiple(query));
         }
 
+        /// <inheritdoc />
         public Task<OrganizationResponse> ExecuteAsync(
             OrganizationRequest request,
             CancellationToken ct = default)
@@ -138,6 +158,9 @@ namespace dvmig.Providers
             return Task.FromResult(_client.Execute(request));
         }
 
+        /// <summary>
+        /// Disposes the underlying CRM service client.
+        /// </summary>
         public void Dispose()
         {
             _client.Dispose();

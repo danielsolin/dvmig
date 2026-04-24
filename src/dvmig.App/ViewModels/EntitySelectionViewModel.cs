@@ -9,6 +9,10 @@ using dvmig.App.Services;
 
 namespace dvmig.App.ViewModels
 {
+    /// <summary>
+    /// View model for the entity and record selection screen. Allows users to
+    /// choose which entities and specific records to migrate.
+    /// </summary>
     public partial class EntitySelectionViewModel : ViewModelBase
     {
         private readonly INavigationService _navigationService;
@@ -16,30 +20,65 @@ namespace dvmig.App.ViewModels
         private readonly ICollectionView _entitiesView;
         private CancellationTokenSource? _recordCts;
 
+        /// <summary>
+        /// Gets or sets the search text used to filter the list of entities.
+        /// </summary>
         [ObservableProperty]
         private string _searchText = string.Empty;
 
+        /// <summary>
+        /// Gets or sets a value indicating whether system/internal entities 
+        /// should be displayed in the list.
+        /// </summary>
         [ObservableProperty]
         private bool _showSystemEntities;
 
+        /// <summary>
+        /// Gets or sets a value indicating whether the entity metadata is 
+        /// currently being loaded.
+        /// </summary>
         [ObservableProperty]
         private bool _isLoading;
 
+        /// <summary>
+        /// Gets or sets the currently active (highlighted) entity for 
+        /// record selection.
+        /// </summary>
         [ObservableProperty]
         private EntitySelectionItem? _activeEntity;
 
+        /// <summary>
+        /// Gets or sets the search text used to filter the list of records 
+        /// for the active entity.
+        /// </summary>
         [ObservableProperty]
         private string _recordSearchText = string.Empty;
 
+        /// <summary>
+        /// Gets or sets a value indicating whether records for the active 
+        /// entity are currently being loaded.
+        /// </summary>
         [ObservableProperty]
         private bool _isLoadingRecords;
 
+        /// <summary>
+        /// Gets the collection of available entities for selection.
+        /// </summary>
         public ObservableCollection<EntitySelectionItem> Entities { get; } =
             new ObservableCollection<EntitySelectionItem>();
 
+        /// <summary>
+        /// Gets the collection of records for the currently active entity.
+        /// </summary>
         public ObservableCollection<RecordSelectionItem> Records { get; } =
             new ObservableCollection<RecordSelectionItem>();
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="EntitySelectionViewModel"/> 
+        /// class.
+        /// </summary>
+        /// <param name="navigationService">The navigation service.</param>
+        /// <param name="migrationService">The migration service.</param>
         public EntitySelectionViewModel(
             INavigationService navigationService,
             IMigrationService migrationService)

@@ -7,10 +7,20 @@ using Microsoft.Xrm.Sdk.Query;
 
 namespace dvmig.Providers
 {
+    /// <summary>
+    /// Implementation of <see cref="IDataverseProvider"/> using the modern 
+    /// <see cref="ServiceClient"/> from the PowerPlatform.Dataverse.Client SDK.
+    /// </summary>
     public class DataverseProvider : IDataverseProvider, IDisposable
     {
         private readonly ServiceClient _client;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DataverseProvider"/> class.
+        /// </summary>
+        /// <param name="connectionString">
+        /// The connection string to the Dataverse environment.
+        /// </param>
         public DataverseProvider(string connectionString)
         {
             _client = new ServiceClient(connectionString);
@@ -22,6 +32,7 @@ namespace dvmig.Providers
             }
         }
 
+        /// <inheritdoc />
         public Guid? CallerId
         {
             get
@@ -34,6 +45,7 @@ namespace dvmig.Providers
             }
         }
 
+        /// <inheritdoc />
         public async Task<Entity?> RetrieveAsync(
             string entityLogicalName,
             Guid id,
@@ -66,6 +78,7 @@ namespace dvmig.Providers
             }
         }
 
+        /// <inheritdoc />
         public async Task<EntityMetadata?> GetEntityMetadataAsync(
             string entityLogicalName,
             CancellationToken ct = default)
@@ -91,6 +104,7 @@ namespace dvmig.Providers
             }
         }
 
+        /// <inheritdoc />
         public async Task<Guid> CreateAsync(
             Entity entity,
             CancellationToken ct = default)
@@ -98,6 +112,7 @@ namespace dvmig.Providers
             return await _client.CreateAsync(entity, ct);
         }
 
+        /// <inheritdoc />
         public async Task UpdateAsync(
             Entity entity,
             CancellationToken ct = default)
@@ -105,6 +120,7 @@ namespace dvmig.Providers
             await _client.UpdateAsync(entity, ct);
         }
 
+        /// <inheritdoc />
         public async Task DeleteAsync(
             string entityLogicalName,
             Guid id,
@@ -113,6 +129,7 @@ namespace dvmig.Providers
             await _client.DeleteAsync(entityLogicalName, id, ct);
         }
 
+        /// <inheritdoc />
         public async Task AssociateAsync(
             string entityLogicalName,
             Guid entityId,
@@ -129,6 +146,7 @@ namespace dvmig.Providers
             );
         }
 
+        /// <inheritdoc />
         public async Task<EntityCollection> RetrieveMultipleAsync(
             QueryBase query,
             CancellationToken ct = default)
@@ -136,6 +154,7 @@ namespace dvmig.Providers
             return await _client.RetrieveMultipleAsync(query, ct);
         }
 
+        /// <inheritdoc />
         public async Task<OrganizationResponse> ExecuteAsync(
             OrganizationRequest request,
             CancellationToken ct = default)
@@ -143,6 +162,9 @@ namespace dvmig.Providers
             return await _client.ExecuteAsync(request, ct);
         }
 
+        /// <summary>
+        /// Disposes the underlying service client.
+        /// </summary>
         public void Dispose()
         {
             _client.Dispose();

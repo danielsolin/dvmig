@@ -5,24 +5,58 @@ using System.Text.Json;
 
 namespace dvmig.App.Services
 {
+    /// <summary>
+    /// Represents the persisted user settings for the application.
+    /// </summary>
     public class UserSettings
     {
+        /// <summary>
+        /// Gets or sets the encrypted connection string for the source 
+        /// environment.
+        /// </summary>
         public string SourceConnectionString { get; set; } = string.Empty;
 
+        /// <summary>
+        /// Gets or sets the encrypted connection string for the target 
+        /// environment.
+        /// </summary>
         public string TargetConnectionString { get; set; } = string.Empty;
 
+        /// <summary>
+        /// Gets or sets a value indicating whether connection strings 
+        /// should be persisted.
+        /// </summary>
         public bool RememberConnections { get; set; }
 
+        /// <summary>
+        /// Gets or sets a value indicating whether to automatically attempt 
+        /// connection on startup.
+        /// </summary>
         public bool AutoConnect { get; set; }
     }
 
+    /// <summary>
+    /// Service interface for loading and saving application settings.
+    /// </summary>
     public interface ISettingsService
     {
+        /// <summary>
+        /// Loads the user settings from persistent storage.
+        /// </summary>
+        /// <returns>The loaded user settings.</returns>
         UserSettings LoadSettings();
 
+        /// <summary>
+        /// Saves the specified user settings to persistent storage.
+        /// </summary>
+        /// <param name="settings">The settings to save.</param>
         void SaveSettings(UserSettings settings);
     }
 
+    /// <summary>
+    /// Implementation of the settings service using local file storage and 
+    /// DPAPI for encryption.
+    /// </summary>
     public class SettingsService : ISettingsService
     {
         private readonly string _filePath;
@@ -30,6 +64,9 @@ namespace dvmig.App.Services
         private static readonly byte[] LegacyEntropy =
             Encoding.UTF8.GetBytes("dvmig-entropy");
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="SettingsService"/> class.
+        /// </summary>
         public SettingsService()
         {
             var appData = Environment.GetFolderPath(
@@ -46,6 +83,7 @@ namespace dvmig.App.Services
             _filePath = Path.Combine(folder, "settings.json");
         }
 
+        /// <inheritdoc />
         public UserSettings LoadSettings()
         {
             if (!File.Exists(_filePath))
@@ -81,6 +119,7 @@ namespace dvmig.App.Services
             }
         }
 
+        /// <inheritdoc />
         public void SaveSettings(UserSettings settings)
         {
             try
@@ -109,6 +148,9 @@ namespace dvmig.App.Services
             }
         }
 
+        /// <summary>
+        /// Encrypts the specified text using DPAPI.
+        /// </summary>
         private string Encrypt(string text)
         {
             if (string.IsNullOrEmpty(text))
@@ -133,6 +175,9 @@ namespace dvmig.App.Services
             }
         }
 
+        /// <summary>
+        /// Decrypts the specified base64 string using DPAPI.
+        /// </summary>
         private string Decrypt(string base64)
         {
             if (string.IsNullOrEmpty(base64))

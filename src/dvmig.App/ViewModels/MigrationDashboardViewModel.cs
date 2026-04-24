@@ -8,6 +8,10 @@ using Microsoft.Xrm.Sdk.Query;
 
 namespace dvmig.App.ViewModels
 {
+    /// <summary>
+    /// View model for the migration dashboard, providing real-time progress
+    /// tracking and logging for the migration process.
+    /// </summary>
     public partial class MigrationDashboardViewModel : ViewModelBase
     {
         private readonly INavigationService _navigationService;
@@ -15,18 +19,36 @@ namespace dvmig.App.ViewModels
         private readonly ISyncEngine _syncEngine;
         private CancellationTokenSource? _cts;
 
+        /// <summary>
+        /// Gets or sets the progress information for the current migration.
+        /// </summary>
         [ObservableProperty]
         private SyncProgressInfo _progress = new SyncProgressInfo();
 
+        /// <summary>
+        /// Gets or sets a value indicating whether a migration process is 
+        /// currently running.
+        /// </summary>
         [ObservableProperty]
         [NotifyCanExecuteChangedFor(nameof(StartMigrationCommand))]
         [NotifyCanExecuteChangedFor(nameof(CancelMigrationCommand))]
         [NotifyCanExecuteChangedFor(nameof(GoBackCommand))]
         private bool _isMigrationRunning;
 
+        /// <summary>
+        /// Gets the collection of log messages generated during the 
+        /// migration process.
+        /// </summary>
         public ObservableCollection<string> Logs { get; } =
             new ObservableCollection<string>();
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="MigrationDashboardViewModel"/> 
+        /// class.
+        /// </summary>
+        /// <param name="navigationService">The navigation service.</param>
+        /// <param name="migrationService">The migration service.</param>
+        /// <param name="syncEngine">The synchronization engine.</param>
         public MigrationDashboardViewModel(
             INavigationService navigationService,
             IMigrationService migrationService,
@@ -37,6 +59,9 @@ namespace dvmig.App.ViewModels
             _syncEngine = syncEngine;
         }
 
+        /// <summary>
+        /// Initiates the migration process asynchronously.
+        /// </summary>
         [RelayCommand(CanExecute = nameof(CanStartMigration))]
         private async Task StartMigrationAsync()
         {

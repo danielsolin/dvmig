@@ -8,69 +8,146 @@ using dvmig.Core.Metadata;
 
 namespace dvmig.App.Services
 {
+    /// <summary>
+    /// Service interface for managing Dataverse connections and retrieving 
+    /// metadata and records for migration selection.
+    /// </summary>
     public interface IMigrationService
     {
+        /// <summary>
+        /// Asynchronously connects to the source Dataverse/CRM environment.
+        /// </summary>
+        /// <param name="connectionString">The connection string to use.</param>
+        /// <param name="isLegacy">
+        /// True if using legacy CRM OnPrem authentication (AD/IFD).
+        /// </param>
+        /// <param name="ct">A cancellation token.</param>
+        /// <returns>True if connection was successful; otherwise, false.</returns>
         Task<bool> ConnectSourceAsync(
             string connectionString,
             bool isLegacy,
             CancellationToken ct = default
         );
 
+        /// <summary>
+        /// Asynchronously connects to the target Dataverse environment.
+        /// </summary>
+        /// <param name="connectionString">The connection string to use.</param>
+        /// <param name="isLegacy">
+        /// True if using legacy CRM OnPrem authentication.
+        /// </param>
+        /// <param name="ct">A cancellation token.</param>
+        /// <returns>True if connection was successful; otherwise, false.</returns>
         Task<bool> ConnectTargetAsync(
             string connectionString,
             bool isLegacy,
             CancellationToken ct = default
         );
 
+        /// <summary>
+        /// Retrieves all entity metadata from the source environment.
+        /// </summary>
+        /// <param name="ct">A cancellation token.</param>
+        /// <returns>A list of entity metadata.</returns>
         Task<List<EntityMetadata>> GetSourceEntitiesAsync(
             CancellationToken ct = default
         );
 
+        /// <summary>
+        /// Gets the total record count for a specific entity in the 
+        /// source environment.
+        /// </summary>
+        /// <param name="logicalName">The logical name of the entity.</param>
+        /// <param name="ct">A cancellation token.</param>
+        /// <returns>The total number of records.</returns>
         Task<long> GetRecordCountAsync(
             string logicalName,
             CancellationToken ct = default
         );
 
+        /// <summary>
+        /// Retrieves a sample list of records for a specific entity from 
+        /// the source environment.
+        /// </summary>
+        /// <param name="logicalName">The logical name of the entity.</param>
+        /// <param name="searchText">
+        /// Optional search text to filter records by their primary name.
+        /// </param>
+        /// <param name="ct">A cancellation token.</param>
+        /// <returns>A list of record selection items.</returns>
         Task<List<RecordSelectionItem>> GetRecordsAsync(
             string logicalName,
             string? searchText = null,
             CancellationToken ct = default
         );
 
+        /// <summary>
+        /// Disconnects the source environment provider and clears 
+        /// cached metadata.
+        /// </summary>
         void DisconnectSource();
 
+        /// <summary>
+        /// Disconnects the target environment provider.
+        /// </summary>
         void DisconnectTarget();
 
+        /// <summary>
+        /// Gets the current source Dataverse provider.
+        /// </summary>
         IDataverseProvider? SourceProvider { get; }
+
+        /// <summary>
+        /// Gets the current target Dataverse provider.
+        /// </summary>
         IDataverseProvider? TargetProvider { get; }
 
+        /// <summary>
+        /// Gets the list of currently configured entity migrations.
+        /// </summary>
         List<EntitySyncConfiguration> SelectedEntities { get; }
 
+        /// <summary>
+        /// Determines if the specified entity is considered a standard 
+        /// (non-system) entity.
+        /// </summary>
+        /// <param name="logicalName">The logical name of the entity.</param>
+        /// <returns>True if it is a standard entity; otherwise, false.</returns>
         bool IsStandardEntity(string logicalName);
     }
 
+    /// <summary>
+    /// Implementation of the migration service for managing Dataverse 
+    /// operations within the application.
+    /// </summary>
     public class MigrationService : IMigrationService
     {
         private List<EntityMetadata>? _cachedMetadata;
 
+        /// <inheritdoc />
         public IDataverseProvider? SourceProvider { get; private set; }
 
+        /// <inheritdoc />
         public IDataverseProvider? TargetProvider { get; private set; }
 
+        /// <inheritdoc />
         public List<EntitySyncConfiguration> SelectedEntities { get; } = 
             new List<EntitySyncConfiguration>();
 
+        /// <inheritdoc />
         public void DisconnectSource()
         {
             SourceProvider = null;
             _cachedMetadata = null;
         }
 
+        /// <inheritdoc />
         public void DisconnectTarget()
         {
             TargetProvider = null;
         }
 
+        /// <inheritdoc />
         public async Task<bool> ConnectSourceAsync(
             string connectionString,
             bool isLegacy,
@@ -110,6 +187,7 @@ namespace dvmig.App.Services
             }
         }
 
+        /// <inheritdoc />
         public async Task<bool> ConnectTargetAsync(
             string connectionString,
             bool isLegacy,
@@ -149,14 +227,18 @@ namespace dvmig.App.Services
             }
         }
 
+        /// <summary>
+        /// Deprecated method for testing connections. Use ConnectSource or 
+        /// ConnectTarget instead.
+        /// </summary>
         public Task<bool> TestConnectionAsync(
             string connectionString,
             bool isLegacy)
         {
-            // Deprecated, using ConnectSource/ConnectTarget
             return Task.FromResult(false);
         }
 
+        /// <inheritdoc />
         public async Task<List<EntityMetadata>> GetSourceEntitiesAsync(
             CancellationToken ct = default)
         {
@@ -189,6 +271,7 @@ namespace dvmig.App.Services
             return _cachedMetadata;
         }
 
+        /// <inheritdoc />
         public async Task<long> GetRecordCountAsync(
             string logicalName,
             CancellationToken ct = default)
@@ -232,6 +315,7 @@ namespace dvmig.App.Services
             return 0;
         }
 
+        /// <inheritdoc />
         public async Task<List<RecordSelectionItem>> GetRecordsAsync(
             string logicalName,
             string? searchText = null,
@@ -286,6 +370,7 @@ namespace dvmig.App.Services
             )).ToList();
         }
 
+        /// <inheritdoc />
         public bool IsStandardEntity(string logicalName)
         {
             return EntityMetadataHelper.IsStandardEntity(logicalName);

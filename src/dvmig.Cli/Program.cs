@@ -10,12 +10,21 @@ using Spectre.Console;
 
 namespace dvmig.Cli
 {
+    /// <summary>
+    /// Entry point for the Terminal User Interface (TUI) version of the 
+    /// Dataverse Migrator.
+    /// </summary>
     class Program
     {
         private static IDataverseProvider? _source;
         private static IDataverseProvider? _target;
         private static ISyncEngine? _engine;
 
+        /// <summary>
+        /// Main application loop for the CLI. Handles connection, entity 
+        /// selection, and migration execution.
+        /// </summary>
+        /// <param name="args">Command line arguments.</param>
         static async Task Main(string[] args)
         {
             AnsiConsole.Write(
@@ -87,6 +96,11 @@ namespace dvmig.Cli
             Console.ReadKey();
         }
 
+        /// <summary>
+        /// Interactively connects to a Dataverse/CRM environment.
+        /// </summary>
+        /// <param name="label">The label for the connection (Source/Target).</param>
+        /// <returns>A configured Dataverse provider, or null if connection fails.</returns>
         private static async Task<IDataverseProvider?> ConnectAsync(
             string label
         )
@@ -133,6 +147,10 @@ namespace dvmig.Cli
                 });
         }
 
+        /// <summary>
+        /// Interactively allows the user to select entities for migration.
+        /// </summary>
+        /// <returns>A list of selected entity logical names.</returns>
         private static async Task<List<string>?> SelectEntitiesAsync()
         {
             return await AnsiConsole.Status()
@@ -192,11 +210,18 @@ namespace dvmig.Cli
                 });
         }
 
+        /// <summary>
+        /// Checks if an entity is considered a standard (non-system) entity.
+        /// </summary>
         private static bool IsStandardEntity(string logicalName)
         {
             return EntityMetadataHelper.IsStandardEntity(logicalName);
         }
 
+        /// <summary>
+        /// Executes the migration for the selected entities.
+        /// </summary>
+        /// <param name="entities">The list of logical names to migrate.</param>
         private static async Task RunMigrationAsync(List<string> entities)
         {
             foreach (var logicalName in entities)

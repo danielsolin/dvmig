@@ -7,6 +7,10 @@ using dvmig.Core.Provisioning;
 
 namespace dvmig.App.ViewModels
 {
+    /// <summary>
+    /// View model for the connection screen, handling the configuration 
+    /// and testing of source and target environment connections.
+    /// </summary>
     public partial class ConnectionViewModel : ViewModelBase
     {
         private readonly INavigationService _navigationService;
@@ -14,35 +18,73 @@ namespace dvmig.App.ViewModels
         private readonly ISettingsService _settingsService;
         private readonly ISetupService _setupService;
 
+        /// <summary>
+        /// Gets or sets the connection string for the source environment.
+        /// </summary>
         [ObservableProperty]
         private string _sourceConnectionString = string.Empty;
 
+        /// <summary>
+        /// Gets or sets the connection string for the target environment.
+        /// </summary>
         [ObservableProperty]
         private string _targetConnectionString = string.Empty;
 
+        /// <summary>
+        /// Gets or sets a value indicating whether the source environment is 
+        /// currently connected.
+        /// </summary>
         [ObservableProperty]
         [NotifyCanExecuteChangedFor(nameof(ProceedToSelectionCommand))]
         private bool _isSourceConnected;
 
+        /// <summary>
+        /// Gets or sets a value indicating whether the target environment is 
+        /// currently connected.
+        /// </summary>
         [ObservableProperty]
         [NotifyCanExecuteChangedFor(nameof(ProceedToSelectionCommand))]
         private bool _isTargetConnected;
 
+        /// <summary>
+        /// Gets or sets a value indicating whether a connection attempt to 
+        /// the source environment is in progress.
+        /// </summary>
         [ObservableProperty]
         private bool _isSourceConnecting;
 
+        /// <summary>
+        /// Gets or sets a value indicating whether a connection attempt to 
+        /// the target environment is in progress.
+        /// </summary>
         [ObservableProperty]
         private bool _isTargetConnecting;
 
+        /// <summary>
+        /// Gets or sets the connection status message for the source 
+        /// environment.
+        /// </summary>
         [ObservableProperty]
         private string _sourceStatus = "Not Connected";
 
+        /// <summary>
+        /// Gets or sets the connection status message for the target 
+        /// environment.
+        /// </summary>
         [ObservableProperty]
         private string _targetStatus = "Not Connected";
 
+        /// <summary>
+        /// Gets or sets a value indicating whether connection settings 
+        /// should be persisted.
+        /// </summary>
         [ObservableProperty]
         private bool _rememberConnections;
 
+        /// <summary>
+        /// Gets or sets a value indicating whether to automatically attempt 
+        /// connection on startup if settings are saved.
+        /// </summary>
         [ObservableProperty]
         private bool _autoConnect;
 
@@ -58,6 +100,9 @@ namespace dvmig.App.ViewModels
             SaveCurrentSettings();
         }
 
+        /// <summary>
+        /// Persists the current connection and user settings.
+        /// </summary>
         private void SaveCurrentSettings()
         {
             if (_isSettingsLoading)
@@ -76,18 +121,38 @@ namespace dvmig.App.ViewModels
             );
         }
 
+        /// <summary>
+        /// Gets or sets a value indicating whether the target environment 
+        /// has been properly initialized for migration.
+        /// </summary>
         [ObservableProperty]
         private bool _isEnvironmentReady = true;
 
+        /// <summary>
+        /// Gets or sets a value indicating whether the target environment 
+        /// initialization is in progress.
+        /// </summary>
         [ObservableProperty]
         private bool _isInitializing;
 
+        /// <summary>
+        /// Gets or sets the current status message for the environment 
+        /// initialization process.
+        /// </summary>
         [ObservableProperty]
         private string _initializationStatus = string.Empty;
 
         private CancellationTokenSource? _sourceCts;
         private CancellationTokenSource? _targetCts;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ConnectionViewModel"/> 
+        /// class.
+        /// </summary>
+        /// <param name="navigationService">The navigation service.</param>
+        /// <param name="migrationService">The migration service.</param>
+        /// <param name="settingsService">The settings service.</param>
+        /// <param name="setupService">The environment setup service.</param>
         public ConnectionViewModel(
             INavigationService navigationService,
             IMigrationService migrationService,
@@ -102,6 +167,9 @@ namespace dvmig.App.ViewModels
             LoadSavedSettings();
         }
 
+        /// <summary>
+        /// Loads user settings and initiates automatic connections if enabled.
+        /// </summary>
         private void LoadSavedSettings()
         {
             _isSettingsLoading = true;
