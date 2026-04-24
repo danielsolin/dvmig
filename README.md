@@ -17,7 +17,6 @@ Many organizations are "stuck" on outdated CRM OnPrem systems because migration 
 - **`dvmig.App` (WPF):** The modern, inviting user interface.
 - **`dvmig.Core`:** The central migration and mapping engine.
 - **`dvmig.Providers`:** Specialized adapters for different CRM versions and auth types.
-- **`dvmig.Common`:** Shared models, utilities, and logging.
 - **`dvmig.Plugins`:** Dataverse-side plugins for metadata preservation.
 
 ## Getting Started

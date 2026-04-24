@@ -1,4 +1,5 @@
 using dvmig.Core;
+using dvmig.Core.Metadata;
 using dvmig.Providers;
 using Microsoft.Crm.Sdk.Messages;
 using Microsoft.Xrm.Sdk.Messages;
@@ -191,63 +192,7 @@ namespace dvmig.Cli
 
         private static bool IsStandardEntity(string logicalName)
         {
-            var standard = new[]
-            {
-                "account",
-                "activitypointer",
-                "appointment",
-                "assettable",
-                "bookableresource",
-                "bookableresourcebooking",
-                "businessunit",
-                "campaign",
-                "category",
-                "competitor",
-                "contact",
-                "custtable",
-                "email",
-                "entitlement",
-                "equipment",
-                "goal",
-                "incident",
-                "inventlocation",
-                "inventsite",
-                "inventtable",
-                "invoice",
-                "kbarticle",
-                "knowledgearticle",
-                "lead",
-                "list",
-                "mainaccount",
-                "msdyn_agreement",
-                "msdyn_customerasset",
-                "msdyn_expense",
-                "msdyn_project",
-                "msdyn_projecttask",
-                "msdyn_timeentry",
-                "msdyn_workorder",
-                "msdyncrm_customerjourney",
-                "msdyncrm_marketingemail",
-                "msdyncrm_segment",
-                "msevtmgt_event",
-                "opportunity",
-                "phonecall",
-                "pricelevel",
-                "product",
-                "purchtable",
-                "queue",
-                "quote",
-                "salesorder",
-                "salestable",
-                "sla",
-                "subject",
-                "systemuser",
-                "task",
-                "team",
-                "vendtable"
-            };
-
-            return standard.Contains(logicalName.ToLower());
+            return EntityMetadataHelper.IsStandardEntity(logicalName);
         }
 
         private static async Task RunMigrationAsync(List<string> entities)
