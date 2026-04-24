@@ -5,6 +5,20 @@ namespace dvmig.Core.Synchronization
 {
     public partial class SyncEngine
     {
+        /// <summary>
+        /// Orchestrates the error handling strategy for exceptions encountered 
+        /// during record synchronization. Analyzes the exception type and 
+        /// applies specific resolution logic (e.g., duplicate handling, 
+        /// missing dependencies).
+        /// </summary>
+        /// <param name="ex">The exception that occurred.</param>
+        /// <param name="entity">The entity record being synchronized.</param>
+        /// <param name="options">The synchronization configuration.</param>
+        /// <param name="ct">A cancellation token.</param>
+        /// <returns>
+        /// True if the exception was resolved and synchronization was 
+        /// successful; otherwise, false.
+        /// </returns>
         private async Task<bool> HandleSyncExceptionAsync(
             Exception ex,
             Entity entity,
@@ -121,6 +135,18 @@ namespace dvmig.Core.Synchronization
             return false;
         }
 
+        /// <summary>
+        /// Handles state and status transitions for entities. This method 
+        /// strips the state/status codes to allow record creation/update and 
+        /// then applies them using a SetState request or a subsequent update.
+        /// </summary>
+        /// <param name="entity">The entity record.</param>
+        /// <param name="options">The synchronization configuration.</param>
+        /// <param name="ct">A cancellation token.</param>
+        /// <returns>
+        /// True if the entity was successfully synchronized and its status 
+        /// transition applied; otherwise, false.
+        /// </returns>
         private async Task<bool> HandleStatusTransitionAsync(
             Entity entity,
             SyncOptions options,
@@ -242,6 +268,14 @@ namespace dvmig.Core.Synchronization
             return success;
         }
 
+        /// <summary>
+        /// Converts a raw value to an <see cref="OptionSetValue"/>.
+        /// </summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns>
+        /// An <see cref="OptionSetValue"/> if the conversion is possible; 
+        /// otherwise, null.
+        /// </returns>
         private OptionSetValue? ToOptionSetValue(object? value)
         {
             if (value == null)
@@ -262,6 +296,19 @@ namespace dvmig.Core.Synchronization
             return null;
         }
 
+        /// <summary>
+        /// Attempts to resolve missing SQL-level dependencies (foreign key 
+        /// constraints) by identifying the missing record, synchronizing it 
+        /// to the target, and retrying the parent record.
+        /// </summary>
+        /// <param name="message">The SQL error message.</param>
+        /// <param name="entity">The parent entity record.</param>
+        /// <param name="options">The synchronization configuration.</param>
+        /// <param name="ct">A cancellation token.</param>
+        /// <returns>
+        /// True if the dependency was resolved and the parent record was 
+        /// successfully retried; otherwise, false.
+        /// </returns>
         private async Task<bool> ResolveSqlDependencyAsync(
             string message,
             Entity entity,
@@ -343,6 +390,15 @@ namespace dvmig.Core.Synchronization
             return false;
         }
 
+        /// <summary>
+        /// Prepares and retries the synchronization of an entity.
+        /// </summary>
+        /// <param name="entity">The entity record to retry.</param>
+        /// <param name="options">The synchronization configuration.</param>
+        /// <param name="ct">A cancellation token.</param>
+        /// <returns>
+        /// True if the retry was successful; otherwise, false.
+        /// </returns>
         private async Task<bool> RetryEntityAsync(
             Entity entity,
             SyncOptions options,
@@ -372,6 +428,18 @@ namespace dvmig.Core.Synchronization
             );
         }
 
+        /// <summary>
+        /// Identifies an attribute that caused a synchronization failure, 
+        /// removes it from the entity, and retries the synchronization.
+        /// </summary>
+        /// <param name="ex">The exception that occurred.</param>
+        /// <param name="entity">The entity record.</param>
+        /// <param name="options">The synchronization configuration.</param>
+        /// <param name="ct">A cancellation token.</param>
+        /// <returns>
+        /// True if the attribute was stripped and the retry was successful; 
+        /// otherwise, false.
+        /// </returns>
         private async Task<bool> StripAttributeAndRetryAsync(
             Exception ex,
             Entity entity,
@@ -408,6 +476,19 @@ namespace dvmig.Core.Synchronization
             return false;
         }
 
+        /// <summary>
+        /// Attempts to resolve missing Dataverse dependencies (e.g., missing 
+        /// lookup records) by identifying the missing record, synchronizing 
+        /// it to the target, and retrying the parent record.
+        /// </summary>
+        /// <param name="ex">The exception indicating the missing record.</param>
+        /// <param name="entity">The parent entity record.</param>
+        /// <param name="options">The synchronization configuration.</param>
+        /// <param name="ct">A cancellation token.</param>
+        /// <returns>
+        /// True if the dependency was resolved and the parent record was 
+        /// successfully retried; otherwise, false.
+        /// </returns>
         private async Task<bool> ResolveMissingDependencyAsync(
             Exception ex,
             Entity entity,

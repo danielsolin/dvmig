@@ -6,6 +6,16 @@ namespace dvmig.Core.Synchronization
 {
     public partial class SyncEngine
     {
+        /// <summary>
+        /// Prepares a source entity for the target environment by mapping 
+        /// users, resolving lookups through the ID cache, and stripping 
+        /// forbidden or invalid attributes.
+        /// </summary>
+        /// <param name="entity">The source entity record.</param>
+        /// <param name="metadata">The entity metadata from the target.</param>
+        /// <param name="options">The synchronization configuration.</param>
+        /// <param name="ct">A cancellation token.</param>
+        /// <returns>A prepared entity record ready for the target.</returns>
         private async Task<Entity> PrepareEntityForTargetAsync(
             Entity entity,
             EntityMetadata? metadata,
@@ -84,6 +94,16 @@ namespace dvmig.Core.Synchronization
             return target;
         }
 
+        /// <summary>
+        /// Attempts to find an existing record in the target environment that 
+        /// matches the source entity using alternate keys, primary name 
+        /// attribute, or specific entity-based fallback logic.
+        /// </summary>
+        /// <param name="sourceEntity">The source entity record.</param>
+        /// <param name="ct">A cancellation token.</param>
+        /// <returns>
+        /// The GUID of the matching target record if found; otherwise, null.
+        /// </returns>
         private async Task<Guid?> FindExistingOnTargetAsync(
             Entity sourceEntity,
             CancellationToken ct)
@@ -206,6 +226,13 @@ namespace dvmig.Core.Synchronization
             return null;
         }
 
+        /// <summary>
+        /// Retrieves entity metadata from the target environment, utilizing 
+        /// an internal cache to improve performance.
+        /// </summary>
+        /// <param name="logicalName">The logical name of the entity.</param>
+        /// <param name="ct">A cancellation token.</param>
+        /// <returns>The entity metadata, or null if it cannot be retrieved.</returns>
         private async Task<EntityMetadata?> GetMetadataAsync(
             string logicalName,
             CancellationToken ct)
@@ -239,6 +266,12 @@ namespace dvmig.Core.Synchronization
             }
         }
 
+        /// <summary>
+        /// Determines whether an attribute is forbidden from being synchronized 
+        /// (e.g., system-managed fields like versionnumber).
+        /// </summary>
+        /// <param name="attrName">The logical name of the attribute.</param>
+        /// <returns>True if the attribute is forbidden; otherwise, false.</returns>
         private bool IsForbiddenAttribute(string attrName)
         {
             var forbidden = new[]
@@ -257,6 +290,12 @@ namespace dvmig.Core.Synchronization
             return forbidden.Contains(attrName.ToLower());
         }
 
+        /// <summary>
+        /// Determines whether an attribute is a user reference field (e.g., 
+        /// ownerid, createdby).
+        /// </summary>
+        /// <param name="attrName">The logical name of the attribute.</param>
+        /// <returns>True if the attribute is a user field; otherwise, false.</returns>
         private bool IsUserAttribute(string attrName)
         {
             var userFields = new[] { "ownerid", "createdby", "modifiedby" };

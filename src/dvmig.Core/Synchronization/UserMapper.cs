@@ -21,6 +21,12 @@ namespace dvmig.Core.Synchronization
         private readonly ConcurrentDictionary<Guid, EntityReference>
             _mappingCache = new ConcurrentDictionary<Guid, EntityReference>();
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="UserMapper"/> class.
+        /// </summary>
+        /// <param name="source">The source Dataverse provider.</param>
+        /// <param name="target">The target Dataverse provider.</param>
+        /// <param name="logger">The logger instance.</param>
         public UserMapper(
             IDataverseProvider source,
             IDataverseProvider target,
@@ -146,6 +152,17 @@ namespace dvmig.Core.Synchronization
             return null;
         }
 
+        /// <summary>
+        /// Searches the target environment for a user record matching a 
+        /// specific attribute and value.
+        /// </summary>
+        /// <param name="attribute">The logical name of the attribute to search by.</param>
+        /// <param name="value">The value to match.</param>
+        /// <param name="ct">A cancellation token.</param>
+        /// <returns>
+        /// An entity reference to the matching target user, or null if 
+        /// no match is found.
+        /// </returns>
         private async Task<EntityReference?> FindTargetUserAsync(
             string attribute,
             string value,
