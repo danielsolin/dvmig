@@ -30,8 +30,8 @@ namespace dvmig.Core.Seeding
             CancellationToken ct = default
         )
         {
-            _logger.Information("Starting test data seeding: {Count} records", count);
-            progress?.Report($"Generating {count} accounts and contacts...");
+            _logger.Information("Starting interconnected test data seeding: {Count} accounts", count);
+            progress?.Report($"Generating {count} accounts with related contacts...");
 
             var accountFaker = new Faker<Entity>()
                 .CustomInstantiator(f => new Entity("account"))
@@ -56,38 +56,191 @@ namespace dvmig.Core.Seeding
                     e["jobtitle"] = f.Name.JobTitle();
                 });
 
-            var accounts = accountFaker.Generate(count);
-            var contacts = contactFaker.Generate(count);
+            var taskFaker = new Faker<Entity>()
+                .CustomInstantiator(f => new Entity("task"))
+                .FinishWith((f, e) =>
+                {
+                    e["subject"] = f.Lorem.Sentence();
+                    e["description"] = f.Lorem.Paragraph();
+                    e["scheduledend"] = f.Date.Soon();
+                });
+
+            var phoneCallFaker = new Faker<Entity>()
+                .CustomInstantiator(f => new Entity("phonecall"))
+                .FinishWith((f, e) =>
+                {
+                    e["subject"] = $"Follow up: {f.Company.CatchPhrase()}";
+                    e["description"] = f.Lorem.Sentences(2);
+                    e["phonenumber"] = f.Phone.PhoneNumber();
+                });
+
+            var emailFaker = new Faker<Entity>()
+                .CustomInstantiator(f => new Entity("email"))
+                .FinishWith((f, e) =>
+                {
+                    e["subject"] = f.Commerce.ProductName();
+                    e["description"] = string.Join("\n", f.Lorem.Paragraphs(3));
+                });
+
+            var random = new Random();
+            int totalContactsCreated = 0;
+            int totalActivitiesCreated = 0;
+
+            for (int i = 0; i < count; i++)
+            {
+                ct.ThrowIfCancellationRequested();
+
+                // 1. Create Account
+                var account = accountFaker.Generate();
+                var accountId = await provider.CreateAsync(account, ct);
+                account.Id = accountId;
+                var accountRef = new EntityReference("account", accountId);
+
+                // 2. Create related Contacts
+                int contactCount = random.Next(1, 11);
+                var relatedContacts = contactFaker.Generate(contactCount);
+                var createdContactIds = new List<Guid>();
+
+                foreach (var contact in relatedContacts)
+                {
+                    contact["parentcustomerid"] = accountRef;
+                    var contactId = await provider.CreateAsync(contact, ct);
+                    createdContactIds.Add(contactId);
+                    totalContactsCreated++;
+                }
+
+                // 3. Set Primary Contact
+                var primaryContactId = createdContactIds[random.Next(createdContactIds.Count)];
+                var accountUpdate = new Entity("account", accountId);
+                accountUpdate["primarycontactid"] = new EntityReference("contact", primaryContactId);
+                
+                await provider.UpdateAsync(accountUpdate, ct);
+
+                // 4. Create Activities regarding the Account
+                
+                // Tasks
+                int taskCount = random.Next(1, 6);
+                foreach (var task in taskFaker.Generate(taskCount))
+                {
+                    task["regardingobjectid"] = accountRef;
+                    await provider.CreateAsync(task, ct);
+                    totalActivitiesCreated++;
+                }
+
+                // Phone Calls
+                int phoneCount = random.Next(1, 4);
+                foreach (var phone in phoneCallFaker.Generate(phoneCount))
+                {
+                    phone["regardingobjectid"] = accountRef;
+                    
+                    // To: Random related contact
+                    var toRef = new EntityReference("contact", createdContactIds[random.Next(createdContactIds.Count)]);
+                    phone["to"] = CreatePartyList(toRef);
+                    
+                    await provider.CreateAsync(phone, ct);
+                    totalActivitiesCreated++;
+                }
+
+                // Emails
+                int emailCount = random.Next(1, 3);
+                foreach (var email in emailFaker.Generate(emailCount))
+                {
+                    email["regardingobjectid"] = accountRef;
+                    
+                    // To: Primary contact
+                    var toRef = new EntityReference("contact", primaryContactId);
+                    email["to"] = CreatePartyList(toRef);
+                    
+                    await provider.CreateAsync(email, ct);
+                    totalActivitiesCreated++;
+                }
+
+                if ((i + 1) % 5 == 0 || i + 1 == count)
+                {
+                    progress?.Report(
+                        $"Processed {i + 1}/{count} accounts. " +
+                        $"Contacts: {totalContactsCreated}, Activities: {totalActivitiesCreated}"
+                    );
+                }
+            }
+
+            _logger.Information(
+                "Seeding completed. Accounts: {AccountCount}, Contacts: {ContactCount}, Activities: {ActivityCount}", 
+                count, 
+                totalContactsCreated,
+                totalActivitiesCreated
+            );
+            progress?.Report(
+                $"Seeding completed. Created {count} accounts, " +
+                $"{totalContactsCreated} contacts, and {totalActivitiesCreated} activities."
+            );
+        }
+
+        private EntityCollection CreatePartyList(EntityReference reference)
+        {
+            var party = new Entity("activityparty");
+            party["partyid"] = reference;
+            
+            return new EntityCollection(new List<Entity> { party });
+        }
+
+        /// <inheritdoc />
+        public async Task CleanTestDataAsync(
+            IDataverseProvider provider,
+            IProgress<string>? progress = null,
+            CancellationToken ct = default
+        )
+        {
+            _logger.Warning("Starting test data cleanup (Activities, Contacts, Accounts)...");
+            progress?.Report("Cleaning up activities...");
+
+            // Delete in order of dependency
+            await DeleteAllOfEntityAsync(provider, "email", progress, ct);
+            await DeleteAllOfEntityAsync(provider, "phonecall", progress, ct);
+            await DeleteAllOfEntityAsync(provider, "task", progress, ct);
+            await DeleteAllOfEntityAsync(provider, "contact", progress, ct);
+            await DeleteAllOfEntityAsync(provider, "account", progress, ct);
+
+            _logger.Information("Cleanup completed successfully.");
+            progress?.Report("Cleanup completed successfully.");
+        }
+
+        private async Task DeleteAllOfEntityAsync(
+            IDataverseProvider provider,
+            string logicalName,
+            IProgress<string>? progress,
+            CancellationToken ct)
+        {
+            progress?.Report($"Fetching all {logicalName} records...");
+
+            var query = new Microsoft.Xrm.Sdk.Query.QueryExpression(logicalName)
+            {
+                ColumnSet = new Microsoft.Xrm.Sdk.Query.ColumnSet(false)
+            };
+
+            var results = await provider.RetrieveMultipleAsync(query, ct);
+            var total = results.Entities.Count;
+
+            if (total == 0)
+            {
+                progress?.Report($"No {logicalName} records found.");
+                return;
+            }
+
+            progress?.Report($"Deleting {total} {logicalName} records...");
 
             int current = 0;
-            int total = count * 2;
-
-            progress?.Report("Inserting Accounts...");
-            foreach (var account in accounts)
+            foreach (var entity in results.Entities)
             {
                 ct.ThrowIfCancellationRequested();
-                await provider.CreateAsync(account, ct);
+                await provider.DeleteAsync(logicalName, entity.Id, ct);
                 current++;
+
                 if (current % 10 == 0 || current == total)
                 {
-                    progress?.Report($"Seeding progress: {current}/{total} records");
+                    progress?.Report($"Deletion progress ({logicalName}): {current}/{total}");
                 }
             }
-
-            progress?.Report("Inserting Contacts...");
-            foreach (var contact in contacts)
-            {
-                ct.ThrowIfCancellationRequested();
-                await provider.CreateAsync(contact, ct);
-                current++;
-                if (current % 10 == 0 || current == total)
-                {
-                    progress?.Report($"Seeding progress: {current}/{total} records");
-                }
-            }
-
-            _logger.Information("Seeding completed successfully.");
-            progress?.Report("Seeding completed successfully.");
         }
     }
 }

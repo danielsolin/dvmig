@@ -41,6 +41,8 @@ namespace dvmig.Cli
 
             _settingsService = new SettingsService();
 
+            bool enableSourceCleanup = args.Contains("--enable-source-cleanup");
+
             AnsiConsole.Write(
                 new FigletText("DVMIG")
                     .Color(Color.Blue)
@@ -54,16 +56,24 @@ namespace dvmig.Cli
             bool exit = false;
             while (!exit)
             {
+                var choices = new List<string> {
+                    "Migrate Data",
+                    "Seed Test Data",
+                    "Clean Target Environment"
+                };
+
+                if (enableSourceCleanup)
+                {
+                    choices.Add("Clean Source Data (DANGEROUS)");
+                }
+
+                choices.Add("Exit");
+
                 var choice = AnsiConsole.Prompt(
                     new SelectionPrompt<string>()
                         .Title("What would you like to do?")
                         .PageSize(10)
-                        .AddChoices(new[] {
-                            "Migrate Data",
-                            "Seed Test Data",
-                            "Clean Target Environment",
-                            "Exit"
-                        }));
+                        .AddChoices(choices));
 
                 switch (choice)
                 {
@@ -75,6 +85,9 @@ namespace dvmig.Cli
                         break;
                     case "Clean Target Environment":
                         await HandleCleanupAsync();
+                        break;
+                    case "Clean Source Data (DANGEROUS)":
+                        await HandleSourceCleanupAsync();
                         break;
                     case "Exit":
                         exit = true;
@@ -136,7 +149,7 @@ namespace dvmig.Cli
             var provider = await ConnectAsync("Source Environment to Seed");
             if (provider == null) return;
 
-            int count = AnsiConsole.Ask<int>("How many records to generate per entity (Account/Contact)?", 100);
+            int count = AnsiConsole.Ask<int>("How many [bold blue]Accounts[/] would you like to generate?", 100);
 
             _seeder ??= new TestDataSeeder(_logger!);
 
@@ -183,6 +196,37 @@ namespace dvmig.Cli
                 });
 
             AnsiConsole.MarkupLine("[bold green]Cleanup Finished![/]");
+        }
+
+        private static async Task HandleSourceCleanupAsync()
+        {
+            var provider = await ConnectAsync("Source Environment to Clean");
+            if (provider == null) return;
+
+            AnsiConsole.MarkupLine("[bold red]WARNING:[/] This operation will delete [bold]ALL[/] Accounts and Contacts from the selected environment.");
+            AnsiConsole.MarkupLine("[red]This action is irreversible.[/]");
+
+            var confirmation = AnsiConsole.Ask<string>("Type [bold red]DELETE[/] to confirm:");
+            if (confirmation != "DELETE")
+            {
+                AnsiConsole.MarkupLine("[yellow]Cleanup cancelled.[/]");
+                return;
+            }
+
+            _seeder ??= new TestDataSeeder(_logger!);
+
+            await AnsiConsole.Status()
+                .StartAsync("Cleaning source data...", async ctx =>
+                {
+                    var progress = new Progress<string>(msg =>
+                    {
+                        AnsiConsole.MarkupLine($"[grey][[{DateTime.Now:HH:mm:ss}]][/] {msg}");
+                    });
+
+                    await _seeder.CleanTestDataAsync(provider, progress);
+                });
+
+            AnsiConsole.MarkupLine("[bold green]Source Cleanup Finished![/]");
         }
 
         /// <summary>

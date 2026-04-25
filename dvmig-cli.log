@@ -14,3 +14,9 @@
 2026-04-22 22:19:08.756 +02:00 [INF] account:"a55bf53b-aa35-f111-88b3-7ced8d416e70" already exists on target. Attempting update to ensure all fields are set.
 2026-04-22 22:19:09.300 +02:00 [INF] account:"a75bf53b-aa35-f111-88b3-7ced8d416e70" already exists on target. Attempting update to ensure all fields are set.
 2026-04-22 22:19:09.667 +02:00 [INF] Sync completed
+2026-04-25 08:13:27.453 +02:00 [WRN] Starting test data cleanup (Account and Contact)...
+2026-04-25 08:14:39.756 +02:00 [INF] Cleanup completed successfully.
+2026-04-25 08:17:44.233 +02:00 [WRN] Starting test data cleanup (Account and Contact)...
+2026-04-25 08:17:44.503 +02:00 [INF] Cleanup completed successfully.
+2026-04-25 08:17:56.358 +02:00 [INF] Starting interconnected test data seeding: 100 accounts
+2026-04-25 08:19:55.462 +02:00 [INF] Seeding completed. Accounts: 100, Contacts: 510

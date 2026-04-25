@@ -23,5 +23,19 @@ namespace dvmig.Core.Seeding
             IProgress<string>? progress = null,
             CancellationToken ct = default
         );
+
+        /// <summary>
+        /// Deletes all Account and Contact records from the environment.
+        /// [DANGEROUS] This should only be used in isolated test environments.
+        /// </summary>
+        /// <param name="provider">The Dataverse provider to use.</param>
+        /// <param name="progress">An optional progress reporter.</param>
+        /// <param name="ct">A cancellation token.</param>
+        /// <returns>A task representing the asynchronous cleaning operation.</returns>
+        Task CleanTestDataAsync(
+            IDataverseProvider provider,
+            IProgress<string>? progress = null,
+            CancellationToken ct = default
+        );
     }
 }
