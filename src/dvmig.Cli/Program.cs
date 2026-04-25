@@ -63,6 +63,7 @@ namespace dvmig.Cli
                 var choices = new List<string> {
                     "Migrate Data",
                     "Seed Test Data",
+                    "Install/Update dvmig Components on Target",
                     "Uninstall dvmig Components from Target"
                 };
 
@@ -86,6 +87,9 @@ namespace dvmig.Cli
                         break;
                     case "Seed Test Data":
                         await HandleSeedingAsync();
+                        break;
+                    case "Install/Update dvmig Components on Target":
+                        await HandleInstallAsync();
                         break;
                     case "Uninstall dvmig Components from Target":
                         await HandleCleanupAsync();
@@ -127,6 +131,35 @@ namespace dvmig.Cli
             if (_target == null)
             {
                 return;
+            }
+
+            // Check if target environment is ready
+            _setupService ??= CreateSetupService();
+            bool isReady = await _setupService.IsEnvironmentReadyAsync(
+                _target, 
+                default
+            );
+
+            if (!isReady)
+            {
+                var prepare = AnsiConsole.Confirm(
+                    "[yellow]Target environment is not prepared for migration. " +
+                    "Prepare it now?[/]", 
+                    true
+                );
+
+                if (prepare)
+                {
+                    await HandleInstallAsync(_target);
+                }
+                else
+                {
+                    AnsiConsole.MarkupLine(
+                        "[red]Migration cannot proceed without components.[/]"
+                    );
+
+                    return;
+                }
             }
 
             // 3. Initialize Services
@@ -187,9 +220,76 @@ namespace dvmig.Cli
             AnsiConsole.MarkupLine("[bold green]Seeding Finished![/]");
         }
 
+        private static async Task HandleInstallAsync(
+            IDataverseProvider? target = null
+        )
+        {
+            var provider = target ?? 
+                           await ConnectAsync("Target Environment to Install on");
+
+            if (provider == null)
+            {
+                return;
+            }
+
+            _setupService ??= CreateSetupService();
+
+            await AnsiConsole.Status()
+                .StartAsync("Installing components...", async ctx =>
+                {
+                    var progress = new Progress<string>(msg =>
+                    {
+                        AnsiConsole.MarkupLine(
+                            $"[grey][[{DateTime.Now:HH:mm:ss}]][/] {msg}"
+                        );
+                    });
+
+                    // 1. Create Schema
+                    await _setupService.CreateSchemaAsync(provider, progress);
+
+                    // 2. Deploy Plugin
+                    var assemblyPath = Path.Combine(
+                        AppDomain.CurrentDomain.BaseDirectory,
+                        "dvmig.Plugins.dll"
+                    );
+
+                    // Fallback for development if not in same folder
+                    if (!File.Exists(assemblyPath))
+                    {
+                        assemblyPath = Path.Combine(
+                            AppDomain.CurrentDomain.BaseDirectory,
+                            "..", "..", "..", "..",
+                            "dvmig.Plugins", "bin", "Debug", "netstandard2.0",
+                            "dvmig.Plugins.dll"
+                        );
+                    }
+
+                    await _setupService.DeployPluginAsync(
+                        provider, 
+                        assemblyPath, 
+                        progress
+                    );
+                });
+
+            AnsiConsole.MarkupLine("[bold green]Installation Finished![/]");
+        }
+
+        private static ISetupService CreateSetupService()
+        {
+            return new SetupService(
+                new EnvironmentValidator(),
+                new SchemaManager(_logger!),
+                new PluginDeployer(_logger!),
+                _logger!
+            );
+        }
+
         private static async Task HandleCleanupAsync()
         {
-            var provider = await ConnectAsync("Target Environment to Uninstall from");
+            var provider = await ConnectAsync(
+                "Target Environment to Uninstall from"
+            );
+
             if (provider == null)
             {
                 return;
@@ -204,12 +304,7 @@ namespace dvmig.Cli
                 return;
             }
 
-            _setupService ??= new SetupService(
-                new EnvironmentValidator(),
-                new SchemaManager(_logger!),
-                new PluginDeployer(_logger!),
-                _logger!
-            );
+            _setupService ??= CreateSetupService();
 
             await AnsiConsole.Status()
                 .StartAsync("Uninstalling components...", async ctx =>
