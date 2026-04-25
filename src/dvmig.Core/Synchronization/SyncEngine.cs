@@ -182,6 +182,16 @@ namespace dvmig.Core.Synchronization
                         progress,
                         ct
                     );
+
+                    if (!success)
+                    {
+                        await LogFailureToTargetAsync(
+                            entity, 
+                            "Sync failed during record processing.", 
+                            ct
+                        );
+                    }
+
                     recordProgress?.Report(success);
                 }
                 catch (Exception ex)
@@ -193,8 +203,38 @@ namespace dvmig.Core.Synchronization
                         entity.Id
                     );
 
+                    await LogFailureToTargetAsync(entity, ex.Message, ct);
                     recordProgress?.Report(false);
                 }
+            }
+        }
+
+        private async Task LogFailureToTargetAsync(
+            Entity entity,
+            string errorMessage,
+            CancellationToken ct)
+        {
+            try
+            {
+                var failure = new Entity("dm_migrationfailure");
+                failure["dm_name"] =
+                    $"{entity.LogicalName}:{entity.Id}".Substring(0, 100);
+                failure["dm_sourceid"] = entity.Id.ToString();
+                failure["dm_entitylogicalname"] = entity.LogicalName;
+                failure["dm_errormessage"] = errorMessage;
+                failure["dm_timestamp"] = DateTime.UtcNow;
+
+                await _target.CreateAsync(failure, ct);
+            }
+            catch (Exception ex)
+            {
+                _logger.Warning(
+                    "Failed to log migration failure for {Entity}:{Id} " +
+                    "to target Dataverse: {Msg}",
+                    entity.LogicalName,
+                    entity.Id,
+                    ex.Message
+                );
             }
         }
 

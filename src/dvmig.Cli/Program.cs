@@ -62,6 +62,7 @@ namespace dvmig.Cli
             {
                 var choices = new List<string> {
                     "Migrate Data",
+                    "Reconcile Migration / View Failures",
                     "Seed Test Data",
                     "Install/Update dvmig Components on Target",
                     "Uninstall dvmig Components from Target"
@@ -69,7 +70,10 @@ namespace dvmig.Cli
 
                 if (enableSourceCleanup)
                 {
-                    choices.Add("Wipe ALL Accounts, Contacts, and Activities from Source (DANGEROUS)");
+                    choices.Add(
+                        "Wipe ALL Accounts, Contacts, and Activities from " +
+                        "Source (DANGEROUS)"
+                    );
                 }
 
                 choices.Add("Exit");
@@ -84,6 +88,9 @@ namespace dvmig.Cli
                 {
                     case "Migrate Data":
                         await HandleMigrationAsync();
+                        break;
+                    case "Reconcile Migration / View Failures":
+                        await HandleReconcileAsync();
                         break;
                     case "Seed Test Data":
                         await HandleSeedingAsync();
@@ -105,7 +112,9 @@ namespace dvmig.Cli
                 if (!exit)
                 {
                     AnsiConsole.WriteLine();
-                    AnsiConsole.MarkupLine("[grey]Press any key to return to menu...[/]");
+                    AnsiConsole.MarkupLine(
+                        "[grey]Press any key to return to menu...[/]"
+                    );
                     Console.ReadKey(true);
                     AnsiConsole.Clear();
                     
@@ -187,6 +196,110 @@ namespace dvmig.Cli
             // 5. Run Migration
             await RunMigrationAsync(selectedEntities);
             AnsiConsole.MarkupLine("[bold green]Migration Finished![/]");
+        }
+
+        private static async Task HandleReconcileAsync()
+        {
+            _target = await ConnectAsync("Target");
+            if (_target == null)
+            {
+                return;
+            }
+
+            // Check if failure logging entity exists
+            var meta = await _target.GetEntityMetadataAsync(
+                "dm_migrationfailure", 
+                default
+            );
+
+            if (meta == null)
+            {
+                AnsiConsole.MarkupLine(
+                    "[yellow]Migration failure logging is not initialized on " +
+                    "this target.[/]"
+                );
+                AnsiConsole.MarkupLine(
+                    "[grey]Please use 'Install/Update dvmig Components' to " +
+                    "enable this feature.[/]"
+                );
+
+                return;
+            }
+
+            AnsiConsole.MarkupLine(
+                "[bold blue]Fetching recorded migration failures...[/]"
+            );
+
+            var query = new Microsoft.Xrm.Sdk.Query.QueryExpression(
+                "dm_migrationfailure"
+            )
+            {
+                ColumnSet = new Microsoft.Xrm.Sdk.Query.ColumnSet(
+                    "dm_sourceid", 
+                    "dm_entitylogicalname", 
+                    "dm_errormessage", 
+                    "dm_timestamp"
+                )
+            };
+            query.AddOrder(
+                "dm_timestamp", 
+                Microsoft.Xrm.Sdk.Query.OrderType.Descending
+            );
+
+            var failures = await _target.RetrieveMultipleAsync(query, default);
+
+            if (failures.Entities.Count == 0)
+            {
+                AnsiConsole.MarkupLine(
+                    "[green]No migration failures recorded in Target " +
+                    "environment.[/]"
+                );
+
+                return;
+            }
+
+            var table = new Table();
+            table.AddColumn("Entity");
+            table.AddColumn("Source ID");
+            table.AddColumn("Timestamp (UTC)");
+            table.AddColumn("Error Message");
+
+            foreach (var failure in failures.Entities)
+            {
+                table.AddRow(
+                    failure.GetAttributeValue<string>(
+                        "dm_entitylogicalname"
+                    ) ?? "N/A",
+                    failure.GetAttributeValue<string>("dm_sourceid") ?? "N/A",
+                    failure.GetAttributeValue<DateTime>(
+                        "dm_timestamp"
+                    ).ToString("yyyy-MM-dd HH:mm:ss"),
+                    failure.GetAttributeValue<string>("dm_errormessage") ?? "N/A"
+                );
+            }
+
+            AnsiConsole.Write(table);
+
+            var clearLog = "Would you like to clear the failure log on " +
+                           "the target?";
+
+            if (AnsiConsole.Confirm(clearLog, false))
+            {
+                await AnsiConsole.Status()
+                    .StartAsync("Clearing failure log...", async ctx =>
+                    {
+                        foreach (var failure in failures.Entities)
+                        {
+                            await _target.DeleteAsync(
+                                "dm_migrationfailure", 
+                                failure.Id, 
+                                default
+                            );
+                        }
+                    });
+
+                AnsiConsole.MarkupLine("[green]Failure log cleared.[/]");
+            }
         }
 
         private static async Task HandleSeedingAsync()
@@ -577,12 +690,12 @@ namespace dvmig.Cli
                 // 2. Resume Check
                 if (_stateTracker!.StateExists())
                 {
-                    var synced = await _stateTracker.GetSyncedIdsAsync();
-                    if (synced.Count > 0)
+                    var syncedIds = await _stateTracker.GetSyncedIdsAsync();
+                    if (syncedIds.Count > 0)
                     {
                         var resume = AnsiConsole.Confirm(
                             $"Previous migration state found for {logicalName} " +
-                            $"({synced.Count} records already synced). Resume?", 
+                            $"({syncedIds.Count} records already synced). Resume?", 
                             true
                         );
 
@@ -595,7 +708,10 @@ namespace dvmig.Cli
                 }
 
                 // 3. Setup Query
-                var columns = await _engine.GetValidColumnsAsync(logicalName, default);
+                var columns = await _engine.GetValidColumnsAsync(
+                    logicalName, 
+                    default
+                );
 
                 var query = new Microsoft.Xrm.Sdk.Query.QueryExpression(
                     logicalName
@@ -621,6 +737,7 @@ namespace dvmig.Cli
                     AnsiConsole.MarkupLine(
                         $"[grey]No records found for {logicalName}.[/]"
                     );
+
                     continue;
                 }
 
@@ -683,11 +800,18 @@ namespace dvmig.Cli
 
         private static string MaskConnectionString(string connectionString)
         {
-            var parts = connectionString.Split(';', StringSplitOptions.RemoveEmptyEntries);
+            var parts = connectionString.Split(
+                ';', 
+                StringSplitOptions.RemoveEmptyEntries
+            );
+
             var maskedParts = parts.Select(p =>
             {
                 var kv = p.Split('=', 2);
-                if (kv.Length != 2) return p;
+                if (kv.Length != 2)
+                {
+                    return p;
+                }
 
                 var key = kv[0].Trim();
                 var val = kv[1].Trim();
