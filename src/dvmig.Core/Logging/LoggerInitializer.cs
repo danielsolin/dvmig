@@ -29,6 +29,7 @@ namespace dvmig.Core.Logging
                 .WriteTo.File(
                     logPath,
                     rollingInterval: RollingInterval.Day,
+                    flushToDiskInterval: TimeSpan.FromSeconds(1),
                     outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}"
                 )
                 .CreateLogger();

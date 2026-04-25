@@ -157,10 +157,11 @@ namespace dvmig.Core.Seeding
 
                 if ((i + 1) % 5 == 0 || i + 1 == count)
                 {
-                    progress?.Report(
-                        $"Processed {i + 1}/{count} accounts. " +
-                        $"Contacts: {totalContactsCreated}, Activities: {totalActivitiesCreated}"
-                    );
+                    var msg = $"Processed {i + 1}/{count} accounts. " +
+                              $"Contacts: {totalContactsCreated}, Activities: {totalActivitiesCreated}";
+                    
+                    _logger.Information(msg);
+                    progress?.Report(msg);
                 }
             }
 
