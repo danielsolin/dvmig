@@ -59,12 +59,12 @@ namespace dvmig.Cli
                 var choices = new List<string> {
                     "Migrate Data",
                     "Seed Test Data",
-                    "Clean Target Environment"
+                    "Uninstall dvmig Components from Target"
                 };
 
                 if (enableSourceCleanup)
                 {
-                    choices.Add("Clean Source Data (DANGEROUS)");
+                    choices.Add("Wipe ALL Accounts, Contacts, and Activities from Source (DANGEROUS)");
                 }
 
                 choices.Add("Exit");
@@ -83,10 +83,10 @@ namespace dvmig.Cli
                     case "Seed Test Data":
                         await HandleSeedingAsync();
                         break;
-                    case "Clean Target Environment":
+                    case "Uninstall dvmig Components from Target":
                         await HandleCleanupAsync();
                         break;
-                    case "Clean Source Data (DANGEROUS)":
+                    case "Wipe ALL Accounts, Contacts, and Activities from Source (DANGEROUS)":
                         await HandleSourceCleanupAsync();
                         break;
                     case "Exit":
@@ -169,10 +169,10 @@ namespace dvmig.Cli
 
         private static async Task HandleCleanupAsync()
         {
-            var provider = await ConnectAsync("Target Environment to Clean");
+            var provider = await ConnectAsync("Target Environment to Uninstall from");
             if (provider == null) return;
 
-            if (!AnsiConsole.Confirm("[red]Are you sure you want to remove all dvmig components (schema and plugins) from this environment?[/]", false))
+            if (!AnsiConsole.Confirm("[red]Are you sure you want to remove all dvmig system components (schema and plugins) from this environment?[/]", false))
             {
                 return;
             }
@@ -185,7 +185,7 @@ namespace dvmig.Cli
             );
 
             await AnsiConsole.Status()
-                .StartAsync("Cleaning environment...", async ctx =>
+                .StartAsync("Uninstalling components...", async ctx =>
                 {
                     var progress = new Progress<string>(msg =>
                     {
@@ -195,28 +195,29 @@ namespace dvmig.Cli
                     await _setupService.CleanEnvironmentAsync(provider, progress);
                 });
 
-            AnsiConsole.MarkupLine("[bold green]Cleanup Finished![/]");
+            AnsiConsole.MarkupLine("[bold green]Uninstallation Finished![/]");
         }
 
         private static async Task HandleSourceCleanupAsync()
         {
-            var provider = await ConnectAsync("Source Environment to Clean");
+            var provider = await ConnectAsync("Source Environment to Wipe");
             if (provider == null) return;
 
-            AnsiConsole.MarkupLine("[bold red]WARNING:[/] This operation will delete [bold]ALL[/] Accounts and Contacts from the selected environment.");
-            AnsiConsole.MarkupLine("[red]This action is irreversible.[/]");
+            AnsiConsole.MarkupLine("[bold red]CRITICAL WARNING:[/] This operation will delete [bold]EVERY SINGLE[/] Account, Contact, Task, Phone Call, and Email record from the selected environment.");
+            AnsiConsole.MarkupLine("[red]This is NOT restricted to test data. Real data will be destroyed.[/]");
+            AnsiConsole.MarkupLine("[red]This action is permanent and irreversible.[/]");
 
-            var confirmation = AnsiConsole.Ask<string>("Type [bold red]DELETE[/] to confirm:");
-            if (confirmation != "DELETE")
+            var confirmation = AnsiConsole.Ask<string>("Type [bold red]WIPE ALL DATA[/] to confirm:");
+            if (confirmation != "WIPE ALL DATA")
             {
-                AnsiConsole.MarkupLine("[yellow]Cleanup cancelled.[/]");
+                AnsiConsole.MarkupLine("[yellow]Wipe cancelled.[/]");
                 return;
             }
 
             _seeder ??= new TestDataSeeder(_logger!);
 
             await AnsiConsole.Status()
-                .StartAsync("Cleaning source data...", async ctx =>
+                .StartAsync("Wiping data...", async ctx =>
                 {
                     var progress = new Progress<string>(msg =>
                     {
@@ -226,7 +227,7 @@ namespace dvmig.Cli
                     await _seeder.CleanTestDataAsync(provider, progress);
                 });
 
-            AnsiConsole.MarkupLine("[bold green]Source Cleanup Finished![/]");
+            AnsiConsole.MarkupLine("[bold green]Data Wipe Finished![/]");
         }
 
         /// <summary>
