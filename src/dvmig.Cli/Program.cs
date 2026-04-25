@@ -1,4 +1,5 @@
 using dvmig.Core.DataPreservation;
+using dvmig.Core.Logging;
 using dvmig.Core.Metadata;
 using dvmig.Core.Provisioning;
 using dvmig.Core.Seeding;
@@ -35,9 +36,7 @@ namespace dvmig.Cli
         /// <param name="args">Command line arguments.</param>
         static async Task Main(string[] args)
         {
-            _logger = new Serilog.LoggerConfiguration()
-                .WriteTo.File("dvmig-cli.log")
-                .CreateLogger();
+            _logger = LoggerInitializer.Initialize("dvmig.Cli");
 
             _settingsService = new SettingsService();
 

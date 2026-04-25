@@ -1,8 +1,8 @@
-using System.IO;
 using System.Windows;
 using dvmig.App.Services;
 using dvmig.App.ViewModels;
 using dvmig.Core.DataPreservation;
+using dvmig.Core.Logging;
 using dvmig.Core.Provisioning;
 using dvmig.Core.Settings;
 using dvmig.Core.Synchronization;
@@ -17,19 +17,7 @@ namespace dvmig.App
 
         public App()
         {
-            var appData = Environment.GetFolderPath(
-                Environment.SpecialFolder.ApplicationData
-            );
-            var logPath = Path.Combine(appData, "dvmig", "logs", "log.txt");
-
-            Log.Logger = new LoggerConfiguration()
-                .MinimumLevel.Debug()
-                .WriteTo.Debug()
-                .WriteTo.File(
-                    logPath,
-                    rollingInterval: RollingInterval.Day
-                )
-                .CreateLogger();
+            Log.Logger = LoggerInitializer.Initialize("dvmig.App");
 
             var services = new ServiceCollection();
 
