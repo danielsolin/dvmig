@@ -1,13 +1,13 @@
 using dvmig.Core.DataPreservation;
 using dvmig.Core.Logging;
-using dvmig.Shared.Metadata;
+using dvmig.Core.Metadata;
 using dvmig.Core.Provisioning;
 using dvmig.Core.Seeding;
 using dvmig.Core.Settings;
 using dvmig.Core.Synchronization;
 using dvmig.Providers;
+using dvmig.Shared.Metadata;
 using Microsoft.Crm.Sdk.Messages;
-using Microsoft.Xrm.Sdk.Messages;
 using System.Runtime.Versioning;
 using Serilog;
 using Spectre.Console;
@@ -26,6 +26,7 @@ namespace dvmig.Cli
         private static ISyncEngine? _engine;
         private static ISetupService? _setupService;
         private static ITestDataSeeder? _seeder;
+        private static IMetadataService? _metadataService;
         private static ISyncStateTracker? _stateTracker;
         private static ISettingsService? _settingsService;
         private static ILogger? _logger;
@@ -43,6 +44,7 @@ namespace dvmig.Cli
             _settingsService = new SettingsService();
             _stateTracker = new LocalFileStateTracker();
             _seeder = new TestDataSeeder(_logger);
+            _metadataService = new MetadataService();
 
             bool enableSourceCleanup = args.Contains("--enable-source-cleanup");
 
@@ -59,24 +61,7 @@ namespace dvmig.Cli
             bool exit = false;
             while (!exit)
             {
-                var choices = new List<string> {
-                    "Migrate Data",
-                    "Reconcile Migration / View Failures",
-                    "Seed Test Data",
-                    "Install/Update dvmig Components on Target",
-                    "Uninstall dvmig Components from Target"
-                };
-
-                if (enableSourceCleanup)
-                {
-                    choices.Add(
-                        "Wipe ALL Accounts, Contacts, and Activities from " +
-                        "Source (DANGEROUS)"
-                    );
-                }
-
-                choices.Add("Exit");
-
+                var choices = GetMainMenuChoices(enableSourceCleanup);
                 var choice = AnsiConsole.Prompt(
                     new SelectionPrompt<string>()
                         .Title("What would you like to do?")
@@ -126,23 +111,43 @@ namespace dvmig.Cli
             }
         }
 
+        private static List<string> GetMainMenuChoices(bool enableSourceCleanup)
+        {
+            var choices = new List<string> {
+                "Migrate Data",
+                "Reconcile Migration / View Failures",
+                "Seed Test Data",
+                "Install/Update dvmig Components on Target",
+                "Uninstall dvmig Components from Target"
+            };
+
+            if (enableSourceCleanup)
+            {
+                choices.Add(
+                    "Wipe ALL Accounts, Contacts, and Activities from " +
+                    "Source (DANGEROUS)"
+                );
+            }
+
+            choices.Add("Exit");
+
+            return choices;
+        }
+
         private static async Task HandleMigrationAsync()
         {
-            // 1. Source Connection
             _source = await ConnectAsync("Source");
             if (_source == null)
             {
                 return;
             }
 
-            // 2. Target Connection
             _target = await ConnectAsync("Target");
             if (_target == null)
             {
                 return;
             }
 
-            // Check if target environment is ready
             _setupService ??= CreateSetupService();
             bool isReady = await _setupService.IsEnvironmentReadyAsync(
                 _target, 
@@ -154,9 +159,7 @@ namespace dvmig.Cli
                 var prepareMsg = "[yellow]Target environment is not " +
                                  "prepared for migration. Prepare it now?[/]";
 
-                var prepare = AnsiConsole.Confirm(prepareMsg, true);
-
-                if (prepare)
+                if (AnsiConsole.Confirm(prepareMsg, true))
                 {
                     await HandleInstallAsync(_target);
                 }
@@ -170,7 +173,6 @@ namespace dvmig.Cli
                 }
             }
 
-            // 3. Initialize Services
             var userMapper = new UserMapper(_source, _target, _logger!);
             var dataPreservation = new DataPreservationManager(_target, _logger!);
             
@@ -183,7 +185,6 @@ namespace dvmig.Cli
                 _logger!
             );
 
-            // 4. Entity Selection
             var selectedEntities = await SelectEntitiesAsync();
             if (selectedEntities == null || selectedEntities.Count == 0)
             {
@@ -192,7 +193,6 @@ namespace dvmig.Cli
                 return;
             }
 
-            // 5. Run Migration
             await RunMigrationAsync(selectedEntities);
             AnsiConsole.MarkupLine("[bold green]Migration Finished![/]");
         }
@@ -205,7 +205,6 @@ namespace dvmig.Cli
                 return;
             }
 
-            // Check if failure logging entity exists
             var meta = await _target.GetEntityMetadataAsync(
                 SchemaConstants.MigrationFailure.EntityLogicalName, 
                 default
@@ -318,8 +317,6 @@ namespace dvmig.Cli
 
             int count = AnsiConsole.Ask<int>(prompt, 100);
 
-            _seeder ??= new TestDataSeeder(_logger!);
-
             await AnsiConsole.Status()
                 .StartAsync("Seeding data...", async ctx =>
                 {
@@ -330,7 +327,7 @@ namespace dvmig.Cli
                         );
                     });
 
-                    await _seeder.SeedTestDataAsync(provider, count, progress);
+                    await _seeder!.SeedTestDataAsync(provider, count, progress);
                 });
 
             AnsiConsole.MarkupLine("[bold green]Seeding Finished![/]");
@@ -340,8 +337,8 @@ namespace dvmig.Cli
             IDataverseProvider? target = null
         )
         {
-            var label = "Target Environment to Install on";
-            var provider = target ?? await ConnectAsync(label);
+            var provider = target ?? 
+                           await ConnectAsync("Target Environment to Install on");
 
             if (provider == null)
             {
@@ -360,16 +357,13 @@ namespace dvmig.Cli
                         );
                     });
 
-                    // 1. Create Schema
                     await _setupService.CreateSchemaAsync(provider, progress);
 
-                    // 2. Deploy Plugin
                     var assemblyPath = Path.Combine(
                         AppDomain.CurrentDomain.BaseDirectory,
                         "dvmig.Plugins.dll"
                     );
 
-                    // Fallback for development if not in same folder
                     if (!File.Exists(assemblyPath))
                     {
                         assemblyPath = Path.Combine(
@@ -470,8 +464,6 @@ namespace dvmig.Cli
                 return;
             }
 
-            _seeder ??= new TestDataSeeder(_logger!);
-
             await AnsiConsole.Status()
                 .StartAsync("Wiping data...", async ctx =>
                 {
@@ -482,17 +474,12 @@ namespace dvmig.Cli
                         );
                     });
 
-                    await _seeder.CleanTestDataAsync(provider, progress);
+                    await _seeder!.CleanTestDataAsync(provider, progress);
                 });
 
             AnsiConsole.MarkupLine("[bold green]Data Wipe Finished![/]");
         }
 
-        /// <summary>
-        /// Interactively connects to a Dataverse/CRM environment.
-        /// </summary>
-        /// <param name="label">The label for the connection (Source/Target).</param>
-        /// <returns>A configured Dataverse provider, or null if connection fails.</returns>
         private static async Task<IDataverseProvider?> ConnectAsync(
             string label
         )
@@ -508,8 +495,7 @@ namespace dvmig.Cli
             string connStr;
             if (!string.IsNullOrEmpty(storedConn))
             {
-                // Mask sensitive info for preview (passwords/secrets)
-                var preview = MaskConnectionString(storedConn);
+                var preview = ConnectionHelper.MaskConnectionString(storedConn);
                 
                 var useStored = AnsiConsole.Confirm(
                     $"Use [green]stored[/] {label} connection string?\n" +
@@ -517,16 +503,9 @@ namespace dvmig.Cli
                     true
                 );
 
-                if (useStored)
-                {
-                    connStr = storedConn;
-                }
-                else
-                {
-                    connStr = AnsiConsole.Ask<string>(
-                        $"Enter [bold blue]{label}[/] Connection String:"
-                    );
-                }
+                connStr = useStored ? storedConn : AnsiConsole.Ask<string>(
+                    $"Enter [bold blue]{label}[/] Connection String:"
+                );
             }
             else
             {
@@ -549,15 +528,8 @@ namespace dvmig.Cli
                             ? new LegacyCrmProvider(connStr)
                             : new DataverseProvider(connStr);
 
-                        // Test connection
-                        await p.ExecuteAsync(
-                            new WhoAmIRequest(),
-                            default
-                        );
-
-                        AnsiConsole.MarkupLine(
-                            $"[green]✓[/] Connected to {label}"
-                        );
+                        await p.ExecuteAsync(new WhoAmIRequest(), default);
+                        AnsiConsole.MarkupLine($"[green]✓[/] Connected to {label}");
 
                         return p;
                     }
@@ -599,47 +571,25 @@ namespace dvmig.Cli
             return provider;
         }
 
-        /// <summary>
-        /// Interactively allows the user to select entities for migration.
-        /// </summary>
-        /// <returns>A list of selected entity logical names.</returns>
         private static async Task<List<string>?> SelectEntitiesAsync()
         {
-            List<Microsoft.Xrm.Sdk.Metadata.EntityMetadata>? entities = null;
-
-            await AnsiConsole.Status()
+            var entities = await AnsiConsole.Status()
                 .StartAsync("Fetching entity metadata...", async ctx =>
                 {
                     try
                     {
-                        var request = new RetrieveAllEntitiesRequest
-                        {
-                            EntityFilters = Microsoft.Xrm.Sdk.Metadata
-                                .EntityFilters.Entity,
-                            RetrieveAsIfPublished = true
-                        };
-
-                        var response = (RetrieveAllEntitiesResponse)await
-                            _source!.ExecuteAsync(request, default);
-
-                        entities = response.EntityMetadata
-                            .Where(e =>
-                                (e.IsCustomEntity == true ||
-                                 IsStandardEntity(e.LogicalName)) &&
-                                e.IsIntersect == false &&
-                                e.IsValidForAdvancedFind == true &&
-                                !string.IsNullOrEmpty(
-                                    e.DisplayName?.UserLocalizedLabel?.Label))
-                            .OrderBy(e =>
-                                e.DisplayName?.UserLocalizedLabel?.Label ??
-                                e.LogicalName)
-                            .ToList();
+                        return await _metadataService!.GetMigrationEntitiesAsync(
+                            _source!, 
+                            default
+                        );
                     }
                     catch (Exception ex)
                     {
                         AnsiConsole.MarkupLine(
                             $"[red]×[/] Failed to fetch metadata: {ex.Message}"
                         );
+
+                        return null;
                     }
                 });
 
@@ -651,9 +601,7 @@ namespace dvmig.Cli
             var prompt = new MultiSelectionPrompt<string>()
                 .Title("Select [green]Entities[/] to migrate:")
                 .PageSize(15)
-                .MoreChoicesText(
-                    "[grey](Move up and down to reveal more)[/]"
-                )
+                .MoreChoicesText("[grey](Move up and down to reveal more)[/]")
                 .InstructionsText(
                     "[grey](Press [blue]<space>[/] to toggle, " +
                     "[green]<enter>[/] to accept)[/]"
@@ -667,30 +615,14 @@ namespace dvmig.Cli
             return AnsiConsole.Prompt(prompt);
         }
 
-        /// <summary>
-        /// Checks if an entity is considered a standard (non-system) entity.
-        /// </summary>
-        private static bool IsStandardEntity(string logicalName)
-        {
-            return EntityMetadataHelper.IsStandardEntity(logicalName);
-        }
-
-        /// <summary>
-        /// Executes the migration for the selected entities.
-        /// </summary>
-        /// <param name="entities">The list of logical names to migrate.</param>
         private static async Task RunMigrationAsync(List<string> entities)
         {
             foreach (var logicalName in entities)
             {
-                AnsiConsole.MarkupLine(
-                    $"[bold yellow]Migrating {logicalName}...[/]"
-                );
+                AnsiConsole.MarkupLine($"[bold yellow]Migrating {logicalName}...[/]");
 
-                // 1. Initialize Engine for this entity
                 await _engine!.InitializeEntitySyncAsync(logicalName);
 
-                // 2. Resume Check
                 if (_stateTracker!.StateExists())
                 {
                     var syncedIds = await _stateTracker.GetSyncedIdsAsync();
@@ -700,9 +632,7 @@ namespace dvmig.Cli
                                         $"for {logicalName} ({syncedIds.Count} " +
                                         "records already synced). Resume?";
 
-                        var resume = AnsiConsole.Confirm(resumeMsg, true);
-
-                        if (!resume)
+                        if (!AnsiConsole.Confirm(resumeMsg, true))
                         {
                             await _stateTracker.ClearStateAsync();
                             await _engine.InitializeEntitySyncAsync(logicalName);
@@ -710,7 +640,6 @@ namespace dvmig.Cli
                     }
                 }
 
-                // 3. Get Total Count for progress bar
                 long totalCount = await _seeder!.GetRecordCountAsync(
                     _source!, 
                     logicalName, 
@@ -726,7 +655,6 @@ namespace dvmig.Cli
                     continue;
                 }
 
-                // 4. Centralized Paginated Sync
                 await AnsiConsole.Progress()
                     .Columns(new ProgressColumn[] 
                     {
@@ -758,57 +686,13 @@ namespace dvmig.Cli
                         await _engine.SyncEntityAsync(
                             logicalName,
                             new SyncOptions { StripMissingDependencies = true },
-                            null, // Query (null = all)
-                            null, // Progress (null = no UI logs)
+                            null, 
+                            null, 
                             recordProgress,
                             default
                         );
                     });
             }
-        }
-
-        private static string MaskConnectionString(string connectionString)
-        {
-            var parts = connectionString.Split(
-                ';', 
-                StringSplitOptions.RemoveEmptyEntries
-            );
-
-            var maskedParts = parts.Select(p =>
-            {
-                var kv = p.Split('=', 2);
-                if (kv.Length != 2)
-                {
-                    return p;
-                }
-
-                var key = kv[0].Trim();
-                var val = kv[1].Trim();
-
-                var isPass = key.Contains(
-                    "Password", 
-                    StringComparison.OrdinalIgnoreCase
-                );
-
-                var isSec = key.Contains(
-                    "Secret", 
-                    StringComparison.OrdinalIgnoreCase
-                );
-
-                var isTok = key.Contains(
-                    "Token", 
-                    StringComparison.OrdinalIgnoreCase
-                );
-
-                if (isPass || isSec || isTok)
-                {
-                    return $"{key}=********";
-                }
-
-                return p;
-            });
-
-            return string.Join("; ", maskedParts);
         }
     }
 }
