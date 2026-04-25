@@ -15,6 +15,9 @@ namespace dvmig.Providers
     {
         private readonly ServiceClient _client;
 
+        /// <inheritdoc />
+        public string ConnectionString { get; }
+
         /// <summary>
         /// Initializes a new instance of the <see cref="DataverseProvider"/> class.
         /// </summary>
@@ -23,6 +26,7 @@ namespace dvmig.Providers
         /// </param>
         public DataverseProvider(string connectionString)
         {
+            ConnectionString = connectionString;
             _client = new ServiceClient(connectionString);
             if (!_client.IsReady)
             {

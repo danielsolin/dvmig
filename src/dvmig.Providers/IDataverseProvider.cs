@@ -11,6 +11,11 @@ namespace dvmig.Providers
     public interface IDataverseProvider
     {
         /// <summary>
+        /// Gets the connection string used by this provider.
+        /// </summary>
+        string ConnectionString { get; }
+
+        /// <summary>
         /// Retrieves a single entity record by ID.
         /// </summary>
         /// <param name="entityLogicalName">The logical name of the entity.</param>

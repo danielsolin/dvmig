@@ -14,6 +14,7 @@ namespace dvmig.Tests
         private readonly Mock<IDataverseProvider> _targetMock;
         private readonly Mock<IUserMapper> _userMapperMock;
         private readonly Mock<IDataPreservationManager> _dataPreservationMock;
+        private readonly Mock<ISyncStateTracker> _stateTrackerMock;
         private readonly Mock<ILogger> _loggerMock;
         private readonly SyncEngine _engine;
 
@@ -23,13 +24,18 @@ namespace dvmig.Tests
             _targetMock = new Mock<IDataverseProvider>();
             _userMapperMock = new Mock<IUserMapper>();
             _dataPreservationMock = new Mock<IDataPreservationManager>();
+            _stateTrackerMock = new Mock<ISyncStateTracker>();
             _loggerMock = new Mock<ILogger>();
+
+            _stateTrackerMock.Setup(s => s.GetSyncedIdsAsync())
+                .ReturnsAsync(new HashSet<Guid>());
 
             _engine = new SyncEngine(
                 _sourceMock.Object,
                 _targetMock.Object,
                 _userMapperMock.Object,
                 _dataPreservationMock.Object,
+                _stateTrackerMock.Object,
                 _loggerMock.Object
             );
 

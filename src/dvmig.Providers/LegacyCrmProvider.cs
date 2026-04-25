@@ -16,6 +16,9 @@ namespace dvmig.Providers
     {
         private readonly CrmServiceClient _client;
 
+        /// <inheritdoc />
+        public string ConnectionString { get; }
+
         /// <summary>
         /// Initializes a new instance of the <see cref="LegacyCrmProvider"/> class.
         /// </summary>
@@ -24,6 +27,7 @@ namespace dvmig.Providers
         /// </param>
         public LegacyCrmProvider(string connectionString)
         {
+            ConnectionString = connectionString;
             _client = new CrmServiceClient(connectionString);
             if (!_client.IsReady)
             {

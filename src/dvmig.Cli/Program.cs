@@ -6,6 +6,7 @@ using dvmig.Core.Seeding;
 using dvmig.Core.Settings;
 using dvmig.Core.Synchronization;
 using dvmig.Providers;
+using Microsoft.Xrm.Sdk;
 using Microsoft.Crm.Sdk.Messages;
 using Microsoft.Xrm.Sdk.Messages;
 using System.Runtime.Versioning;
@@ -26,6 +27,7 @@ namespace dvmig.Cli
         private static ISyncEngine? _engine;
         private static ISetupService? _setupService;
         private static ITestDataSeeder? _seeder;
+        private static ISyncStateTracker? _stateTracker;
         private static ISettingsService? _settingsService;
         private static ILogger? _logger;
 
@@ -39,6 +41,7 @@ namespace dvmig.Cli
             _logger = LoggerInitializer.Initialize("dvmig.Cli");
 
             _settingsService = new SettingsService();
+            _stateTracker = new LocalFileStateTracker();
 
             bool enableSourceCleanup = args.Contains("--enable-source-cleanup");
 
@@ -127,6 +130,7 @@ namespace dvmig.Cli
                 _target,
                 userMapper,
                 dataPreservation,
+                _stateTracker!,
                 _logger!
             );
 
@@ -413,19 +417,73 @@ namespace dvmig.Cli
                     $"[bold yellow]Migrating {logicalName}...[/]"
                 );
 
+                // Check for existing state and prompt to resume
+                await _stateTracker!.InitializeAsync(
+                    _source!.ConnectionString,
+                    _target!.ConnectionString,
+                    logicalName
+                );
+
+                if (_stateTracker.StateExists())
+                {
+                    var synced = await _stateTracker.GetSyncedIdsAsync();
+                    if (synced.Count > 0)
+                    {
+                        if (!AnsiConsole.Confirm(
+                            $"Previous migration state found for {logicalName} " +
+                            $"({synced.Count} records already synced). Resume?", 
+                            true))
+                        {
+                            await _stateTracker.ClearStateAsync();
+                        }
+                    }
+                }
+
                 var query = new Microsoft.Xrm.Sdk.Query.QueryExpression(
                     logicalName
                 )
                 {
-                    ColumnSet = new Microsoft.Xrm.Sdk.Query.ColumnSet(true)
+                    ColumnSet = new Microsoft.Xrm.Sdk.Query.ColumnSet(true),
+                    PageInfo = new Microsoft.Xrm.Sdk.Query.PagingInfo
+                    {
+                        Count = 1000,
+                        PageNumber = 1
+                    }
                 };
 
-                var sourceRecords = await _source!.RetrieveMultipleAsync(
-                    query,
-                    default
-                );
+                var allEntities = new List<Entity>();
+                var alreadySyncedIds = new HashSet<Guid>();
 
-                if (sourceRecords.Entities.Count == 0)
+                await AnsiConsole.Status()
+                    .StartAsync($"Fetching {logicalName} records...", async ctx =>
+                    {
+                        while (true)
+                        {
+                            var response = await _source!.RetrieveMultipleAsync(
+                                query,
+                                default
+                            );
+                            
+                            allEntities.AddRange(response.Entities);
+
+                            if (!response.MoreRecords)
+                            {
+                                break;
+                            }
+
+                            query.PageInfo.PageNumber++;
+                            query.PageInfo.PagingCookie = response.PagingCookie;
+                            
+                            ctx.Status(
+                                $"Fetching {logicalName} records " +
+                                $"(Page {query.PageInfo.PageNumber}, {allEntities.Count} so far)..."
+                            );
+                        }
+
+                        alreadySyncedIds = await _stateTracker.GetSyncedIdsAsync();
+                    });
+
+                if (allEntities.Count == 0)
                 {
                     AnsiConsole.MarkupLine(
                         $"[grey]No records found for {logicalName}.[/]"
@@ -435,21 +493,36 @@ namespace dvmig.Cli
                 }
 
                 await AnsiConsole.Progress()
+                    .Columns(new ProgressColumn[] 
+                    {
+                        new TaskDescriptionColumn(),
+                        new ProgressBarColumn(),
+                        new PercentageColumn(),
+                        new RemainingTimeColumn(),
+                        new SpinnerColumn(),
+                    })
                     .StartAsync(async ctx =>
                     {
+                        int current = alreadySyncedIds.Count;
+                        int total = allEntities.Count;
+
                         var task = ctx.AddTask(
-                            $"Syncing {logicalName}",
+                            $"Syncing {logicalName} ({current}/{total})",
                             true,
-                            sourceRecords.Entities.Count
+                            total
                         );
+
+                        task.Value = current;
 
                         var recordProgress = new Progress<bool>(success =>
                         {
-                            task.Increment(1);
+                            current++;
+                            task.Value = current;
+                            task.Description = $"Syncing {logicalName} ({current}/{total})";
                         });
 
                         await _engine!.SyncAsync(
-                            sourceRecords.Entities,
+                            allEntities,
                             new SyncOptions { StripMissingDependencies = true },
                             null,
                             recordProgress,

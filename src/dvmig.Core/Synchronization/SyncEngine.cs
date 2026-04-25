@@ -21,6 +21,7 @@ namespace dvmig.Core.Synchronization
         private readonly IDataverseProvider _target;
         private readonly IUserMapper _userMapper;
         private readonly IDataPreservationManager _dataPreservation;
+        private readonly ISyncStateTracker _stateTracker;
         private readonly ILogger _logger;
         private readonly AsyncRetryPolicy _retryPolicy;
 
@@ -37,6 +38,8 @@ namespace dvmig.Core.Synchronization
         private readonly ConcurrentDictionary<string, EntityMetadata>
             _metadataCache = new ConcurrentDictionary<string, EntityMetadata>();
 
+        private HashSet<Guid> _syncedIds = new HashSet<Guid>();
+
         private const int MaxRecursionDepth = 3;
 
         /// <summary>
@@ -48,12 +51,14 @@ namespace dvmig.Core.Synchronization
         /// <param name="dataPreservation">
         /// The data preservation manager.
         /// </param>
+        /// <param name="stateTracker">The sync state tracking service.</param>
         /// <param name="logger">The logger instance.</param>
         public SyncEngine(
             IDataverseProvider source,
             IDataverseProvider target,
             IUserMapper userMapper,
             IDataPreservationManager dataPreservation,
+            ISyncStateTracker stateTracker,
             ILogger logger
         )
         {
@@ -61,6 +66,7 @@ namespace dvmig.Core.Synchronization
             _target = target;
             _userMapper = userMapper;
             _dataPreservation = dataPreservation;
+            _stateTracker = stateTracker;
             _logger = logger;
 
             _retryPolicy = Policy
@@ -141,18 +147,44 @@ namespace dvmig.Core.Synchronization
             CancellationToken ct = default
         )
         {
-            _logger.Information(
-                "Starting sync of {Count} entities",
-                entities.Count()
+            var firstEntity = entities.FirstOrDefault();
+            if (firstEntity == null)
+            {
+                return;
+            }
+
+            // Initialize state tracker for this entity type
+            await _stateTracker.InitializeAsync(
+                _source.ConnectionString,
+                _target.ConnectionString,
+                firstEntity.LogicalName
             );
+
+            _syncedIds = await _stateTracker.GetSyncedIdsAsync();
+            var entitiesToSync = entities
+                .Where(e => !_syncedIds.Contains(e.Id))
+                .ToList();
+
+            var skippedCount = entities.Count() - entitiesToSync.Count;
+
+            _logger.Information(
+                "Starting sync of {Count} entities ({Skipped} skipped)",
+                entitiesToSync.Count,
+                skippedCount
+            );
+
+            if (skippedCount > 0)
+            {
+                progress?.Report($"Skipped {skippedCount} already synced records.");
+            }
 
             _recursionTracker.Clear();
 
             progress?.Report(
-                $"Starting migration of {entities.Count()} records..."
+                $"Starting migration of {entitiesToSync.Count} records..."
             );
 
-            foreach (var entity in entities)
+            foreach (var entity in entitiesToSync)
             {
                 ct.ThrowIfCancellationRequested();
 
@@ -191,6 +223,11 @@ namespace dvmig.Core.Synchronization
             CancellationToken ct = default
         )
         {
+            if (_syncedIds.Contains(entity.Id))
+            {
+                return true;
+            }
+
             var recordKey = $"{entity.LogicalName}:{entity.Id}";
             var depth = _recursionTracker.AddOrUpdate(
                 recordKey,
@@ -213,8 +250,18 @@ namespace dvmig.Core.Synchronization
             try
             {
                 var metadata = await GetMetadataAsync(entity.LogicalName, ct);
+                if (metadata == null)
+                {
+                    _logger.Error(
+                        "Metadata could not be retrieved for {Entity}. " +
+                        "Skipping record {Id}.",
+                        entity.LogicalName,
+                        entity.Id
+                    );
+                    return false;
+                }
 
-                if (metadata?.IsIntersect == true)
+                if (metadata.IsIntersect == true)
                 {
                     return await SyncIntersectEntityAsync(
                         entity, 
@@ -262,10 +309,14 @@ namespace dvmig.Core.Synchronization
 
                 if (success)
                 {
+                    _syncedIds.Add(entity.Id);
                     _idMappingCache[recordKey] = entity.Id;
                     progress?.Report(
                         $"Synced {entity.LogicalName}:{entity.Id}"
                     );
+
+                    // Mark as synced in the persistent state
+                    await _stateTracker.MarkAsSyncedAsync(entity.Id);
 
                     if (options.PreserveDates)
                     {

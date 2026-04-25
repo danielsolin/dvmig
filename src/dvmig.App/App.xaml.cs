@@ -33,6 +33,7 @@ namespace dvmig.App
             services.AddSingleton<ISchemaManager, SchemaManager>();
             services.AddSingleton<IPluginDeployer, PluginDeployer>();
             services.AddSingleton<ISetupService, SetupService>();
+            services.AddSingleton<ISyncStateTracker, LocalFileStateTracker>();
 
             // Core Migration Logic
             services.AddTransient<IUserMapper>(provider =>
@@ -68,6 +69,7 @@ namespace dvmig.App
                     migrationService.TargetProvider!,
                     provider.GetRequiredService<IUserMapper>(),
                     provider.GetRequiredService<IDataPreservationManager>(),
+                    provider.GetRequiredService<ISyncStateTracker>(),
                     provider.GetRequiredService<ILogger>()
                 );
             });

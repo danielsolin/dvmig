@@ -18,212 +18,82 @@ namespace dvmig.Core.Synchronization
         /// <returns>A prepared entity record ready for the target.</returns>
         private async Task<Entity> PrepareEntityForTargetAsync(
             Entity entity,
-            EntityMetadata? metadata,
+            EntityMetadata metadata,
             SyncOptions options,
             CancellationToken ct)
         {
-            var target = new Entity(entity.LogicalName, entity.Id);
+            var targetEntity = new Entity(entity.LogicalName, entity.Id);
 
-            foreach (var attr in entity.Attributes)
+            foreach (var attribute in entity.Attributes)
             {
-                if (IsForbiddenAttribute(attr.Key))
+                if (IsForbiddenAttribute(attribute.Key))
                 {
                     continue;
                 }
 
-                if (IsUserAttribute(attr.Key) &&
-                    attr.Value is EntityReference userRef)
+                var attrMetadata = metadata.Attributes
+                    .FirstOrDefault(a => a.LogicalName == attribute.Key);
+
+                if (attrMetadata != null && attrMetadata.IsValidForCreate == false &&
+                    attrMetadata.IsValidForUpdate == false)
                 {
-                    var mapped = await _userMapper.MapUserAsync(userRef, ct);
-                    if (mapped != null)
-                    {
-                        target[attr.Key] = mapped;
-
-                        continue;
-                    }
-
-                    // Mapping failed. Do NOT send original user ID to target
-                    _logger.Warning(
-                        "Skipping user attribute '{Attr}' for {Key}:{Id} " +
-                        "because source user could not be mapped.",
-                        attr.Key,
-                        entity.LogicalName,
-                        entity.Id
-                    );
-
                     continue;
                 }
 
-                if (metadata?.Attributes != null)
+                var value = attribute.Value;
+
+                // Handle EntityReference mapping
+                if (value is EntityReference er)
                 {
-                    var attrMeta = metadata.Attributes
-                        .FirstOrDefault(a => a.LogicalName == attr.Key);
-
-                    if (attrMeta != null &&
-                        attrMeta.IsValidForCreate == false &&
-                        attr.Key != "statecode" &&
-                        attr.Key != "statuscode")
+                    if (IsUserAttribute(attribute.Key))
                     {
-                        _logger.Debug(
-                            "Proactively stripping {Attr} for {Entity}",
-                            attr.Key,
-                            entity.LogicalName
-                        );
-
-                        continue;
+                        value = await _userMapper.MapUserAsync(er, ct);
+                    }
+                    else if (_idMappingCache.TryGetValue(
+                        $"{er.LogicalName}:{er.Id}",
+                        out var mappedId))
+                    {
+                        value = new EntityReference(er.LogicalName, mappedId);
                     }
                 }
 
-                if (attr.Value is EntityReference er)
-                {
-                    var cacheKey = $"{er.LogicalName}:{er.Id}";
-                    if (_idMappingCache.TryGetValue(cacheKey, out var targetId))
-                    {
-                        target[attr.Key] = new EntityReference(
-                            er.LogicalName,
-                            targetId
-                        );
-
-                        continue;
-                    }
-                }
-
-                target[attr.Key] = attr.Value;
+                targetEntity[attribute.Key] = value;
             }
 
-            return target;
+            return targetEntity;
         }
 
         /// <summary>
-        /// Attempts to find an existing record in the target environment that 
-        /// matches the source entity using alternate keys, primary name 
-        /// attribute, or specific entity-based fallback logic.
+        /// Attempts to find a record on the target environment that matches 
+        /// the source record based on its primary name or business key.
         /// </summary>
-        /// <param name="sourceEntity">The source entity record.</param>
+        /// <param name="entity">The source entity record.</param>
         /// <param name="ct">A cancellation token.</param>
         /// <returns>
-        /// The GUID of the matching target record if found; otherwise, null.
+        /// The ID of the matching record on the target, or null if not found.
         /// </returns>
         private async Task<Guid?> FindExistingOnTargetAsync(
-            Entity sourceEntity,
+            Entity entity,
             CancellationToken ct)
         {
-            var metadata = await GetMetadataAsync(
-                sourceEntity.LogicalName,
-                ct
-            );
+            var metadata = await GetMetadataAsync(entity.LogicalName, ct);
+            if (metadata == null) return null;
 
-            if (metadata == null)
+            var primaryNameAttr = metadata.PrimaryNameAttribute;
+            if (string.IsNullOrEmpty(primaryNameAttr) ||
+                !entity.Contains(primaryNameAttr))
             {
                 return null;
             }
 
-            // 1. Try Alternate Keys
-            if (metadata.Keys != null && metadata.Keys.Any())
+            var query = new QueryByAttribute(entity.LogicalName)
             {
-                foreach (var key in metadata.Keys)
-                {
-                    var query = new QueryExpression(sourceEntity.LogicalName)
-                    {
-                        ColumnSet = new ColumnSet(false)
-                    };
-                    var hasAllParts = true;
+                ColumnSet = new ColumnSet(metadata.PrimaryIdAttribute)
+            };
+            query.AddAttributeValue(primaryNameAttr, entity[primaryNameAttr]);
 
-                    foreach (var attrName in key.KeyAttributes)
-                    {
-                        if (!sourceEntity.Contains(attrName))
-                        {
-                            hasAllParts = false;
-
-                            break;
-                        }
-
-                        query.Criteria.AddCondition(
-                            attrName,
-                            ConditionOperator.Equal,
-                            sourceEntity[attrName]
-                        );
-                    }
-
-                    if (hasAllParts)
-                    {
-                        var results = await _target
-                            .RetrieveMultipleAsync(query, ct);
-
-                        if (results.Entities.Count == 1)
-                        {
-                            return results.Entities.First().Id;
-                        }
-
-                        if (results.Entities.Count > 1)
-                        {
-                            _logger.Warning(
-                                "Ambiguous alternate key match for {Entity}. " +
-                                "Found {Count} records. Skipping mapping.",
-                                sourceEntity.LogicalName,
-                                results.Entities.Count
-                            );
-                        }
-                    }
-                }
-            }
-
-            // 2. Fallback to Primary Name Attribute
-            var primaryAttr = metadata.PrimaryNameAttribute;
-            if (!string.IsNullOrEmpty(primaryAttr) &&
-                sourceEntity.Contains(primaryAttr))
-            {
-                var query = new QueryExpression(sourceEntity.LogicalName)
-                {
-                    ColumnSet = new ColumnSet(false)
-                };
-                query.Criteria.AddCondition(
-                    primaryAttr,
-                    ConditionOperator.Equal,
-                    sourceEntity[primaryAttr]
-                );
-
-                var results = await _target.RetrieveMultipleAsync(query, ct);
-                if (results.Entities.Count == 1)
-                {
-                    return results.Entities.First().Id;
-                }
-
-                if (results.Entities.Count > 1)
-                {
-                    _logger.Warning(
-                        "Ambiguous primary name match for {Entity} '{Name}'. " +
-                        "Found {Count} records. Skipping mapping.",
-                        sourceEntity.LogicalName,
-                        sourceEntity[primaryAttr],
-                        results.Entities.Count
-                    );
-                }
-            }
-
-            // 3. Fallback for specific entities with unique constraints 
-            // but no alternate keys
-            if (sourceEntity.LogicalName == "transactioncurrency" &&
-                sourceEntity.Contains("isocurrencycode"))
-            {
-                var query = new QueryExpression(sourceEntity.LogicalName)
-                {
-                    ColumnSet = new ColumnSet(false)
-                };
-                query.Criteria.AddCondition(
-                    "isocurrencycode",
-                    ConditionOperator.Equal,
-                    sourceEntity["isocurrencycode"]
-                );
-
-                var results = await _target.RetrieveMultipleAsync(query, ct);
-                if (results.Entities.Count == 1)
-                {
-                    return results.Entities.First().Id;
-                }
-            }
-
-            return null;
+            var results = await _target.RetrieveMultipleAsync(query, ct);
+            return results.Entities.FirstOrDefault()?.Id;
         }
 
         /// <summary>

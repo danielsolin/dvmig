@@ -29,7 +29,14 @@
                 <StackPanel HorizontalAlignment="Center">
                     <TextBlock Text="Progress" FontWeight="Bold" HorizontalAlignment="Center" />
                     <ProgressBar Value="{Binding Progress.ProgressPercentage}" Height="20" Width="150" Margin="0,15,0,0" />
-                    <TextBlock Text="{Binding Progress.ProgressPercentage, StringFormat={}{0:F0}%}" HorizontalAlignment="Center" Margin="0,5,0,0" />
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,5,0,0">
+                        <TextBlock Text="{Binding Progress.ProgressPercentage, StringFormat={}{0:F0}%}" />
+                        <TextBlock Text=" (" />
+                        <TextBlock Text="{Binding Progress.ProcessedRecords}" />
+                        <TextBlock Text="/" />
+                        <TextBlock Text="{Binding Progress.TotalRecords}" />
+                        <TextBlock Text=")" />
+                    </StackPanel>
                 </StackPanel>
             </Border>
 

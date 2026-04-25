@@ -1,9 +1,11 @@
 using System.Collections.ObjectModel;
+using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using dvmig.App.Models;
 using dvmig.App.Services;
 using dvmig.Core.Synchronization;
+using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Query;
 
 namespace dvmig.App.ViewModels
@@ -17,6 +19,7 @@ namespace dvmig.App.ViewModels
         private readonly INavigationService _navigationService;
         private readonly IMigrationService _migrationService;
         private readonly ISyncEngine _syncEngine;
+        private readonly ISyncStateTracker _stateTracker;
         private CancellationTokenSource? _cts;
 
         /// <summary>
@@ -42,21 +45,20 @@ namespace dvmig.App.ViewModels
         public ObservableCollection<string> Logs { get; } =
             new ObservableCollection<string>();
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="MigrationDashboardViewModel"/> 
-        /// class.
-        /// </summary>
         /// <param name="navigationService">The navigation service.</param>
         /// <param name="migrationService">The migration service.</param>
         /// <param name="syncEngine">The synchronization engine.</param>
+        /// <param name="stateTracker">The sync state tracking service.</param>
         public MigrationDashboardViewModel(
             INavigationService navigationService,
             IMigrationService migrationService,
-            ISyncEngine syncEngine)
+            ISyncEngine syncEngine,
+            ISyncStateTracker stateTracker)
         {
             _navigationService = navigationService;
             _migrationService = migrationService;
             _syncEngine = syncEngine;
+            _stateTracker = stateTracker;
         }
 
         /// <summary>
@@ -120,9 +122,54 @@ namespace dvmig.App.ViewModels
                         $"Processing {logicalName}..."
                     );
 
+                    // Check for existing state and prompt to resume
+                    await _stateTracker.InitializeAsync(
+                        _migrationService.SourceProvider!.ConnectionString,
+                        _migrationService.TargetProvider!.ConnectionString,
+                        logicalName
+                    );
+
+                    if (_stateTracker.StateExists())
+                    {
+                        var syncedIds = await _stateTracker.GetSyncedIdsAsync();
+                        if (syncedIds.Count > 0)
+                        {
+                            var result = MessageBox.Show(
+                                $"Previous migration state found for {logicalName} " +
+                                $"({syncedIds.Count} records already synced). \n\n" +
+                                "Do you want to resume from the checkpoint?",
+                                "Resume Migration",
+                                MessageBoxButton.YesNo,
+                                MessageBoxImage.Question
+                            );
+
+                            if (result == MessageBoxResult.No)
+                            {
+                                await _stateTracker.ClearStateAsync();
+                            }
+                            else
+                            {
+                                // Account for already synced records in overall progress
+                                cumulativeProcessed += syncedIds.Count;
+                                cumulativeSuccess += syncedIds.Count;
+                                
+                                Progress.Update(
+                                    cumulativeProcessed,
+                                    cumulativeSuccess,
+                                    cumulativeFailure
+                                );
+                            }
+                        }
+                    }
+
                     var query = new QueryExpression(logicalName)
                     {
-                        ColumnSet = new ColumnSet(true)
+                        ColumnSet = new ColumnSet(true),
+                        PageInfo = new PagingInfo
+                        {
+                            Count = 1000,
+                            PageNumber = 1
+                        }
                     };
 
                     if (!config.SyncAllRecords)
@@ -152,10 +199,32 @@ namespace dvmig.App.ViewModels
                         );
                     }
 
-                    var sourceRecords = await _migrationService.SourceProvider
-                        .RetrieveMultipleAsync(query, _cts.Token);
+                    var allEntities = new List<Entity>();
 
-                    if (sourceRecords.Entities.Count == 0)
+                    await Task.Run(async () =>
+                    {
+                        while (true)
+                        {
+                            var response = await _migrationService.SourceProvider!
+                                .RetrieveMultipleAsync(query, _cts.Token);
+
+                            allEntities.AddRange(response.Entities);
+
+                            if (!response.MoreRecords)
+                            {
+                                break;
+                            }
+
+                            query.PageInfo.PageNumber++;
+                            query.PageInfo.PagingCookie = response.PagingCookie;
+
+                            progressReporter.Report(
+                                $"Fetched {allEntities.Count} {logicalName} records..."
+                            );
+                        }
+                    }, _cts.Token);
+
+                    if (allEntities.Count == 0)
                     {
                         progressReporter.Report(
                             $"No records found for {logicalName}."
@@ -165,7 +234,7 @@ namespace dvmig.App.ViewModels
                     }
 
                     progressReporter.Report(
-                        $"Starting migration of {sourceRecords.Entities.Count} " +
+                        $"Starting migration of {allEntities.Count} " +
                         $"{logicalName} records..."
                     );
 
@@ -189,7 +258,7 @@ namespace dvmig.App.ViewModels
                     });
 
                     await _syncEngine.SyncAsync(
-                        sourceRecords.Entities,
+                        allEntities,
                         new SyncOptions
                         {
                             StripMissingDependencies = true

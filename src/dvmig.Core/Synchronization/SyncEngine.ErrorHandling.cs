@@ -439,6 +439,11 @@ namespace dvmig.Core.Synchronization
             CancellationToken ct)
         {
             var metadata = await GetMetadataAsync(entity.LogicalName, ct);
+            if (metadata == null)
+            {
+                return false;
+            }
+
             var prepared = await PrepareEntityForTargetAsync(
                 entity,
                 metadata,
