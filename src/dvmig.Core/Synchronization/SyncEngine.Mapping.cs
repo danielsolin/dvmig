@@ -6,6 +6,60 @@ namespace dvmig.Core.Synchronization
 {
     public partial class SyncEngine
     {
+        /// <inheritdoc />
+        public async Task<Microsoft.Xrm.Sdk.Query.ColumnSet> GetValidColumnsAsync(
+            string logicalName,
+            CancellationToken ct = default
+        )
+        {
+            var meta = await GetMetadataAsync(logicalName, ct);
+            if (meta == null || meta.Attributes == null)
+            {
+                return new Microsoft.Xrm.Sdk.Query.ColumnSet(true);
+            }
+
+            // Safety Whitelist: These columns MUST be included if they exist
+            var whitelist = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                meta.PrimaryIdAttribute,
+                meta.PrimaryNameAttribute ?? string.Empty,
+                "ownerid",
+                "statecode",
+                "statuscode",
+                "createdon",
+                "modifiedon",
+                "transactioncurrencyid",
+                "exchangerate"
+            };
+
+            // Filter for attributes that are valid for reading and NOT purely 
+            // logical/calculated to avoid performance issues.
+            var attributes = meta.Attributes
+                .Where(a => 
+                    whitelist.Contains(a.LogicalName) ||
+                    (a.IsLogical == false &&
+                     a.IsValidForRead == true &&
+                     (a.IsValidForCreate == true || 
+                      a.IsValidForUpdate == true)))
+                .Select(a => a.LogicalName)
+                .Where(name => !string.IsNullOrEmpty(name))
+                .Distinct()
+                .ToArray();
+
+            if (attributes.Length == 0)
+            {
+                return new Microsoft.Xrm.Sdk.Query.ColumnSet(true);
+            }
+
+            _logger.Debug(
+                "Configured ColumnSet for {Entity} with {Count} attributes.", 
+                logicalName, 
+                attributes.Length
+            );
+
+            return new Microsoft.Xrm.Sdk.Query.ColumnSet(attributes);
+        }
+
         /// <summary>
         /// Prepares a source entity for the target environment by mapping 
         /// users, resolving lookups through the ID cache, and stripping 

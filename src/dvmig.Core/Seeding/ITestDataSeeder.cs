@@ -37,5 +37,19 @@ namespace dvmig.Core.Seeding
             IProgress<string>? progress = null,
             CancellationToken ct = default
         );
+
+        /// <summary>
+        /// Gets the total number of records for a specific entity in the 
+        /// environment.
+        /// </summary>
+        /// <param name="provider">The Dataverse provider to use.</param>
+        /// <param name="logicalName">The logical name of the entity.</param>
+        /// <param name="ct">A cancellation token.</param>
+        /// <returns>The total number of records.</returns>
+        Task<long> GetRecordCountAsync(
+            IDataverseProvider provider,
+            string logicalName,
+            CancellationToken ct = default
+        );
     }
 }

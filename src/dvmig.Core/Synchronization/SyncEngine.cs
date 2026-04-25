@@ -139,6 +139,18 @@ namespace dvmig.Core.Synchronization
         }
 
         /// <inheritdoc />
+        public async Task InitializeEntitySyncAsync(string logicalName)
+        {
+            await _stateTracker.InitializeAsync(
+                _source.ConnectionString,
+                _target.ConnectionString,
+                logicalName
+            );
+
+            _syncedIds = await _stateTracker.GetSyncedIdsAsync();
+        }
+
+        /// <inheritdoc />
         public async Task SyncAsync(
             IEnumerable<Entity> entities,
             SyncOptions options,
@@ -147,42 +159,16 @@ namespace dvmig.Core.Synchronization
             CancellationToken ct = default
         )
         {
-            var firstEntity = entities.FirstOrDefault();
-            if (firstEntity == null)
-            {
-                return;
-            }
-
-            // Initialize state tracker for this entity type
-            await _stateTracker.InitializeAsync(
-                _source.ConnectionString,
-                _target.ConnectionString,
-                firstEntity.LogicalName
-            );
-
-            _syncedIds = await _stateTracker.GetSyncedIdsAsync();
             var entitiesToSync = entities
                 .Where(e => !_syncedIds.Contains(e.Id))
                 .ToList();
 
-            var skippedCount = entities.Count() - entitiesToSync.Count;
-
-            _logger.Information(
-                "Starting sync of {Count} entities ({Skipped} skipped)",
-                entitiesToSync.Count,
-                skippedCount
-            );
-
-            if (skippedCount > 0)
+            if (!entitiesToSync.Any())
             {
-                progress?.Report($"Skipped {skippedCount} already synced records.");
+                return;
             }
 
             _recursionTracker.Clear();
-
-            progress?.Report(
-                $"Starting migration of {entitiesToSync.Count} records..."
-            );
 
             foreach (var entity in entitiesToSync)
             {
@@ -210,9 +196,6 @@ namespace dvmig.Core.Synchronization
                     recordProgress?.Report(false);
                 }
             }
-
-            _logger.Information("Sync completed");
-            progress?.Report("Migration completed successfully.");
         }
 
         /// <inheritdoc />

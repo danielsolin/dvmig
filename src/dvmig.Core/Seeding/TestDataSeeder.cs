@@ -212,36 +212,98 @@ namespace dvmig.Core.Seeding
             IProgress<string>? progress,
             CancellationToken ct)
         {
-            progress?.Report($"Fetching all {logicalName} records...");
+            progress?.Report($"Fetching {logicalName} records for deletion...");
 
             var query = new Microsoft.Xrm.Sdk.Query.QueryExpression(logicalName)
             {
-                ColumnSet = new Microsoft.Xrm.Sdk.Query.ColumnSet(false)
+                ColumnSet = new Microsoft.Xrm.Sdk.Query.ColumnSet(false),
+                PageInfo = new Microsoft.Xrm.Sdk.Query.PagingInfo
+                {
+                    Count = 5000,
+                    PageNumber = 1
+                }
             };
 
-            var results = await provider.RetrieveMultipleAsync(query, ct);
-            var total = results.Entities.Count;
+            int totalDeleted = 0;
+            while (true)
+            {
+                var results = await provider.RetrieveMultipleAsync(query, ct);
+                if (results.Entities.Count == 0)
+                {
+                    break;
+                }
 
-            if (total == 0)
+                progress?.Report(
+                    $"Deleting {results.Entities.Count} {logicalName} " +
+                    $"records (Page {query.PageInfo.PageNumber})..."
+                );
+
+                int currentBatch = 0;
+                foreach (var entity in results.Entities)
+                {
+                    ct.ThrowIfCancellationRequested();
+                    await provider.DeleteAsync(logicalName, entity.Id, ct);
+                    currentBatch++;
+                    totalDeleted++;
+
+                    if (currentBatch % 50 == 0 || 
+                        currentBatch == results.Entities.Count)
+                    {
+                        progress?.Report(
+                            $"Deletion progress ({logicalName}): " +
+                            $"{totalDeleted} total deleted."
+                        );
+                    }
+                }
+
+                if (!results.MoreRecords)
+                {
+                    break;
+                }
+
+                query.PageInfo.PageNumber++;
+                query.PageInfo.PagingCookie = results.PagingCookie;
+            }
+
+            if (totalDeleted == 0)
             {
                 progress?.Report($"No {logicalName} records found.");
-                return;
             }
 
-            progress?.Report($"Deleting {total} {logicalName} records...");
+            _logger.Information(
+                "Deleted {Count} records of type {Entity}", 
+                totalDeleted, 
+                logicalName
+            );
+        }
 
-            int current = 0;
-            foreach (var entity in results.Entities)
+        /// <inheritdoc />
+        public async Task<long> GetRecordCountAsync(
+            IDataverseProvider provider,
+            string logicalName,
+            CancellationToken ct = default
+        )
+        {
+            var fetchXml = $@"
+                <fetch aggregate='true'>
+                  <entity name='{logicalName}'>
+                    <attribute name='{logicalName}id' alias='count' aggregate='count' />
+                  </entity>
+                </fetch>";
+
+            var response = await provider.RetrieveMultipleAsync(
+                new Microsoft.Xrm.Sdk.Query.FetchExpression(fetchXml),
+                ct
+            );
+
+            if (response.Entities.Count > 0 &&
+                response.Entities[0].Contains("count"))
             {
-                ct.ThrowIfCancellationRequested();
-                await provider.DeleteAsync(logicalName, entity.Id, ct);
-                current++;
-
-                if (current % 10 == 0 || current == total)
-                {
-                    progress?.Report($"Deletion progress ({logicalName}): {current}/{total}");
-                }
+                var aliasedValue = (AliasedValue)response.Entities[0]["count"];
+                return (int)aliasedValue.Value;
             }
+
+            return 0;
         }
     }
 }

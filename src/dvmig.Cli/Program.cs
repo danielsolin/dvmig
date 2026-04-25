@@ -42,6 +42,7 @@ namespace dvmig.Cli
 
             _settingsService = new SettingsService();
             _stateTracker = new LocalFileStateTracker();
+            _seeder = new TestDataSeeder(_logger);
 
             bool enableSourceCleanup = args.Contains("--enable-source-cleanup");
 
@@ -417,81 +418,60 @@ namespace dvmig.Cli
                     $"[bold yellow]Migrating {logicalName}...[/]"
                 );
 
-                // Check for existing state and prompt to resume
-                await _stateTracker!.InitializeAsync(
-                    _source!.ConnectionString,
-                    _target!.ConnectionString,
-                    logicalName
-                );
+                // 1. Initialize Engine for this entity
+                await _engine!.InitializeEntitySyncAsync(logicalName);
 
-                if (_stateTracker.StateExists())
+                // 2. Resume Check
+                if (_stateTracker!.StateExists())
                 {
                     var synced = await _stateTracker.GetSyncedIdsAsync();
                     if (synced.Count > 0)
                     {
-                        if (!AnsiConsole.Confirm(
+                        var resume = AnsiConsole.Confirm(
                             $"Previous migration state found for {logicalName} " +
                             $"({synced.Count} records already synced). Resume?", 
-                            true))
+                            true
+                        );
+
+                        if (!resume)
                         {
                             await _stateTracker.ClearStateAsync();
+                            await _engine.InitializeEntitySyncAsync(logicalName);
                         }
                     }
                 }
+
+                // 3. Setup Query
+                var columns = await _engine.GetValidColumnsAsync(logicalName, default);
 
                 var query = new Microsoft.Xrm.Sdk.Query.QueryExpression(
                     logicalName
                 )
                 {
-                    ColumnSet = new Microsoft.Xrm.Sdk.Query.ColumnSet(true),
+                    ColumnSet = columns,
                     PageInfo = new Microsoft.Xrm.Sdk.Query.PagingInfo
                     {
-                        Count = 1000,
+                        Count = 500,
                         PageNumber = 1
                     }
                 };
 
-                var allEntities = new List<Entity>();
-                var alreadySyncedIds = new HashSet<Guid>();
+                // 4. Get Total Count for progress bar
+                long totalCount = await _seeder!.GetRecordCountAsync(
+                    _source!, 
+                    logicalName, 
+                    default
+                );
 
-                await AnsiConsole.Status()
-                    .StartAsync($"Fetching {logicalName} records...", async ctx =>
-                    {
-                        while (true)
-                        {
-                            var response = await _source!.RetrieveMultipleAsync(
-                                query,
-                                default
-                            );
-                            
-                            allEntities.AddRange(response.Entities);
-
-                            if (!response.MoreRecords)
-                            {
-                                break;
-                            }
-
-                            query.PageInfo.PageNumber++;
-                            query.PageInfo.PagingCookie = response.PagingCookie;
-                            
-                            ctx.Status(
-                                $"Fetching {logicalName} records " +
-                                $"(Page {query.PageInfo.PageNumber}, {allEntities.Count} so far)..."
-                            );
-                        }
-
-                        alreadySyncedIds = await _stateTracker.GetSyncedIdsAsync();
-                    });
-
-                if (allEntities.Count == 0)
+                if (totalCount == 0)
                 {
                     AnsiConsole.MarkupLine(
                         $"[grey]No records found for {logicalName}.[/]"
                     );
-
                     continue;
                 }
 
+                // 5. Paginated Sync Loop
                 await AnsiConsole.Progress()
                     .Columns(new ProgressColumn[] 
                     {
@@ -503,31 +483,47 @@ namespace dvmig.Cli
                     })
                     .StartAsync(async ctx =>
                     {
-                        int current = alreadySyncedIds.Count;
-                        int total = allEntities.Count;
+                        var syncedIds = await _stateTracker.GetSyncedIdsAsync();
+                        int processed = syncedIds.Count;
 
                         var task = ctx.AddTask(
-                            $"Syncing {logicalName} ({current}/{total})",
+                            $"Syncing {logicalName} ({processed}/{totalCount})",
                             true,
-                            total
+                            totalCount
                         );
-
-                        task.Value = current;
+                        task.Value = processed;
 
                         var recordProgress = new Progress<bool>(success =>
                         {
-                            current++;
-                            task.Value = current;
-                            task.Description = $"Syncing {logicalName} ({current}/{total})";
+                            processed++;
+                            task.Value = processed;
+                            task.Description = 
+                                $"Syncing {logicalName} ({processed}/{totalCount})";
                         });
 
-                        await _engine!.SyncAsync(
-                            allEntities,
-                            new SyncOptions { StripMissingDependencies = true },
-                            null,
-                            recordProgress,
-                            default
-                        );
+                        while (true)
+                        {
+                            var response = await _source!.RetrieveMultipleAsync(
+                                query,
+                                default
+                            );
+
+                            await _engine.SyncAsync(
+                                response.Entities,
+                                new SyncOptions { StripMissingDependencies = true },
+                                null,
+                                recordProgress,
+                                default
+                            );
+
+                            if (!response.MoreRecords)
+                            {
+                                break;
+                            }
+
+                            query.PageInfo.PageNumber++;
+                            query.PageInfo.PagingCookie = response.PagingCookie;
+                        }
                     });
             }
         }

@@ -43,5 +43,25 @@ namespace dvmig.Core.Synchronization
             IProgress<string>? progress = null,
             CancellationToken ct = default
         );
+
+        /// <summary>
+        /// Retrieves a set of valid attributes for extraction, excluding 
+        /// logical or non-readable columns to optimize query performance.
+        /// </summary>
+        /// <param name="logicalName">The logical name of the entity.</param>
+        /// <param name="ct">A cancellation token.</param>
+        /// <returns>A configured ColumnSet containing valid attributes.</returns>
+        Task<Microsoft.Xrm.Sdk.Query.ColumnSet> GetValidColumnsAsync(
+            string logicalName,
+            CancellationToken ct = default
+        );
+
+        /// <summary>
+        /// Initializes the sync engine for a specific entity type, ensuring 
+        /// the state tracker is ready for the current job.
+        /// </summary>
+        /// <param name="logicalName">The logical name of the entity.</param>
+        /// <returns>A task representing the asynchronous operation.</returns>
+        Task InitializeEntitySyncAsync(string logicalName);
     }
 }

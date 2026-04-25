@@ -162,12 +162,15 @@ namespace dvmig.App.ViewModels
                         }
                     }
 
+                    var columns = await _syncEngine
+                        .GetValidColumnsAsync(logicalName, _cts.Token);
+
                     var query = new QueryExpression(logicalName)
                     {
-                        ColumnSet = new ColumnSet(true),
+                        ColumnSet = columns,
                         PageInfo = new PagingInfo
                         {
-                            Count = 1000,
+                            Count = 500,
                             PageNumber = 1
                         }
                     };
@@ -199,44 +202,8 @@ namespace dvmig.App.ViewModels
                         );
                     }
 
-                    var allEntities = new List<Entity>();
-
-                    await Task.Run(async () =>
-                    {
-                        while (true)
-                        {
-                            var response = await _migrationService.SourceProvider!
-                                .RetrieveMultipleAsync(query, _cts.Token);
-
-                            allEntities.AddRange(response.Entities);
-
-                            if (!response.MoreRecords)
-                            {
-                                break;
-                            }
-
-                            query.PageInfo.PageNumber++;
-                            query.PageInfo.PagingCookie = response.PagingCookie;
-
-                            progressReporter.Report(
-                                $"Fetched {allEntities.Count} {logicalName} records..."
-                            );
-                        }
-                    }, _cts.Token);
-
-                    if (allEntities.Count == 0)
-                    {
-                        progressReporter.Report(
-                            $"No records found for {logicalName}."
-                        );
-
-                        continue;
-                    }
-
-                    progressReporter.Report(
-                        $"Starting migration of {allEntities.Count} " +
-                        $"{logicalName} records..."
-                    );
+                    // 1. Initialize Engine for this entity
+                    await _syncEngine.InitializeEntitySyncAsync(logicalName);
 
                     var recordProgress = new Progress<bool>(success =>
                     {
@@ -257,16 +224,47 @@ namespace dvmig.App.ViewModels
                         );
                     });
 
-                    await _syncEngine.SyncAsync(
-                        allEntities,
-                        new SyncOptions
+                    // 2. Paginated Sync Loop
+                    await Task.Run(async () =>
+                    {
+                        int fetchedForEntity = 0;
+
+                        while (true)
                         {
-                            StripMissingDependencies = true
-                        },
-                        progressReporter,
-                        recordProgress,
-                        _cts.Token
-                    );
+                            var response = await _migrationService.SourceProvider!
+                                .RetrieveMultipleAsync(query, _cts.Token);
+
+                            if (response.Entities.Count == 0)
+                            {
+                                break;
+                            }
+
+                            fetchedForEntity += response.Entities.Count;
+                            
+                            // Optimistic Logging: Don't log every record in UI 
+                            // to avoid freezing the ListBox.
+                            progressReporter.Report(
+                                $"Syncing {logicalName} page {query.PageInfo.PageNumber} " +
+                                $"({fetchedForEntity} records found so far)..."
+                            );
+
+                            await _syncEngine.SyncAsync(
+                                response.Entities,
+                                new SyncOptions { StripMissingDependencies = true },
+                                null, // NULL progress avoids record-level UI logs
+                                recordProgress,
+                                _cts.Token
+                            );
+
+                            if (!response.MoreRecords)
+                            {
+                                break;
+                            }
+
+                            query.PageInfo.PageNumber++;
+                            query.PageInfo.PagingCookie = response.PagingCookie;
+                        }
+                    }, _cts.Token);
                 }
 
                 progressReporter.Report("Migration finished.");
