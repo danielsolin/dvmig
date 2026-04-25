@@ -38,6 +38,7 @@ namespace dvmig.Cli
         /// <param name="args">Command line arguments.</param>
         static async Task Main(string[] args)
         {
+            AnsiConsole.Clear();
             _logger = LoggerInitializer.Initialize("dvmig.Cli");
 
             _settingsService = new SettingsService();
@@ -116,11 +117,17 @@ namespace dvmig.Cli
         {
             // 1. Source Connection
             _source = await ConnectAsync("Source");
-            if (_source == null) return;
+            if (_source == null)
+            {
+                return;
+            }
 
             // 2. Target Connection
             _target = await ConnectAsync("Target");
-            if (_target == null) return;
+            if (_target == null)
+            {
+                return;
+            }
 
             // 3. Initialize Services
             var userMapper = new UserMapper(_source, _target, _logger!);
@@ -140,6 +147,7 @@ namespace dvmig.Cli
             if (selectedEntities == null || selectedEntities.Count == 0)
             {
                 AnsiConsole.MarkupLine("[yellow]No entities selected.[/]");
+
                 return;
             }
 
@@ -151,9 +159,15 @@ namespace dvmig.Cli
         private static async Task HandleSeedingAsync()
         {
             var provider = await ConnectAsync("Source Environment to Seed");
-            if (provider == null) return;
+            if (provider == null)
+            {
+                return;
+            }
 
-            int count = AnsiConsole.Ask<int>("How many [bold blue]Accounts[/] would you like to generate?", 100);
+            int count = AnsiConsole.Ask<int>(
+                "How many [bold blue]Accounts[/] would you like to generate?", 
+                100
+            );
 
             _seeder ??= new TestDataSeeder(_logger!);
 
@@ -162,7 +176,9 @@ namespace dvmig.Cli
                 {
                     var progress = new Progress<string>(msg =>
                     {
-                        AnsiConsole.MarkupLine($"[grey][[{DateTime.Now:HH:mm:ss}]][/] {msg}");
+                        AnsiConsole.MarkupLine(
+                            $"[grey][[{DateTime.Now:HH:mm:ss}]][/] {msg}"
+                        );
                     });
 
                     await _seeder.SeedTestDataAsync(provider, count, progress);
@@ -174,9 +190,16 @@ namespace dvmig.Cli
         private static async Task HandleCleanupAsync()
         {
             var provider = await ConnectAsync("Target Environment to Uninstall from");
-            if (provider == null) return;
+            if (provider == null)
+            {
+                return;
+            }
 
-            if (!AnsiConsole.Confirm("[red]Are you sure you want to remove all dvmig system components (schema and plugins) from this environment?[/]", false))
+            var promptMsg = "[red]Are you sure you want to remove all dvmig " +
+                            "system components (schema and plugins) from this " +
+                            "environment?[/]";
+
+            if (!AnsiConsole.Confirm(promptMsg, false))
             {
                 return;
             }
@@ -193,7 +216,9 @@ namespace dvmig.Cli
                 {
                     var progress = new Progress<string>(msg =>
                     {
-                        AnsiConsole.MarkupLine($"[grey][[{DateTime.Now:HH:mm:ss}]][/] {msg}");
+                        AnsiConsole.MarkupLine(
+                            $"[grey][[{DateTime.Now:HH:mm:ss}]][/] {msg}"
+                        );
                     });
 
                     await _setupService.CleanEnvironmentAsync(provider, progress);
@@ -205,16 +230,32 @@ namespace dvmig.Cli
         private static async Task HandleSourceCleanupAsync()
         {
             var provider = await ConnectAsync("Source Environment to Wipe");
-            if (provider == null) return;
+            if (provider == null)
+            {
+                return;
+            }
 
-            AnsiConsole.MarkupLine("[bold red]CRITICAL WARNING:[/] This operation will delete [bold]EVERY SINGLE[/] Account, Contact, Task, Phone Call, and Email record from the selected environment.");
-            AnsiConsole.MarkupLine("[red]This is NOT restricted to test data. Real data will be destroyed.[/]");
-            AnsiConsole.MarkupLine("[red]This action is permanent and irreversible.[/]");
+            AnsiConsole.MarkupLine(
+                "[bold red]CRITICAL WARNING:[/] This operation will delete " +
+                "[bold]EVERY SINGLE[/] Account, Contact, Task, Phone Call, " +
+                "and Email record from the selected environment."
+            );
+            AnsiConsole.MarkupLine(
+                "[red]This is NOT restricted to test data. Real data will " +
+                "be destroyed.[/]"
+            );
+            AnsiConsole.MarkupLine(
+                "[red]This action is permanent and irreversible.[/]"
+            );
 
-            var confirmation = AnsiConsole.Ask<string>("Type [bold red]WIPE ALL DATA[/] to confirm:");
+            var confirmation = AnsiConsole.Ask<string>(
+                "Type [bold red]WIPE ALL DATA[/] to confirm:"
+            );
+
             if (confirmation != "WIPE ALL DATA")
             {
                 AnsiConsole.MarkupLine("[yellow]Wipe cancelled.[/]");
+
                 return;
             }
 
@@ -225,7 +266,9 @@ namespace dvmig.Cli
                 {
                     var progress = new Progress<string>(msg =>
                     {
-                        AnsiConsole.MarkupLine($"[grey][[{DateTime.Now:HH:mm:ss}]][/] {msg}");
+                        AnsiConsole.MarkupLine(
+                            $"[grey][[{DateTime.Now:HH:mm:ss}]][/] {msg}"
+                        );
                     });
 
                     await _seeder.CleanTestDataAsync(provider, progress);
@@ -244,7 +287,10 @@ namespace dvmig.Cli
         )
         {
             var settings = _settingsService!.LoadSettings();
-            string? storedConn = label.Contains("Source", StringComparison.OrdinalIgnoreCase) 
+            string? storedConn = label.Contains(
+                "Source", 
+                StringComparison.OrdinalIgnoreCase
+            ) 
                 ? settings.SourceConnectionString 
                 : settings.TargetConnectionString;
 
@@ -255,7 +301,8 @@ namespace dvmig.Cli
                 var preview = MaskConnectionString(storedConn);
                 
                 var useStored = AnsiConsole.Confirm(
-                    $"Use [green]stored[/] {label} connection string?\n[grey]({preview})[/]", 
+                    $"Use [green]stored[/] {label} connection string?\n" +
+                    $"[grey]({preview})[/]", 
                     true
                 );
 
@@ -316,10 +363,15 @@ namespace dvmig.Cli
 
             if (provider != null && connStr != storedConn)
             {
-                if (AnsiConsole.Confirm($"Save this {label} connection string for future use?", true))
+                var savePrompt = $"Save this {label} connection string " +
+                                 "for future use?";
+
+                if (AnsiConsole.Confirm(savePrompt, true))
                 {
                     settings.RememberConnections = true;
-                    if (label.Contains("Source", StringComparison.OrdinalIgnoreCase))
+                    if (label.Contains(
+                            "Source", 
+                            StringComparison.OrdinalIgnoreCase))
                     {
                         settings.SourceConnectionString = connStr;
                     }
@@ -327,6 +379,7 @@ namespace dvmig.Cli
                     {
                         settings.TargetConnectionString = connStr;
                     }
+
                     _settingsService.SaveSettings(settings);
                     AnsiConsole.MarkupLine("[grey]Settings saved.[/]");
                 }
@@ -341,7 +394,9 @@ namespace dvmig.Cli
         /// <returns>A list of selected entity logical names.</returns>
         private static async Task<List<string>?> SelectEntitiesAsync()
         {
-            return await AnsiConsole.Status()
+            List<Microsoft.Xrm.Sdk.Metadata.EntityMetadata>? entities = null;
+
+            await AnsiConsole.Status()
                 .StartAsync("Fetching entity metadata...", async ctx =>
                 {
                     try
@@ -356,7 +411,7 @@ namespace dvmig.Cli
                         var response = (RetrieveAllEntitiesResponse)await
                             _source!.ExecuteAsync(request, default);
 
-                        var entities = response.EntityMetadata
+                        entities = response.EntityMetadata
                             .Where(e =>
                                 (e.IsCustomEntity == true ||
                                  IsStandardEntity(e.LogicalName)) &&
@@ -368,34 +423,37 @@ namespace dvmig.Cli
                                 e.DisplayName?.UserLocalizedLabel?.Label ??
                                 e.LogicalName)
                             .ToList();
-
-                        var prompt = new MultiSelectionPrompt<string>()
-                            .Title("Select [green]Entities[/] to migrate:")
-                            .PageSize(15)
-                            .MoreChoicesText(
-                                "[grey](Move up and down to reveal more)[/]"
-                            )
-                            .InstructionsText(
-                                "[grey](Press [blue]<space>[/] to toggle, " +
-                                "[green]<enter>[/] to accept)[/]"
-                            );
-
-                        foreach (var entity in entities)
-                        {
-                            prompt.AddChoice(entity.LogicalName);
-                        }
-
-                        return AnsiConsole.Prompt(prompt);
                     }
                     catch (Exception ex)
                     {
                         AnsiConsole.MarkupLine(
                             $"[red]×[/] Failed to fetch metadata: {ex.Message}"
                         );
-
-                        return null;
                     }
                 });
+
+            if (entities == null || entities.Count == 0)
+            {
+                return null;
+            }
+
+            var prompt = new MultiSelectionPrompt<string>()
+                .Title("Select [green]Entities[/] to migrate:")
+                .PageSize(15)
+                .MoreChoicesText(
+                    "[grey](Move up and down to reveal more)[/]"
+                )
+                .InstructionsText(
+                    "[grey](Press [blue]<space>[/] to toggle, " +
+                    "[green]<enter>[/] to accept)[/]"
+                );
+
+            foreach (var entity in entities)
+            {
+                prompt.AddChoice(entity.LogicalName);
+            }
+
+            return AnsiConsole.Prompt(prompt);
         }
 
         /// <summary>

@@ -29,6 +29,7 @@ namespace dvmig.Core.Synchronization
             }
 
             _filePath = Path.Combine(folder, $"{logicalName}.txt");
+
             return Task.CompletedTask;
         }
 

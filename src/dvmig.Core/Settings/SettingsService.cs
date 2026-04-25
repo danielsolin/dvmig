@@ -141,6 +141,7 @@ namespace dvmig.Core.Settings
                 }
 
                 var json = JsonSerializer.Serialize(settingsCopy);
+
                 File.WriteAllText(_filePath, json);
             }
             catch

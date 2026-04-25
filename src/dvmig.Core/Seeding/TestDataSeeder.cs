@@ -300,6 +300,7 @@ namespace dvmig.Core.Seeding
                 response.Entities[0].Contains("count"))
             {
                 var aliasedValue = (AliasedValue)response.Entities[0]["count"];
+
                 return (int)aliasedValue.Value;
             }
 

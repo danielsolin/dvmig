@@ -131,7 +131,10 @@ namespace dvmig.Core.Synchronization
             CancellationToken ct)
         {
             var metadata = await GetMetadataAsync(entity.LogicalName, ct);
-            if (metadata == null) return null;
+            if (metadata == null)
+            {
+                return null;
+            }
 
             var primaryNameAttr = metadata.PrimaryNameAttribute;
             if (string.IsNullOrEmpty(primaryNameAttr) ||
@@ -147,6 +150,7 @@ namespace dvmig.Core.Synchronization
             query.AddAttributeValue(primaryNameAttr, entity[primaryNameAttr]);
 
             var results = await _target.RetrieveMultipleAsync(query, ct);
+
             return results.Entities.FirstOrDefault()?.Id;
         }
 
