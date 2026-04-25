@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using dvmig.Core.DataPreservation;
+using dvmig.Shared.Metadata;
 using dvmig.Providers;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Messages;
@@ -139,6 +140,79 @@ namespace dvmig.Core.Synchronization
         }
 
         /// <inheritdoc />
+        public async Task SyncEntityAsync(
+            string logicalName,
+            SyncOptions options,
+            Microsoft.Xrm.Sdk.Query.QueryExpression? query = null,
+            IProgress<string>? progress = null,
+            IProgress<bool>? recordProgress = null,
+            CancellationToken ct = default
+        )
+        {
+            await InitializeEntitySyncAsync(logicalName);
+
+            var columns = await GetValidColumnsAsync(logicalName, ct);
+            var syncQuery = query ?? new Microsoft.Xrm.Sdk.Query.QueryExpression(
+                logicalName
+            )
+            {
+                ColumnSet = columns
+            };
+
+            // Ensure paging is initialized
+            syncQuery.PageInfo = new Microsoft.Xrm.Sdk.Query.PagingInfo
+            {
+                Count = 500,
+                PageNumber = 1
+            };
+
+            int totalSynced = 0;
+
+            while (true)
+            {
+                var response = await _source.RetrieveMultipleAsync(syncQuery, ct);
+                if (response.Entities.Count == 0)
+                {
+                    break;
+                }
+
+                if (progress != null)
+                {
+                    progress.Report(
+                        $"Syncing {logicalName} page " +
+                        $"{syncQuery.PageInfo.PageNumber} " +
+                        $"({totalSynced + response.Entities.Count} records " +
+                        $"found so far)..."
+                    );
+                }
+
+                await SyncAsync(
+                    response.Entities, 
+                    options, 
+                    progress, 
+                    recordProgress, 
+                    ct
+                );
+                
+                totalSynced += response.Entities.Count;
+
+                if (!response.MoreRecords)
+                {
+                    break;
+                }
+
+                syncQuery.PageInfo.PageNumber++;
+                syncQuery.PageInfo.PagingCookie = response.PagingCookie;
+            }
+
+            _logger.Information(
+                "SyncEntity {Entity} finished. Total records: {Count}", 
+                logicalName, 
+                totalSynced
+            );
+        }
+
+        /// <inheritdoc />
         public async Task InitializeEntitySyncAsync(string logicalName)
         {
             await _stateTracker.InitializeAsync(
@@ -216,13 +290,24 @@ namespace dvmig.Core.Synchronization
         {
             try
             {
-                var failure = new Entity("dm_migrationfailure");
-                failure["dm_name"] =
+                var failure = new Entity(
+                    SchemaConstants.MigrationFailure.EntityLogicalName
+                );
+
+                failure[SchemaConstants.MigrationFailure.Name] =
                     $"{entity.LogicalName}:{entity.Id}".Substring(0, 100);
-                failure["dm_sourceid"] = entity.Id.ToString();
-                failure["dm_entitylogicalname"] = entity.LogicalName;
-                failure["dm_errormessage"] = errorMessage;
-                failure["dm_timestamp"] = DateTime.UtcNow;
+
+                failure[SchemaConstants.MigrationFailure.SourceId] = 
+                    entity.Id.ToString();
+
+                failure[SchemaConstants.MigrationFailure.EntityLogicalNameAttr] = 
+                    entity.LogicalName;
+
+                failure[SchemaConstants.MigrationFailure.ErrorMessage] = 
+                    errorMessage;
+
+                failure[SchemaConstants.MigrationFailure.Timestamp] = 
+                    DateTime.UtcNow;
 
                 await _target.CreateAsync(failure, ct);
             }

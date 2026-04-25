@@ -1,3 +1,4 @@
+using dvmig.Shared.Metadata;
 using dvmig.Providers;
 using Microsoft.Crm.Sdk.Messages;
 using Microsoft.Xrm.Sdk;
@@ -51,22 +52,23 @@ namespace dvmig.Core.Provisioning
             CancellationToken ct
         )
         {
+            var entityName = SchemaConstants.SourceDate.EntityLogicalName;
             var existingMeta = await target.GetEntityMetadataAsync(
-                "dm_sourcedate",
+                entityName,
                 ct
             );
 
             if (existingMeta == null)
             {
-                _logger.Information("Creating 'dm_sourcedate' entity...");
-                progress?.Report("Creating 'dm_sourcedate' entity...");
+                _logger.Information("Creating '{Entity}' entity...", entityName);
+                progress?.Report($"Creating '{entityName}' entity...");
 
                 var entityReq = new CreateEntityRequest
                 {
                     Entity = new EntityMetadata
                     {
-                        SchemaName = "dm_sourcedate",
-                        LogicalName = "dm_sourcedate",
+                        SchemaName = entityName,
+                        LogicalName = entityName,
                         DisplayName = new Label("Source Date Preservation", 1033),
                         DisplayCollectionName = new Label("Source Dates", 1033),
                         OwnershipType = OwnershipTypes.UserOwned,
@@ -76,8 +78,8 @@ namespace dvmig.Core.Provisioning
                     },
                     PrimaryAttribute = new StringAttributeMetadata
                     {
-                        SchemaName = "dm_name",
-                        LogicalName = "dm_name",
+                        SchemaName = SchemaConstants.SourceDate.Name,
+                        LogicalName = SchemaConstants.SourceDate.Name,
                         DisplayName = new Label("Name", 1033),
                         RequiredLevel = new AttributeRequiredLevelManagedProperty(
                             AttributeRequiredLevel.None
@@ -90,16 +92,16 @@ namespace dvmig.Core.Provisioning
                 await Task.Delay(5000, ct); // Wait for propagation
 
                 existingMeta = await target.GetEntityMetadataAsync(
-                    "dm_sourcedate",
+                    entityName,
                     ct
                 );
             }
 
             await CreateAttributeIfMissingAsync(
                 target,
-                "dm_sourcedate",
+                entityName,
                 existingMeta!,
-                "dm_sourceentityid",
+                SchemaConstants.SourceDate.EntityId,
                 "Source Entity ID",
                 progress,
                 ct
@@ -107,9 +109,9 @@ namespace dvmig.Core.Provisioning
 
             await CreateAttributeIfMissingAsync(
                 target,
-                "dm_sourcedate",
+                entityName,
                 existingMeta!,
-                "dm_sourceentitylogicalname",
+                SchemaConstants.SourceDate.EntityLogicalNameAttr,
                 "Source Entity Logical Name",
                 progress,
                 ct
@@ -117,9 +119,9 @@ namespace dvmig.Core.Provisioning
 
             await CreateAttributeIfMissingAsync(
                 target,
-                "dm_sourcedate",
+                entityName,
                 existingMeta!,
-                "dm_sourcecreateddate",
+                SchemaConstants.SourceDate.CreatedDate,
                 "Source Created Date",
                 progress,
                 ct,
@@ -128,9 +130,9 @@ namespace dvmig.Core.Provisioning
 
             await CreateAttributeIfMissingAsync(
                 target,
-                "dm_sourcedate",
+                entityName,
                 existingMeta!,
-                "dm_sourcemodifieddate",
+                SchemaConstants.SourceDate.ModifiedDate,
                 "Source Modified Date",
                 progress,
                 ct,
@@ -144,22 +146,23 @@ namespace dvmig.Core.Provisioning
             CancellationToken ct
         )
         {
+            var entityName = SchemaConstants.MigrationFailure.EntityLogicalName;
             var existingMeta = await target.GetEntityMetadataAsync(
-                "dm_migrationfailure",
+                entityName,
                 ct
             );
 
             if (existingMeta == null)
             {
-                _logger.Information("Creating 'dm_migrationfailure' entity...");
-                progress?.Report("Creating 'dm_migrationfailure' entity...");
+                _logger.Information("Creating '{Entity}' entity...", entityName);
+                progress?.Report($"Creating '{entityName}' entity...");
 
                 var entityReq = new CreateEntityRequest
                 {
                     Entity = new EntityMetadata
                     {
-                        SchemaName = "dm_migrationfailure",
-                        LogicalName = "dm_migrationfailure",
+                        SchemaName = entityName,
+                        LogicalName = entityName,
                         DisplayName = new Label("Migration Failure", 1033),
                         DisplayCollectionName = new Label(
                             "Migration Failures", 
@@ -170,8 +173,8 @@ namespace dvmig.Core.Provisioning
                     },
                     PrimaryAttribute = new StringAttributeMetadata
                     {
-                        SchemaName = "dm_name",
-                        LogicalName = "dm_name",
+                        SchemaName = SchemaConstants.MigrationFailure.Name,
+                        LogicalName = SchemaConstants.MigrationFailure.Name,
                         DisplayName = new Label("Name", 1033),
                         MaxLength = 100
                     }
@@ -181,16 +184,16 @@ namespace dvmig.Core.Provisioning
                 await Task.Delay(5000, ct);
 
                 existingMeta = await target.GetEntityMetadataAsync(
-                    "dm_migrationfailure",
+                    entityName,
                     ct
                 );
             }
 
             await CreateAttributeIfMissingAsync(
                 target,
-                "dm_migrationfailure",
+                entityName,
                 existingMeta!,
-                "dm_sourceid",
+                SchemaConstants.MigrationFailure.SourceId,
                 "Source Record ID",
                 progress,
                 ct
@@ -198,9 +201,9 @@ namespace dvmig.Core.Provisioning
 
             await CreateAttributeIfMissingAsync(
                 target,
-                "dm_migrationfailure",
+                entityName,
                 existingMeta!,
-                "dm_entitylogicalname",
+                SchemaConstants.MigrationFailure.EntityLogicalNameAttr,
                 "Entity Logical Name",
                 progress,
                 ct
@@ -208,9 +211,9 @@ namespace dvmig.Core.Provisioning
 
             await CreateAttributeIfMissingAsync(
                 target,
-                "dm_migrationfailure",
+                entityName,
                 existingMeta!,
-                "dm_errormessage",
+                SchemaConstants.MigrationFailure.ErrorMessage,
                 "Error Message",
                 progress,
                 ct,
@@ -220,9 +223,9 @@ namespace dvmig.Core.Provisioning
 
             await CreateAttributeIfMissingAsync(
                 target,
-                "dm_migrationfailure",
+                entityName,
                 existingMeta!,
-                "dm_timestamp",
+                SchemaConstants.MigrationFailure.Timestamp,
                 "Failure Timestamp",
                 progress,
                 ct,
@@ -308,12 +311,17 @@ namespace dvmig.Core.Provisioning
         )
         {
             // 1. dm_sourcedate
-            await DropEntityIfPresentAsync(target, "dm_sourcedate", progress, ct);
+            await DropEntityIfPresentAsync(
+                target, 
+                SchemaConstants.SourceDate.EntityLogicalName, 
+                progress, 
+                ct
+            );
 
             // 2. dm_migrationfailure
             await DropEntityIfPresentAsync(
                 target, 
-                "dm_migrationfailure", 
+                SchemaConstants.MigrationFailure.EntityLogicalName, 
                 progress, 
                 ct
             );

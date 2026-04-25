@@ -4,7 +4,7 @@ using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Messages;
 using Microsoft.Xrm.Sdk.Metadata;
 using Microsoft.Xrm.Sdk.Query;
-using dvmig.Core.Metadata;
+using dvmig.Shared.Metadata;
 
 namespace dvmig.App.Services
 {

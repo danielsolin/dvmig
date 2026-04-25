@@ -14,4 +14,8 @@
     <PackageReference Include="Microsoft.CrmSdk.CoreAssemblies" Version="9.0.2.60" ExcludeAssets="runtime" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Include="..\shared\*.cs" Link="Shared\%(RecursiveDir)%(FileName)%(Extension)" />
+  </ItemGroup>
+
 </Project>

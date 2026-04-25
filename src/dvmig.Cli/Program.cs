@@ -1,12 +1,11 @@
 using dvmig.Core.DataPreservation;
 using dvmig.Core.Logging;
-using dvmig.Core.Metadata;
+using dvmig.Shared.Metadata;
 using dvmig.Core.Provisioning;
 using dvmig.Core.Seeding;
 using dvmig.Core.Settings;
 using dvmig.Core.Synchronization;
 using dvmig.Providers;
-using Microsoft.Xrm.Sdk;
 using Microsoft.Crm.Sdk.Messages;
 using Microsoft.Xrm.Sdk.Messages;
 using System.Runtime.Versioning;
@@ -101,7 +100,8 @@ namespace dvmig.Cli
                     case "Uninstall dvmig Components from Target":
                         await HandleCleanupAsync();
                         break;
-                    case "Wipe ALL Accounts, Contacts, and Activities from Source (DANGEROUS)":
+                    case "Wipe ALL Accounts, Contacts, and Activities from " +
+                         "Source (DANGEROUS)":
                         await HandleSourceCleanupAsync();
                         break;
                     case "Exit":
@@ -151,11 +151,10 @@ namespace dvmig.Cli
 
             if (!isReady)
             {
-                var prepare = AnsiConsole.Confirm(
-                    "[yellow]Target environment is not prepared for migration. " +
-                    "Prepare it now?[/]", 
-                    true
-                );
+                var prepareMsg = "[yellow]Target environment is not " +
+                                 "prepared for migration. Prepare it now?[/]";
+
+                var prepare = AnsiConsole.Confirm(prepareMsg, true);
 
                 if (prepare)
                 {
@@ -208,7 +207,7 @@ namespace dvmig.Cli
 
             // Check if failure logging entity exists
             var meta = await _target.GetEntityMetadataAsync(
-                "dm_migrationfailure", 
+                SchemaConstants.MigrationFailure.EntityLogicalName, 
                 default
             );
 
@@ -231,18 +230,18 @@ namespace dvmig.Cli
             );
 
             var query = new Microsoft.Xrm.Sdk.Query.QueryExpression(
-                "dm_migrationfailure"
+                SchemaConstants.MigrationFailure.EntityLogicalName
             )
             {
                 ColumnSet = new Microsoft.Xrm.Sdk.Query.ColumnSet(
-                    "dm_sourceid", 
-                    "dm_entitylogicalname", 
-                    "dm_errormessage", 
-                    "dm_timestamp"
+                    SchemaConstants.MigrationFailure.SourceId, 
+                    SchemaConstants.MigrationFailure.EntityLogicalNameAttr, 
+                    SchemaConstants.MigrationFailure.ErrorMessage, 
+                    SchemaConstants.MigrationFailure.Timestamp
                 )
             };
             query.AddOrder(
-                "dm_timestamp", 
+                SchemaConstants.MigrationFailure.Timestamp, 
                 Microsoft.Xrm.Sdk.Query.OrderType.Descending
             );
 
@@ -268,13 +267,17 @@ namespace dvmig.Cli
             {
                 table.AddRow(
                     failure.GetAttributeValue<string>(
-                        "dm_entitylogicalname"
+                        SchemaConstants.MigrationFailure.EntityLogicalNameAttr
                     ) ?? "N/A",
-                    failure.GetAttributeValue<string>("dm_sourceid") ?? "N/A",
+                    failure.GetAttributeValue<string>(
+                        SchemaConstants.MigrationFailure.SourceId
+                    ) ?? "N/A",
                     failure.GetAttributeValue<DateTime>(
-                        "dm_timestamp"
+                        SchemaConstants.MigrationFailure.Timestamp
                     ).ToString("yyyy-MM-dd HH:mm:ss"),
-                    failure.GetAttributeValue<string>("dm_errormessage") ?? "N/A"
+                    failure.GetAttributeValue<string>(
+                        SchemaConstants.MigrationFailure.ErrorMessage
+                    ) ?? "N/A"
                 );
             }
 
@@ -291,7 +294,7 @@ namespace dvmig.Cli
                         foreach (var failure in failures.Entities)
                         {
                             await _target.DeleteAsync(
-                                "dm_migrationfailure", 
+                                SchemaConstants.MigrationFailure.EntityLogicalName, 
                                 failure.Id, 
                                 default
                             );
@@ -310,10 +313,10 @@ namespace dvmig.Cli
                 return;
             }
 
-            int count = AnsiConsole.Ask<int>(
-                "How many [bold blue]Accounts[/] would you like to generate?", 
-                100
-            );
+            var prompt = "How many [bold blue]Accounts[/] would you like " +
+                         "to generate?";
+
+            int count = AnsiConsole.Ask<int>(prompt, 100);
 
             _seeder ??= new TestDataSeeder(_logger!);
 
@@ -337,8 +340,8 @@ namespace dvmig.Cli
             IDataverseProvider? target = null
         )
         {
-            var provider = target ?? 
-                           await ConnectAsync("Target Environment to Install on");
+            var label = "Target Environment to Install on";
+            var provider = target ?? await ConnectAsync(label);
 
             if (provider == null)
             {
@@ -693,11 +696,11 @@ namespace dvmig.Cli
                     var syncedIds = await _stateTracker.GetSyncedIdsAsync();
                     if (syncedIds.Count > 0)
                     {
-                        var resume = AnsiConsole.Confirm(
-                            $"Previous migration state found for {logicalName} " +
-                            $"({syncedIds.Count} records already synced). Resume?", 
-                            true
-                        );
+                        var resumeMsg = $"Previous migration state found " +
+                                        $"for {logicalName} ({syncedIds.Count} " +
+                                        "records already synced). Resume?";
+
+                        var resume = AnsiConsole.Confirm(resumeMsg, true);
 
                         if (!resume)
                         {
@@ -707,25 +710,7 @@ namespace dvmig.Cli
                     }
                 }
 
-                // 3. Setup Query
-                var columns = await _engine.GetValidColumnsAsync(
-                    logicalName, 
-                    default
-                );
-
-                var query = new Microsoft.Xrm.Sdk.Query.QueryExpression(
-                    logicalName
-                )
-                {
-                    ColumnSet = columns,
-                    PageInfo = new Microsoft.Xrm.Sdk.Query.PagingInfo
-                    {
-                        Count = 500,
-                        PageNumber = 1
-                    }
-                };
-
-                // 4. Get Total Count for progress bar
+                // 3. Get Total Count for progress bar
                 long totalCount = await _seeder!.GetRecordCountAsync(
                     _source!, 
                     logicalName, 
@@ -741,7 +726,7 @@ namespace dvmig.Cli
                     continue;
                 }
 
-                // 5. Paginated Sync Loop
+                // 4. Centralized Paginated Sync
                 await AnsiConsole.Progress()
                     .Columns(new ProgressColumn[] 
                     {
@@ -756,44 +741,28 @@ namespace dvmig.Cli
                         var syncedIds = await _stateTracker.GetSyncedIdsAsync();
                         int processed = syncedIds.Count;
 
-                        var task = ctx.AddTask(
-                            $"Syncing {logicalName} ({processed}/{totalCount})",
-                            true,
-                            totalCount
-                        );
+                        var taskName = $"Syncing {logicalName} " +
+                                       $"({processed}/{totalCount})";
+
+                        var task = ctx.AddTask(taskName, true, totalCount);
                         task.Value = processed;
 
                         var recordProgress = new Progress<bool>(success =>
                         {
                             processed++;
                             task.Value = processed;
-                            task.Description = 
-                                $"Syncing {logicalName} ({processed}/{totalCount})";
+                            task.Description = $"Syncing {logicalName} " +
+                                               $"({processed}/{totalCount})";
                         });
 
-                        while (true)
-                        {
-                            var response = await _source!.RetrieveMultipleAsync(
-                                query,
-                                default
-                            );
-
-                            await _engine.SyncAsync(
-                                response.Entities,
-                                new SyncOptions { StripMissingDependencies = true },
-                                null,
-                                recordProgress,
-                                default
-                            );
-
-                            if (!response.MoreRecords)
-                            {
-                                break;
-                            }
-
-                            query.PageInfo.PageNumber++;
-                            query.PageInfo.PagingCookie = response.PagingCookie;
-                        }
+                        await _engine.SyncEntityAsync(
+                            logicalName,
+                            new SyncOptions { StripMissingDependencies = true },
+                            null, // Query (null = all)
+                            null, // Progress (null = no UI logs)
+                            recordProgress,
+                            default
+                        );
                     });
             }
         }
@@ -816,9 +785,22 @@ namespace dvmig.Cli
                 var key = kv[0].Trim();
                 var val = kv[1].Trim();
 
-                if (key.Contains("Password", StringComparison.OrdinalIgnoreCase) ||
-                    key.Contains("Secret", StringComparison.OrdinalIgnoreCase) ||
-                    key.Contains("Token", StringComparison.OrdinalIgnoreCase))
+                var isPass = key.Contains(
+                    "Password", 
+                    StringComparison.OrdinalIgnoreCase
+                );
+
+                var isSec = key.Contains(
+                    "Secret", 
+                    StringComparison.OrdinalIgnoreCase
+                );
+
+                var isTok = key.Contains(
+                    "Token", 
+                    StringComparison.OrdinalIgnoreCase
+                );
+
+                if (isPass || isSec || isTok)
                 {
                     return $"{key}=********";
                 }

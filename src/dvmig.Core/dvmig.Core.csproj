@@ -20,4 +20,8 @@
     <ProjectReference Include="..\dvmig.Providers\dvmig.Providers.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Include="..\shared\*.cs" Link="Metadata\%(RecursiveDir)%(FileName)%(Extension)" />
+  </ItemGroup>
+
 </Project>

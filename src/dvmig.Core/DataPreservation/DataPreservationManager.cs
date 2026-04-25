@@ -1,3 +1,4 @@
+using dvmig.Shared.Metadata;
 using dvmig.Providers;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Query;
@@ -54,7 +55,7 @@ namespace dvmig.Core.DataPreservation
             try
             {
                 var meta = await _target.GetEntityMetadataAsync(
-                    "dm_sourcedate",
+                    SchemaConstants.SourceDate.EntityLogicalName,
                     ct
                 );
 
@@ -68,9 +69,10 @@ namespace dvmig.Core.DataPreservation
             if (_isSupported == false)
             {
                 _logger.Warning(
-                    "Date preservation entity 'dm_sourcedate' not found " +
+                    "Date preservation entity '{Entity}' not found " +
                     "on target. Date preservation will be disabled " +
-                    "for this session."
+                    "for this session.",
+                    SchemaConstants.SourceDate.EntityLogicalName
                 );
             }
 
@@ -119,21 +121,26 @@ namespace dvmig.Core.DataPreservation
         /// <returns>A populated 'dm_sourcedate' entity.</returns>
         private Entity CreateSourceDateEntity(Entity entity)
         {
-            var sourceDate = new Entity("dm_sourcedate");
+            var sourceDate = new Entity(
+                SchemaConstants.SourceDate.EntityLogicalName
+            );
 
-            sourceDate["dm_sourceentityid"] = entity.Id.ToString();
+            sourceDate[SchemaConstants.SourceDate.EntityId] = 
+                entity.Id.ToString();
 
-            sourceDate["dm_sourceentitylogicalname"] =
+            sourceDate[SchemaConstants.SourceDate.EntityLogicalNameAttr] =
                 entity.LogicalName.ToLower();
 
             if (entity.Contains("createdon"))
             {
-                sourceDate["dm_sourcecreateddate"] = entity["createdon"];
+                sourceDate[SchemaConstants.SourceDate.CreatedDate] = 
+                    entity["createdon"];
             }
 
             if (entity.Contains("modifiedon"))
             {
-                sourceDate["dm_sourcemodifieddate"] = entity["modifiedon"];
+                sourceDate[SchemaConstants.SourceDate.ModifiedDate] = 
+                    entity["modifiedon"];
             }
 
             return sourceDate;
@@ -156,12 +163,12 @@ namespace dvmig.Core.DataPreservation
                 var fetchXml = $@"
                     <fetch version='1.0' output-format='xml-platform' 
                            mapping='logical' distinct='false' count='1'>
-                      <entity name='dm_sourcedate'>
-                        <attribute name='dm_sourcedateid' />
+                      <entity name='{SchemaConstants.SourceDate.EntityLogicalName}'>
+                        <attribute name='{SchemaConstants.SourceDate.PrimaryId}' />
                         <filter type='and'>
-                          <condition attribute='dm_sourceentityid' 
+                          <condition attribute='{SchemaConstants.SourceDate.EntityId}' 
                             operator='eq' value='{entityId}' />
-                          <condition attribute='dm_sourceentitylogicalname' 
+                          <condition attribute='{SchemaConstants.SourceDate.EntityLogicalNameAttr}' 
                             operator='eq' value='{logicalName.ToLower()}' />
                         </filter>
                       </entity>
@@ -175,7 +182,7 @@ namespace dvmig.Core.DataPreservation
                 if (result.Entities.Any())
                 {
                     await _target.DeleteAsync(
-                        "dm_sourcedate",
+                        SchemaConstants.SourceDate.EntityLogicalName,
                         result.Entities[0].Id,
                         ct
                     );

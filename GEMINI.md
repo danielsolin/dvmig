@@ -9,7 +9,8 @@ This file contains foundational mandates, architectural decisions, and project-s
 
 ## Foundational Mandates
 1.  **Legacy Support:** The tool MUST maintain compatibility with legacy CRM OnPrem platforms (including AD/ADFS/IFD authentication).
-2.  **Dual UI Strategy:** The project MUST support two separate interfaces: a simplified graphical UI (WPF-based) for non-technical users, and an advanced Terminal User Interface (TUI) for technical power users.
+2.  **Dual UI Strategy:** The project MUST support two separate interfaces: a simplified graphical UI (WPF-based) for non-technical users, and an advanced Terminal User Interface (TUI) for technical power users. 
+    *   **V1.0 Note:** Prioritize the CLI/TUI (`dvmig.Cli`) as the primary interface for Version 1.0. The WPF App (`dvmig.App`) is to be maintained but not actively developed or polished until the TUI is complete.
 3.  **Code Style:** Adhere strictly to the rules defined in the global `GEMINI.md`.
 4.  **Resiliency:** Use `Polly` for retries on transient network errors or Dataverse throttling (including high-precision `8004410d` handling).
 5.  **Logging:** Use `Serilog` for structured logging (file + UI sinks).

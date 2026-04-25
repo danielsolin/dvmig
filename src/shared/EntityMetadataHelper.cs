@@ -1,4 +1,6 @@
-namespace dvmig.Core.Metadata
+using System.Linq;
+
+namespace dvmig.Shared.Metadata
 {
     /// <summary>
     /// Provides helper methods for identifying and working with Dataverse 
