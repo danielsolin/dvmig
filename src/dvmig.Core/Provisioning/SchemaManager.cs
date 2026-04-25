@@ -208,5 +208,47 @@ namespace dvmig.Core.Provisioning
 
             await target.ExecuteAsync(req, ct);
         }
+
+        /// <inheritdoc />
+        public async Task DropSchemaAsync(
+            IDataverseProvider target,
+            IProgress<string>? progress = null,
+            CancellationToken ct = default
+        )
+        {
+            _logger.Information("Checking for 'dm_sourcedate' entity...");
+            progress?.Report("Checking for 'dm_sourcedate' entity...");
+
+            var existingMeta = await target.GetEntityMetadataAsync(
+                "dm_sourcedate",
+                ct
+            );
+
+            if (existingMeta != null)
+            {
+                _logger.Information("Deleting 'dm_sourcedate' entity...");
+                progress?.Report("Deleting 'dm_sourcedate' entity...");
+
+                var request = new DeleteEntityRequest
+                {
+                    LogicalName = "dm_sourcedate"
+                };
+
+                await target.ExecuteAsync(request, ct);
+
+                _logger.Information("Entity deleted. Publishing changes...");
+                progress?.Report("Entity deleted. Publishing changes...");
+
+                await target.ExecuteAsync(new PublishAllXmlRequest(), ct);
+
+                _logger.Information("Schema removed successfully.");
+                progress?.Report("Schema removed successfully.");
+            }
+            else
+            {
+                _logger.Information("'dm_sourcedate' entity not found.");
+                progress?.Report("'dm_sourcedate' entity not found.");
+            }
+        }
     }
 }

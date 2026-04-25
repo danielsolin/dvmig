@@ -1,9 +1,9 @@
-using System.IO;
 using System.Security.Cryptography;
+using System.Runtime.Versioning;
 using System.Text;
 using System.Text.Json;
 
-namespace dvmig.App.Services
+namespace dvmig.Core.Settings
 {
     /// <summary>
     /// Represents the persisted user settings for the application.
@@ -57,6 +57,7 @@ namespace dvmig.App.Services
     /// Implementation of the settings service using local file storage and 
     /// DPAPI for encryption.
     /// </summary>
+    [SupportedOSPlatform("windows")]
     public class SettingsService : ISettingsService
     {
         private readonly string _filePath;

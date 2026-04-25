@@ -249,5 +249,85 @@ namespace dvmig.Core.Provisioning
                 );
             }
         }
+
+        /// <inheritdoc />
+        public async Task RemovePluginAsync(
+            IDataverseProvider target,
+            IProgress<string>? progress = null,
+            CancellationToken ct = default
+        )
+        {
+            _logger.Information("Searching for plugin assembly to remove...");
+            progress?.Report("Searching for plugin assembly to remove...");
+
+            var query = new QueryByAttribute("pluginassembly")
+            {
+                ColumnSet = new ColumnSet("pluginassemblyid")
+            };
+            query.AddAttributeValue("name", "dvmig.Plugins");
+
+            var result = await target.RetrieveMultipleAsync(query, ct);
+
+            if (result.Entities.Any())
+            {
+                var assemblyId = result.Entities.First().Id;
+                progress?.Report("Found plugin assembly. Identifying dependent components...");
+
+                // 1. Find all types in this assembly
+                var typeQuery = new QueryByAttribute("plugintype")
+                {
+                    ColumnSet = new ColumnSet("plugintypeid", "typename")
+                };
+                typeQuery.AddAttributeValue("pluginassemblyid", assemblyId);
+                var types = await target.RetrieveMultipleAsync(typeQuery, ct);
+
+                foreach (var type in types.Entities)
+                {
+                    var typeName = type.GetAttributeValue<string>("typename");
+                    
+                    // 2. Find and delete steps for each type
+                    var stepQuery = new QueryByAttribute("sdkmessageprocessingstep")
+                    {
+                        ColumnSet = new ColumnSet("sdkmessageprocessingstepid", "name")
+                    };
+                    stepQuery.AddAttributeValue("plugintypeid", type.Id);
+                    var steps = await target.RetrieveMultipleAsync(stepQuery, ct);
+
+                    foreach (var step in steps.Entities)
+                    {
+                        var stepName = step.GetAttributeValue<string>("name");
+                        _logger.Debug("Deleting plugin step {Name} ({Id})", stepName, step.Id);
+                        progress?.Report($"Deleting plugin step: {stepName}...");
+                        
+                        await target.DeleteAsync(
+                            "sdkmessageprocessingstep", 
+                            step.Id, 
+                            ct
+                        );
+                    }
+
+                    _logger.Debug("Deleting plugin type {Name} ({Id})", typeName, type.Id);
+                    progress?.Report($"Deleting plugin type: {typeName}...");
+                    await target.DeleteAsync("plugintype", type.Id, ct);
+                }
+
+                _logger.Information(
+                    "Found plugin assembly {Id}. Deleting...",
+                    assemblyId
+                );
+
+                progress?.Report("Deleting plugin assembly...");
+
+                await target.DeleteAsync("pluginassembly", assemblyId, ct);
+
+                _logger.Information("Plugin assembly removed successfully.");
+                progress?.Report("Plugin assembly removed successfully.");
+            }
+            else
+            {
+                _logger.Information("No plugin assembly found to remove.");
+                progress?.Report("No plugin assembly found to remove.");
+            }
+        }
     }
 }

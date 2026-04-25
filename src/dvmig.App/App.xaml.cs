@@ -4,6 +4,7 @@ using dvmig.App.Services;
 using dvmig.App.ViewModels;
 using dvmig.Core.DataPreservation;
 using dvmig.Core.Provisioning;
+using dvmig.Core.Settings;
 using dvmig.Core.Synchronization;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;

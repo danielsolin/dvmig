@@ -55,5 +55,19 @@ namespace dvmig.Core.Provisioning
             IProgress<string>? progress = null,
             CancellationToken ct = default
         );
+
+        /// <summary>
+        /// Removes all migration-specific components (schema and plugins) 
+        /// from the target environment.
+        /// </summary>
+        /// <param name="target">The target Dataverse provider.</param>
+        /// <param name="progress">An optional progress reporter.</param>
+        /// <param name="ct">A cancellation token.</param>
+        /// <returns>A task representing the asynchronous cleanup operation.</returns>
+        Task CleanEnvironmentAsync(
+            IDataverseProvider target,
+            IProgress<string>? progress = null,
+            CancellationToken ct = default
+        );
     }
 }

@@ -68,5 +68,25 @@ namespace dvmig.Core.Provisioning
                 ct
             );
         }
+
+        /// <inheritdoc />
+        public async Task CleanEnvironmentAsync(
+            IDataverseProvider target,
+            IProgress<string>? progress = null,
+            CancellationToken ct = default
+        )
+        {
+            _logger.Information("Cleaning target environment...");
+            progress?.Report("Cleaning target environment...");
+
+            // 1. Remove Plugin
+            await _pluginDeployer.RemovePluginAsync(target, progress, ct);
+
+            // 2. Drop Schema
+            await _schemaManager.DropSchemaAsync(target, progress, ct);
+
+            _logger.Information("Environment cleanup completed.");
+            progress?.Report("Environment cleanup completed.");
+        }
     }
 }
