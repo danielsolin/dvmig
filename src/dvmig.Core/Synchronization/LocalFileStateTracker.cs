@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-using System.IO;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -14,16 +12,26 @@ namespace dvmig.Core.Synchronization
         private readonly SemaphoreSlim _fileLock = new SemaphoreSlim(1, 1);
 
         /// <inheritdoc />
-        public Task InitializeAsync(string sourceKey, string targetKey, string logicalName)
+        public Task InitializeAsync(
+            string sourceKey, string targetKey, string logicalName)
         {
             var appData = Environment.GetFolderPath(
                 Environment.SpecialFolder.ApplicationData
             );
 
-            var normalizedKey = $"{NormalizeConnectionString(sourceKey)}|{NormalizeConnectionString(targetKey)}";
+            var normalizedKey = $"{NormalizeConnectionString(sourceKey)}"
+                                + "|{NormalizeConnectionString(targetKey)}";
             var normalizedHash = GetHash(normalizedKey);
-            var normalizedFolder = Path.Combine(appData, "dvmig", "state", normalizedHash);
-            var normalizedPath = Path.Combine(normalizedFolder, $"{logicalName}.txt");
+            var normalizedFolder = Path.Combine(
+                appData,
+                "dvmig",
+                "state",
+                normalizedHash
+            );
+            var normalizedPath = Path.Combine(
+                normalizedFolder,
+                $"{logicalName}.txt"
+            );
 
             // Fallback to the old raw-hash path if state already exists there.
             var rawKey = $"{sourceKey}|{targetKey}";
@@ -99,15 +107,16 @@ namespace dvmig.Core.Synchronization
 
         private static bool IsSensitiveConnectionKey(string key)
         {
-            return key.Contains("password", StringComparison.OrdinalIgnoreCase) ||
-                   key.Contains("secret", StringComparison.OrdinalIgnoreCase) ||
-                   key.Contains("token", StringComparison.OrdinalIgnoreCase) ||
-                   key.Contains("thumbprint", StringComparison.OrdinalIgnoreCase) ||
-                   key.Contains("clientid", StringComparison.OrdinalIgnoreCase) ||
-                   key.Contains("appid", StringComparison.OrdinalIgnoreCase) ||
-                   key.Contains("userid", StringComparison.OrdinalIgnoreCase) ||
-                   key.Contains("user id", StringComparison.OrdinalIgnoreCase) ||
-                   key.Contains("username", StringComparison.OrdinalIgnoreCase);
+            return
+                key.Contains("password", StringComparison.OrdinalIgnoreCase) ||
+                key.Contains("secret", StringComparison.OrdinalIgnoreCase) ||
+                key.Contains("token", StringComparison.OrdinalIgnoreCase) ||
+                key.Contains("thumbprint", StringComparison.OrdinalIgnoreCase) ||
+                key.Contains("clientid", StringComparison.OrdinalIgnoreCase) ||
+                key.Contains("appid", StringComparison.OrdinalIgnoreCase) ||
+                key.Contains("userid", StringComparison.OrdinalIgnoreCase) ||
+                key.Contains("user id", StringComparison.OrdinalIgnoreCase) ||
+                key.Contains("username", StringComparison.OrdinalIgnoreCase);
         }
 
         /// <inheritdoc />

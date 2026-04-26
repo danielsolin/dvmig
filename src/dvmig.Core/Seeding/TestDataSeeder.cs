@@ -32,7 +32,7 @@ namespace dvmig.Core.Seeding
         )
         {
             _logger.Information(
-                "Starting interconnected test data seeding: {Count} accounts", 
+                "Starting interconnected test data seeding: {Count} accounts",
                 count
             );
             progress?.Report(
@@ -85,7 +85,7 @@ namespace dvmig.Core.Seeding
                 .FinishWith((f, e) =>
                 {
                     e["subject"] = f.Commerce.ProductName();
-                    e["description"] = 
+                    e["description"] =
                         string.Join("\n", f.Lorem.Paragraphs(3));
                 });
 
@@ -122,7 +122,7 @@ namespace dvmig.Core.Seeding
                 ];
                 var accountUpdate = new Entity("account", accountId);
                 accountUpdate["primarycontactid"] = new EntityReference(
-                    "contact", 
+                    "contact",
                     primaryContactId
                 );
 
@@ -147,7 +147,7 @@ namespace dvmig.Core.Seeding
 
                     // To: Random related contact
                     var toRef = new EntityReference(
-                        "contact", 
+                        "contact",
                         createdContactIds[random.Next(createdContactIds.Count)]
                     );
                     phone["to"] = CreatePartyList(toRef);
@@ -164,7 +164,7 @@ namespace dvmig.Core.Seeding
 
                     // To: Primary contact
                     var toRef = new EntityReference(
-                        "contact", 
+                        "contact",
                         primaryContactId
                     );
                     email["to"] = CreatePartyList(toRef);
@@ -271,7 +271,7 @@ namespace dvmig.Core.Seeding
                     currentBatch++;
                     totalDeleted++;
 
-                    if (currentBatch % 50 == 0 || 
+                    if (currentBatch % 50 == 0 ||
                         currentBatch == results.Entities.Count)
                     {
                         progress?.Report(
@@ -296,8 +296,8 @@ namespace dvmig.Core.Seeding
             }
 
             _logger.Information(
-                "Deleted {Count} records of type {Entity}", 
-                totalDeleted, 
+                "Deleted {Count} records of type {Entity}",
+                totalDeleted,
                 logicalName
             );
         }

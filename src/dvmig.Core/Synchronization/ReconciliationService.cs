@@ -47,7 +47,7 @@ namespace dvmig.Core.Synchronization
         public async Task<bool> IsInitializedAsync(IDataverseProvider target, CancellationToken ct = default)
         {
             var meta = await target.GetEntityMetadataAsync(
-                SchemaConstants.MigrationFailure.EntityLogicalName, 
+                SchemaConstants.MigrationFailure.EntityLogicalName,
                 ct
             );
 
@@ -60,9 +60,9 @@ namespace dvmig.Core.Synchronization
             var query = new QueryExpression(SchemaConstants.MigrationFailure.EntityLogicalName)
             {
                 ColumnSet = new ColumnSet(
-                    SchemaConstants.MigrationFailure.SourceId, 
-                    SchemaConstants.MigrationFailure.EntityLogicalNameAttr, 
-                    SchemaConstants.MigrationFailure.ErrorMessage, 
+                    SchemaConstants.MigrationFailure.SourceId,
+                    SchemaConstants.MigrationFailure.EntityLogicalNameAttr,
+                    SchemaConstants.MigrationFailure.ErrorMessage,
                     SchemaConstants.MigrationFailure.Timestamp
                 )
             };

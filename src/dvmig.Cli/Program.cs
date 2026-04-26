@@ -1,3 +1,4 @@
+using System.Runtime.Versioning;
 using dvmig.Core.DataPreservation;
 using dvmig.Core.Logging;
 using dvmig.Core.Metadata;
@@ -7,7 +8,6 @@ using dvmig.Core.Settings;
 using dvmig.Core.Synchronization;
 using dvmig.Providers;
 using Microsoft.Crm.Sdk.Messages;
-using System.Runtime.Versioning;
 using Serilog;
 using Spectre.Console;
 
@@ -136,9 +136,9 @@ namespace dvmig.Cli
             }
 
             _setupService ??= CreateSetupService();
-            
+
             bool isReady = await _setupService.IsEnvironmentReadyAsync(
-                _target, 
+                _target,
                 default
             );
 
@@ -163,10 +163,10 @@ namespace dvmig.Cli
 
             var userMapper = new UserMapper(_source, _target, _logger!);
             var dataPreservation = new DataPreservationManager(
-                _target, 
+                _target,
                 _logger!
             );
-            
+
             _engine = new SyncEngine(
                 _source,
                 _target,
@@ -200,9 +200,9 @@ namespace dvmig.Cli
                 return;
             }
 
-            bool isInitialized = 
+            bool isInitialized =
                 await _reconciliationService!.IsInitializedAsync(
-                    _target, 
+                    _target,
                     default
                 );
 
@@ -223,7 +223,7 @@ namespace dvmig.Cli
             var failures = await CliUI.RunStatusAsync(
                 "Fetching recorded migration failures...",
                 async () => await _reconciliationService.GetFailuresAsync(
-                    _target, 
+                    _target,
                     default
                 )
             );
@@ -263,7 +263,7 @@ namespace dvmig.Cli
                 await CliUI.RunStatusAsync("Clearing failure log...", async _ =>
                 {
                     await _reconciliationService.ClearFailuresAsync(
-                        _target, 
+                        _target,
                         default
                     );
                 });
@@ -279,17 +279,17 @@ namespace dvmig.Cli
             );
             if (provider == null)
                 return;
-                
+
             var prompt = "How many [bold blue]Accounts[/] would you like " +
                          "to generate?";
 
             int count = AnsiConsole.Ask<int>(prompt, 100);
 
             await CliUI.RunStatusAsync(
-                "Seeding data...", 
+                "Seeding data...",
                 async progress => await _seeder!.SeedTestDataAsync(
-                    provider, 
-                    count, 
+                    provider,
+                    count,
                     progress
                 )
             );
@@ -317,8 +317,8 @@ namespace dvmig.Cli
             _setupService ??= CreateSetupService();
 
             await CliUI.RunStatusAsync(
-                "Installing components...", 
-                async progress => 
+                "Installing components...",
+                async progress =>
                 {
                     await _setupService.CreateSchemaAsync(provider, progress);
                     await _setupService.DeployPluginAsync(provider, progress);
@@ -360,9 +360,9 @@ namespace dvmig.Cli
             _setupService ??= CreateSetupService();
 
             await CliUI.RunStatusAsync(
-                "Uninstalling components...", 
+                "Uninstalling components...",
                 async progress => await _setupService.CleanEnvironmentAsync(
-                    provider, 
+                    provider,
                     progress
                 )
             );
@@ -404,9 +404,9 @@ namespace dvmig.Cli
             }
 
             await CliUI.RunStatusAsync(
-                "Wiping data...", 
+                "Wiping data...",
                 async progress => await _seeder!.CleanTestDataAsync(
-                    provider, 
+                    provider,
                     progress
                 )
             );
@@ -430,10 +430,10 @@ namespace dvmig.Cli
             if (!string.IsNullOrEmpty(storedConn))
             {
                 var preview = ConnectionHelper.MaskConnectionString(storedConn);
-                
+
                 var useStored = AnsiConsole.Confirm(
                     $"Use [green]stored[/] {label} connection string?\n" +
-                    $"[grey]({preview})[/]", 
+                    $"[grey]({preview})[/]",
                     true
                 );
 
@@ -454,7 +454,7 @@ namespace dvmig.Cli
             );
 
             IDataverseProvider? provider = await CliUI.RunStatusAsync(
-                $"Connecting to {label}...", 
+                $"Connecting to {label}...",
                 async () =>
                 {
                     try
@@ -511,14 +511,14 @@ namespace dvmig.Cli
         private static async Task<List<string>?> SelectEntitiesAsync()
         {
             var entities = await CliUI.RunStatusAsync(
-                "Fetching entity metadata...", 
+                "Fetching entity metadata...",
                 async () =>
                 {
                     try
                     {
                         return await _metadataService!
                             .GetMigrationEntitiesAsync(
-                                _source!, 
+                                _source!,
                                 default
                             );
                     }
@@ -592,8 +592,8 @@ namespace dvmig.Cli
                 }
 
                 long totalCount = await _metadataService!.GetRecordCountAsync(
-                    _source!, 
-                    logicalName, 
+                    _source!,
+                    logicalName,
                     default
                 );
 
@@ -607,7 +607,7 @@ namespace dvmig.Cli
                 }
 
                 await AnsiConsole.Progress()
-                    .Columns(new ProgressColumn[] 
+                    .Columns(new ProgressColumn[]
                     {
                         new TaskDescriptionColumn(),
                         new ProgressBarColumn(),
@@ -634,8 +634,8 @@ namespace dvmig.Cli
                         await _engine.SyncEntityAsync(
                             logicalName,
                             new SyncOptions { StripMissingDependencies = true },
-                            null, 
-                            null, 
+                            null,
+                            null,
                             recordProgress,
                             default
                         );

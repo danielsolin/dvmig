@@ -163,7 +163,7 @@ namespace dvmig.Core.DataPreservation
                 var entityName = SchemaConstants.SourceDate.EntityLogicalName;
                 var primaryId = SchemaConstants.SourceDate.PrimaryId;
                 var sourceEntityId = SchemaConstants.SourceDate.EntityId;
-                var logicalNameAttr = 
+                var logicalNameAttr =
                     SchemaConstants.SourceDate.EntityLogicalNameAttr;
 
                 var fetchXml = $@"

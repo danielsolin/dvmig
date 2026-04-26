@@ -1,4 +1,3 @@
-using System.IO;
 using dvmig.Providers;
 using dvmig.Shared.Metadata;
 using Serilog;
@@ -73,7 +72,7 @@ namespace dvmig.Core.Provisioning
                 assemblyPath = Path.Combine(
                     AppDomain.CurrentDomain.BaseDirectory,
                     "..", "..", "..", "..",
-                    SchemaConstants.AppConstants.PluginName, 
+                    SchemaConstants.AppConstants.PluginName,
                     "bin", "Debug", "netstandard2.0",
                     SchemaConstants.AppConstants.PluginAssemblyName
                 );
