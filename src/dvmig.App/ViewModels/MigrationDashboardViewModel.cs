@@ -5,7 +5,6 @@ using CommunityToolkit.Mvvm.Input;
 using dvmig.App.Models;
 using dvmig.App.Services;
 using dvmig.Core.Synchronization;
-using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Query;
 
 namespace dvmig.App.ViewModels
@@ -147,7 +146,7 @@ namespace dvmig.App.ViewModels
                                 // Account for already synced records in overall progress
                                 cumulativeProcessed += syncedIds.Count;
                                 cumulativeSuccess += syncedIds.Count;
-                                
+
                                 Progress.Update(
                                     cumulativeProcessed,
                                     cumulativeSuccess,

@@ -113,11 +113,11 @@ namespace dvmig.Core.Seeding
                 var primaryContactId = createdContactIds[random.Next(createdContactIds.Count)];
                 var accountUpdate = new Entity("account", accountId);
                 accountUpdate["primarycontactid"] = new EntityReference("contact", primaryContactId);
-                
+
                 await provider.UpdateAsync(accountUpdate, ct);
 
                 // 4. Create Activities regarding the Account
-                
+
                 // Tasks
                 int taskCount = random.Next(1, 6);
                 foreach (var task in taskFaker.Generate(taskCount))
@@ -132,11 +132,11 @@ namespace dvmig.Core.Seeding
                 foreach (var phone in phoneCallFaker.Generate(phoneCount))
                 {
                     phone["regardingobjectid"] = accountRef;
-                    
+
                     // To: Random related contact
                     var toRef = new EntityReference("contact", createdContactIds[random.Next(createdContactIds.Count)]);
                     phone["to"] = CreatePartyList(toRef);
-                    
+
                     await provider.CreateAsync(phone, ct);
                     totalActivitiesCreated++;
                 }
@@ -146,11 +146,11 @@ namespace dvmig.Core.Seeding
                 foreach (var email in emailFaker.Generate(emailCount))
                 {
                     email["regardingobjectid"] = accountRef;
-                    
+
                     // To: Primary contact
                     var toRef = new EntityReference("contact", primaryContactId);
                     email["to"] = CreatePartyList(toRef);
-                    
+
                     await provider.CreateAsync(email, ct);
                     totalActivitiesCreated++;
                 }
@@ -159,15 +159,15 @@ namespace dvmig.Core.Seeding
                 {
                     var msg = $"Processed {i + 1}/{count} accounts. " +
                               $"Contacts: {totalContactsCreated}, Activities: {totalActivitiesCreated}";
-                    
+
                     _logger.Information(msg);
                     progress?.Report(msg);
                 }
             }
 
             _logger.Information(
-                "Seeding completed. Accounts: {AccountCount}, Contacts: {ContactCount}, Activities: {ActivityCount}", 
-                count, 
+                "Seeding completed. Accounts: {AccountCount}, Contacts: {ContactCount}, Activities: {ActivityCount}",
+                count,
                 totalContactsCreated,
                 totalActivitiesCreated
             );
@@ -181,7 +181,7 @@ namespace dvmig.Core.Seeding
         {
             var party = new Entity("activityparty");
             party["partyid"] = reference;
-            
+
             return new EntityCollection(new List<Entity> { party });
         }
 
@@ -246,7 +246,7 @@ namespace dvmig.Core.Seeding
                     currentBatch++;
                     totalDeleted++;
 
-                    if (currentBatch % 50 == 0 || 
+                    if (currentBatch % 50 == 0 ||
                         currentBatch == results.Entities.Count)
                     {
                         progress?.Report(
@@ -271,8 +271,8 @@ namespace dvmig.Core.Seeding
             }
 
             _logger.Information(
-                "Deleted {Count} records of type {Entity}", 
-                totalDeleted, 
+                "Deleted {Count} records of type {Entity}",
+                totalDeleted,
                 logicalName
             );
         }

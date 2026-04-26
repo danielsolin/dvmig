@@ -21,7 +21,7 @@ namespace dvmig.Core.Settings
             }
 
             var parts = connectionString.Split(
-                ';', 
+                ';',
                 StringSplitOptions.RemoveEmptyEntries
             );
 
@@ -37,17 +37,17 @@ namespace dvmig.Core.Settings
                 var val = kv[1].Trim();
 
                 var isPass = key.Contains(
-                    "Password", 
+                    "Password",
                     StringComparison.OrdinalIgnoreCase
                 );
 
                 var isSec = key.Contains(
-                    "Secret", 
+                    "Secret",
                     StringComparison.OrdinalIgnoreCase
                 );
 
                 var isTok = key.Contains(
-                    "Token", 
+                    "Token",
                     StringComparison.OrdinalIgnoreCase
                 );
 

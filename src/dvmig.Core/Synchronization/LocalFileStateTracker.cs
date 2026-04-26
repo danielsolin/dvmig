@@ -81,7 +81,7 @@ namespace dvmig.Core.Synchronization
             try
             {
                 await File.AppendAllLinesAsync(
-                    _filePath, 
+                    _filePath,
                     new[] { id.ToString() }
                 );
             }
@@ -112,7 +112,7 @@ namespace dvmig.Core.Synchronization
         {
             var bytes = Encoding.UTF8.GetBytes(input);
             var hashBytes = SHA256.HashData(bytes);
-            
+
             var sb = new StringBuilder();
             foreach (var b in hashBytes)
             {

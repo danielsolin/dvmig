@@ -284,7 +284,7 @@ namespace dvmig.Core.Provisioning
                 foreach (var type in types.Entities)
                 {
                     var typeName = type.GetAttributeValue<string>("typename");
-                    
+
                     // 2. Find and delete steps for each type
                     var stepQuery = new QueryByAttribute("sdkmessageprocessingstep")
                     {
@@ -298,10 +298,10 @@ namespace dvmig.Core.Provisioning
                         var stepName = step.GetAttributeValue<string>("name");
                         _logger.Debug("Deleting plugin step {Name} ({Id})", stepName, step.Id);
                         progress?.Report($"Deleting plugin step: {stepName}...");
-                        
+
                         await target.DeleteAsync(
-                            "sdkmessageprocessingstep", 
-                            step.Id, 
+                            "sdkmessageprocessingstep",
+                            step.Id,
                             ct
                         );
                     }

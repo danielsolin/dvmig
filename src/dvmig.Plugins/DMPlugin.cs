@@ -1,5 +1,4 @@
 using System;
-using System.Linq;
 using dvmig.Shared.Metadata;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Query;
@@ -152,7 +151,7 @@ namespace dvmig.Plugins
         {
             if (sourceDate.Contains(SchemaConstants.SourceDate.CreatedDate))
             {
-                var createdDate = 
+                var createdDate =
                     sourceDate[SchemaConstants.SourceDate.CreatedDate];
 
                 entity["createdon"] = createdDate;
@@ -161,7 +160,7 @@ namespace dvmig.Plugins
 
             if (sourceDate.Contains(SchemaConstants.SourceDate.ModifiedDate))
             {
-                entity["modifiedon"] = 
+                entity["modifiedon"] =
                     sourceDate[SchemaConstants.SourceDate.ModifiedDate];
             }
         }
@@ -177,7 +176,7 @@ namespace dvmig.Plugins
         {
             if (sourceDate.Contains(SchemaConstants.SourceDate.ModifiedDate))
             {
-                entity["modifiedon"] = 
+                entity["modifiedon"] =
                     sourceDate[SchemaConstants.SourceDate.ModifiedDate];
             }
         }

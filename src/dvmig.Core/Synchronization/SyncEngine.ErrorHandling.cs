@@ -94,9 +94,9 @@ namespace dvmig.Core.Synchronization
             if (msg.Contains("is not a valid status code"))
             {
                 return await HandleStatusTransitionAsync(
-                    entity, 
-                    options, 
-                    progress, 
+                    entity,
+                    options,
+                    progress,
                     ct
                 );
             }
@@ -393,9 +393,9 @@ namespace dvmig.Core.Synchronization
                             targetId.Value;
 
                         return await RetryEntityAsync(
-                            entity, 
-                            options, 
-                            progress, 
+                            entity,
+                            options,
+                            progress,
                             ct
                         );
                     }
@@ -411,9 +411,9 @@ namespace dvmig.Core.Synchronization
                     if (success)
                     {
                         return await RetryEntityAsync(
-                            entity, 
-                            options, 
-                            progress, 
+                            entity,
+                            options,
+                            progress,
                             ct
                         );
                     }
@@ -620,9 +620,9 @@ namespace dvmig.Core.Synchronization
                             _idMappingCache[dependencyKey] = targetId.Value;
 
                             return await RetryEntityAsync(
-                                entity, 
-                                options, 
-                                progress, 
+                                entity,
+                                options,
+                                progress,
                                 ct
                             );
                         }
@@ -638,9 +638,9 @@ namespace dvmig.Core.Synchronization
                         if (success)
                         {
                             return await RetryEntityAsync(
-                                entity, 
-                                options, 
-                                progress, 
+                                entity,
+                                options,
+                                progress,
                                 ct
                             );
                         }

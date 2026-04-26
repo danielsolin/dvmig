@@ -14,9 +14,9 @@ namespace dvmig.App.Converters
         /// Converts a null value to a Visibility state.
         /// </summary>
         public object Convert(
-            object? value, 
-            Type targetType, 
-            object? parameter, 
+            object? value,
+            Type targetType,
+            object? parameter,
             CultureInfo culture)
         {
             var isNull = value == null;
@@ -34,9 +34,9 @@ namespace dvmig.App.Converters
         /// Not implemented.
         /// </summary>
         public object ConvertBack(
-            object? value, 
-            Type targetType, 
-            object? parameter, 
+            object? value,
+            Type targetType,
+            object? parameter,
             CultureInfo culture)
         {
             throw new NotImplementedException();

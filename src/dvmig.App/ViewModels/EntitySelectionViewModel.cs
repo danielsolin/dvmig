@@ -237,7 +237,7 @@ namespace dvmig.App.ViewModels
                         record.PropertyChanged += OnRecordPropertyChanged;
                         Records.Add(record);
                     }
-                    
+
                     // Trigger validation after records are loaded
                     StartMigrationCommand.NotifyCanExecuteChanged();
                 });
@@ -344,7 +344,7 @@ namespace dvmig.App.ViewModels
 
             // Allow proceeding if at least one selected entity is valid.
             // Invalid entities (SyncAll=false and 0 records) will be skipped.
-            return selected.Any(e => 
+            return selected.Any(e =>
                 e.SyncAllRecords || e.SelectedRecordIds.Any()
             );
         }
@@ -387,8 +387,8 @@ namespace dvmig.App.ViewModels
             }
             else
             {
-                StatusText = pendingCount 
-                    ? $"Records to sync: {total}+ (fetching counts... {selectedCount} entities)" 
+                StatusText = pendingCount
+                    ? $"Records to sync: {total}+ (fetching counts... {selectedCount} entities)"
                     : $"Records to sync: {total} ({selectedCount} entities selected)";
             }
 
@@ -403,7 +403,7 @@ namespace dvmig.App.ViewModels
                 var count = await _migrationService.GetRecordCountAsync(
                     item.LogicalName
                 );
-                
+
                 Application.Current.Dispatcher.Invoke(() =>
                 {
                     item.RecordCount = count;

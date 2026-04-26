@@ -20,7 +20,7 @@ namespace dvmig.Core.Logging
             var appData = Environment.GetFolderPath(
                 Environment.SpecialFolder.ApplicationData
             );
-            
+
             var logPath = Path.Combine(appData, "dvmig", "logs", $"{appName}.log");
 
             Log.Logger = new LoggerConfiguration()

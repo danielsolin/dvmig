@@ -1,3 +1,4 @@
+using System.Runtime.Versioning;
 using dvmig.Core.DataPreservation;
 using dvmig.Core.Logging;
 using dvmig.Core.Metadata;
@@ -8,7 +9,6 @@ using dvmig.Core.Synchronization;
 using dvmig.Providers;
 using dvmig.Shared.Metadata;
 using Microsoft.Crm.Sdk.Messages;
-using System.Runtime.Versioning;
 using Serilog;
 using Spectre.Console;
 
@@ -38,25 +38,14 @@ namespace dvmig.Cli
         /// <param name="args">Command line arguments.</param>
         static async Task Main(string[] args)
         {
-            AnsiConsole.Clear();
             _logger = LoggerInitializer.Initialize("dvmig.Cli");
-
             _settingsService = new SettingsService();
             _stateTracker = new LocalFileStateTracker();
             _seeder = new TestDataSeeder(_logger);
             _metadataService = new MetadataService();
 
             bool enableSourceCleanup = args.Contains("--enable-source-cleanup");
-
-            AnsiConsole.Write(
-                new FigletText("DVMIG")
-                    .Color(Color.Blue)
-            );
-
-            AnsiConsole.MarkupLine(
-                "[bold]Dataverse Migrator - Technical UI[/]"
-            );
-            AnsiConsole.WriteLine();
+            CliUI.WriteHeader();
 
             bool exit = false;
             while (!exit)
@@ -96,17 +85,8 @@ namespace dvmig.Cli
 
                 if (!exit)
                 {
-                    AnsiConsole.WriteLine();
-                    AnsiConsole.MarkupLine(
-                        "[grey]Press any key to return to menu...[/]"
-                    );
-                    Console.ReadKey(true);
-                    AnsiConsole.Clear();
-                    
-                    AnsiConsole.Write(
-                        new FigletText("DVMIG")
-                            .Color(Color.Blue)
-                    );
+                    CliUI.Pause();
+                    CliUI.WriteHeader();
                 }
             }
         }
@@ -149,8 +129,9 @@ namespace dvmig.Cli
             }
 
             _setupService ??= CreateSetupService();
+
             bool isReady = await _setupService.IsEnvironmentReadyAsync(
-                _target, 
+                _target,
                 default
             );
 
@@ -165,9 +146,7 @@ namespace dvmig.Cli
                 }
                 else
                 {
-                    AnsiConsole.MarkupLine(
-                        "[red]Migration cannot proceed without components.[/]"
-                    );
+                    CliUI.WriteError("Migration cannot proceed without components.");
 
                     return;
                 }
@@ -175,7 +154,7 @@ namespace dvmig.Cli
 
             var userMapper = new UserMapper(_source, _target, _logger!);
             var dataPreservation = new DataPreservationManager(_target, _logger!);
-            
+
             _engine = new SyncEngine(
                 _source,
                 _target,
@@ -188,13 +167,13 @@ namespace dvmig.Cli
             var selectedEntities = await SelectEntitiesAsync();
             if (selectedEntities == null || selectedEntities.Count == 0)
             {
-                AnsiConsole.MarkupLine("[yellow]No entities selected.[/]");
+                CliUI.WriteWarning("No entities selected.");
 
                 return;
             }
 
             await RunMigrationAsync(selectedEntities);
-            AnsiConsole.MarkupLine("[bold green]Migration Finished![/]");
+            CliUI.WriteSuccess("Migration Finished!");
         }
 
         private static async Task HandleReconcileAsync()
@@ -206,15 +185,14 @@ namespace dvmig.Cli
             }
 
             var meta = await _target.GetEntityMetadataAsync(
-                SchemaConstants.MigrationFailure.EntityLogicalName, 
+                SchemaConstants.MigrationFailure.EntityLogicalName,
                 default
             );
 
             if (meta == null)
             {
-                AnsiConsole.MarkupLine(
-                    "[yellow]Migration failure logging is not initialized on " +
-                    "this target.[/]"
+                CliUI.WriteWarning(
+                    "Migration failure logging is not initialized on this target."
                 );
                 AnsiConsole.MarkupLine(
                     "[grey]Please use 'Install/Update dvmig Components' to " +
@@ -233,14 +211,14 @@ namespace dvmig.Cli
             )
             {
                 ColumnSet = new Microsoft.Xrm.Sdk.Query.ColumnSet(
-                    SchemaConstants.MigrationFailure.SourceId, 
-                    SchemaConstants.MigrationFailure.EntityLogicalNameAttr, 
-                    SchemaConstants.MigrationFailure.ErrorMessage, 
+                    SchemaConstants.MigrationFailure.SourceId,
+                    SchemaConstants.MigrationFailure.EntityLogicalNameAttr,
+                    SchemaConstants.MigrationFailure.ErrorMessage,
                     SchemaConstants.MigrationFailure.Timestamp
                 )
             };
             query.AddOrder(
-                SchemaConstants.MigrationFailure.Timestamp, 
+                SchemaConstants.MigrationFailure.Timestamp,
                 Microsoft.Xrm.Sdk.Query.OrderType.Descending
             );
 
@@ -248,9 +226,8 @@ namespace dvmig.Cli
 
             if (failures.Entities.Count == 0)
             {
-                AnsiConsole.MarkupLine(
-                    "[green]No migration failures recorded in Target " +
-                    "environment.[/]"
+                CliUI.WriteSuccess(
+                    "No migration failures recorded in Target environment."
                 );
 
                 return;
@@ -287,20 +264,19 @@ namespace dvmig.Cli
 
             if (AnsiConsole.Confirm(clearLog, false))
             {
-                await AnsiConsole.Status()
-                    .StartAsync("Clearing failure log...", async ctx =>
+                await CliUI.RunStatusAsync("Clearing failure log...", async _ =>
+                {
+                    foreach (var failure in failures.Entities)
                     {
-                        foreach (var failure in failures.Entities)
-                        {
-                            await _target.DeleteAsync(
-                                SchemaConstants.MigrationFailure.EntityLogicalName, 
-                                failure.Id, 
-                                default
-                            );
-                        }
-                    });
+                        await _target.DeleteAsync(
+                            SchemaConstants.MigrationFailure.EntityLogicalName,
+                            failure.Id,
+                            default
+                        );
+                    }
+                });
 
-                AnsiConsole.MarkupLine("[green]Failure log cleared.[/]");
+                CliUI.WriteSuccess("Failure log cleared.");
             }
         }
 
@@ -317,28 +293,24 @@ namespace dvmig.Cli
 
             int count = AnsiConsole.Ask<int>(prompt, 100);
 
-            await AnsiConsole.Status()
-                .StartAsync("Seeding data...", async ctx =>
-                {
-                    var progress = new Progress<string>(msg =>
-                    {
-                        AnsiConsole.MarkupLine(
-                            $"[grey][[{DateTime.Now:HH:mm:ss}]][/] {msg}"
-                        );
-                    });
+            await CliUI.RunStatusAsync(
+                "Seeding data...",
+                async progress => await _seeder!.SeedTestDataAsync(
+                    provider,
+                    count,
+                    progress
+                )
+            );
 
-                    await _seeder!.SeedTestDataAsync(provider, count, progress);
-                });
-
-            AnsiConsole.MarkupLine("[bold green]Seeding Finished![/]");
+            CliUI.WriteSuccess("Seeding Finished!");
         }
 
         private static async Task HandleInstallAsync(
             IDataverseProvider? target = null
         )
         {
-            var provider = target ?? 
-                           await ConnectAsync("Target Environment to Install on");
+            var label = "Target Environment to Install on";
+            var provider = target ?? await ConnectAsync(label);
 
             if (provider == null)
             {
@@ -347,16 +319,10 @@ namespace dvmig.Cli
 
             _setupService ??= CreateSetupService();
 
-            await AnsiConsole.Status()
-                .StartAsync("Installing components...", async ctx =>
+            await CliUI.RunStatusAsync(
+                "Installing components...",
+                async progress =>
                 {
-                    var progress = new Progress<string>(msg =>
-                    {
-                        AnsiConsole.MarkupLine(
-                            $"[grey][[{DateTime.Now:HH:mm:ss}]][/] {msg}"
-                        );
-                    });
-
                     await _setupService.CreateSchemaAsync(provider, progress);
 
                     var assemblyPath = Path.Combine(
@@ -375,13 +341,14 @@ namespace dvmig.Cli
                     }
 
                     await _setupService.DeployPluginAsync(
-                        provider, 
-                        assemblyPath, 
+                        provider,
+                        assemblyPath,
                         progress
                     );
-                });
+                }
+            );
 
-            AnsiConsole.MarkupLine("[bold green]Installation Finished![/]");
+            CliUI.WriteSuccess("Installation Finished!");
         }
 
         private static ISetupService CreateSetupService()
@@ -416,20 +383,15 @@ namespace dvmig.Cli
 
             _setupService ??= CreateSetupService();
 
-            await AnsiConsole.Status()
-                .StartAsync("Uninstalling components...", async ctx =>
-                {
-                    var progress = new Progress<string>(msg =>
-                    {
-                        AnsiConsole.MarkupLine(
-                            $"[grey][[{DateTime.Now:HH:mm:ss}]][/] {msg}"
-                        );
-                    });
+            await CliUI.RunStatusAsync(
+                "Uninstalling components...",
+                async progress => await _setupService.CleanEnvironmentAsync(
+                    provider,
+                    progress
+                )
+            );
 
-                    await _setupService.CleanEnvironmentAsync(provider, progress);
-                });
-
-            AnsiConsole.MarkupLine("[bold green]Uninstallation Finished![/]");
+            CliUI.WriteSuccess("Uninstallation Finished!");
         }
 
         private static async Task HandleSourceCleanupAsync()
@@ -459,47 +421,40 @@ namespace dvmig.Cli
 
             if (confirmation != "WIPE ALL DATA")
             {
-                AnsiConsole.MarkupLine("[yellow]Wipe cancelled.[/]");
+                CliUI.WriteWarning("Wipe cancelled.");
 
                 return;
             }
 
-            await AnsiConsole.Status()
-                .StartAsync("Wiping data...", async ctx =>
-                {
-                    var progress = new Progress<string>(msg =>
-                    {
-                        AnsiConsole.MarkupLine(
-                            $"[grey][[{DateTime.Now:HH:mm:ss}]][/] {msg}"
-                        );
-                    });
+            await CliUI.RunStatusAsync(
+                "Wiping data...",
+                async progress => await _seeder!.CleanTestDataAsync(
+                    provider,
+                    progress
+                )
+            );
 
-                    await _seeder!.CleanTestDataAsync(provider, progress);
-                });
-
-            AnsiConsole.MarkupLine("[bold green]Data Wipe Finished![/]");
+            CliUI.WriteSuccess("Data Wipe Finished!");
         }
 
-        private static async Task<IDataverseProvider?> ConnectAsync(
-            string label
-        )
+        private static async Task<IDataverseProvider?> ConnectAsync(string label)
         {
             var settings = _settingsService!.LoadSettings();
             string? storedConn = label.Contains(
-                "Source", 
+                "Source",
                 StringComparison.OrdinalIgnoreCase
-            ) 
-                ? settings.SourceConnectionString 
+            )
+                ? settings.SourceConnectionString
                 : settings.TargetConnectionString;
 
             string connStr;
             if (!string.IsNullOrEmpty(storedConn))
             {
                 var preview = ConnectionHelper.MaskConnectionString(storedConn);
-                
+
                 var useStored = AnsiConsole.Confirm(
                     $"Use [green]stored[/] {label} connection string?\n" +
-                    $"[grey]({preview})[/]", 
+                    $"[grey]({preview})[/]",
                     true
                 );
 
@@ -519,8 +474,9 @@ namespace dvmig.Cli
                 false
             );
 
-            IDataverseProvider? provider = await AnsiConsole.Status()
-                .StartAsync($"Connecting to {label}...", async ctx =>
+            IDataverseProvider? provider = await CliUI.RunStatusAsync(
+                $"Connecting to {label}...",
+                async () =>
                 {
                     try
                     {
@@ -529,8 +485,6 @@ namespace dvmig.Cli
                             : new DataverseProvider(connStr);
 
                         await p.ExecuteAsync(new WhoAmIRequest(), default);
-                        AnsiConsole.MarkupLine($"[green]✓[/] Connected to {label}");
-
                         return p;
                     }
                     catch (Exception ex)
@@ -542,29 +496,35 @@ namespace dvmig.Cli
 
                         return null;
                     }
-                });
+                }
+            );
 
-            if (provider != null && connStr != storedConn)
+            if (provider != null)
             {
-                var savePrompt = $"Save this {label} connection string " +
-                                 "for future use?";
+                CliUI.WriteSuccess($"Connected to {label}");
 
-                if (AnsiConsole.Confirm(savePrompt, true))
+                if (connStr != storedConn)
                 {
-                    settings.RememberConnections = true;
-                    if (label.Contains(
-                            "Source", 
-                            StringComparison.OrdinalIgnoreCase))
-                    {
-                        settings.SourceConnectionString = connStr;
-                    }
-                    else
-                    {
-                        settings.TargetConnectionString = connStr;
-                    }
+                    var savePrompt = $"Save this {label} connection string " +
+                                     "for future use?";
 
-                    _settingsService.SaveSettings(settings);
-                    AnsiConsole.MarkupLine("[grey]Settings saved.[/]");
+                    if (AnsiConsole.Confirm(savePrompt, true))
+                    {
+                        settings.RememberConnections = true;
+                        if (label.Contains(
+                                "Source",
+                                StringComparison.OrdinalIgnoreCase))
+                        {
+                            settings.SourceConnectionString = connStr;
+                        }
+                        else
+                        {
+                            settings.TargetConnectionString = connStr;
+                        }
+
+                        _settingsService.SaveSettings(settings);
+                        AnsiConsole.MarkupLine("[grey]Settings saved.[/]");
+                    }
                 }
             }
 
@@ -573,25 +533,25 @@ namespace dvmig.Cli
 
         private static async Task<List<string>?> SelectEntitiesAsync()
         {
-            var entities = await AnsiConsole.Status()
-                .StartAsync("Fetching entity metadata...", async ctx =>
+            var entities = await CliUI.RunStatusAsync(
+                "Fetching entity metadata...",
+                async () =>
                 {
                     try
                     {
                         return await _metadataService!.GetMigrationEntitiesAsync(
-                            _source!, 
+                            _source!,
                             default
                         );
                     }
                     catch (Exception ex)
                     {
-                        AnsiConsole.MarkupLine(
-                            $"[red]×[/] Failed to fetch metadata: {ex.Message}"
-                        );
+                        CliUI.WriteError($"Failed to fetch metadata: {ex.Message}");
 
                         return null;
                     }
-                });
+                }
+            );
 
             if (entities == null || entities.Count == 0)
             {
@@ -641,8 +601,8 @@ namespace dvmig.Cli
                 }
 
                 long totalCount = await _seeder!.GetRecordCountAsync(
-                    _source!, 
-                    logicalName, 
+                    _source!,
+                    logicalName,
                     default
                 );
 
@@ -656,7 +616,7 @@ namespace dvmig.Cli
                 }
 
                 await AnsiConsole.Progress()
-                    .Columns(new ProgressColumn[] 
+                    .Columns(new ProgressColumn[]
                     {
                         new TaskDescriptionColumn(),
                         new ProgressBarColumn(),
@@ -686,8 +646,8 @@ namespace dvmig.Cli
                         await _engine.SyncEntityAsync(
                             logicalName,
                             new SyncOptions { StripMissingDependencies = true },
-                            null, 
-                            null, 
+                            null,
+                            null,
                             recordProgress,
                             default
                         );

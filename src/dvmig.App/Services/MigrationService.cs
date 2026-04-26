@@ -1,10 +1,10 @@
 using dvmig.App.Models;
 using dvmig.Providers;
+using dvmig.Shared.Metadata;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Messages;
 using Microsoft.Xrm.Sdk.Metadata;
 using Microsoft.Xrm.Sdk.Query;
-using dvmig.Shared.Metadata;
 
 namespace dvmig.App.Services
 {
@@ -131,7 +131,7 @@ namespace dvmig.App.Services
         public IDataverseProvider? TargetProvider { get; private set; }
 
         /// <inheritdoc />
-        public List<EntitySyncConfiguration> SelectedEntities { get; } = 
+        public List<EntitySyncConfiguration> SelectedEntities { get; } =
             new List<EntitySyncConfiguration>();
 
         /// <inheritdoc />
@@ -282,7 +282,7 @@ namespace dvmig.App.Services
             }
 
             var metadata = await GetSourceEntitiesAsync(ct);
-            var entityMeta = metadata.FirstOrDefault(e => 
+            var entityMeta = metadata.FirstOrDefault(e =>
                 e.LogicalName == logicalName
             );
 
@@ -305,7 +305,7 @@ namespace dvmig.App.Services
                 ct
             );
 
-            if (response.Entities.Count > 0 && 
+            if (response.Entities.Count > 0 &&
                 response.Entities[0].Contains("count"))
             {
                 var aliasedValue = (AliasedValue)response.Entities[0]["count"];
@@ -327,7 +327,7 @@ namespace dvmig.App.Services
             }
 
             var metadata = await GetSourceEntitiesAsync(ct);
-            var entityMeta = metadata.FirstOrDefault(e => 
+            var entityMeta = metadata.FirstOrDefault(e =>
                 e.LogicalName == logicalName
             );
 
@@ -348,18 +348,18 @@ namespace dvmig.App.Services
             if (!string.IsNullOrWhiteSpace(searchText))
             {
                 query.Criteria.AddCondition(
-                    primaryName, 
-                    ConditionOperator.Like, 
+                    primaryName,
+                    ConditionOperator.Like,
                     $"%{searchText}%"
                 );
             }
 
             var results = await SourceProvider.RetrieveMultipleAsync(
-                query, 
+                query,
                 ct
             );
 
-            var config = SelectedEntities.FirstOrDefault(c => 
+            var config = SelectedEntities.FirstOrDefault(c =>
                 c.LogicalName == logicalName
             );
 

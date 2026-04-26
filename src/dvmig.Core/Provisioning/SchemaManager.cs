@@ -1,5 +1,5 @@
-using dvmig.Shared.Metadata;
 using dvmig.Providers;
+using dvmig.Shared.Metadata;
 using Microsoft.Crm.Sdk.Messages;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Messages;
@@ -165,7 +165,7 @@ namespace dvmig.Core.Provisioning
                         LogicalName = entityName,
                         DisplayName = new Label("Migration Failure", 1033),
                         DisplayCollectionName = new Label(
-                            "Migration Failures", 
+                            "Migration Failures",
                             1033
                         ),
                         OwnershipType = OwnershipTypes.UserOwned,
@@ -251,8 +251,8 @@ namespace dvmig.Core.Provisioning
             }
 
             _logger.Information(
-                "Creating attribute {Attr} on {Entity}...", 
-                schemaName, 
+                "Creating attribute {Attr} on {Entity}...",
+                schemaName,
                 entityLogicalName
             );
             progress?.Report($"Creating attribute {schemaName}...");
@@ -312,17 +312,17 @@ namespace dvmig.Core.Provisioning
         {
             // 1. dm_sourcedate
             await DropEntityIfPresentAsync(
-                target, 
-                SchemaConstants.SourceDate.EntityLogicalName, 
-                progress, 
+                target,
+                SchemaConstants.SourceDate.EntityLogicalName,
+                progress,
                 ct
             );
 
             // 2. dm_migrationfailure
             await DropEntityIfPresentAsync(
-                target, 
-                SchemaConstants.MigrationFailure.EntityLogicalName, 
-                progress, 
+                target,
+                SchemaConstants.MigrationFailure.EntityLogicalName,
+                progress,
                 ct
             );
 

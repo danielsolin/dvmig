@@ -1,5 +1,5 @@
-using dvmig.Shared.Metadata;
 using dvmig.Providers;
+using dvmig.Shared.Metadata;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Query;
 using Serilog;
@@ -125,7 +125,7 @@ namespace dvmig.Core.DataPreservation
                 SchemaConstants.SourceDate.EntityLogicalName
             );
 
-            sourceDate[SchemaConstants.SourceDate.EntityId] = 
+            sourceDate[SchemaConstants.SourceDate.EntityId] =
                 entity.Id.ToString();
 
             sourceDate[SchemaConstants.SourceDate.EntityLogicalNameAttr] =
@@ -133,13 +133,13 @@ namespace dvmig.Core.DataPreservation
 
             if (entity.Contains("createdon"))
             {
-                sourceDate[SchemaConstants.SourceDate.CreatedDate] = 
+                sourceDate[SchemaConstants.SourceDate.CreatedDate] =
                     entity["createdon"];
             }
 
             if (entity.Contains("modifiedon"))
             {
-                sourceDate[SchemaConstants.SourceDate.ModifiedDate] = 
+                sourceDate[SchemaConstants.SourceDate.ModifiedDate] =
                     entity["modifiedon"];
             }
 

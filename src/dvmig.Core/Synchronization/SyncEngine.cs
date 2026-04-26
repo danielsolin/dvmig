@@ -1,7 +1,7 @@
 using System.Collections.Concurrent;
 using dvmig.Core.DataPreservation;
-using dvmig.Shared.Metadata;
 using dvmig.Providers;
+using dvmig.Shared.Metadata;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Messages;
 using Microsoft.Xrm.Sdk.Metadata;
@@ -187,13 +187,13 @@ namespace dvmig.Core.Synchronization
                 }
 
                 await SyncAsync(
-                    response.Entities, 
-                    options, 
-                    progress, 
-                    recordProgress, 
+                    response.Entities,
+                    options,
+                    progress,
+                    recordProgress,
                     ct
                 );
-                
+
                 totalSynced += response.Entities.Count;
 
                 if (!response.MoreRecords)
@@ -206,8 +206,8 @@ namespace dvmig.Core.Synchronization
             }
 
             _logger.Information(
-                "SyncEntity {Entity} finished. Total records: {Count}", 
-                logicalName, 
+                "SyncEntity {Entity} finished. Total records: {Count}",
+                logicalName,
                 totalSynced
             );
         }
@@ -260,8 +260,8 @@ namespace dvmig.Core.Synchronization
                     if (!success)
                     {
                         await LogFailureToTargetAsync(
-                            entity, 
-                            "Sync failed during record processing.", 
+                            entity,
+                            "Sync failed during record processing.",
                             ct
                         );
                     }
@@ -297,16 +297,16 @@ namespace dvmig.Core.Synchronization
                 failure[SchemaConstants.MigrationFailure.Name] =
                     $"{entity.LogicalName}:{entity.Id}".Substring(0, 100);
 
-                failure[SchemaConstants.MigrationFailure.SourceId] = 
+                failure[SchemaConstants.MigrationFailure.SourceId] =
                     entity.Id.ToString();
 
-                failure[SchemaConstants.MigrationFailure.EntityLogicalNameAttr] = 
+                failure[SchemaConstants.MigrationFailure.EntityLogicalNameAttr] =
                     entity.LogicalName;
 
-                failure[SchemaConstants.MigrationFailure.ErrorMessage] = 
+                failure[SchemaConstants.MigrationFailure.ErrorMessage] =
                     errorMessage;
 
-                failure[SchemaConstants.MigrationFailure.Timestamp] = 
+                failure[SchemaConstants.MigrationFailure.Timestamp] =
                     DateTime.UtcNow;
 
                 await _target.CreateAsync(failure, ct);
@@ -372,9 +372,9 @@ namespace dvmig.Core.Synchronization
                 if (metadata.IsIntersect == true)
                 {
                     return await SyncIntersectEntityAsync(
-                        entity, 
-                        options, 
-                        progress, 
+                        entity,
+                        options,
+                        progress,
                         ct
                     );
                 }
@@ -486,10 +486,10 @@ namespace dvmig.Core.Synchronization
                 }
 
                 return await HandleSyncExceptionAsync(
-                    ex, 
-                    entity, 
-                    options, 
-                    progress, 
+                    ex,
+                    entity,
+                    options,
+                    progress,
                     ct
                 );
             }
@@ -547,10 +547,10 @@ namespace dvmig.Core.Synchronization
             catch (Exception ex)
             {
                 return await HandleSyncExceptionAsync(
-                    ex, 
-                    entity, 
-                    options, 
-                    progress, 
+                    ex,
+                    entity,
+                    options,
+                    progress,
                     ct
                 );
             }

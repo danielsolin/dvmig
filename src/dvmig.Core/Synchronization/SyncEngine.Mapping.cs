@@ -35,11 +35,11 @@ namespace dvmig.Core.Synchronization
             // Filter for attributes that are valid for reading and NOT purely 
             // logical/calculated to avoid performance issues.
             var attributes = meta.Attributes
-                .Where(a => 
+                .Where(a =>
                     whitelist.Contains(a.LogicalName) ||
                     (a.IsLogical == false &&
                      a.IsValidForRead == true &&
-                     (a.IsValidForCreate == true || 
+                     (a.IsValidForCreate == true ||
                       a.IsValidForUpdate == true)))
                 .Select(a => a.LogicalName)
                 .Where(name => !string.IsNullOrEmpty(name))
@@ -52,8 +52,8 @@ namespace dvmig.Core.Synchronization
             }
 
             _logger.Debug(
-                "Configured ColumnSet for {Entity} with {Count} attributes.", 
-                logicalName, 
+                "Configured ColumnSet for {Entity} with {Count} attributes.",
+                logicalName,
                 attributes.Length
             );
 

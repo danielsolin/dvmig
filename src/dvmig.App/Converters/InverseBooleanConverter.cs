@@ -12,9 +12,9 @@ namespace dvmig.App.Converters
         /// Inverts a boolean value.
         /// </summary>
         public object Convert(
-            object? value, 
-            Type targetType, 
-            object? parameter, 
+            object? value,
+            Type targetType,
+            object? parameter,
             CultureInfo culture)
         {
             if (value is bool b)
@@ -29,9 +29,9 @@ namespace dvmig.App.Converters
         /// Inverts a boolean value back to its original state.
         /// </summary>
         public object ConvertBack(
-            object? value, 
-            Type targetType, 
-            object? parameter, 
+            object? value,
+            Type targetType,
+            object? parameter,
             CultureInfo culture)
         {
             if (value is bool b)
