@@ -65,7 +65,7 @@ namespace dvmig.Cli
             while (!exit)
             {
                 var menu = GetMenu(
-                    enableSourceCleanup, 
+                    enableSourceCleanup,
                     migrationActions,
                     reconciliationActions,
                     maintenanceActions,
@@ -100,7 +100,7 @@ namespace dvmig.Cli
             var menu = new List<MenuItem>
             {
                 new MenuItem(
-                    "Migrate Data", 
+                    "Migrate Data",
                     migrationActions.HandleMigrationAsync
                 ),
                 new MenuItem(
@@ -108,7 +108,7 @@ namespace dvmig.Cli
                     reconciliationActions.HandleReconcileAsync
                 ),
                 new MenuItem(
-                    "Seed Test Data", 
+                    "Seed Test Data",
                     maintenanceActions.HandleSeedingAsync
                 ),
                 new MenuItem(

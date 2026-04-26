@@ -1,7 +1,6 @@
 using dvmig.Core.DataPreservation;
 using dvmig.Providers;
 using Microsoft.Xrm.Sdk;
-using Microsoft.Xrm.Sdk.Messages;
 using Serilog;
 
 namespace dvmig.Core.Synchronization

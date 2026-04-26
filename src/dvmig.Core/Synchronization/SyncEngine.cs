@@ -1,11 +1,8 @@
 using System.Collections.Concurrent;
 using dvmig.Core.DataPreservation;
 using dvmig.Providers;
-using dvmig.Shared.Metadata;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Messages;
-using Microsoft.Xrm.Sdk.Metadata;
-using Polly;
 using Polly.Retry;
 using Serilog;
 
