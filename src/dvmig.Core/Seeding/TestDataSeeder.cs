@@ -14,7 +14,8 @@ namespace dvmig.Core.Seeding
         private readonly ILogger _logger;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="TestDataSeeder"/> class.
+        /// Initializes a new instance of the 
+        /// <see cref="TestDataSeeder"/> class.
         /// </summary>
         /// <param name="logger">The logger instance.</param>
         public TestDataSeeder(ILogger logger)
@@ -30,8 +31,13 @@ namespace dvmig.Core.Seeding
             CancellationToken ct = default
         )
         {
-            _logger.Information("Starting interconnected test data seeding: {Count} accounts", count);
-            progress?.Report($"Generating {count} accounts with related contacts...");
+            _logger.Information(
+                "Starting interconnected test data seeding: {Count} accounts", 
+                count
+            );
+            progress?.Report(
+                $"Generating {count} accounts with related contacts..."
+            );
 
             var accountFaker = new Faker<Entity>()
                 .CustomInstantiator(f => new Entity("account"))
@@ -79,7 +85,8 @@ namespace dvmig.Core.Seeding
                 .FinishWith((f, e) =>
                 {
                     e["subject"] = f.Commerce.ProductName();
-                    e["description"] = string.Join("\n", f.Lorem.Paragraphs(3));
+                    e["description"] = 
+                        string.Join("\n", f.Lorem.Paragraphs(3));
                 });
 
             var random = new Random();
@@ -110,9 +117,14 @@ namespace dvmig.Core.Seeding
                 }
 
                 // 3. Set Primary Contact
-                var primaryContactId = createdContactIds[random.Next(createdContactIds.Count)];
+                var primaryContactId = createdContactIds[
+                    random.Next(createdContactIds.Count)
+                ];
                 var accountUpdate = new Entity("account", accountId);
-                accountUpdate["primarycontactid"] = new EntityReference("contact", primaryContactId);
+                accountUpdate["primarycontactid"] = new EntityReference(
+                    "contact", 
+                    primaryContactId
+                );
 
                 await provider.UpdateAsync(accountUpdate, ct);
 
@@ -134,7 +146,10 @@ namespace dvmig.Core.Seeding
                     phone["regardingobjectid"] = accountRef;
 
                     // To: Random related contact
-                    var toRef = new EntityReference("contact", createdContactIds[random.Next(createdContactIds.Count)]);
+                    var toRef = new EntityReference(
+                        "contact", 
+                        createdContactIds[random.Next(createdContactIds.Count)]
+                    );
                     phone["to"] = CreatePartyList(toRef);
 
                     await provider.CreateAsync(phone, ct);
@@ -148,7 +163,10 @@ namespace dvmig.Core.Seeding
                     email["regardingobjectid"] = accountRef;
 
                     // To: Primary contact
-                    var toRef = new EntityReference("contact", primaryContactId);
+                    var toRef = new EntityReference(
+                        "contact", 
+                        primaryContactId
+                    );
                     email["to"] = CreatePartyList(toRef);
 
                     await provider.CreateAsync(email, ct);
@@ -158,7 +176,8 @@ namespace dvmig.Core.Seeding
                 if ((i + 1) % 5 == 0 || i + 1 == count)
                 {
                     var msg = $"Processed {i + 1}/{count} accounts. " +
-                              $"Contacts: {totalContactsCreated}, Activities: {totalActivitiesCreated}";
+                        $"Contacts: {totalContactsCreated}, " +
+                        $"Activities: {totalActivitiesCreated}";
 
                     _logger.Information(msg);
                     progress?.Report(msg);
@@ -166,14 +185,16 @@ namespace dvmig.Core.Seeding
             }
 
             _logger.Information(
-                "Seeding completed. Accounts: {AccountCount}, Contacts: {ContactCount}, Activities: {ActivityCount}",
+                "Seeding completed. Accounts: {AccountCount}, " +
+                "Contacts: {ContactCount}, Activities: {ActivityCount}",
                 count,
                 totalContactsCreated,
                 totalActivitiesCreated
             );
             progress?.Report(
                 $"Seeding completed. Created {count} accounts, " +
-                $"{totalContactsCreated} contacts, and {totalActivitiesCreated} activities."
+                $"{totalContactsCreated} contacts, and " +
+                $"{totalActivitiesCreated} activities."
             );
         }
 
@@ -192,7 +213,9 @@ namespace dvmig.Core.Seeding
             CancellationToken ct = default
         )
         {
-            _logger.Warning("Starting test data cleanup (Activities, Contacts, Accounts)...");
+            _logger.Warning(
+                "Starting test data cleanup (Activities, Contacts, Accounts)..."
+            );
             progress?.Report("Cleaning up activities...");
 
             // Delete in order of dependency
@@ -210,7 +233,8 @@ namespace dvmig.Core.Seeding
             IDataverseProvider provider,
             string logicalName,
             IProgress<string>? progress,
-            CancellationToken ct)
+            CancellationToken ct
+        )
         {
             progress?.Report($"Fetching {logicalName} records for deletion...");
 
@@ -219,7 +243,8 @@ namespace dvmig.Core.Seeding
                 ColumnSet = new Microsoft.Xrm.Sdk.Query.ColumnSet(false),
                 PageInfo = new Microsoft.Xrm.Sdk.Query.PagingInfo
                 {
-                    Count = dvmig.Shared.Metadata.SchemaConstants.AppConstants.DefaultDeletionBatchSize,
+                    Count = dvmig.Shared.Metadata.SchemaConstants.AppConstants
+                        .DefaultDeletionBatchSize,
                     PageNumber = 1
                 }
             };

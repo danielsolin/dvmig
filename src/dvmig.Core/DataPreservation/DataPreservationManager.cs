@@ -7,11 +7,11 @@ using Serilog;
 namespace dvmig.Core.DataPreservation
 {
     /// <summary>
-    /// Manages the preservation of original creation and modification dates 
-    /// from a source environment during record migration. This is achieved 
-    /// by creating temporary 'dm_sourcedate' side-car records in the target 
-    /// environment, which a target-side plugin then uses to override the 
-    /// system-generated dates.
+    /// Manages the preservation of original creation and modification
+    /// dates from a source environment during record migration. This is
+    /// achieved by creating temporary 'dm_sourcedate' side-car records
+    /// in the target environment, which a target-side plugin then uses
+    /// to override the system-generated dates.
     /// </summary>
     public class DataPreservationManager : IDataPreservationManager
     {
@@ -160,15 +160,21 @@ namespace dvmig.Core.DataPreservation
 
             try
             {
+                var entityName = SchemaConstants.SourceDate.EntityLogicalName;
+                var primaryId = SchemaConstants.SourceDate.PrimaryId;
+                var sourceEntityId = SchemaConstants.SourceDate.EntityId;
+                var logicalNameAttr = 
+                    SchemaConstants.SourceDate.EntityLogicalNameAttr;
+
                 var fetchXml = $@"
                     <fetch version='1.0' output-format='xml-platform' 
                            mapping='logical' distinct='false' count='1'>
-                      <entity name='{SchemaConstants.SourceDate.EntityLogicalName}'>
-                        <attribute name='{SchemaConstants.SourceDate.PrimaryId}' />
+                      <entity name='{entityName}'>
+                        <attribute name='{primaryId}' />
                         <filter type='and'>
-                          <condition attribute='{SchemaConstants.SourceDate.EntityId}' 
+                          <condition attribute='{sourceEntityId}' 
                             operator='eq' value='{entityId}' />
-                          <condition attribute='{SchemaConstants.SourceDate.EntityLogicalNameAttr}' 
+                          <condition attribute='{logicalNameAttr}' 
                             operator='eq' value='{logicalName.ToLower()}' />
                         </filter>
                       </entity>

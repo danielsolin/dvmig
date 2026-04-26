@@ -31,6 +31,12 @@ namespace dvmig.Cli
         private static ISettingsService? _settingsService;
         private static ILogger? _logger;
 
+        private enum ConnectionDirection
+        {
+            Source,
+            Target
+        }
+
         /// <summary>
         /// Main application loop for the CLI. Handles connection, entity 
         /// selection, and migration execution.
@@ -73,11 +79,11 @@ namespace dvmig.Cli
                         await HandleInstallAsync();
                         break;
                     case "Uninstall dvmig Components from Target":
-                        await HandleCleanupAsync();
+                        await HandleDvMigComponentsCleanupAsync();
                         break;
                     case "Wipe ALL Accounts, Contacts, and Activities from " +
                          "Source (DANGEROUS)":
-                        await HandleSourceCleanupAsync();
+                        await HandleSourceTestDataCleanupAsync();
                         break;
                     case "Exit":
                         exit = true;
@@ -117,13 +123,13 @@ namespace dvmig.Cli
 
         private static async Task HandleMigrationAsync()
         {
-            _source = await ConnectAsync("Source");
+            _source = await ConnectAsync(ConnectionDirection.Source);
             if (_source == null)
             {
                 return;
             }
 
-            _target = await ConnectAsync("Target");
+            _target = await ConnectAsync(ConnectionDirection.Target);
             if (_target == null)
             {
                 return;
@@ -147,14 +153,19 @@ namespace dvmig.Cli
                 }
                 else
                 {
-                    CliUI.WriteError("Migration cannot proceed without components.");
+                    CliUI.WriteError(
+                        "Migration cannot proceed without components."
+                    );
 
                     return;
                 }
             }
 
             var userMapper = new UserMapper(_source, _target, _logger!);
-            var dataPreservation = new DataPreservationManager(_target, _logger!);
+            var dataPreservation = new DataPreservationManager(
+                _target, 
+                _logger!
+            );
             
             _engine = new SyncEngine(
                 _source,
@@ -179,21 +190,23 @@ namespace dvmig.Cli
 
         private static async Task HandleReconcileAsync()
         {
-            _target = await ConnectAsync("Target");
+            _target = await ConnectAsync(ConnectionDirection.Target);
             if (_target == null)
             {
                 return;
             }
 
-            bool isInitialized = await _reconciliationService!.IsInitializedAsync(
-                _target, 
-                default
-            );
+            bool isInitialized = 
+                await _reconciliationService!.IsInitializedAsync(
+                    _target, 
+                    default
+                );
 
             if (!isInitialized)
             {
                 CliUI.WriteWarning(
-                    "Migration failure logging is not initialized on this target."
+                    "Migration failure logging is not initialized on " +
+                    "this target."
                 );
                 AnsiConsole.MarkupLine(
                     "[grey]Please use 'Install/Update dvmig Components' to " +
@@ -257,12 +270,12 @@ namespace dvmig.Cli
 
         private static async Task HandleSeedingAsync()
         {
-            var provider = await ConnectAsync("Source Environment to Seed");
+            var provider = await ConnectAsync(
+                ConnectionDirection.Source
+            );
             if (provider == null)
-            {
                 return;
-            }
-
+                
             var prompt = "How many [bold blue]Accounts[/] would you like " +
                          "to generate?";
 
@@ -284,8 +297,8 @@ namespace dvmig.Cli
             IDataverseProvider? target = null
         )
         {
-            var label = "Target Environment to Install on";
-            var provider = target ?? await ConnectAsync(label);
+            var provider = target ?? await ConnectAsync(
+                ConnectionDirection.Target);
 
             if (provider == null)
             {
@@ -316,11 +329,10 @@ namespace dvmig.Cli
             );
         }
 
-        private static async Task HandleCleanupAsync()
+        private static async Task HandleDvMigComponentsCleanupAsync()
         {
             var provider = await ConnectAsync(
-                "Target Environment to Uninstall from"
-            );
+                ConnectionDirection.Target);
 
             if (provider == null)
             {
@@ -328,8 +340,8 @@ namespace dvmig.Cli
             }
 
             var promptMsg = "[red]Are you sure you want to remove all dvmig " +
-                            "system components (schema and plugins) from this " +
-                            "environment?[/]";
+                            "system components (schema and plugins) from " +
+                            "this environment?[/]";
 
             if (!AnsiConsole.Confirm(promptMsg, false))
             {
@@ -349,9 +361,10 @@ namespace dvmig.Cli
             CliUI.WriteSuccess("Uninstallation Finished!");
         }
 
-        private static async Task HandleSourceCleanupAsync()
+        private static async Task HandleSourceTestDataCleanupAsync()
         {
-            var provider = await ConnectAsync("Source Environment to Wipe");
+            var provider = await ConnectAsync(
+                ConnectionDirection.Source);
             if (provider == null)
             {
                 return;
@@ -392,14 +405,16 @@ namespace dvmig.Cli
             CliUI.WriteSuccess("Data Wipe Finished!");
         }
 
-        private static async Task<IDataverseProvider?> ConnectAsync(string label)
+        private static async Task<IDataverseProvider?> ConnectAsync(
+            ConnectionDirection direction,
+            string? label = null
+        )
         {
+            label ??= direction.ToString();
+
             var settings = _settingsService!.LoadSettings();
-            string? storedConn = label.Contains(
-                "Source", 
-                StringComparison.OrdinalIgnoreCase
-            ) 
-                ? settings.SourceConnectionString 
+            string? storedConn = direction == ConnectionDirection.Source
+                ? settings.SourceConnectionString
                 : settings.TargetConnectionString;
 
             string connStr;
@@ -466,9 +481,7 @@ namespace dvmig.Cli
                     if (AnsiConsole.Confirm(savePrompt, true))
                     {
                         settings.RememberConnections = true;
-                        if (label.Contains(
-                                "Source", 
-                                StringComparison.OrdinalIgnoreCase))
+                        if (direction == ConnectionDirection.Source)
                         {
                             settings.SourceConnectionString = connStr;
                         }
@@ -494,14 +507,17 @@ namespace dvmig.Cli
                 {
                     try
                     {
-                        return await _metadataService!.GetMigrationEntitiesAsync(
-                            _source!, 
-                            default
-                        );
+                        return await _metadataService!
+                            .GetMigrationEntitiesAsync(
+                                _source!, 
+                                default
+                            );
                     }
                     catch (Exception ex)
                     {
-                        CliUI.WriteError($"Failed to fetch metadata: {ex.Message}");
+                        CliUI.WriteError(
+                            $"Failed to fetch metadata: {ex.Message}"
+                        );
 
                         return null;
                     }
@@ -534,23 +550,33 @@ namespace dvmig.Cli
         {
             foreach (var logicalName in entities)
             {
-                AnsiConsole.MarkupLine($"[bold yellow]Migrating {logicalName}...[/]");
+                AnsiConsole.MarkupLine(
+                    $"[bold yellow]Migrating {logicalName}...[/]"
+                );
 
                 await _engine!.InitializeEntitySyncAsync(logicalName);
 
+                int processed = 0;
                 if (_stateTracker!.StateExists())
                 {
                     var syncedIds = await _stateTracker.GetSyncedIdsAsync();
                     if (syncedIds.Count > 0)
                     {
                         var resumeMsg = $"Previous migration state found " +
-                                        $"for {logicalName} ({syncedIds.Count} " +
+                                        $"for {logicalName} " +
+                                        $"({syncedIds.Count} " +
                                         "records already synced). Resume?";
 
                         if (!AnsiConsole.Confirm(resumeMsg, true))
                         {
                             await _stateTracker.ClearStateAsync();
-                            await _engine.InitializeEntitySyncAsync(logicalName);
+                            await _engine.InitializeEntitySyncAsync(
+                                logicalName
+                            );
+                        }
+                        else
+                        {
+                            processed = syncedIds.Count;
                         }
                     }
                 }
@@ -581,9 +607,6 @@ namespace dvmig.Cli
                     })
                     .StartAsync(async ctx =>
                     {
-                        var syncedIds = await _stateTracker.GetSyncedIdsAsync();
-                        int processed = syncedIds.Count;
-
                         var taskName = $"Syncing {logicalName} " +
                                        $"({processed}/{totalCount})";
 
