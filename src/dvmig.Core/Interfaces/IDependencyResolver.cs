@@ -1,7 +1,8 @@
 using System.Collections.Concurrent;
+using dvmig.Core.Synchronization;
 using Microsoft.Xrm.Sdk;
 
-namespace dvmig.Core.Synchronization
+namespace dvmig.Core.Interfaces
 {
     /// <summary>
     /// Defines the contract for resolving missing dependencies during

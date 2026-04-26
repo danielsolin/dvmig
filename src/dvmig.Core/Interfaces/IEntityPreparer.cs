@@ -1,9 +1,10 @@
 using System.Collections.Concurrent;
+using dvmig.Core.Synchronization;
 using dvmig.Providers;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Metadata;
 
-namespace dvmig.Core.Synchronization
+namespace dvmig.Core.Interfaces
 {
     /// <summary>
     /// Defines the contract for preparing entities for synchronization to the

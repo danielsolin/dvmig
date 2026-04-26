@@ -1,6 +1,6 @@
 using Microsoft.Xrm.Sdk;
 
-namespace dvmig.Core.Synchronization
+namespace dvmig.Core.Interfaces
 {
     /// <summary>
     /// Defines the contract for a service that maps user references from a 

@@ -1,3 +1,4 @@
+using dvmig.Core.Interfaces;
 using dvmig.Providers;
 using dvmig.Shared.Metadata;
 using Serilog;

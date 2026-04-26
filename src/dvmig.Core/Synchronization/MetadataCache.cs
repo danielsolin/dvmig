@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using dvmig.Core.Interfaces;
 using dvmig.Providers;
 using Microsoft.Xrm.Sdk.Metadata;
 using Microsoft.Xrm.Sdk.Query;

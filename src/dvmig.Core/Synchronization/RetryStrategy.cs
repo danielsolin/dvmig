@@ -1,3 +1,4 @@
+using dvmig.Core.Interfaces;
 using Polly;
 using Polly.Retry;
 using Serilog;

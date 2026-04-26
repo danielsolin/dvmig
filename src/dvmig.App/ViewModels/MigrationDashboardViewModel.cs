@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using dvmig.App.Models;
 using dvmig.App.Services;
+using dvmig.Core.Interfaces;
 using dvmig.Core.Synchronization;
 using Microsoft.Xrm.Sdk.Query;
 

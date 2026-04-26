@@ -1,6 +1,7 @@
+using dvmig.Core.Synchronization;
 using Microsoft.Xrm.Sdk;
 
-namespace dvmig.Core.Synchronization
+namespace dvmig.Core.Interfaces
 {
     /// <summary>
     /// Defines the contract for an engine that synchronizes data records 

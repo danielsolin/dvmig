@@ -1,4 +1,5 @@
 using dvmig.Cli.Infrastructure;
+using dvmig.Core.Interfaces;
 using dvmig.Core.Provisioning;
 using dvmig.Core.Seeding;
 using Serilog;

@@ -1,6 +1,6 @@
 using dvmig.Providers;
 
-namespace dvmig.Core.Seeding
+namespace dvmig.Core.Interfaces
 {
     /// <summary>
     /// Defines the contract for a service that generates and inserts test 

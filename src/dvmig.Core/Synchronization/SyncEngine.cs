@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using dvmig.Core.DataPreservation;
+using dvmig.Core.Interfaces;
 using dvmig.Providers;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Messages;

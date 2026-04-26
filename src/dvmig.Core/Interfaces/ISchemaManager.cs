@@ -1,6 +1,6 @@
 using dvmig.Providers;
 
-namespace dvmig.Core.Provisioning
+namespace dvmig.Core.Interfaces
 {
     /// <summary>
     /// Defines the contract for managing schema creation in the target

@@ -1,6 +1,6 @@
 using dvmig.Providers;
 
-namespace dvmig.Core.Provisioning
+namespace dvmig.Core.Interfaces
 {
     /// <summary>
     /// Defines the contract for validating target environment readiness.

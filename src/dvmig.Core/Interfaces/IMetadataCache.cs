@@ -1,7 +1,7 @@
 using Microsoft.Xrm.Sdk.Metadata;
 using Microsoft.Xrm.Sdk.Query;
 
-namespace dvmig.Core.Synchronization
+namespace dvmig.Core.Interfaces
 {
     /// <summary>
     /// Defines the contract for caching and retrieving entity metadata.

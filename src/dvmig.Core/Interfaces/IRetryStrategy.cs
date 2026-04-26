@@ -1,6 +1,6 @@
 using Polly.Retry;
 
-namespace dvmig.Core.Synchronization
+namespace dvmig.Core.Interfaces
 {
     /// <summary>
     /// Defines the contract for retry strategies during synchronization.

@@ -1,4 +1,4 @@
-namespace dvmig.Core.Synchronization
+namespace dvmig.Core.Interfaces
 {
     /// <summary>
     /// Defines the contract for a component that tracks the synchronization 

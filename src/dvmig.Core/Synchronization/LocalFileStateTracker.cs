@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using System.Text;
+using dvmig.Core.Interfaces;
 
 namespace dvmig.Core.Synchronization
 {
