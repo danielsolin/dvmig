@@ -37,6 +37,8 @@ namespace dvmig.Cli
             Target
         }
 
+        private record MenuItem(string Label, Func<Task> Action);
+
         /// <summary>
         /// Main application loop for the CLI. Handles connection, entity 
         /// selection, and migration execution.
@@ -57,38 +59,15 @@ namespace dvmig.Cli
             bool exit = false;
             while (!exit)
             {
-                var choices = GetMainMenuChoices(enableSourceCleanup);
+                var menu = GetMenu(enableSourceCleanup, () => exit = true);
                 var choice = AnsiConsole.Prompt(
-                    new SelectionPrompt<string>()
+                    new SelectionPrompt<MenuItem>()
                         .Title("What would you like to do?")
                         .PageSize(10)
-                        .AddChoices(choices));
+                        .UseConverter(m => m.Label)
+                        .AddChoices(menu));
 
-                switch (choice)
-                {
-                    case "Migrate Data":
-                        await HandleMigrationAsync();
-                        break;
-                    case "Reconcile Migration / View Failures":
-                        await HandleReconcileAsync();
-                        break;
-                    case "Seed Test Data":
-                        await HandleSeedingAsync();
-                        break;
-                    case "Install/Update dvmig Components on Target":
-                        await HandleInstallAsync();
-                        break;
-                    case "Uninstall dvmig Components from Target":
-                        await HandleTargetComponentsCleanupAsync();
-                        break;
-                    case "Wipe ALL Accounts, Contacts, and Activities from " +
-                         "Source (DANGEROUS)":
-                        await HandleSourceTestDataCleanupAsync();
-                        break;
-                    case "Exit":
-                        exit = true;
-                        break;
-                }
+                await choice.Action();
 
                 if (!exit)
                 {
@@ -98,28 +77,45 @@ namespace dvmig.Cli
             }
         }
 
-        private static List<string> GetMainMenuChoices(bool enableSourceCleanup)
+        private static List<MenuItem> GetMenu(
+            bool enableSourceCleanup,
+            Action onExit
+        )
         {
-            var choices = new List<string>
+            var menu = new List<MenuItem>
             {
-                "Migrate Data",
-                "Reconcile Migration / View Failures",
-                "Seed Test Data",
-                "Install/Update dvmig Components on Target",
-                "Uninstall dvmig Components from Target"
+                new MenuItem("Migrate Data", HandleMigrationAsync),
+                new MenuItem(
+                    "Reconcile Migration / View Failures",
+                    HandleReconcileAsync
+                ),
+                new MenuItem("Seed Test Data", HandleSeedingAsync),
+                new MenuItem(
+                    "Install/Update dvmig Components on Target",
+                    () => HandleInstallAsync()
+                ),
+                new MenuItem(
+                    "Uninstall dvmig Components from Target",
+                    HandleTargetComponentsCleanupAsync
+                )
             };
 
             if (enableSourceCleanup)
             {
-                choices.Add(
+                menu.Add(new MenuItem(
                     "Wipe ALL Accounts, Contacts, and Activities from " +
-                    "Source (DANGEROUS)"
-                );
+                    "Source (DANGEROUS)",
+                    HandleSourceTestDataCleanupAsync
+                ));
             }
 
-            choices.Add("Exit");
+            menu.Add(new MenuItem("Exit", () =>
+            {
+                onExit();
+                return Task.CompletedTask;
+            }));
 
-            return choices;
+            return menu;
         }
 
         private static async Task HandleMigrationAsync()
