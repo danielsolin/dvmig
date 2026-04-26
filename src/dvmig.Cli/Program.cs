@@ -100,7 +100,8 @@ namespace dvmig.Cli
 
         private static List<string> GetMainMenuChoices(bool enableSourceCleanup)
         {
-            var choices = new List<string> {
+            var choices = new List<string>
+            {
                 "Migrate Data",
                 "Reconcile Migration / View Failures",
                 "Seed Test Data",
@@ -274,7 +275,7 @@ namespace dvmig.Cli
 
         private static async Task HandleSeedingAsync()
         {
-            var provider = _source ??= await ConnectAsync(
+            var provider = _source ?? await ConnectAsync(
                 ConnectionDirection.Source
             );
             if (provider == null)
@@ -340,8 +341,9 @@ namespace dvmig.Cli
 
         private static async Task HandleTargetComponentsCleanupAsync()
         {
-            var provider = _target ??= await ConnectAsync(
-                ConnectionDirection.Target);
+            var provider = _target ?? await ConnectAsync(
+                ConnectionDirection.Target
+            );
 
             if (provider == null)
             {
@@ -372,8 +374,9 @@ namespace dvmig.Cli
 
         private static async Task HandleSourceTestDataCleanupAsync()
         {
-            var provider = _source ??= await ConnectAsync(
-                ConnectionDirection.Source);
+            var provider = _source ?? await ConnectAsync(
+                ConnectionDirection.Source
+            );
             if (provider == null)
             {
                 return;
@@ -607,14 +610,16 @@ namespace dvmig.Cli
                 }
 
                 await AnsiConsole.Progress()
-                    .Columns(new ProgressColumn[]
-                    {
-                        new TaskDescriptionColumn(),
-                        new ProgressBarColumn(),
-                        new PercentageColumn(),
-                        new RemainingTimeColumn(),
-                        new SpinnerColumn(),
-                    })
+                    .Columns(
+                        new ProgressColumn[]
+                        {
+                            new TaskDescriptionColumn(),
+                            new ProgressBarColumn(),
+                            new PercentageColumn(),
+                            new RemainingTimeColumn(),
+                            new SpinnerColumn(),
+                        }
+                    )
                     .StartAsync(async ctx =>
                     {
                         var taskName = $"Syncing {logicalName} " +
@@ -631,9 +636,14 @@ namespace dvmig.Cli
                                                $"({processed}/{totalCount})";
                         });
 
+                        var options = new SyncOptions
+                        {
+                            StripMissingDependencies = true
+                        };
+
                         await _engine.SyncEntityAsync(
                             logicalName,
-                            new SyncOptions { StripMissingDependencies = true },
+                            options,
                             null,
                             null,
                             recordProgress,

@@ -151,13 +151,16 @@ namespace dvmig.Tests
                 new AttributeMetadata[0]
             );
 
-            _targetMock.Setup(t => t.GetEntityMetadataAsync(
-                "dm_sourcedate",
-                It.IsAny<CancellationToken>())
-            ).ReturnsAsync(entityMetadata);
-
+            // Mock dm_sourcedate
             _targetMock.SetupSequence(t => t.GetEntityMetadataAsync(
                 "dm_sourcedate",
+                It.IsAny<CancellationToken>())
+            ).ReturnsAsync((EntityMetadata?)null)
+             .ReturnsAsync(entityMetadata);
+
+            // Mock dm_migrationfailure
+            _targetMock.SetupSequence(t => t.GetEntityMetadataAsync(
+                "dm_migrationfailure",
                 It.IsAny<CancellationToken>())
             ).ReturnsAsync((EntityMetadata?)null)
              .ReturnsAsync(entityMetadata);
@@ -166,7 +169,7 @@ namespace dvmig.Tests
 
             _targetMock.Verify(t => t.ExecuteAsync(
                 It.Is<OrganizationRequest>(r => r.RequestName == "CreateEntity"),
-                It.IsAny<CancellationToken>()), Times.Once
+                It.IsAny<CancellationToken>()), Times.Exactly(2)
             );
         }
 
@@ -180,7 +183,7 @@ namespace dvmig.Tests
             );
 
             _targetMock.Setup(t => t.GetEntityMetadataAsync(
-                "dm_sourcedate",
+                It.IsAny<string>(),
                 It.IsAny<CancellationToken>())
             ).ReturnsAsync(entityMetadata);
 

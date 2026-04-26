@@ -256,7 +256,8 @@ namespace dvmig.Core.Provisioning
             bool isMemo = false
         )
         {
-            if (entityMeta.Attributes.Any(a => a.LogicalName == schemaName))
+            if (entityMeta.Attributes != null &&
+                entityMeta.Attributes.Any(a => a.LogicalName == schemaName))
             {
                 return;
             }

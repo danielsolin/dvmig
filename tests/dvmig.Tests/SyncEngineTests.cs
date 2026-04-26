@@ -4,6 +4,7 @@ using dvmig.Providers;
 using dvmig.Shared.Metadata;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Messages;
+using Microsoft.Xrm.Sdk.Metadata;
 using Moq;
 using Serilog;
 
@@ -30,6 +31,18 @@ namespace dvmig.Tests
 
             _stateTrackerMock.Setup(s => s.GetSyncedIdsAsync())
                 .ReturnsAsync(new HashSet<Guid>());
+
+            var defaultMetadata = new EntityMetadata();
+            typeof(EntityMetadata).GetProperty("Attributes")?.SetValue(
+                defaultMetadata,
+                new AttributeMetadata[0]
+            );
+
+            _targetMock.Setup(t => t.GetEntityMetadataAsync(
+                It.IsAny<string>(),
+                It.IsAny<CancellationToken>()
+            ))
+                .ReturnsAsync(defaultMetadata);
 
             _engine = new SyncEngine(
                 _sourceMock.Object,

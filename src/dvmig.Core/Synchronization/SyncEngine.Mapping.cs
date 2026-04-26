@@ -85,7 +85,7 @@ namespace dvmig.Core.Synchronization
                     continue;
                 }
 
-                var attrMetadata = metadata.Attributes
+                var attrMetadata = metadata.Attributes?
                     .FirstOrDefault(a => a.LogicalName == attribute.Key);
 
                 if (attrMetadata != null && attrMetadata.IsValidForCreate == false &&
