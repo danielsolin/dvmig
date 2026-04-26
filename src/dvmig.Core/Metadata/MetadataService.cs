@@ -22,6 +22,20 @@ namespace dvmig.Core.Metadata
             IDataverseProvider provider,
             CancellationToken ct = default
         );
+
+        /// <summary>
+        /// Gets the total number of records for a specific entity in the 
+        /// environment.
+        /// </summary>
+        /// <param name="provider">The Dataverse provider to use.</param>
+        /// <param name="logicalName">The logical name of the entity.</param>
+        /// <param name="ct">A cancellation token.</param>
+        /// <returns>The total number of records.</returns>
+        Task<long> GetRecordCountAsync(
+            IDataverseProvider provider,
+            string logicalName,
+            CancellationToken ct = default
+        );
     }
 
     /// <summary>
@@ -57,6 +71,36 @@ namespace dvmig.Core.Metadata
                     e.DisplayName?.UserLocalizedLabel?.Label ??
                     e.LogicalName)
                 .ToList();
+        }
+
+        /// <inheritdoc />
+        public async Task<long> GetRecordCountAsync(
+            IDataverseProvider provider,
+            string logicalName,
+            CancellationToken ct = default
+        )
+        {
+            var fetchXml = $@"
+                <fetch aggregate='true'>
+                  <entity name='{logicalName}'>
+                    <attribute name='{logicalName}id' alias='count' aggregate='count' />
+                  </entity>
+                </fetch>";
+
+            var response = await provider.RetrieveMultipleAsync(
+                new Microsoft.Xrm.Sdk.Query.FetchExpression(fetchXml),
+                ct
+            );
+
+            if (response.Entities.Count > 0 &&
+                response.Entities[0].Contains("count"))
+            {
+                var aliasedValue = (Microsoft.Xrm.Sdk.AliasedValue)response.Entities[0]["count"];
+
+                return (int)aliasedValue.Value;
+            }
+
+            return 0;
         }
     }
 }

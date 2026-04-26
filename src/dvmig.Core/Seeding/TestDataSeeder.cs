@@ -246,7 +246,7 @@ namespace dvmig.Core.Seeding
                     currentBatch++;
                     totalDeleted++;
 
-                    if (currentBatch % 50 == 0 ||
+                    if (currentBatch % 50 == 0 || 
                         currentBatch == results.Entities.Count)
                     {
                         progress?.Report(
@@ -271,40 +271,10 @@ namespace dvmig.Core.Seeding
             }
 
             _logger.Information(
-                "Deleted {Count} records of type {Entity}",
-                totalDeleted,
+                "Deleted {Count} records of type {Entity}", 
+                totalDeleted, 
                 logicalName
             );
         }
-
-        /// <inheritdoc />
-        public async Task<long> GetRecordCountAsync(
-            IDataverseProvider provider,
-            string logicalName,
-            CancellationToken ct = default
-        )
-        {
-            var fetchXml = $@"
-                <fetch aggregate='true'>
-                  <entity name='{logicalName}'>
-                    <attribute name='{logicalName}id' alias='count' aggregate='count' />
-                  </entity>
-                </fetch>";
-
-            var response = await provider.RetrieveMultipleAsync(
-                new Microsoft.Xrm.Sdk.Query.FetchExpression(fetchXml),
-                ct
-            );
-
-            if (response.Entities.Count > 0 &&
-                response.Entities[0].Contains("count"))
-            {
-                var aliasedValue = (AliasedValue)response.Entities[0]["count"];
-
-                return (int)aliasedValue.Value;
-            }
-
-            return 0;
         }
-    }
-}
+        }
