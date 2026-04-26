@@ -24,6 +24,13 @@ namespace dvmig.Core.Synchronization
         private readonly IDataPreservationManager _dataPreservation;
         private readonly ISyncStateTracker _stateTracker;
         private readonly ILogger _logger;
+        private readonly IRetryStrategy _retryStrategy;
+        private readonly IEntityPreparer _entityPreparer;
+        private readonly ISyncErrorHandler _errorHandler;
+        private readonly IDependencyResolver _dependencyResolver;
+        private readonly IStatusTransitionHandler _statusTransitionHandler;
+        private readonly IMetadataCache _metadataCache;
+        private readonly IFailureLogger _failureLogger;
         private readonly AsyncRetryPolicy _retryPolicy;
 
         private readonly ConcurrentDictionary<string, int> _recursionTracker =
@@ -35,9 +42,6 @@ namespace dvmig.Core.Synchronization
 
         private readonly ConcurrentDictionary<string, Guid> _idMappingCache =
             new ConcurrentDictionary<string, Guid>();
-
-        private readonly ConcurrentDictionary<string, EntityMetadata>
-            _metadataCache = new ConcurrentDictionary<string, EntityMetadata>();
 
         private HashSet<Guid> _syncedIds = new HashSet<Guid>();
 
@@ -54,13 +58,27 @@ namespace dvmig.Core.Synchronization
         /// </param>
         /// <param name="stateTracker">The sync state tracking service.</param>
         /// <param name="logger">The logger instance.</param>
+        /// <param name="retryStrategy">The retry strategy.</param>
+        /// <param name="entityPreparer">The entity preparer.</param>
+        /// <param name="errorHandler">The error handler.</param>
+        /// <param name="dependencyResolver">The dependency resolver.</param>
+        /// <param name="statusTransitionHandler">The status transition handler.</param>
+        /// <param name="metadataCache">The metadata cache.</param>
+        /// <param name="failureLogger">The failure logger.</param>
         public SyncEngine(
             IDataverseProvider source,
             IDataverseProvider target,
             IUserMapper userMapper,
             IDataPreservationManager dataPreservation,
             ISyncStateTracker stateTracker,
-            ILogger logger
+            ILogger logger,
+            IRetryStrategy retryStrategy,
+            IEntityPreparer entityPreparer,
+            ISyncErrorHandler errorHandler,
+            IDependencyResolver dependencyResolver,
+            IStatusTransitionHandler statusTransitionHandler,
+            IMetadataCache metadataCache,
+            IFailureLogger failureLogger
         )
         {
             _source = source;
@@ -69,74 +87,15 @@ namespace dvmig.Core.Synchronization
             _dataPreservation = dataPreservation;
             _stateTracker = stateTracker;
             _logger = logger;
+            _retryStrategy = retryStrategy;
+            _entityPreparer = entityPreparer;
+            _errorHandler = errorHandler;
+            _dependencyResolver = dependencyResolver;
+            _statusTransitionHandler = statusTransitionHandler;
+            _metadataCache = metadataCache;
+            _failureLogger = failureLogger;
 
-            _retryPolicy = Policy
-                .Handle<Exception>(IsTransientError)
-                .WaitAndRetryAsync(
-                    5,
-                    GetRetryDelay,
-                    (ex, time, count, ctx) =>
-                    {
-                        _logger.Warning(
-                            ex,
-                            "Throttling or transient error. " +
-                            "Retry {Count} in {Time}ms",
-                            count,
-                            time.TotalMilliseconds
-                        );
-
-                        return Task.CompletedTask;
-                    }
-                );
-        }
-
-        /// <summary>
-        /// Determines if an exception represents a transient error that 
-        /// should trigger a retry attempt (e.g., throttling, timeout).
-        /// </summary>
-        /// <param name="ex">The exception to evaluate.</param>
-        /// <returns>True if the error is transient; otherwise, false.</returns>
-        private bool IsTransientError(Exception ex)
-        {
-            var msg = ex.Message.ToLower();
-
-            if (msg.Contains("8004410d") || msg.Contains("too many requests"))
-            {
-                return true;
-            }
-
-            return msg.Contains("generic sql error") ||
-                   msg.Contains("timeout");
-        }
-
-        /// <summary>
-        /// Calculates the delay before the next retry attempt, applying 
-        /// exponential backoff. Caps the delay for Dataverse Service 
-        /// Protection Limits (8004410d).
-        /// </summary>
-        /// <param name="retryCount">The current retry attempt number.</param>
-        /// <param name="ex">The exception that triggered the retry.</param>
-        /// <param name="ctx">The Polly execution context.</param>
-        /// <returns>The duration to wait before retrying.</returns>
-        private TimeSpan GetRetryDelay(
-            int retryCount,
-            Exception ex,
-            Context ctx
-        )
-        {
-            if (ex.Message.Contains("8004410d"))
-            {
-                _logger.Information(
-                    "Service Protection Limit reached. " +
-                    "Applying throttled backoff."
-                );
-
-                return TimeSpan.FromSeconds(
-                    Math.Min(Math.Pow(2, retryCount), 30)
-                );
-            }
-
-            return TimeSpan.FromSeconds(Math.Pow(2, retryCount));
+            _retryPolicy = _retryStrategy.CreateRetryPolicy();
         }
 
         /// <inheritdoc />
@@ -278,7 +237,7 @@ namespace dvmig.Core.Synchronization
                         entity.Id
                     );
 
-                    var failureMessage = FormatFailureMessage(
+                    var failureMessage = _errorHandler.FormatFailureMessage(
                         "SyncAsync",
                         ex
                     );
@@ -294,50 +253,7 @@ namespace dvmig.Core.Synchronization
             string errorMessage,
             CancellationToken ct)
         {
-            try
-            {
-                var failure = new Entity(
-                    SchemaConstants.MigrationFailure.EntityLogicalName
-                );
-
-                var failureName = $"{entity.LogicalName}:{entity.Id}";
-                failure[SchemaConstants.MigrationFailure.Name] =
-                    failureName.Length <= 100
-                        ? failureName
-                        : failureName.Substring(0, 100);
-
-                failure[SchemaConstants.MigrationFailure.SourceId] =
-                    entity.Id.ToString();
-
-                failure[SchemaConstants.MigrationFailure.EntityLogicalNameAttr] =
-                    entity.LogicalName;
-
-                failure[SchemaConstants.MigrationFailure.ErrorMessage] =
-                    errorMessage;
-
-                failure[SchemaConstants.MigrationFailure.Timestamp] =
-                    DateTime.UtcNow;
-
-                await _target.CreateAsync(failure, ct);
-            }
-            catch (Exception ex)
-            {
-                var message =
-                    "Failed to log migration failure for {Entity}:{Id} " +
-                    "to target Dataverse.";
-
-                _logger.Error(
-                    ex,
-                    message,
-                    entity.LogicalName,
-                    entity.Id
-                );
-
-                throw new InvalidOperationException(
-                    message,
-                    ex
-                );
-            }
+            await _failureLogger.LogFailureToTargetAsync(entity, errorMessage, ct);
         }
 
         /// <inheritdoc />
@@ -469,7 +385,7 @@ namespace dvmig.Core.Synchronization
                     $"FAILED {entity.LogicalName}:{entity.Id} - {ex.Message}"
                 );
 
-                return (false, FormatFailureMessage(
+                return (false, _errorHandler.FormatFailureMessage(
                     "SyncRecordAsync",
                     ex
                 ));
@@ -513,12 +429,33 @@ namespace dvmig.Core.Synchronization
                     return (true, string.Empty);
                 }
 
-                var (success, failureMessage) = await HandleSyncExceptionAsync(
+                var (success, failureMessage) = await _errorHandler.HandleSyncExceptionAsync(
                     ex,
                     entity,
                     options,
                     progress,
-                    ct
+                    ct,
+                    updateFunc: async (e, token) => await _target.UpdateAsync(e, token),
+                    statusTransitionFunc: async (e, opts, prog, token) =>
+                        await _statusTransitionHandler.HandleStatusTransitionAsync(
+                            e, opts, prog, token),
+                    resolveMissingDependencyFunc: async (exception, e, opts, prog, token) =>
+                        await _dependencyResolver.ResolveMissingDependencyAsync(
+                            exception, e, opts, prog, token,
+                            syncRecordFunc: async (rec, o, p, t) => await SyncRecordAsync(rec, o, p, t),
+                            retryEntityFunc: async (e, o, p, t) => await RetryEntityAsync(e, o, p, t),
+                            findExistingFunc: async (rec, t) => await FindExistingOnTargetAsync(rec, t),
+                            idMappingCache: _idMappingCache,
+                            triedDependencies: _triedDependencies),
+                    resolveSqlDependencyFunc: async (msg, e, opts, prog, token) =>
+                        await _dependencyResolver.ResolveSqlDependencyAsync(
+                            msg, e, opts, prog, token,
+                            syncRecordFunc: async (rec, o, p, t) => await SyncRecordAsync(rec, o, p, t),
+                            retryEntityFunc: async (e, o, p, t) => await RetryEntityAsync(e, o, p, t),
+                            findExistingFunc: async (rec, t) => await FindExistingOnTargetAsync(rec, t),
+                            idMappingCache: _idMappingCache),
+                    stripAttributeFunc: async (exception, e, opts, prog, token) =>
+                        await StripAttributeAndRetryAsync(exception, e, opts, prog, token)
                 );
 
                 return success
@@ -578,12 +515,33 @@ namespace dvmig.Core.Synchronization
             }
             catch (Exception ex)
             {
-                var (success, failureMessage) = await HandleSyncExceptionAsync(
+                var (success, failureMessage) = await _errorHandler.HandleSyncExceptionAsync(
                     ex,
                     entity,
                     options,
                     progress,
-                    ct
+                    ct,
+                    updateFunc: async (e, token) => await _target.UpdateAsync(e, token),
+                    statusTransitionFunc: async (e, opts, prog, token) =>
+                        await _statusTransitionHandler.HandleStatusTransitionAsync(
+                            e, opts, prog, token),
+                    resolveMissingDependencyFunc: async (exception, e, opts, prog, token) =>
+                        await _dependencyResolver.ResolveMissingDependencyAsync(
+                            exception, e, opts, prog, token,
+                            syncRecordFunc: async (rec, o, p, t) => await SyncRecordAsync(rec, o, p, t),
+                            retryEntityFunc: async (e, o, p, t) => await RetryEntityAsync(e, o, p, t),
+                            findExistingFunc: async (rec, t) => await FindExistingOnTargetAsync(rec, t),
+                            idMappingCache: _idMappingCache,
+                            triedDependencies: _triedDependencies),
+                    resolveSqlDependencyFunc: async (msg, e, opts, prog, token) =>
+                        await _dependencyResolver.ResolveSqlDependencyAsync(
+                            msg, e, opts, prog, token,
+                            syncRecordFunc: async (rec, o, p, t) => await SyncRecordAsync(rec, o, p, t),
+                            retryEntityFunc: async (e, o, p, t) => await RetryEntityAsync(e, o, p, t),
+                            findExistingFunc: async (rec, t) => await FindExistingOnTargetAsync(rec, t),
+                            idMappingCache: _idMappingCache),
+                    stripAttributeFunc: async (exception, e, opts, prog, token) =>
+                        await StripAttributeAndRetryAsync(exception, e, opts, prog, token)
                 );
 
                 return success

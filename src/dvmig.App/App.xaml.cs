@@ -63,14 +63,39 @@ namespace dvmig.App
             {
                 var migrationService = provider
                     .GetRequiredService<IMigrationService>();
+                var logger = provider.GetRequiredService<ILogger>();
+                var targetProvider = migrationService.TargetProvider!;
+                var dataPreservation = provider.GetRequiredService<IDataPreservationManager>();
+
+                var retryStrategy = new RetryStrategy(logger);
+                var entityPreparer = new EntityPreparer(logger);
+                var errorHandler = new SyncErrorHandler(targetProvider, dataPreservation, logger);
+                var dependencyResolver = new DependencyResolver(
+                    migrationService.SourceProvider!,
+                    logger
+                );
+                var statusTransitionHandler = new StatusTransitionHandler(
+                    targetProvider,
+                    dataPreservation,
+                    logger
+                );
+                var metadataCache = new MetadataCache(targetProvider, logger);
+                var failureLogger = new FailureLogger(targetProvider, logger);
 
                 return new SyncEngine(
                     migrationService.SourceProvider!,
                     migrationService.TargetProvider!,
                     provider.GetRequiredService<IUserMapper>(),
-                    provider.GetRequiredService<IDataPreservationManager>(),
+                    dataPreservation,
                     provider.GetRequiredService<ISyncStateTracker>(),
-                    provider.GetRequiredService<ILogger>()
+                    logger,
+                    retryStrategy,
+                    entityPreparer,
+                    errorHandler,
+                    dependencyResolver,
+                    statusTransitionHandler,
+                    metadataCache,
+                    failureLogger
                 );
             });
 

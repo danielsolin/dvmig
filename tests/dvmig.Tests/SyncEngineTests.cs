@@ -44,13 +44,39 @@ namespace dvmig.Tests
             ))
                 .ReturnsAsync(defaultMetadata);
 
+            var retryStrategy = new RetryStrategy(_loggerMock.Object);
+            var entityPreparer = new EntityPreparer(_loggerMock.Object);
+            var errorHandler = new SyncErrorHandler(
+                _targetMock.Object,
+                _dataPreservationMock.Object,
+                _loggerMock.Object
+            );
+            var dependencyResolver = new DependencyResolver(
+                _sourceMock.Object,
+                _loggerMock.Object
+            );
+            var statusTransitionHandler = new StatusTransitionHandler(
+                _targetMock.Object,
+                _dataPreservationMock.Object,
+                _loggerMock.Object
+            );
+            var metadataCache = new MetadataCache(_targetMock.Object, _loggerMock.Object);
+            var failureLogger = new FailureLogger(_targetMock.Object, _loggerMock.Object);
+
             _engine = new SyncEngine(
                 _sourceMock.Object,
                 _targetMock.Object,
                 _userMapperMock.Object,
                 _dataPreservationMock.Object,
                 _stateTrackerMock.Object,
-                _loggerMock.Object
+                _loggerMock.Object,
+                retryStrategy,
+                entityPreparer,
+                errorHandler,
+                dependencyResolver,
+                statusTransitionHandler,
+                metadataCache,
+                failureLogger
             );
 
             _userMapperMock.Setup(m => m.MapUserAsync(

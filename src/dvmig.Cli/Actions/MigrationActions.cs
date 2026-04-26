@@ -82,13 +82,32 @@ namespace dvmig.Cli.Actions
                 _logger
             );
 
+            var retryStrategy = new RetryStrategy(_logger);
+            var entityPreparer = new EntityPreparer(_logger);
+            var errorHandler = new SyncErrorHandler(target, dataPreservation, _logger);
+            var dependencyResolver = new DependencyResolver(source, _logger);
+            var statusTransitionHandler = new StatusTransitionHandler(
+                target,
+                dataPreservation,
+                _logger
+            );
+            var metadataCache = new MetadataCache(target, _logger);
+            var failureLogger = new FailureLogger(target, _logger);
+
             var engine = new SyncEngine(
                 source,
                 target,
                 userMapper,
                 dataPreservation,
                 _stateTracker,
-                _logger
+                _logger,
+                retryStrategy,
+                entityPreparer,
+                errorHandler,
+                dependencyResolver,
+                statusTransitionHandler,
+                metadataCache,
+                failureLogger
             );
 
             var selectedEntities = await CliUI.SelectEntitiesAsync(
