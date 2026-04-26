@@ -6,9 +6,7 @@ using dvmig.Core.Seeding;
 using dvmig.Core.Settings;
 using dvmig.Core.Synchronization;
 using dvmig.Providers;
-using dvmig.Shared.Metadata;
 using Microsoft.Crm.Sdk.Messages;
-using Microsoft.Xrm.Sdk.Messages;
 using System.Runtime.Versioning;
 using Serilog;
 using Spectre.Console;
@@ -301,27 +299,7 @@ namespace dvmig.Cli
                 async progress => 
                 {
                     await _setupService.CreateSchemaAsync(provider, progress);
-
-                    var assemblyPath = Path.Combine(
-                        AppDomain.CurrentDomain.BaseDirectory,
-                        "dvmig.Plugins.dll"
-                    );
-
-                    if (!File.Exists(assemblyPath))
-                    {
-                        assemblyPath = Path.Combine(
-                            AppDomain.CurrentDomain.BaseDirectory,
-                            "..", "..", "..", "..",
-                            "dvmig.Plugins", "bin", "Debug", "netstandard2.0",
-                            "dvmig.Plugins.dll"
-                        );
-                    }
-
-                    await _setupService.DeployPluginAsync(
-                        provider, 
-                        assemblyPath, 
-                        progress
-                    );
+                    await _setupService.DeployPluginAsync(provider, progress);
                 }
             );
 

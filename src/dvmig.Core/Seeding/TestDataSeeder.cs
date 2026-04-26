@@ -219,7 +219,7 @@ namespace dvmig.Core.Seeding
                 ColumnSet = new Microsoft.Xrm.Sdk.Query.ColumnSet(false),
                 PageInfo = new Microsoft.Xrm.Sdk.Query.PagingInfo
                 {
-                    Count = 5000,
+                    Count = dvmig.Shared.Metadata.SchemaConstants.AppConstants.DefaultDeletionBatchSize,
                     PageNumber = 1
                 }
             };
@@ -276,5 +276,5 @@ namespace dvmig.Core.Seeding
                 logicalName
             );
         }
-        }
-        }
+    }
+}

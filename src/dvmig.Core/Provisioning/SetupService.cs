@@ -1,4 +1,6 @@
+using System.IO;
 using dvmig.Providers;
+using dvmig.Shared.Metadata;
 using Serilog;
 
 namespace dvmig.Core.Provisioning
@@ -56,14 +58,38 @@ namespace dvmig.Core.Provisioning
         /// <inheritdoc />
         public async Task DeployPluginAsync(
             IDataverseProvider target,
-            string pluginAssemblyPath,
             IProgress<string>? progress = null,
             CancellationToken ct = default
         )
         {
+            var assemblyPath = Path.Combine(
+                AppDomain.CurrentDomain.BaseDirectory,
+                SchemaConstants.AppConstants.PluginAssemblyName
+            );
+
+            // Fallback for development if not in same folder
+            if (!File.Exists(assemblyPath))
+            {
+                assemblyPath = Path.Combine(
+                    AppDomain.CurrentDomain.BaseDirectory,
+                    "..", "..", "..", "..",
+                    SchemaConstants.AppConstants.PluginName, 
+                    "bin", "Debug", "netstandard2.0",
+                    SchemaConstants.AppConstants.PluginAssemblyName
+                );
+            }
+
+            if (!File.Exists(assemblyPath))
+            {
+                var msg = $"Plugin assembly not found at {assemblyPath}. " +
+                          "Cannot proceed with installation.";
+                _logger.Error(msg);
+                throw new FileNotFoundException(msg, assemblyPath);
+            }
+
             await _pluginDeployer.DeployPluginAsync(
                 target,
-                pluginAssemblyPath,
+                assemblyPath,
                 progress,
                 ct
             );

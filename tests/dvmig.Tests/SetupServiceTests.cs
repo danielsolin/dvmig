@@ -197,8 +197,7 @@ namespace dvmig.Tests
         {
             await Assert.ThrowsAsync<FileNotFoundException>(() =>
                 _service.DeployPluginAsync(
-                    _targetMock.Object,
-                    "non_existent_file.dll"
+                    _targetMock.Object
                 )
             );
         }

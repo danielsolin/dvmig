@@ -338,22 +338,8 @@ namespace dvmig.App.ViewModels
                     progress
                 );
 
-                var assemblyPath = Path.Combine(
-                    AppDomain.CurrentDomain.BaseDirectory,
-                    "..",
-                    "..",
-                    "..",
-                    "..",
-                    "dvmig.Plugins",
-                    "bin",
-                    "Debug",
-                    "netstandard2.0",
-                    "dvmig.Plugins.dll"
-                );
-
                 await _setupService.DeployPluginAsync(
                     _migrationService.TargetProvider,
-                    assemblyPath,
                     progress
                 );
 

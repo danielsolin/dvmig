@@ -33,5 +33,17 @@ namespace dvmig.Shared.Metadata
             public const string ErrorMessage = "dm_errormessage";
             public const string Timestamp = "dm_timestamp";
         }
+
+        /// <summary>
+        /// Application-wide constants for configuration, batch sizes, and file names.
+        /// </summary>
+        public static class AppConstants
+        {
+            public const int DefaultDeletionBatchSize = 5000;
+            public const int MetadataPropagationDelayMs = 5000;
+            public const int MaxMemoFieldLength = 5000;
+            public const string PluginAssemblyName = "dvmig.Plugins.dll";
+            public const string PluginName = "dvmig.Plugins";
+        }
     }
 }

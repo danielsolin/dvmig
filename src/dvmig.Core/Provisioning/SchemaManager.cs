@@ -89,7 +89,7 @@ namespace dvmig.Core.Provisioning
                 };
 
                 await target.ExecuteAsync(entityReq, ct);
-                await Task.Delay(5000, ct); // Wait for propagation
+                await Task.Delay(SchemaConstants.AppConstants.MetadataPropagationDelayMs, ct); // Wait for propagation
 
                 existingMeta = await target.GetEntityMetadataAsync(
                     entityName,
@@ -181,7 +181,7 @@ namespace dvmig.Core.Provisioning
                 };
 
                 await target.ExecuteAsync(entityReq, ct);
-                await Task.Delay(5000, ct);
+                await Task.Delay(SchemaConstants.AppConstants.MetadataPropagationDelayMs, ct);
 
                 existingMeta = await target.GetEntityMetadataAsync(
                     entityName,
@@ -268,7 +268,7 @@ namespace dvmig.Core.Provisioning
                         SchemaName = schemaName,
                         LogicalName = schemaName.ToLower(),
                         DisplayName = new Label(displayName, 1033),
-                        MaxLength = 5000
+                        MaxLength = SchemaConstants.AppConstants.MaxMemoFieldLength
                     };
                 }
                 else
