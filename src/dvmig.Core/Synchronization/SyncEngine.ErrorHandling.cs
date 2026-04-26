@@ -19,12 +19,14 @@ namespace dvmig.Core.Synchronization
         /// True if the exception was resolved and synchronization was 
         /// successful; otherwise, false.
         /// </returns>
-        private async Task<bool> HandleSyncExceptionAsync(
-            Exception ex,
-            Entity entity,
-            SyncOptions options,
-            IProgress<string>? progress,
-            CancellationToken ct)
+        private async Task<(bool Success, string FailureMessage)>
+            HandleSyncExceptionAsync(
+                Exception ex,
+                Entity entity,
+                SyncOptions options,
+                IProgress<string>? progress,
+                CancellationToken ct
+            )
         {
             var msg = ex.Message.ToLower();
 
@@ -49,35 +51,47 @@ namespace dvmig.Core.Synchronization
                     // Try standard update first
                     await _target.UpdateAsync(entity, ct);
 
-                    return true;
+                    return (true, string.Empty);
                 }
                 catch (Exception updateEx)
                 {
                     var updateMsg = updateEx.Message.ToLower();
 
-                    // If update fails due to state/status, fall through to 
-                    // the status handling logic.
                     if (updateMsg.Contains("is not a valid status code"))
                     {
-                        return await HandleStatusTransitionAsync(
+                        var success = await HandleStatusTransitionAsync(
                             entity,
                             options,
                             progress,
                             ct
                         );
+
+                        return success
+                            ? (true, string.Empty)
+                            : (false, FormatFailureMessage(
+                                "Status transition failed",
+                                updateEx
+                            ));
                     }
 
                     if (updateMsg.Contains(
                             "conflicted with the foreign key constraint") ||
                         updateMsg.Contains("conflicted with a constraint"))
                     {
-                        return await ResolveSqlDependencyAsync(
+                        var success = await ResolveSqlDependencyAsync(
                             updateEx.Message,
                             entity,
                             options,
                             progress,
                             ct
                         );
+
+                        return success
+                            ? (true, string.Empty)
+                            : (false, FormatFailureMessage(
+                                "SQL dependency resolution failed",
+                                updateEx
+                            ));
                     }
 
                     _logger.Warning(
@@ -87,53 +101,84 @@ namespace dvmig.Core.Synchronization
                         updateEx.Message
                     );
 
-                    return false;
+                    return (false, FormatFailureMessage(
+                        "Update failed for existing record",
+                        updateEx
+                    ));
                 }
             }
 
             if (msg.Contains("is not a valid status code"))
             {
-                return await HandleStatusTransitionAsync(
+                var success = await HandleStatusTransitionAsync(
                     entity,
                     options,
                     progress,
                     ct
                 );
+
+                return success
+                    ? (true, string.Empty)
+                    : (false, FormatFailureMessage(
+                        "Status transition failed",
+                        ex
+                    ));
             }
 
             if (msg.Contains("does not exist"))
             {
-                return await ResolveMissingDependencyAsync(
+                var success = await ResolveMissingDependencyAsync(
                     ex,
                     entity,
                     options,
                     progress,
                     ct
                 );
+
+                return success
+                    ? (true, string.Empty)
+                    : (false, FormatFailureMessage(
+                        "Missing dependency resolution failed",
+                        ex
+                    ));
             }
 
             if (msg.Contains("conflicted with the foreign key constraint"))
             {
-                return await ResolveSqlDependencyAsync(
+                var success = await ResolveSqlDependencyAsync(
                     ex.Message,
                     entity,
                     options,
                     progress,
                     ct
                 );
+
+                return success
+                    ? (true, string.Empty)
+                    : (false, FormatFailureMessage(
+                        "SQL dependency resolution failed",
+                        ex
+                    ));
             }
 
             if (msg.Contains("cannot be modified") ||
                 msg.Contains("cannot be set on creation") ||
                 msg.Contains("outside the valid range"))
             {
-                return await StripAttributeAndRetryAsync(
+                var success = await StripAttributeAndRetryAsync(
                     ex,
                     entity,
                     options,
                     progress,
                     ct
                 );
+
+                return success
+                    ? (true, string.Empty)
+                    : (false, FormatFailureMessage(
+                        "Strip attribute retry failed",
+                        ex
+                    ));
             }
 
             _logger.Error(
@@ -147,7 +192,17 @@ namespace dvmig.Core.Synchronization
                 $"FAILED {entity.LogicalName}:{entity.Id} - {ex.Message}"
             );
 
-            return false;
+            return (false, FormatFailureMessage(
+                "Unresolved error",
+                ex
+            ));
+        }
+
+        private static string FormatFailureMessage(
+            string context,
+            Exception ex)
+        {
+            return $"{context}: {ex.GetType().Name}: {ex.Message}";
         }
 
         /// <summary>
@@ -193,7 +248,7 @@ namespace dvmig.Core.Synchronization
             entity.Attributes.Remove("statecode");
             entity.Attributes.Remove("statuscode");
 
-            var success = await CreateWithFixStrategyAsync(
+            var (success, _) = await CreateWithFixStrategyAsync(
                 entity,
                 options,
                 progress,
@@ -401,7 +456,7 @@ namespace dvmig.Core.Synchronization
                     }
 
                     // Re-use the existing logic to sync the missing record
-                    var success = await SyncRecordAsync(
+                    var (success, _) = await SyncRecordAsync(
                         missingRecord,
                         options,
                         progress,
@@ -453,20 +508,24 @@ namespace dvmig.Core.Synchronization
 
             if (metadata?.IsIntersect == true)
             {
-                return await SyncIntersectEntityAsync(
+                var (success, _) = await SyncIntersectEntityAsync(
                     prepared,
                     options,
                     progress,
                     ct
                 );
+
+                return success;
             }
 
-            return await CreateWithFixStrategyAsync(
+            var (created, _) = await CreateWithFixStrategyAsync(
                 prepared,
                 options,
                 progress,
                 ct
             );
+
+            return created;
         }
 
         /// <summary>
@@ -512,12 +571,14 @@ namespace dvmig.Core.Synchronization
 
                     entity.Attributes.Remove(attrName);
 
-                    return await CreateWithFixStrategyAsync(
+                    var (success, _) = await CreateWithFixStrategyAsync(
                         entity,
                         options,
                         progress,
                         ct
                     );
+
+                    return success;
                 }
             }
 
@@ -589,7 +650,8 @@ namespace dvmig.Core.Synchronization
                     );
 
                     progress?.Report(
-                        $"Resolving missing dependency: {missingType}:{missingId}"
+                        $"Resolving missing dependency: "
+                        + "{missingType}:{missingId}"
                     );
 
                     var missingRecord = await _source.RetrieveAsync(
@@ -628,7 +690,7 @@ namespace dvmig.Core.Synchronization
                         }
 
                         // Normal Sync: Try to sync the record over
-                        var success = await SyncRecordAsync(
+                        var (success, _) = await SyncRecordAsync(
                             missingRecord,
                             options,
                             progress,
@@ -673,17 +735,20 @@ namespace dvmig.Core.Synchronization
                         );
 
                         progress?.Report(
-                            $"Dependency resolution failed. Stripping '{attrToStrip}' and retrying..."
+                            $"Dependency resolution failed. Stripping "
+                            + "'{attrToStrip}' and retrying..."
                         );
 
                         entity.Attributes.Remove(attrToStrip);
 
-                        return await CreateWithFixStrategyAsync(
+                        var (success, _) = await CreateWithFixStrategyAsync(
                             entity,
                             options,
                             progress,
                             ct
                         );
+
+                        return success;
                     }
                 }
             }

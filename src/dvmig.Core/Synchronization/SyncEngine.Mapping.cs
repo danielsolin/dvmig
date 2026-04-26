@@ -102,6 +102,19 @@ namespace dvmig.Core.Synchronization
                     if (IsUserAttribute(attribute.Key))
                     {
                         value = await _userMapper.MapUserAsync(er, ct);
+                        if (value == null)
+                        {
+                            _logger.Warning(
+                                "Skipping unmapped user field {Attr} for {Entity}:{Id}; " +
+                                "source user {UserId} was not found or could not be resolved.",
+                                attribute.Key,
+                                entity.LogicalName,
+                                entity.Id,
+                                er.Id
+                            );
+
+                            continue;
+                        }
                     }
                     else if (_idMappingCache.TryGetValue(
                         $"{er.LogicalName}:{er.Id}",

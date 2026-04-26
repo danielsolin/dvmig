@@ -39,7 +39,7 @@ namespace dvmig.Core.Synchronization
         /// <returns>
         /// True if the synchronization was successful; otherwise, false.
         /// </returns>
-        Task<bool> SyncRecordAsync(
+        Task<(bool Success, string? FailureMessage)> SyncRecordAsync(
             Entity entity,
             SyncOptions options,
             IProgress<string>? progress = null,

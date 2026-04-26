@@ -1,6 +1,7 @@
 using dvmig.Core.DataPreservation;
 using dvmig.Core.Synchronization;
 using dvmig.Providers;
+using dvmig.Shared.Metadata;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Messages;
 using Moq;
@@ -76,7 +77,7 @@ namespace dvmig.Tests
             var options = new SyncOptions { SkipExisting = false };
 
             // Act
-            var result = await _engine.SyncRecordAsync(account, options);
+            var (result, _) = await _engine.SyncRecordAsync(account, options);
 
             // Assert
             Assert.True(result);
@@ -132,7 +133,7 @@ namespace dvmig.Tests
             var options = new SyncOptions { SkipExisting = false };
 
             // Act
-            var result = await _engine.SyncRecordAsync(contact, options);
+            var (result, _) = await _engine.SyncRecordAsync(contact, options);
 
             // Assert
             Assert.True(result);
@@ -184,7 +185,7 @@ namespace dvmig.Tests
             var options = new SyncOptions { SkipExisting = false };
 
             // Act
-            var result = await _engine.SyncRecordAsync(
+            var (result, _) = await _engine.SyncRecordAsync(
                 intersectEntity,
                 options
             );
@@ -305,7 +306,7 @@ namespace dvmig.Tests
             var options = new SyncOptions { SkipExisting = false };
 
             // Act
-            var result = await _engine.SyncRecordAsync(account, options);
+            var (result, _) = await _engine.SyncRecordAsync(account, options);
 
             // Assert
             Assert.True(result);
@@ -352,11 +353,61 @@ namespace dvmig.Tests
             var options = new SyncOptions { SkipExisting = false };
 
             // Act
-            var result = await _engine.SyncRecordAsync(account, options);
+            var (result, _) = await _engine.SyncRecordAsync(account, options);
 
             // Assert
             Assert.True(result);
             Assert.Equal(2, callCount); // Verified that it retried
+        }
+
+        [Fact]
+        public async Task SyncAsync_RegistersFailureRecord_WhenCreateFails()
+        {
+            // Arrange
+            var accountId = Guid.NewGuid();
+            var account = new Entity("account", accountId)
+            {
+                ["name"] = "Failure Account"
+            };
+
+            var metadata = new Microsoft.Xrm.Sdk.Metadata.EntityMetadata
+            {
+                LogicalName = "account"
+            };
+
+            _targetMock.Setup(t => t.GetEntityMetadataAsync(
+                "account",
+                It.IsAny<CancellationToken>()
+            ))
+                .ReturnsAsync(metadata);
+
+            _targetMock.Setup(t => t.CreateAsync(
+                It.Is<Entity>(e => e.LogicalName == "account"),
+                It.IsAny<CancellationToken>()
+            ))
+                .ThrowsAsync(new Exception("Create failed"));
+
+            _targetMock.Setup(t => t.CreateAsync(
+                It.Is<Entity>(e => e.LogicalName == SchemaConstants.MigrationFailure.EntityLogicalName),
+                It.IsAny<CancellationToken>()
+            ))
+                .ReturnsAsync(Guid.NewGuid());
+
+            var options = new SyncOptions { SkipExisting = false };
+
+            // Act
+            await _engine.SyncAsync(
+                new[] { account },
+                options
+            );
+
+            // Assert
+            _targetMock.Verify(t => t.CreateAsync(
+                It.Is<Entity>(e =>
+                    e.LogicalName == SchemaConstants.MigrationFailure.EntityLogicalName
+                ),
+                It.IsAny<CancellationToken>()
+            ), Times.Once);
         }
     }
 }

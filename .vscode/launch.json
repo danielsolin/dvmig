@@ -1,0 +1,15 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Launch dvmig.Cli",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build",
+      "program": "${workspaceFolder}/src/dvmig.Cli/bin/Debug/net9.0/dvmig.Cli.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}/src/dvmig.Cli",
+      "console": "integratedTerminal"
+    }
+  ]
+}

@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.IO;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -18,19 +20,94 @@ namespace dvmig.Core.Synchronization
                 Environment.SpecialFolder.ApplicationData
             );
 
-            // Create a unique hash for the source/target pair
-            var combinedKey = $"{sourceKey}|{targetKey}";
-            var hash = GetHash(combinedKey);
+            var normalizedKey = $"{NormalizeConnectionString(sourceKey)}|{NormalizeConnectionString(targetKey)}";
+            var normalizedHash = GetHash(normalizedKey);
+            var normalizedFolder = Path.Combine(appData, "dvmig", "state", normalizedHash);
+            var normalizedPath = Path.Combine(normalizedFolder, $"{logicalName}.txt");
 
-            var folder = Path.Combine(appData, "dvmig", "state", hash);
-            if (!Directory.Exists(folder))
+            // Fallback to the old raw-hash path if state already exists there.
+            var rawKey = $"{sourceKey}|{targetKey}";
+            var rawHash = GetHash(rawKey);
+            var rawFolder = Path.Combine(appData, "dvmig", "state", rawHash);
+            var rawPath = Path.Combine(rawFolder, $"{logicalName}.txt");
+
+            if (File.Exists(rawPath))
             {
-                Directory.CreateDirectory(folder);
+                _filePath = rawPath;
+                return Task.CompletedTask;
             }
 
-            _filePath = Path.Combine(folder, $"{logicalName}.txt");
+            if (!Directory.Exists(normalizedFolder))
+            {
+                Directory.CreateDirectory(normalizedFolder);
+            }
+
+            _filePath = normalizedPath;
 
             return Task.CompletedTask;
+        }
+
+        private static string NormalizeConnectionString(string connectionString)
+        {
+            if (string.IsNullOrWhiteSpace(connectionString))
+            {
+                return string.Empty;
+            }
+
+            var parts = connectionString.Split(
+                ';',
+                StringSplitOptions.RemoveEmptyEntries
+            );
+
+            var normalizedPairs = new List<KeyValuePair<string, string>>();
+            foreach (var part in parts)
+            {
+                var kv = part.Split('=', 2);
+                if (kv.Length != 2)
+                {
+                    continue;
+                }
+
+                var key = kv[0].Trim().ToLowerInvariant();
+                var value = kv[1].Trim();
+
+                if (string.IsNullOrEmpty(key) ||
+                    IsSensitiveConnectionKey(key))
+                {
+                    continue;
+                }
+
+                normalizedPairs.Add(
+                    new KeyValuePair<string, string>(key, value)
+                );
+            }
+
+            normalizedPairs.Sort((a, b) =>
+                string.CompareOrdinal(a.Key, b.Key));
+
+            var sb = new StringBuilder();
+            foreach (var pair in normalizedPairs)
+            {
+                sb.Append(pair.Key);
+                sb.Append('=');
+                sb.Append(pair.Value);
+                sb.Append(';');
+            }
+
+            return sb.ToString();
+        }
+
+        private static bool IsSensitiveConnectionKey(string key)
+        {
+            return key.Contains("password", StringComparison.OrdinalIgnoreCase) ||
+                   key.Contains("secret", StringComparison.OrdinalIgnoreCase) ||
+                   key.Contains("token", StringComparison.OrdinalIgnoreCase) ||
+                   key.Contains("thumbprint", StringComparison.OrdinalIgnoreCase) ||
+                   key.Contains("clientid", StringComparison.OrdinalIgnoreCase) ||
+                   key.Contains("appid", StringComparison.OrdinalIgnoreCase) ||
+                   key.Contains("userid", StringComparison.OrdinalIgnoreCase) ||
+                   key.Contains("user id", StringComparison.OrdinalIgnoreCase) ||
+                   key.Contains("username", StringComparison.OrdinalIgnoreCase);
         }
 
         /// <inheritdoc />

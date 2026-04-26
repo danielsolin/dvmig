@@ -69,8 +69,12 @@ namespace dvmig.Core.Provisioning
                     {
                         SchemaName = entityName,
                         LogicalName = entityName,
-                        DisplayName = new Label("Source Date Preservation", 1033),
-                        DisplayCollectionName = new Label("Source Dates", 1033),
+                        DisplayName = new Label(
+                            "DVMig Source Date ", 1033
+                        ),
+                        DisplayCollectionName = new Label(
+                            "DVMig Source Dates", 1033
+                        ),
                         OwnershipType = OwnershipTypes.UserOwned,
                         IsActivity = false,
                         HasNotes = false,
@@ -81,15 +85,19 @@ namespace dvmig.Core.Provisioning
                         SchemaName = SchemaConstants.SourceDate.Name,
                         LogicalName = SchemaConstants.SourceDate.Name,
                         DisplayName = new Label("Name", 1033),
-                        RequiredLevel = new AttributeRequiredLevelManagedProperty(
-                            AttributeRequiredLevel.None
-                        ),
+                        RequiredLevel =
+                            new AttributeRequiredLevelManagedProperty(
+                                AttributeRequiredLevel.None
+                            ),
                         MaxLength = 100
                     }
                 };
 
                 await target.ExecuteAsync(entityReq, ct);
-                await Task.Delay(SchemaConstants.AppConstants.MetadataPropagationDelayMs, ct); // Wait for propagation
+                await Task.Delay(
+                    SchemaConstants.AppConstants.MetadataPropagationDelayMs,
+                    ct
+                ); // Wait for propagation
 
                 existingMeta = await target.GetEntityMetadataAsync(
                     entityName,
@@ -163,9 +171,9 @@ namespace dvmig.Core.Provisioning
                     {
                         SchemaName = entityName,
                         LogicalName = entityName,
-                        DisplayName = new Label("Migration Failure", 1033),
+                        DisplayName = new Label("DVMig Failure", 1033),
                         DisplayCollectionName = new Label(
-                            "Migration Failures",
+                            "DVMig Failures",
                             1033
                         ),
                         OwnershipType = OwnershipTypes.UserOwned,
@@ -181,7 +189,10 @@ namespace dvmig.Core.Provisioning
                 };
 
                 await target.ExecuteAsync(entityReq, ct);
-                await Task.Delay(SchemaConstants.AppConstants.MetadataPropagationDelayMs, ct);
+                await Task.Delay(
+                    SchemaConstants.AppConstants.MetadataPropagationDelayMs,
+                    ct
+                );
 
                 existingMeta = await target.GetEntityMetadataAsync(
                     entityName,
@@ -268,7 +279,8 @@ namespace dvmig.Core.Provisioning
                         SchemaName = schemaName,
                         LogicalName = schemaName.ToLower(),
                         DisplayName = new Label(displayName, 1033),
-                        MaxLength = SchemaConstants.AppConstants.MaxMemoFieldLength
+                        MaxLength = SchemaConstants.AppConstants
+                                        .MaxMemoFieldLength
                     };
                 }
                 else
@@ -342,7 +354,11 @@ namespace dvmig.Core.Provisioning
             CancellationToken ct
         )
         {
-            _logger.Information("Checking for '{Entity}' entity...", logicalName);
+            _logger.Information(
+                "Checking for '{Entity}' entity...",
+                logicalName
+            );
+
             progress?.Report($"Checking for '{logicalName}' entity...");
 
             var existingMeta = await target.GetEntityMetadataAsync(
@@ -352,7 +368,11 @@ namespace dvmig.Core.Provisioning
 
             if (existingMeta != null)
             {
-                _logger.Information("Deleting '{Entity}' entity...", logicalName);
+                _logger.Information(
+                    "Deleting '{Entity}' entity...",
+                    logicalName
+                );
+
                 progress?.Report($"Deleting '{logicalName}' entity...");
 
                 var request = new DeleteEntityRequest
@@ -364,7 +384,11 @@ namespace dvmig.Core.Provisioning
             }
             else
             {
-                _logger.Information("'{Entity}' entity not found.", logicalName);
+                _logger.Information(
+                    "'{Entity}' entity not found.",
+                    logicalName
+                );
+                
                 progress?.Report($"'{logicalName}' entity not found.");
             }
         }

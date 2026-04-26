@@ -79,7 +79,7 @@ namespace dvmig.Cli
                         await HandleInstallAsync();
                         break;
                     case "Uninstall dvmig Components from Target":
-                        await HandleDvMigComponentsCleanupAsync();
+                        await HandleTargetComponentsCleanupAsync();
                         break;
                     case "Wipe ALL Accounts, Contacts, and Activities from " +
                          "Source (DANGEROUS)":
@@ -190,7 +190,11 @@ namespace dvmig.Cli
 
         private static async Task HandleReconcileAsync()
         {
-            _target = await ConnectAsync(ConnectionDirection.Target);
+            if (_target == null)
+            {
+                _target = await ConnectAsync(ConnectionDirection.Target);
+            }
+
             if (_target == null)
             {
                 return;
@@ -270,7 +274,7 @@ namespace dvmig.Cli
 
         private static async Task HandleSeedingAsync()
         {
-            var provider = await ConnectAsync(
+            var provider = _source ??= await ConnectAsync(
                 ConnectionDirection.Source
             );
             if (provider == null)
@@ -297,8 +301,13 @@ namespace dvmig.Cli
             IDataverseProvider? target = null
         )
         {
-            var provider = target ?? await ConnectAsync(
-                ConnectionDirection.Target);
+            var provider = target ?? _target;
+            if (provider == null)
+            {
+                provider = _target = await ConnectAsync(
+                    ConnectionDirection.Target
+                );
+            }
 
             if (provider == null)
             {
@@ -329,9 +338,9 @@ namespace dvmig.Cli
             );
         }
 
-        private static async Task HandleDvMigComponentsCleanupAsync()
+        private static async Task HandleTargetComponentsCleanupAsync()
         {
-            var provider = await ConnectAsync(
+            var provider = _target ??= await ConnectAsync(
                 ConnectionDirection.Target);
 
             if (provider == null)
@@ -363,7 +372,7 @@ namespace dvmig.Cli
 
         private static async Task HandleSourceTestDataCleanupAsync()
         {
-            var provider = await ConnectAsync(
+            var provider = _source ??= await ConnectAsync(
                 ConnectionDirection.Source);
             if (provider == null)
             {
@@ -565,7 +574,8 @@ namespace dvmig.Cli
                         var resumeMsg = $"Previous migration state found " +
                                         $"for {logicalName} " +
                                         $"({syncedIds.Count} " +
-                                        "records already synced). Resume?";
+                                        "records already synced). Resume " +
+                                        "(y) or start over (n) ?";
 
                         if (!AnsiConsole.Confirm(resumeMsg, true))
                         {

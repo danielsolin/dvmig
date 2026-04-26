@@ -250,7 +250,7 @@ namespace dvmig.Core.Synchronization
 
                 try
                 {
-                    var success = await SyncRecordAsync(
+                    var (success, failureMessage) = await SyncRecordAsync(
                         entity,
                         options,
                         progress,
@@ -261,7 +261,8 @@ namespace dvmig.Core.Synchronization
                     {
                         await LogFailureToTargetAsync(
                             entity,
-                            "Sync failed during record processing.",
+                            failureMessage ??
+                                "Sync failed during record processing.",
                             ct
                         );
                     }
@@ -277,7 +278,12 @@ namespace dvmig.Core.Synchronization
                         entity.Id
                     );
 
-                    await LogFailureToTargetAsync(entity, ex.Message, ct);
+                    var failureMessage = FormatFailureMessage(
+                        "SyncAsync",
+                        ex
+                    );
+
+                    await LogFailureToTargetAsync(entity, failureMessage, ct);
                     recordProgress?.Report(false);
                 }
             }
@@ -294,8 +300,11 @@ namespace dvmig.Core.Synchronization
                     SchemaConstants.MigrationFailure.EntityLogicalName
                 );
 
+                var failureName = $"{entity.LogicalName}:{entity.Id}";
                 failure[SchemaConstants.MigrationFailure.Name] =
-                    $"{entity.LogicalName}:{entity.Id}".Substring(0, 100);
+                    failureName.Length <= 100
+                        ? failureName
+                        : failureName.Substring(0, 100);
 
                 failure[SchemaConstants.MigrationFailure.SourceId] =
                     entity.Id.ToString();
@@ -313,18 +322,26 @@ namespace dvmig.Core.Synchronization
             }
             catch (Exception ex)
             {
-                _logger.Warning(
+                var message =
                     "Failed to log migration failure for {Entity}:{Id} " +
-                    "to target Dataverse: {Msg}",
+                    "to target Dataverse.";
+
+                _logger.Error(
+                    ex,
+                    message,
                     entity.LogicalName,
-                    entity.Id,
-                    ex.Message
+                    entity.Id
+                );
+
+                throw new InvalidOperationException(
+                    message,
+                    ex
                 );
             }
         }
 
         /// <inheritdoc />
-        public async Task<bool> SyncRecordAsync(
+        public async Task<(bool Success, string? FailureMessage)> SyncRecordAsync(
             Entity entity,
             SyncOptions options,
             IProgress<string>? progress = null,
@@ -333,7 +350,7 @@ namespace dvmig.Core.Synchronization
         {
             if (_syncedIds.Contains(entity.Id))
             {
-                return true;
+                return (true, string.Empty);
             }
 
             var recordKey = $"{entity.LogicalName}:{entity.Id}";
@@ -352,7 +369,7 @@ namespace dvmig.Core.Synchronization
 
                 _recursionTracker.AddOrUpdate(recordKey, 0, (_, v) => v - 1);
 
-                return false;
+                return (false, "Max recursion depth reached.");
             }
 
             try
@@ -366,7 +383,11 @@ namespace dvmig.Core.Synchronization
                         entity.LogicalName,
                         entity.Id
                     );
-                    return false;
+                    return (
+                        false,
+                        "Metadata could not be retrieved for " +
+                            entity.LogicalName
+                    );
                 }
 
                 if (metadata.IsIntersect == true)
@@ -408,7 +429,7 @@ namespace dvmig.Core.Synchronization
                     }
                 }
 
-                var success = await CreateWithFixStrategyAsync(
+                var (success, failureMessage) = await CreateWithFixStrategyAsync(
                     prepared,
                     options,
                     progress,
@@ -434,9 +455,12 @@ namespace dvmig.Core.Synchronization
                             ct
                         );
                     }
+
+                    return (true, string.Empty);
                 }
 
-                return success;
+                return (false, failureMessage ??
+                    $"Failed to sync {entity.LogicalName}:{entity.Id}.");
             }
             catch (Exception ex)
             {
@@ -445,7 +469,10 @@ namespace dvmig.Core.Synchronization
                     $"FAILED {entity.LogicalName}:{entity.Id} - {ex.Message}"
                 );
 
-                return false;
+                return (false, FormatFailureMessage(
+                    "SyncRecordAsync",
+                    ex
+                ));
             }
             finally
             {
@@ -453,7 +480,8 @@ namespace dvmig.Core.Synchronization
             }
         }
 
-        private async Task<bool> SyncIntersectEntityAsync(
+        private async Task<(bool Success, string FailureMessage)>
+            SyncIntersectEntityAsync(
             Entity entity,
             SyncOptions options,
             IProgress<string>? progress,
@@ -464,7 +492,7 @@ namespace dvmig.Core.Synchronization
                 var request = CreateAssociateRequest(entity);
                 if (request == null)
                 {
-                    return false;
+                    return (false, "Invalid N:N relationship record.");
                 }
 
                 await _retryPolicy.ExecuteAsync(
@@ -476,22 +504,26 @@ namespace dvmig.Core.Synchronization
                     entity.LogicalName
                 );
 
-                return true;
+                return (true, string.Empty);
             }
             catch (Exception ex)
             {
                 if (ex.Message.Contains("already exists"))
                 {
-                    return true;
+                    return (true, string.Empty);
                 }
 
-                return await HandleSyncExceptionAsync(
+                var (success, failureMessage) = await HandleSyncExceptionAsync(
                     ex,
                     entity,
                     options,
                     progress,
                     ct
                 );
+
+                return success
+                    ? (true, string.Empty)
+                    : (false, failureMessage);
             }
         }
 
@@ -524,7 +556,7 @@ namespace dvmig.Core.Synchronization
             return request;
         }
 
-        private async Task<bool> CreateWithFixStrategyAsync(
+        private async Task<(bool Success, string FailureMessage)> CreateWithFixStrategyAsync(
             Entity entity,
             SyncOptions options,
             IProgress<string>? progress,
@@ -542,17 +574,21 @@ namespace dvmig.Core.Synchronization
                     entity.Id
                 );
 
-                return true;
+                return (true, string.Empty);
             }
             catch (Exception ex)
             {
-                return await HandleSyncExceptionAsync(
+                var (success, failureMessage) = await HandleSyncExceptionAsync(
                     ex,
                     entity,
                     options,
                     progress,
                     ct
                 );
+
+                return success
+                    ? (true, string.Empty)
+                    : (false, failureMessage);
             }
         }
     }
