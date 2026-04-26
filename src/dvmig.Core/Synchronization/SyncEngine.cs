@@ -457,7 +457,7 @@ namespace dvmig.Core.Synchronization
 
                 return success
                     ? (true, string.Empty)
-                    : (false, failureMessage);
+                    : (false, failureMessage ?? "Unknown error");
             }
         }
 
@@ -543,7 +543,7 @@ namespace dvmig.Core.Synchronization
 
                 return success
                     ? (true, string.Empty)
-                    : (false, failureMessage);
+                    : (false, failureMessage ?? "Unknown error");
             }
         }
     }
