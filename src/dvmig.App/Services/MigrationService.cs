@@ -122,7 +122,6 @@ namespace dvmig.App.Services
     /// </summary>
     public class MigrationService : IMigrationService
     {
-        private const int RecordFetchLimit = 100;
         private List<EntityMetadata>? _cachedMetadata;
 
         /// <inheritdoc />
@@ -320,7 +319,7 @@ namespace dvmig.App.Services
             var query = new QueryExpression(logicalName)
             {
                 ColumnSet = new ColumnSet(primaryId, primaryName),
-                TopCount = RecordFetchLimit
+                TopCount = SchemaConstants.AppConstants.RecordFetchLimit
             };
 
             if (!string.IsNullOrWhiteSpace(searchText))

@@ -42,6 +42,7 @@ namespace dvmig.Shared.Metadata
             public const int DefaultDeletionBatchSize = 5000;
             public const int MetadataPropagationDelayMs = 5000;
             public const int MaxMemoFieldLength = 5000;
+            public const int RecordFetchLimit = 100;
             public const string PluginAssemblyName = "dvmig.Plugins.dll";
             public const string PluginName = "dvmig.Plugins";
         }
