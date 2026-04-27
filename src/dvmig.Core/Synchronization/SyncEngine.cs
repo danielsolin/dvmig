@@ -60,7 +60,9 @@ namespace dvmig.Core.Synchronization
         /// <param name="entityPreparer">The entity preparer.</param>
         /// <param name="errorHandler">The error handler.</param>
         /// <param name="dependencyResolver">The dependency resolver.</param>
-        /// <param name="statusTransitionHandler">The status transition handler.</param>
+        /// <param name="statusTransitionHandler">
+        /// The status transition handler.
+        /// </param>
         /// <param name="metadataCache">The metadata cache.</param>
         /// <param name="failureLogger">The failure logger.</param>
         public SyncEngine(
@@ -125,7 +127,10 @@ namespace dvmig.Core.Synchronization
 
             while (true)
             {
-                var response = await _source.RetrieveMultipleAsync(syncQuery, ct);
+                var response = await _source.RetrieveMultipleAsync(
+                    syncQuery,
+                    ct
+                );
                 if (response.Entities.Count == 0)
                 {
                     break;
@@ -238,14 +243,19 @@ namespace dvmig.Core.Synchronization
                         ex
                     );
 
-                    await _failureLogger.LogFailureToTargetAsync(entity, failureMessage, ct);
+                    await _failureLogger.LogFailureToTargetAsync(
+                        entity,
+                        failureMessage,
+                        ct
+                    );
                     recordProgress?.Report(false);
                 }
             }
         }
 
         /// <inheritdoc />
-        public async Task<(bool Success, string? FailureMessage)> SyncRecordAsync(
+        public async Task<(bool Success, string? FailureMessage)>
+            SyncRecordAsync(
             Entity entity,
             SyncOptions options,
             IProgress<string>? progress = null,
@@ -333,12 +343,13 @@ namespace dvmig.Core.Synchronization
                     }
                 }
 
-                var (success, failureMessage) = await CreateWithFixStrategyAsync(
-                    prepared,
-                    options,
-                    progress,
-                    ct
-                );
+                var (success, failureMessage) =
+                    await CreateWithFixStrategyAsync(
+                        prepared,
+                        options,
+                        progress,
+                        ct
+                    );
 
                 if (success)
                 {
@@ -413,7 +424,8 @@ namespace dvmig.Core.Synchronization
             return request;
         }
 
-        private async Task<(bool success, string failureMessage)> SyncIntersectEntityAsync(
+        private async Task<(bool success, string failureMessage)>
+            SyncIntersectEntityAsync(
             Entity entity,
             SyncOptions options,
             IProgress<string>? progress,
@@ -445,55 +457,143 @@ namespace dvmig.Core.Synchronization
                     return (true, string.Empty);
                 }
 
-                var (success, failureMessage) = await _errorHandler.HandleSyncExceptionAsync(
-                    ex,
-                    entity,
-                    options,
-                    progress,
-                    ct,
-                    updateFunc: async (entityToUpdate, token) =>
-                        await _target.UpdateAsync(entityToUpdate, token),
-                    statusTransitionFunc: async (entityToTransition, syncOptions, progressReporter, token) =>
-                        await _statusTransitionHandler.HandleStatusTransitionAsync(
+                var (success, failureMessage) =
+                    await _errorHandler.HandleSyncExceptionAsync(
+                        ex,
+                        entity,
+                        options,
+                        progress,
+                        ct,
+                        updateFunc: async (entityToUpdate, token) =>
+                            await _target.UpdateAsync(
+                                entityToUpdate,
+                                token
+                            ),
+                        statusTransitionFunc: async (
                             entityToTransition,
                             syncOptions,
                             progressReporter,
                             token
-                        ),
-                    resolveMissingDependencyFunc: async (exception, entityWithDependency, syncOptions, progressReporter, token) =>
-                        await _dependencyResolver.ResolveMissingDependencyAsync(
+                        ) =>
+                            await _statusTransitionHandler
+                                .HandleStatusTransitionAsync(
+                                    entityToTransition,
+                                    syncOptions,
+                                    progressReporter,
+                                    token
+                                ),
+                        resolveMissingDependencyFunc: async (
                             exception,
                             entityWithDependency,
                             syncOptions,
                             progressReporter,
-                            token,
-                            syncRecordFunc: async (recordToSync, recordOptions, recordProgress, recordToken) =>
-                                await SyncRecordAsync(recordToSync, recordOptions, recordProgress, recordToken),
-                            retryEntityFunc: async (entityToRetry, retryOptions, retryProgress, retryToken) =>
-                                await RetryEntityAsync(entityToRetry, retryOptions, retryProgress, retryToken),
-                            findExistingFunc: async (entityToFind, findToken) =>
-                                await FindExistingOnTargetAsync(entityToFind, findToken),
-                            idMappingCache: _idMappingCache,
-                            triedDependencies: _triedDependencies
-                        ),
-                    resolveSqlDependencyFunc: async (errorMessage, entityWithSqlDependency, syncOptions, progressReporter, token) =>
-                        await _dependencyResolver.ResolveSqlDependencyAsync(
+                            token
+                        ) =>
+                            await _dependencyResolver
+                                .ResolveMissingDependencyAsync(
+                                    exception,
+                                    entityWithDependency,
+                                    syncOptions,
+                                    progressReporter,
+                                    token,
+                                    syncRecordFunc: async (
+                                        recordToSync,
+                                        recordOptions,
+                                        recordProgress,
+                                        recordToken
+                                    ) =>
+                                        await SyncRecordAsync(
+                                            recordToSync,
+                                            recordOptions,
+                                            recordProgress,
+                                            recordToken
+                                        ),
+                                    retryEntityFunc: async (
+                                        entityToRetry,
+                                        retryOptions,
+                                        retryProgress,
+                                        retryToken
+                                    ) =>
+                                        await RetryEntityAsync(
+                                            entityToRetry,
+                                            retryOptions,
+                                            retryProgress,
+                                            retryToken
+                                        ),
+                                    findExistingFunc: async (
+                                        entityToFind,
+                                        findToken
+                                    ) =>
+                                        await FindExistingOnTargetAsync(
+                                            entityToFind,
+                                            findToken
+                                        ),
+                                    idMappingCache: _idMappingCache,
+                                    triedDependencies: _triedDependencies
+                                ),
+                        resolveSqlDependencyFunc: async (
                             errorMessage,
                             entityWithSqlDependency,
                             syncOptions,
                             progressReporter,
-                            token,
-                            syncRecordFunc: async (recordToSync, recordOptions, recordProgress, recordToken) =>
-                                await SyncRecordAsync(recordToSync, recordOptions, recordProgress, recordToken),
-                            retryEntityFunc: async (entityToRetry, retryOptions, retryProgress, retryToken) =>
-                                await RetryEntityAsync(entityToRetry, retryOptions, retryProgress, retryToken),
-                            findExistingFunc: async (entityToFind, findToken) =>
-                                await FindExistingOnTargetAsync(entityToFind, findToken),
-                            idMappingCache: _idMappingCache
-                        ),
-                    stripAttributeFunc: async (exception, entityToStrip, syncOptions, progressReporter, token) =>
-                        await StripAttributeAndRetryAsync(exception, entityToStrip, syncOptions, progressReporter, token)
-                );
+                            token
+                        ) =>
+                            await _dependencyResolver
+                                .ResolveSqlDependencyAsync(
+                                    errorMessage,
+                                    entityWithSqlDependency,
+                                    syncOptions,
+                                    progressReporter,
+                                    token,
+                                    syncRecordFunc: async (
+                                        recordToSync,
+                                        recordOptions,
+                                        recordProgress,
+                                        recordToken
+                                    ) =>
+                                        await SyncRecordAsync(
+                                            recordToSync,
+                                            recordOptions,
+                                            recordProgress,
+                                            recordToken
+                                        ),
+                                    retryEntityFunc: async (
+                                        entityToRetry,
+                                        retryOptions,
+                                        retryProgress,
+                                        retryToken
+                                    ) =>
+                                        await RetryEntityAsync(
+                                            entityToRetry,
+                                            retryOptions,
+                                            retryProgress,
+                                            retryToken
+                                        ),
+                                    findExistingFunc: async (
+                                        entityToFind,
+                                        findToken
+                                    ) =>
+                                        await FindExistingOnTargetAsync(
+                                            entityToFind,
+                                            findToken
+                                        ),
+                                    idMappingCache: _idMappingCache
+                                ),
+                        stripAttributeFunc: async (
+                            exception,
+                            entityToStrip,
+                            syncOptions,
+                            progressReporter,
+                            token
+                        ) =>
+                            await StripAttributeAndRetryAsync(
+                                exception,
+                                entityToStrip,
+                                syncOptions,
+                                progressReporter,
+                                token
+                            )
+                    );
 
                 return success
                     ? (true, string.Empty)
@@ -501,7 +601,8 @@ namespace dvmig.Core.Synchronization
             }
         }
 
-        private async Task<(bool success, string failureMessage)> CreateWithFixStrategyAsync(
+        private async Task<(bool success, string failureMessage)>
+            CreateWithFixStrategyAsync(
             Entity entity,
             SyncOptions options,
             IProgress<string>? progress,
@@ -523,55 +624,126 @@ namespace dvmig.Core.Synchronization
             }
             catch (Exception ex)
             {
-                var (success, failureMessage) = await _errorHandler.HandleSyncExceptionAsync(
-                    ex,
-                    entity,
-                    options,
-                    progress,
-                    ct,
-                    updateFunc: async (entityToUpdate, token) =>
-                        await _target.UpdateAsync(entityToUpdate, token),
-                    statusTransitionFunc: async (entityToTransition, syncOptions, progressReporter, token) =>
-                        await _statusTransitionHandler.HandleStatusTransitionAsync(
+                var (success, failureMessage) =
+                    await _errorHandler.HandleSyncExceptionAsync(
+                        ex,
+                        entity,
+                        options,
+                        progress,
+                        ct,
+                        updateFunc: _target.UpdateAsync,
+                        statusTransitionFunc: async (
                             entityToTransition,
                             syncOptions,
                             progressReporter,
                             token
-                        ),
-                    resolveMissingDependencyFunc: async (exception, entityWithDependency, syncOptions, progressReporter, token) =>
-                        await _dependencyResolver.ResolveMissingDependencyAsync(
+                        ) =>
+                            await _statusTransitionHandler
+                                .HandleStatusTransitionAsync(
+                                    entityToTransition,
+                                    syncOptions,
+                                    progressReporter,
+                                    token
+                                ),
+                        resolveMissingDependencyFunc: async (
                             exception,
                             entityWithDependency,
                             syncOptions,
                             progressReporter,
-                            token,
-                            syncRecordFunc: async (recordToSync, recordOptions, recordProgress, recordToken) =>
-                                await SyncRecordAsync(recordToSync, recordOptions, recordProgress, recordToken),
-                            retryEntityFunc: async (entityToRetry, retryOptions, retryProgress, retryToken) =>
-                                await RetryEntityAsync(entityToRetry, retryOptions, retryProgress, retryToken),
-                            findExistingFunc: async (entityToFind, findToken) =>
-                                await FindExistingOnTargetAsync(entityToFind, findToken),
-                            idMappingCache: _idMappingCache,
-                            triedDependencies: _triedDependencies
-                        ),
-                    resolveSqlDependencyFunc: async (errorMessage, entityWithSqlDependency, syncOptions, progressReporter, token) =>
-                        await _dependencyResolver.ResolveSqlDependencyAsync(
+                            token
+                        ) =>
+                            await _dependencyResolver
+                                .ResolveMissingDependencyAsync(
+                                    exception,
+                                    entityWithDependency,
+                                    syncOptions,
+                                    progressReporter,
+                                    token,
+                                    syncRecordFunc: async (
+                                        recordToSync,
+                                        recordOptions,
+                                        recordProgress,
+                                        recordToken
+                                    ) =>
+                                        await SyncRecordAsync(
+                                            recordToSync,
+                                            recordOptions,
+                                            recordProgress,
+                                            recordToken
+                                        ),
+                                    retryEntityFunc: async (
+                                        entityToRetry,
+                                        retryOptions,
+                                        retryProgress,
+                                        retryToken
+                                    ) =>
+                                        await RetryEntityAsync(
+                                            entityToRetry,
+                                            retryOptions,
+                                            retryProgress,
+                                            retryToken
+                                        ),
+                                    findExistingFunc: async (
+                                        entityToFind,
+                                        findToken
+                                    ) =>
+                                        await FindExistingOnTargetAsync(
+                                            entityToFind,
+                                            findToken
+                                        ),
+                                    idMappingCache: _idMappingCache,
+                                    triedDependencies: _triedDependencies
+                                ),
+                        resolveSqlDependencyFunc: async (
                             errorMessage,
                             entityWithSqlDependency,
                             syncOptions,
                             progressReporter,
-                            token,
-                            syncRecordFunc: async (recordToSync, recordOptions, recordProgress, recordToken) =>
-                                await SyncRecordAsync(recordToSync, recordOptions, recordProgress, recordToken),
-                            retryEntityFunc: async (entityToRetry, retryOptions, retryProgress, retryToken) =>
-                                await RetryEntityAsync(entityToRetry, retryOptions, retryProgress, retryToken),
-                            findExistingFunc: async (entityToFind, findToken) =>
-                                await FindExistingOnTargetAsync(entityToFind, findToken),
-                            idMappingCache: _idMappingCache
-                        ),
-                    stripAttributeFunc: async (exception, entityToStrip, syncOptions, progressReporter, token) =>
-                        await StripAttributeAndRetryAsync(exception, entityToStrip, syncOptions, progressReporter, token)
-                );
+                            token
+                        ) =>
+                            await _dependencyResolver
+                                .ResolveSqlDependencyAsync(
+                                    errorMessage,
+                                    entityWithSqlDependency,
+                                    syncOptions,
+                                    progressReporter,
+                                    token,
+                                    syncRecordFunc: async (
+                                        recordToSync,
+                                        recordOptions,
+                                        recordProgress,
+                                        recordToken
+                                    ) =>
+                                        await SyncRecordAsync(
+                                            recordToSync,
+                                            recordOptions,
+                                            recordProgress,
+                                            recordToken
+                                        ),
+                                    retryEntityFunc: async (
+                                        entityToRetry,
+                                        retryOptions,
+                                        retryProgress,
+                                        retryToken
+                                    ) =>
+                                        await RetryEntityAsync(
+                                            entityToRetry,
+                                            retryOptions,
+                                            retryProgress,
+                                            retryToken
+                                        ),
+                                    findExistingFunc: async (
+                                        entityToFind,
+                                        findToken
+                                    ) =>
+                                        await FindExistingOnTargetAsync(
+                                            entityToFind,
+                                            findToken
+                                        ),
+                                    idMappingCache: _idMappingCache
+                                ),
+                        stripAttributeFunc: StripAttributeAndRetryAsync
+                    );
 
                 return success
                     ? (true, string.Empty)
