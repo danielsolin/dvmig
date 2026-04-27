@@ -1,5 +1,4 @@
 using Microsoft.Xrm.Sdk;
-using dvmig.Core.Interfaces;
 
 namespace dvmig.Core.Interfaces
 {

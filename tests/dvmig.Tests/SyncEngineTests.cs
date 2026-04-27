@@ -1,6 +1,6 @@
 using dvmig.Core.Interfaces;
-using dvmig.Core.Synchronization;
 using dvmig.Core.Shared;
+using dvmig.Core.Synchronization;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Messages;
 using Microsoft.Xrm.Sdk.Metadata;

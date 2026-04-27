@@ -2,7 +2,7 @@ using dvmig.Core.Settings;
 
 namespace dvmig.Core.Interfaces
 {
-/// <summary>
+    /// <summary>
     /// Service interface for loading and saving application settings.
     /// </summary>
     public interface ISettingsService

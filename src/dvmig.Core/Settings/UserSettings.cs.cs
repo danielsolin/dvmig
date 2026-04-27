@@ -1,5 +1,3 @@
-using System;
-
 namespace dvmig.Core.Settings
 {
     /// <summary>

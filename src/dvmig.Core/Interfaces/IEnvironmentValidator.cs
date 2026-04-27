@@ -1,5 +1,3 @@
-using dvmig.Core.Interfaces;
-
 namespace dvmig.Core.Interfaces
 {
     /// <summary>

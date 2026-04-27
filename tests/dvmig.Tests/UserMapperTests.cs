@@ -1,5 +1,5 @@
-using dvmig.Core.Synchronization;
 using dvmig.Core.Interfaces;
+using dvmig.Core.Synchronization;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Query;
 using Moq;
