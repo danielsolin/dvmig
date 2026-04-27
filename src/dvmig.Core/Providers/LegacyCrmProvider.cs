@@ -5,11 +5,11 @@ using Microsoft.Xrm.Sdk.Metadata;
 using Microsoft.Xrm.Sdk.Query;
 using Microsoft.Xrm.Tooling.Connector;
 
-namespace dvmig.Providers
+namespace dvmig.Core.Providers
 {
     /// <summary>
-    /// Implementation of <see cref="IDataverseProvider"/> using the legacy 
-    /// <see cref="CrmServiceClient"/> from the XrmTooling.Connector SDK. 
+    /// Implementation of <see cref="IDataverseProvider"/> using the legacy
+    /// <see cref="CrmServiceClient"/> from the XrmTooling.Connector SDK.
     /// Required for OnPrem (AD/IFD) authentication support.
     /// </summary>
     public class LegacyCrmProvider : IDataverseProvider, IDisposable

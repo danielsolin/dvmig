@@ -7,7 +7,9 @@
       "Bash(git add *)",
       "Bash(git commit *)",
       "Bash(awk 'length > 80 {print NR\": \"length\" chars: \"$0}' src/dvmig.Core/Synchronization/ SyncEngine.cs)",
-      "Bash(awk 'length > 80 {print NR\": \"length\" chars: \"$0}' src/dvmig.Core/Synchronization/SyncEngine.cs)"
+      "Bash(awk 'length > 80 {print NR\": \"length\" chars: \"$0}' src/dvmig.Core/Synchronization/SyncEngine.cs)",
+      "Bash(dotnet clean *)",
+      "Bash(dotnet msbuild *)"
     ]
   }
 }

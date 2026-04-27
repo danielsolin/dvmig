@@ -1,5 +1,5 @@
 using dvmig.App.Models;
-using dvmig.Providers;
+using dvmig.Core.Providers;
 using dvmig.Shared.Metadata;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Messages;
@@ -122,6 +122,7 @@ namespace dvmig.App.Services
     /// </summary>
     public class MigrationService : IMigrationService
     {
+        private const int RecordFetchLimit = 100;
         private List<EntityMetadata>? _cachedMetadata;
 
         /// <inheritdoc />
@@ -153,38 +154,13 @@ namespace dvmig.App.Services
             bool isLegacy,
             CancellationToken ct = default)
         {
-            try
-            {
-                SourceProvider = isLegacy
-                    ? await Task.Run(
-                        () =>
-                        {
-                            ct.ThrowIfCancellationRequested();
+            SourceProvider = await ConnectProviderAsync(
+                connectionString,
+                isLegacy,
+                ct
+            );
 
-                            return new LegacyCrmProvider(connectionString);
-                        },
-                        ct
-                    )
-                    : await Task.Run(
-                        () =>
-                        {
-                            ct.ThrowIfCancellationRequested();
-
-                            return new DataverseProvider(connectionString);
-                        },
-                        ct
-                    );
-
-                return true;
-            }
-            catch (OperationCanceledException)
-            {
-                return false;
-            }
-            catch
-            {
-                return false;
-            }
+            return SourceProvider != null;
         }
 
         /// <inheritdoc />
@@ -193,50 +169,52 @@ namespace dvmig.App.Services
             bool isLegacy,
             CancellationToken ct = default)
         {
+            TargetProvider = await ConnectProviderAsync(
+                connectionString,
+                isLegacy,
+                ct
+            );
+
+            return TargetProvider != null;
+        }
+
+        private async Task<IDataverseProvider?> ConnectProviderAsync(
+            string connectionString,
+            bool isLegacy,
+            CancellationToken ct)
+        {
             try
             {
-                TargetProvider = isLegacy
-                    ? await Task.Run(
-                        () =>
+                return await Task.Run(
+                    () =>
+                    {
+                        ct.ThrowIfCancellationRequested();
+
+                        IDataverseProvider provider;
+                        if (isLegacy)
                         {
-                            ct.ThrowIfCancellationRequested();
-
-                            return new LegacyCrmProvider(connectionString);
-                        },
-                        ct
-                    )
-                    : await Task.Run(
-                        () =>
+                            provider = new LegacyCrmProvider(connectionString);
+                        }
+                        else
                         {
-                            ct.ThrowIfCancellationRequested();
+                            provider = new DataverseProvider(connectionString);
+                        }
 
-                            return new DataverseProvider(connectionString);
-                        },
-                        ct
-                    );
-
-                return true;
+                        return provider;
+                    },
+                    ct
+                );
             }
             catch (OperationCanceledException)
             {
-                return false;
+                return null;
             }
             catch
             {
-                return false;
+                return null;
             }
         }
 
-        /// <summary>
-        /// Deprecated method for testing connections. Use ConnectSource or 
-        /// ConnectTarget instead.
-        /// </summary>
-        public Task<bool> TestConnectionAsync(
-            string connectionString,
-            bool isLegacy)
-        {
-            return Task.FromResult(false);
-        }
 
         /// <inheritdoc />
         public async Task<List<EntityMetadata>> GetSourceEntitiesAsync(
@@ -342,7 +320,7 @@ namespace dvmig.App.Services
             var query = new QueryExpression(logicalName)
             {
                 ColumnSet = new ColumnSet(primaryId, primaryName),
-                TopCount = 100
+                TopCount = RecordFetchLimit
             };
 
             if (!string.IsNullOrWhiteSpace(searchText))

@@ -1,5 +1,5 @@
 using dvmig.Core.Provisioning;
-using dvmig.Providers;
+using dvmig.Core.Providers;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Metadata;
 using Microsoft.Xrm.Sdk.Query;

@@ -1,4 +1,4 @@
-using dvmig.Providers;
+using dvmig.Core.Providers;
 
 namespace dvmig.Core.Interfaces
 {

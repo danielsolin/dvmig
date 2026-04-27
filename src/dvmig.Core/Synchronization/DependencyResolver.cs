@@ -1,7 +1,7 @@
 using System.Collections.Concurrent;
 using System.Text.RegularExpressions;
 using dvmig.Core.Interfaces;
-using dvmig.Providers;
+using dvmig.Core.Providers;
 using Microsoft.Xrm.Sdk;
 using Serilog;
 

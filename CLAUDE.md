@@ -10,8 +10,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 The solution follows a modular, service-oriented architecture with clear separation of concerns:
 
-- **dvmig.Core**: Core business logic including the sync engine, data preservation, metadata services, and provisioning
-- **dvmig.Providers**: Abstraction layer (`IDataverseProvider`) for Dataverse and Legacy CRM SDK operations
+- **dvmig.Core**: Core business logic including the sync engine, data preservation, metadata services, provisioning, and Dataverse providers (`IDataverseProvider`, `DataverseProvider`, `LegacyCrmProvider`)
 - **dvmig.Plugins**: .NET Standard 2.0 plugins deployed to target Dataverse for date preservation (`dm_sourcedate` entity)
 - **dvmig.Cli**: Terminal User Interface (TUI) using Spectre.Console - **primary interface for V1.0**
 - **dvmig.App**: WPF application using MVVM pattern - maintained but not actively developed for V1.0

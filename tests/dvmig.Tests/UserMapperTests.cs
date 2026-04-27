@@ -1,5 +1,5 @@
 using dvmig.Core.Synchronization;
-using dvmig.Providers;
+using dvmig.Core.Providers;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Query;
 using Moq;

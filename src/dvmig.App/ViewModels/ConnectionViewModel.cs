@@ -13,6 +13,16 @@ namespace dvmig.App.ViewModels
     /// </summary>
     public partial class ConnectionViewModel : ViewModelBase
     {
+        private const string StatusNotConnected = "Not Connected";
+        private const string StatusConnecting = "Connecting...";
+        private const string StatusConnected = "Connected";
+        private const string StatusFailed = "Failed";
+        private const string StatusCancelled = "Cancelled";
+        private const string StatusInitializing = "Initializing...";
+        private const string StatusInitSuccess =
+            "Environment initialized successfully.";
+        private const string StatusInitFailedPrefix = "Initialization failed: ";
+
         private readonly INavigationService _navigationService;
         private readonly IMigrationService _migrationService;
         private readonly ISettingsService _settingsService;
@@ -65,14 +75,14 @@ namespace dvmig.App.ViewModels
         /// environment.
         /// </summary>
         [ObservableProperty]
-        private string _sourceStatus = "Not Connected";
+        private string _sourceStatus = StatusNotConnected;
 
         /// <summary>
-        /// Gets or sets the connection status message for the target 
+        /// Gets or sets the connection status message for the target
         /// environment.
         /// </summary>
         [ObservableProperty]
-        private string _targetStatus = "Not Connected";
+        private string _targetStatus = StatusNotConnected;
 
         /// <summary>
         /// Gets or sets a value indicating whether connection settings 
@@ -188,13 +198,13 @@ namespace dvmig.App.ViewModels
                     if (_migrationService.SourceProvider != null)
                     {
                         IsSourceConnected = true;
-                        SourceStatus = "Connected";
+                        SourceStatus = StatusConnected;
                     }
 
                     if (_migrationService.TargetProvider != null)
                     {
                         IsTargetConnected = true;
-                        TargetStatus = "Connected";
+                        TargetStatus = StatusConnected;
                     }
 
                     if (AutoConnect)
@@ -226,7 +236,7 @@ namespace dvmig.App.ViewModels
             _sourceCts = new CancellationTokenSource();
 
             IsSourceConnecting = true;
-            SourceStatus = "Connecting...";
+            SourceStatus = StatusConnecting;
 
             try
             {
@@ -241,7 +251,7 @@ namespace dvmig.App.ViewModels
                 );
 
                 IsSourceConnected = result;
-                SourceStatus = result ? "Connected" : "Failed";
+                SourceStatus = result ? StatusConnected : StatusFailed;
             }
             finally
             {
@@ -253,7 +263,7 @@ namespace dvmig.App.ViewModels
         private void CancelSourceConnection()
         {
             _sourceCts?.Cancel();
-            SourceStatus = "Cancelled";
+            SourceStatus = StatusCancelled;
         }
 
         [RelayCommand]
@@ -261,7 +271,7 @@ namespace dvmig.App.ViewModels
         {
             _migrationService.DisconnectSource();
             IsSourceConnected = false;
-            SourceStatus = "Not Connected";
+            SourceStatus = StatusNotConnected;
         }
 
         [RelayCommand]
@@ -271,7 +281,7 @@ namespace dvmig.App.ViewModels
             _targetCts = new CancellationTokenSource();
 
             IsTargetConnecting = true;
-            TargetStatus = "Connecting...";
+            TargetStatus = StatusConnecting;
 
             try
             {
@@ -282,7 +292,7 @@ namespace dvmig.App.ViewModels
                 );
 
                 IsTargetConnected = result;
-                TargetStatus = result ? "Connected" : "Failed";
+                TargetStatus = result ? StatusConnected : StatusFailed;
 
                 if (result)
                 {
@@ -303,7 +313,7 @@ namespace dvmig.App.ViewModels
         private void CancelTargetConnection()
         {
             _targetCts?.Cancel();
-            TargetStatus = "Cancelled";
+            TargetStatus = StatusCancelled;
         }
 
         [RelayCommand]
@@ -311,7 +321,7 @@ namespace dvmig.App.ViewModels
         {
             _migrationService.DisconnectTarget();
             IsTargetConnected = false;
-            TargetStatus = "Not Connected";
+            TargetStatus = StatusNotConnected;
         }
 
         [RelayCommand]
@@ -323,7 +333,7 @@ namespace dvmig.App.ViewModels
             }
 
             IsInitializing = true;
-            InitializationStatus = "Initializing...";
+            InitializationStatus = StatusInitializing;
 
             var progress = new Progress<string>(msg =>
             {
@@ -343,9 +353,9 @@ namespace dvmig.App.ViewModels
                 );
 
                 IsEnvironmentReady = true;
-                InitializationStatus = "Environment initialized successfully.";
+                InitializationStatus = StatusInitSuccess;
                 MessageBox.Show(
-                    "Environment initialized successfully.",
+                    StatusInitSuccess,
                     "Success",
                     MessageBoxButton.OK,
                     MessageBoxImage.Information
@@ -353,9 +363,9 @@ namespace dvmig.App.ViewModels
             }
             catch (Exception ex)
             {
-                InitializationStatus = $"Initialization failed: {ex.Message}";
+                InitializationStatus = $"{StatusInitFailedPrefix}{ex.Message}";
                 MessageBox.Show(
-                    $"Initialization failed: {ex.Message}",
+                    $"{StatusInitFailedPrefix}{ex.Message}",
                     "Error",
                     MessageBoxButton.OK,
                     MessageBoxImage.Error

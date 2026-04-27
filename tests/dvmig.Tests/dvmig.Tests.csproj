@@ -22,7 +22,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\dvmig.Core\dvmig.Core.csproj" />
-    <ProjectReference Include="..\..\src\dvmig.Providers\dvmig.Providers.csproj" />
   </ItemGroup>
 
 </Project>

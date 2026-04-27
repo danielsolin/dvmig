@@ -15,6 +15,11 @@ namespace dvmig.App.ViewModels
     /// </summary>
     public partial class EntitySelectionViewModel : ViewModelBase
     {
+        private const int RecordFetchDelayMs = 300;
+        private const int RecordFetchLimit = 100;
+        private const string StatusReady = "Ready";
+        private const string StatusFetchingCounts = "fetching counts...";
+
         private readonly INavigationService _navigationService;
         private readonly IMigrationService _migrationService;
         private readonly ICollectionView _entitiesView;
@@ -221,7 +226,7 @@ namespace dvmig.App.ViewModels
             try
             {
                 // Add a small delay for debounce
-                await Task.Delay(300, token);
+                await Task.Delay(RecordFetchDelayMs, token);
 
                 var records = await _migrationService.GetRecordsAsync(
                     ActiveEntity.LogicalName,
@@ -383,12 +388,12 @@ namespace dvmig.App.ViewModels
 
             if (selectedCount == 0)
             {
-                StatusText = "Ready";
+                StatusText = StatusReady;
             }
             else
             {
                 StatusText = pendingCount
-                    ? $"Records to sync: {total}+ (fetching counts... {selectedCount} entities)"
+                    ? $"Records to sync: {total}+ ({StatusFetchingCounts} {selectedCount} entities)"
                     : $"Records to sync: {total} ({selectedCount} entities selected)";
             }
 

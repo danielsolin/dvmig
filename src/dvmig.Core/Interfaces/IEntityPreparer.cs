@@ -1,6 +1,6 @@
 using System.Collections.Concurrent;
+using dvmig.Core.Providers;
 using dvmig.Core.Synchronization;
-using dvmig.Providers;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Metadata;
 

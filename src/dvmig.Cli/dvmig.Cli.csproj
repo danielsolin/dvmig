@@ -2,7 +2,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\dvmig.Core\dvmig.Core.csproj" />
-    <ProjectReference Include="..\dvmig.Providers\dvmig.Providers.csproj" />
   </ItemGroup>
 
   <ItemGroup>

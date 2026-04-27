@@ -1,5 +1,5 @@
+using dvmig.Core.Providers;
 using dvmig.Core.Settings;
-using dvmig.Providers;
 using Microsoft.Crm.Sdk.Messages;
 using Spectre.Console;
 

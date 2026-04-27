@@ -1,5 +1,5 @@
 using dvmig.Core.Interfaces;
-using dvmig.Providers;
+using dvmig.Core.Providers;
 using Microsoft.Xrm.Sdk;
 using Serilog;
 

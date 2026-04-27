@@ -1,5 +1,6 @@
 using dvmig.Core.Interfaces;
-using dvmig.Providers;
+using dvmig.Core.Providers;
+using dvmig.Shared.Metadata;
 using Microsoft.Xrm.Sdk.Query;
 
 namespace dvmig.Core.Provisioning
@@ -17,17 +18,20 @@ namespace dvmig.Core.Provisioning
         {
             try
             {
-                var meta = await target.GetEntityMetadataAsync(
-                    "dm_sourcedate",
+                var md = await target.GetEntityMetadataAsync(
+                    SchemaConstants.SourceDate.EntityLogicalName,
                     ct
                 );
-
-                if (meta == null)
-                {
+                if (md == null)
                     return false;
-                }
 
-                // 1. Check for plugin assembly
+                md = await target.GetEntityMetadataAsync(
+                    SchemaConstants.MigrationFailure.EntityLogicalName,
+                    ct
+                );
+                if (md == null)
+                    return false;
+
                 var query = new QueryByAttribute("pluginassembly")
                 {
                     ColumnSet = new ColumnSet("pluginassemblyid")
@@ -42,7 +46,6 @@ namespace dvmig.Core.Provisioning
                     return false;
                 }
 
-                // 2. Check for plugin type
                 var typeQuery = new QueryByAttribute("plugintype")
                 {
                     ColumnSet = new ColumnSet("plugintypeid")
@@ -61,7 +64,6 @@ namespace dvmig.Core.Provisioning
                     return false;
                 }
 
-                // 3. Check for plugin step
                 var stepQuery = new QueryByAttribute("sdkmessageprocessingstep")
                 {
                     ColumnSet = new ColumnSet("sdkmessageprocessingstepid")
@@ -70,7 +72,7 @@ namespace dvmig.Core.Provisioning
 
                 var steps = await target.RetrieveMultipleAsync(stepQuery, ct);
 
-                // We require both Create and Update steps to be registered
+                // Both Create and Update steps should be present:
                 return steps.Entities.Count >= 2;
             }
             catch

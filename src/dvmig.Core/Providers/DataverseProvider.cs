@@ -5,10 +5,10 @@ using Microsoft.Xrm.Sdk.Messages;
 using Microsoft.Xrm.Sdk.Metadata;
 using Microsoft.Xrm.Sdk.Query;
 
-namespace dvmig.Providers
+namespace dvmig.Core.Providers
 {
     /// <summary>
-    /// Implementation of <see cref="IDataverseProvider"/> using the modern 
+    /// Implementation of <see cref="IDataverseProvider"/> using the modern
     /// <see cref="ServiceClient"/> from the PowerPlatform.Dataverse.Client SDK.
     /// </summary>
     public class DataverseProvider : IDataverseProvider, IDisposable

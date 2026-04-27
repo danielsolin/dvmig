@@ -2,10 +2,10 @@ using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Metadata;
 using Microsoft.Xrm.Sdk.Query;
 
-namespace dvmig.Providers
+namespace dvmig.Core.Providers
 {
     /// <summary>
-    /// Interface for a Dataverse provider, abstracting CRUD and metadata 
+    /// Interface for a Dataverse provider, abstracting CRUD and metadata
     /// operations for different versions of the Dataverse/CRM SDK.
     /// </summary>
     public interface IDataverseProvider
@@ -101,7 +101,7 @@ namespace dvmig.Providers
             CancellationToken ct = default);
 
         /// <summary>
-        /// Gets or sets the ID of the user on whose behalf the operations 
+        /// Gets or sets the ID of the user on whose behalf the operations
         /// are executed.
         /// </summary>
         Guid? CallerId { get; set; }

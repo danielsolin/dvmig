@@ -1,5 +1,5 @@
 using dvmig.Core.Interfaces;
-using dvmig.Providers;
+using dvmig.Core.Providers;
 using dvmig.Shared.Metadata;
 using Microsoft.Crm.Sdk.Messages;
 using Microsoft.Xrm.Sdk;
@@ -14,6 +14,7 @@ namespace dvmig.Core.Provisioning
     /// </summary>
     public class SchemaManager : ISchemaManager
     {
+        private const int LanguageCode = 1033;
         private readonly ILogger _logger;
 
         /// <summary>
@@ -71,10 +72,10 @@ namespace dvmig.Core.Provisioning
                         SchemaName = entityName,
                         LogicalName = entityName,
                         DisplayName = new Label(
-                            "DVMig Source Date ", 1033
+                            "DVMig Source Date ", LanguageCode
                         ),
                         DisplayCollectionName = new Label(
-                            "DVMig Source Dates", 1033
+                            "DVMig Source Dates", LanguageCode
                         ),
                         OwnershipType = OwnershipTypes.UserOwned,
                         IsActivity = false,
@@ -85,7 +86,7 @@ namespace dvmig.Core.Provisioning
                     {
                         SchemaName = SchemaConstants.SourceDate.Name,
                         LogicalName = SchemaConstants.SourceDate.Name,
-                        DisplayName = new Label("Name", 1033),
+                        DisplayName = new Label("Name", LanguageCode),
                         RequiredLevel =
                             new AttributeRequiredLevelManagedProperty(
                                 AttributeRequiredLevel.None
@@ -172,10 +173,10 @@ namespace dvmig.Core.Provisioning
                     {
                         SchemaName = entityName,
                         LogicalName = entityName,
-                        DisplayName = new Label("DVMig Failure", 1033),
+                        DisplayName = new Label("DVMig Failure", LanguageCode),
                         DisplayCollectionName = new Label(
                             "DVMig Failures",
-                            1033
+                            LanguageCode
                         ),
                         OwnershipType = OwnershipTypes.UserOwned,
                         IsActivity = false
@@ -184,7 +185,7 @@ namespace dvmig.Core.Provisioning
                     {
                         SchemaName = SchemaConstants.MigrationFailure.Name,
                         LogicalName = SchemaConstants.MigrationFailure.Name,
-                        DisplayName = new Label("Name", 1033),
+                        DisplayName = new Label("Name", LanguageCode),
                         MaxLength = 100
                     }
                 };
@@ -280,7 +281,7 @@ namespace dvmig.Core.Provisioning
                     {
                         SchemaName = schemaName,
                         LogicalName = schemaName.ToLower(),
-                        DisplayName = new Label(displayName, 1033),
+                        DisplayName = new Label(displayName, LanguageCode),
                         MaxLength = SchemaConstants.AppConstants
                                         .MaxMemoFieldLength
                     };
@@ -291,7 +292,7 @@ namespace dvmig.Core.Provisioning
                     {
                         SchemaName = schemaName,
                         LogicalName = schemaName.ToLower(),
-                        DisplayName = new Label(displayName, 1033),
+                        DisplayName = new Label(displayName, LanguageCode),
                         MaxLength = 200
                     };
                 }
@@ -302,7 +303,7 @@ namespace dvmig.Core.Provisioning
                 {
                     SchemaName = schemaName,
                     LogicalName = schemaName.ToLower(),
-                    DisplayName = new Label(displayName, 1033),
+                    DisplayName = new Label(displayName, LanguageCode),
                     Format = DateTimeFormat.DateAndTime
                 };
             }
