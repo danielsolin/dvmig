@@ -3,7 +3,6 @@ using dvmig.App.Services;
 using dvmig.App.ViewModels;
 using dvmig.Core.Interfaces;
 using dvmig.Core.Logging;
-using dvmig.Core.Providers;
 using dvmig.Core.Provisioning;
 using dvmig.Core.Settings;
 using dvmig.Core.Synchronization;

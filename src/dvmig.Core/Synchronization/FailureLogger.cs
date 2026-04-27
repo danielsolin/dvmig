@@ -1,5 +1,4 @@
 using dvmig.Core.Interfaces;
-using dvmig.Core.Providers;
 using dvmig.Core.Shared;
 using Microsoft.Xrm.Sdk;
 using Serilog;
@@ -37,25 +36,25 @@ namespace dvmig.Core.Synchronization
             try
             {
                 var failure = new Entity(
-                    SchemaConstants.MigrationFailure.EntityLogicalName
+                    SystemConstants.MigrationFailure.EntityLogicalName
                 );
 
                 var failureName = $"{entity.LogicalName}:{entity.Id}";
-                failure[SchemaConstants.MigrationFailure.Name] =
+                failure[SystemConstants.MigrationFailure.Name] =
                     failureName.Length <= 100
                         ? failureName
                         : failureName.Substring(0, 100);
 
-                failure[SchemaConstants.MigrationFailure.SourceId] =
+                failure[SystemConstants.MigrationFailure.SourceId] =
                     entity.Id.ToString();
 
-                failure[SchemaConstants.MigrationFailure.EntityLogicalNameAttr] =
+                failure[SystemConstants.MigrationFailure.EntityLogicalNameAttr] =
                     entity.LogicalName;
 
-                failure[SchemaConstants.MigrationFailure.ErrorMessage] =
+                failure[SystemConstants.MigrationFailure.ErrorMessage] =
                     errorMessage;
 
-                failure[SchemaConstants.MigrationFailure.Timestamp] =
+                failure[SystemConstants.MigrationFailure.Timestamp] =
                     DateTime.UtcNow;
 
                 await _target.CreateAsync(failure, ct);

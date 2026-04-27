@@ -1,5 +1,5 @@
 using dvmig.Core.Metadata;
-using dvmig.Core.Providers;
+using dvmig.Core.Interfaces;
 using Spectre.Console;
 
 namespace dvmig.Cli

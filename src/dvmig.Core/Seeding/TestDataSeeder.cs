@@ -1,6 +1,5 @@
 using Bogus;
 using dvmig.Core.Interfaces;
-using dvmig.Core.Providers;
 using Microsoft.Xrm.Sdk;
 using Serilog;
 
@@ -244,7 +243,7 @@ namespace dvmig.Core.Seeding
                 ColumnSet = new Microsoft.Xrm.Sdk.Query.ColumnSet(false),
                 PageInfo = new Microsoft.Xrm.Sdk.Query.PagingInfo
                 {
-                    Count = dvmig.Core.Shared.SchemaConstants.AppConstants
+                    Count = dvmig.Core.Shared.SystemConstants.AppConstants
                         .DefaultDeletionBatchSize,
                     PageNumber = 1
                 }

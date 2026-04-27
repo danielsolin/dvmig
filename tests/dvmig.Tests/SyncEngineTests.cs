@@ -1,5 +1,4 @@
 using dvmig.Core.Interfaces;
-using dvmig.Core.Providers;
 using dvmig.Core.Synchronization;
 using dvmig.Core.Shared;
 using Microsoft.Xrm.Sdk;
@@ -428,7 +427,7 @@ namespace dvmig.Tests
                 .ThrowsAsync(new Exception("Create failed"));
 
             _targetMock.Setup(t => t.CreateAsync(
-                It.Is<Entity>(e => e.LogicalName == SchemaConstants.MigrationFailure.EntityLogicalName),
+                It.Is<Entity>(e => e.LogicalName == SystemConstants.MigrationFailure.EntityLogicalName),
                 It.IsAny<CancellationToken>()
             ))
                 .ReturnsAsync(Guid.NewGuid());
@@ -444,7 +443,7 @@ namespace dvmig.Tests
             // Assert
             _targetMock.Verify(t => t.CreateAsync(
                 It.Is<Entity>(e =>
-                    e.LogicalName == SchemaConstants.MigrationFailure.EntityLogicalName
+                    e.LogicalName == SystemConstants.MigrationFailure.EntityLogicalName
                 ),
                 It.IsAny<CancellationToken>()
             ), Times.Once);

@@ -1,5 +1,4 @@
 using dvmig.Core.Interfaces;
-using dvmig.Core.Providers;
 using dvmig.Core.Shared;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Query;
@@ -67,7 +66,7 @@ namespace dvmig.Core.Provisioning
         {
             var assemblyPath = Path.Combine(
                 AppDomain.CurrentDomain.BaseDirectory,
-                SchemaConstants.AppConstants.PluginAssemblyName
+                SystemConstants.AppConstants.PluginAssemblyName
             );
 
             // Fallback for development if not in same folder
@@ -76,9 +75,9 @@ namespace dvmig.Core.Provisioning
                 assemblyPath = Path.Combine(
                     AppDomain.CurrentDomain.BaseDirectory,
                     "..", "..", "..", "..",
-                    SchemaConstants.AppConstants.PluginName,
+                    SystemConstants.AppConstants.PluginName,
                     "bin", "Debug", "netstandard2.0",
-                    SchemaConstants.AppConstants.PluginAssemblyName
+                    SystemConstants.AppConstants.PluginAssemblyName
                 );
             }
 
@@ -168,11 +167,11 @@ namespace dvmig.Core.Provisioning
 
             try
             {
-                var entityName = SchemaConstants.SourceDate.EntityLogicalName;
-                var primaryId = SchemaConstants.SourceDate.PrimaryId;
-                var sourceEntityId = SchemaConstants.SourceDate.EntityId;
+                var entityName = SystemConstants.SourceDate.EntityLogicalName;
+                var primaryId = SystemConstants.SourceDate.PrimaryId;
+                var sourceEntityId = SystemConstants.SourceDate.EntityId;
                 var logicalNameAttr =
-                    SchemaConstants.SourceDate.EntityLogicalNameAttr;
+                    SystemConstants.SourceDate.EntityLogicalNameAttr;
 
                 var fetchXml = $@"
                     <fetch version='1.0' output-format='xml-platform' 
@@ -196,7 +195,7 @@ namespace dvmig.Core.Provisioning
                 if (result.Entities.Any())
                 {
                     await target.DeleteAsync(
-                        SchemaConstants.SourceDate.EntityLogicalName,
+                        SystemConstants.SourceDate.EntityLogicalName,
                         result.Entities[0].Id,
                         ct
                     );
@@ -226,7 +225,7 @@ namespace dvmig.Core.Provisioning
             try
             {
                 var meta = await target.GetEntityMetadataAsync(
-                    SchemaConstants.SourceDate.EntityLogicalName,
+                    SystemConstants.SourceDate.EntityLogicalName,
                     ct
                 );
 
@@ -243,7 +242,7 @@ namespace dvmig.Core.Provisioning
                     "Date preservation entity '{Entity}' not found " +
                     "on target. Date preservation will be disabled " +
                     "for this session.",
-                    SchemaConstants.SourceDate.EntityLogicalName
+                    SystemConstants.SourceDate.EntityLogicalName
                 );
             }
 
@@ -253,24 +252,24 @@ namespace dvmig.Core.Provisioning
         private Entity CreateSourceDateEntity(Entity entity)
         {
             var sourceDate = new Entity(
-                SchemaConstants.SourceDate.EntityLogicalName
+                SystemConstants.SourceDate.EntityLogicalName
             );
 
-            sourceDate[SchemaConstants.SourceDate.EntityId] =
+            sourceDate[SystemConstants.SourceDate.EntityId] =
                 entity.Id.ToString();
 
-            sourceDate[SchemaConstants.SourceDate.EntityLogicalNameAttr] =
+            sourceDate[SystemConstants.SourceDate.EntityLogicalNameAttr] =
                 entity.LogicalName.ToLower();
 
             if (entity.Contains("createdon"))
             {
-                sourceDate[SchemaConstants.SourceDate.CreatedDate] =
+                sourceDate[SystemConstants.SourceDate.CreatedDate] =
                     entity["createdon"];
             }
 
             if (entity.Contains("modifiedon"))
             {
-                sourceDate[SchemaConstants.SourceDate.ModifiedDate] =
+                sourceDate[SystemConstants.SourceDate.ModifiedDate] =
                     entity["modifiedon"];
             }
 

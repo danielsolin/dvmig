@@ -1,4 +1,4 @@
-using dvmig.Core.Providers;
+using dvmig.Core.Interfaces;
 using dvmig.Core.Settings;
 using Microsoft.Crm.Sdk.Messages;
 using Spectre.Console;
@@ -35,7 +35,7 @@ namespace dvmig.Cli.Infrastructure
             string connStr;
             if (!string.IsNullOrEmpty(storedConn))
             {
-                var preview = ConnectionHelper.MaskConnectionString(storedConn);
+                var preview = StringMasker.MaskConnectionString(storedConn);
 
                 var useStored = AnsiConsole.Confirm(
                     $"Use [green]stored[/] {label} connection string?\n" +

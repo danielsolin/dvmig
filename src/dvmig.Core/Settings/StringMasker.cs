@@ -3,7 +3,7 @@ namespace dvmig.Core.Settings
     /// <summary>
     /// Provides helper methods for manipulating Dataverse connection strings.
     /// </summary>
-    public static class ConnectionHelper
+    public static class StringMasker
     {
         /// <summary>
         /// Masks sensitive information (passwords, secrets) in a Dataverse 

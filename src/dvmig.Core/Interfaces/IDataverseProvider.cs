@@ -2,7 +2,7 @@ using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Metadata;
 using Microsoft.Xrm.Sdk.Query;
 
-namespace dvmig.Core.Providers
+namespace dvmig.Core.Interfaces
 {
     /// <summary>
     /// Interface for a Dataverse provider, abstracting CRUD and metadata

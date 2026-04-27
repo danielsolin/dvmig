@@ -1,5 +1,4 @@
 using dvmig.Core.Interfaces;
-using dvmig.Core.Providers;
 using dvmig.Core.Shared;
 using Microsoft.Xrm.Sdk.Query;
 
@@ -19,14 +18,14 @@ namespace dvmig.Core.Provisioning
             try
             {
                 var md = await target.GetEntityMetadataAsync(
-                    SchemaConstants.SourceDate.EntityLogicalName,
+                    SystemConstants.SourceDate.EntityLogicalName,
                     ct
                 );
                 if (md == null)
                     return false;
 
                 md = await target.GetEntityMetadataAsync(
-                    SchemaConstants.MigrationFailure.EntityLogicalName,
+                    SystemConstants.MigrationFailure.EntityLogicalName,
                     ct
                 );
                 if (md == null)

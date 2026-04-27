@@ -1,5 +1,5 @@
 using dvmig.App.Models;
-using dvmig.Core.Providers;
+using dvmig.Core.Interfaces;
 using dvmig.Core.Shared;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Messages;
@@ -319,7 +319,7 @@ namespace dvmig.App.Services
             var query = new QueryExpression(logicalName)
             {
                 ColumnSet = new ColumnSet(primaryId, primaryName),
-                TopCount = SchemaConstants.AppConstants.RecordFetchLimit
+                TopCount = SystemConstants.AppConstants.RecordFetchLimit
             };
 
             if (!string.IsNullOrWhiteSpace(searchText))

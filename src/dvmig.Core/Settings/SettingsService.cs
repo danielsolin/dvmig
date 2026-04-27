@@ -2,57 +2,10 @@ using System.Runtime.Versioning;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using dvmig.Core.Interfaces;
 
 namespace dvmig.Core.Settings
 {
-    /// <summary>
-    /// Represents the persisted user settings for the application.
-    /// </summary>
-    public class UserSettings
-    {
-        /// <summary>
-        /// Gets or sets the encrypted connection string for the source 
-        /// environment.
-        /// </summary>
-        public string SourceConnectionString { get; set; } = string.Empty;
-
-        /// <summary>
-        /// Gets or sets the encrypted connection string for the target 
-        /// environment.
-        /// </summary>
-        public string TargetConnectionString { get; set; } = string.Empty;
-
-        /// <summary>
-        /// Gets or sets a value indicating whether connection strings 
-        /// should be persisted.
-        /// </summary>
-        public bool RememberConnections { get; set; }
-
-        /// <summary>
-        /// Gets or sets a value indicating whether to automatically attempt 
-        /// connection on startup.
-        /// </summary>
-        public bool AutoConnect { get; set; }
-    }
-
-    /// <summary>
-    /// Service interface for loading and saving application settings.
-    /// </summary>
-    public interface ISettingsService
-    {
-        /// <summary>
-        /// Loads the user settings from persistent storage.
-        /// </summary>
-        /// <returns>The loaded user settings.</returns>
-        UserSettings LoadSettings();
-
-        /// <summary>
-        /// Saves the specified user settings to persistent storage.
-        /// </summary>
-        /// <param name="settings">The settings to save.</param>
-        void SaveSettings(UserSettings settings);
-    }
-
     /// <summary>
     /// Implementation of the settings service using local file storage and 
     /// DPAPI for encryption.

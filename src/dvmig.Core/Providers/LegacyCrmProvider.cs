@@ -5,7 +5,7 @@ using Microsoft.Xrm.Sdk.Metadata;
 using Microsoft.Xrm.Sdk.Query;
 using Microsoft.Xrm.Tooling.Connector;
 
-namespace dvmig.Core.Providers
+namespace dvmig.Core.Interfaces
 {
     /// <summary>
     /// Implementation of <see cref="IDataverseProvider"/> using the legacy
