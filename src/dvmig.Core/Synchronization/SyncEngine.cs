@@ -256,11 +256,11 @@ namespace dvmig.Core.Synchronization
         /// <inheritdoc />
         public async Task<(bool Success, string? FailureMessage)>
             SyncRecordAsync(
-            Entity entity,
-            SyncOptions options,
-            IProgress<string>? progress = null,
-            CancellationToken ct = default
-        )
+                Entity entity,
+                SyncOptions options,
+                IProgress<string>? progress = null,
+                CancellationToken ct = default
+            )
         {
             if (_syncedIds.Contains(entity.Id))
             {
@@ -426,13 +426,13 @@ namespace dvmig.Core.Synchronization
 
         private async Task<(bool success, string failureMessage)>
             HandleSyncExceptionWithRetryAsync(
-            Exception ex,
-            Entity entity,
-            SyncOptions options,
-            IProgress<string>? progress,
-            CancellationToken ct,
-            bool treatAlreadyExistsAsSuccess = false
-        )
+                Exception ex,
+                Entity entity,
+                SyncOptions options,
+                IProgress<string>? progress,
+                CancellationToken ct,
+                bool treatAlreadyExistsAsSuccess = false
+            )
         {
             if (treatAlreadyExistsAsSuccess &&
                 ex.Message.Contains("already exists"))
@@ -568,11 +568,11 @@ namespace dvmig.Core.Synchronization
 
         private async Task<(bool success, string failureMessage)>
             SyncIntersectEntityAsync(
-            Entity entity,
-            SyncOptions options,
-            IProgress<string>? progress,
-            CancellationToken ct
-        )
+                Entity entity,
+                SyncOptions options,
+                IProgress<string>? progress,
+                CancellationToken ct
+            )
         {
             try
             {
@@ -608,11 +608,11 @@ namespace dvmig.Core.Synchronization
 
         private async Task<(bool success, string failureMessage)>
             CreateWithFixStrategyAsync(
-            Entity entity,
-            SyncOptions options,
-            IProgress<string>? progress,
-            CancellationToken ct
-        )
+                Entity entity,
+                SyncOptions options,
+                IProgress<string>? progress,
+                CancellationToken ct
+            )
         {
             try
             {
