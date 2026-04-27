@@ -1,1 +1,1 @@
-# dvmig (Dataverse Migration)
+# dvmig (Dataverse Migrator)
