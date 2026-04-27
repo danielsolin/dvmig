@@ -1,4 +1,5 @@
 using dvmig.Cli.Infrastructure;
+using dvmig.Core.Interfaces;
 using dvmig.Core.Synchronization;
 using Serilog;
 using Spectre.Console;
@@ -14,7 +15,8 @@ namespace dvmig.Cli.Actions
         public ReconciliationActions(
             ConnectionManager connectionManager,
             IReconciliationService reconciliationService,
-            ILogger logger)
+            ILogger logger
+        )
         {
             _connectionManager = connectionManager;
             _reconciliationService = reconciliationService;
@@ -28,9 +30,7 @@ namespace dvmig.Cli.Actions
             );
 
             if (target == null)
-            {
                 return;
-            }
 
             bool isInitialized =
                 await _reconciliationService.IsInitializedAsync(
@@ -54,10 +54,11 @@ namespace dvmig.Cli.Actions
 
             var failures = await CliUI.RunStatusAsync(
                 "Fetching recorded migration failures...",
-                async () => await _reconciliationService.GetFailuresAsync(
-                    target,
-                    default
-                )
+                async () =>
+                    await _reconciliationService.GetFailuresAsync(
+                        target,
+                        default
+                    )
             );
 
             if (failures.Count == 0)
@@ -76,14 +77,12 @@ namespace dvmig.Cli.Actions
             table.AddColumn("Error Message");
 
             foreach (var failure in failures)
-            {
                 table.AddRow(
                     failure.EntityLogicalName,
                     failure.SourceId,
                     failure.TimestampUtc.ToString("yyyy-MM-dd HH:mm:ss"),
                     failure.ErrorMessage
                 );
-            }
 
             AnsiConsole.Write(table);
 
@@ -92,13 +91,14 @@ namespace dvmig.Cli.Actions
 
             if (AnsiConsole.Confirm(clearLog, false))
             {
-                await CliUI.RunStatusAsync("Clearing failure log...", async _ =>
-                {
-                    await _reconciliationService.ClearFailuresAsync(
-                        target,
-                        default
-                    );
-                });
+                await CliUI.RunStatusAsync(
+                    "Clearing failure log...",
+                    async _ =>
+                        await _reconciliationService.ClearFailuresAsync(
+                            target,
+                            default
+                        )
+                );
 
                 CliUI.WriteSuccess("Failure log cleared.");
             }

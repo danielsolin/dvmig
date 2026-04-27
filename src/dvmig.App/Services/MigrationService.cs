@@ -22,7 +22,9 @@ namespace dvmig.App.Services
         /// True if using legacy CRM OnPrem authentication (AD/IFD).
         /// </param>
         /// <param name="ct">A cancellation token.</param>
-        /// <returns>True if connection was successful; otherwise, false.</returns>
+        /// <returns>
+        /// True if connection was successful; otherwise, false.
+        /// </returns>
         Task<bool> ConnectSourceAsync(
             string connectionString,
             bool isLegacy,
@@ -37,7 +39,9 @@ namespace dvmig.App.Services
         /// True if using legacy CRM OnPrem authentication.
         /// </param>
         /// <param name="ct">A cancellation token.</param>
-        /// <returns>True if connection was successful; otherwise, false.</returns>
+        /// <returns>
+        /// True if connection was successful; otherwise, false.
+        /// </returns>
         Task<bool> ConnectTargetAsync(
             string connectionString,
             bool isLegacy,
@@ -112,7 +116,9 @@ namespace dvmig.App.Services
         /// (non-system) entity.
         /// </summary>
         /// <param name="logicalName">The logical name of the entity.</param>
-        /// <returns>True if it is a standard entity; otherwise, false.</returns>
+        /// <returns>
+        /// True if it is a standard entity; otherwise, false.
+        /// </returns>
         bool IsStandardEntity(string logicalName);
     }
 
@@ -191,13 +197,13 @@ namespace dvmig.App.Services
 
                         IDataverseProvider provider;
                         if (isLegacy)
-                        {
-                            provider = new LegacyCrmProvider(connectionString);
-                        }
+                            provider = new LegacyCrmProvider(
+                                connectionString
+                            );
                         else
-                        {
-                            provider = new DataverseProvider(connectionString);
-                        }
+                            provider = new DataverseProvider(
+                                connectionString
+                            );
 
                         return provider;
                     },
@@ -220,14 +226,10 @@ namespace dvmig.App.Services
             CancellationToken ct = default)
         {
             if (SourceProvider == null)
-            {
                 return new List<EntityMetadata>();
-            }
 
             if (_cachedMetadata != null)
-            {
                 return _cachedMetadata;
-            }
 
             var request = new RetrieveAllEntitiesRequest
             {
@@ -254,9 +256,7 @@ namespace dvmig.App.Services
             CancellationToken ct = default)
         {
             if (SourceProvider == null)
-            {
                 return 0;
-            }
 
             var metadata = await GetSourceEntitiesAsync(ct);
             var entityMeta = metadata.FirstOrDefault(e =>
@@ -264,16 +264,15 @@ namespace dvmig.App.Services
             );
 
             if (entityMeta == null)
-            {
                 return 0;
-            }
 
             var primaryId = entityMeta.PrimaryIdAttribute;
 
             var fetchXml = $@"
                 <fetch aggregate='true'>
                   <entity name='{logicalName}'>
-                    <attribute name='{primaryId}' alias='count' aggregate='count' />
+                    <attribute name='{primaryId}' alias='count' 
+                               aggregate='count' />
                   </entity>
                 </fetch>";
 
@@ -286,6 +285,7 @@ namespace dvmig.App.Services
                 response.Entities[0].Contains("count"))
             {
                 var aliasedValue = (AliasedValue)response.Entities[0]["count"];
+
                 return (int)aliasedValue.Value;
             }
 
@@ -299,9 +299,7 @@ namespace dvmig.App.Services
             CancellationToken ct = default)
         {
             if (SourceProvider == null)
-            {
                 return new List<RecordSelectionItem>();
-            }
 
             var metadata = await GetSourceEntitiesAsync(ct);
             var entityMeta = metadata.FirstOrDefault(e =>
@@ -309,9 +307,7 @@ namespace dvmig.App.Services
             );
 
             if (entityMeta == null)
-            {
                 return new List<RecordSelectionItem>();
-            }
 
             var primaryId = entityMeta.PrimaryIdAttribute;
             var primaryName = entityMeta.PrimaryNameAttribute;
@@ -323,13 +319,11 @@ namespace dvmig.App.Services
             };
 
             if (!string.IsNullOrWhiteSpace(searchText))
-            {
                 query.Criteria.AddCondition(
                     primaryName,
                     ConditionOperator.Like,
                     $"%{searchText}%"
                 );
-            }
 
             var results = await SourceProvider.RetrieveMultipleAsync(
                 query,
@@ -342,7 +336,9 @@ namespace dvmig.App.Services
 
             return results.Entities.Select(e => new RecordSelectionItem(
                 e.Id,
-                e.Contains(primaryName) ? e[primaryName].ToString()! : e.Id.ToString(),
+                e.Contains(primaryName)
+                    ? e[primaryName].ToString()!
+                    : e.Id.ToString(),
                 config?.SelectedRecordIds.Contains(e.Id) ?? false
             )).ToList();
         }

@@ -28,7 +28,9 @@ namespace dvmig.Core.Interfaces
         /// <summary>
         /// Creates a retry policy for handling transient errors.
         /// </summary>
-        /// <param name="maxRetries">The maximum number of retry attempts.</param>
+        /// <param name="maxRetries">
+        /// The maximum number of retry attempts.
+        /// </param>
         /// <returns>A configured retry policy.</returns>
         AsyncRetryPolicy CreateRetryPolicy(int maxRetries = 5);
     }

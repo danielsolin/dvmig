@@ -18,7 +18,9 @@ namespace dvmig.Core.Interfaces
         /// <summary>
         /// Retrieves a single entity record by ID.
         /// </summary>
-        /// <param name="entityLogicalName">The logical name of the entity.</param>
+        /// <param name="entityLogicalName">
+        /// The logical name of the entity.
+        /// </param>
         /// <param name="id">The record ID.</param>
         /// <param name="columns">Optional list of columns to retrieve.</param>
         /// <param name="ct">A cancellation token.</param>
@@ -32,7 +34,9 @@ namespace dvmig.Core.Interfaces
         /// <summary>
         /// Retrieves metadata for a specific entity.
         /// </summary>
-        /// <param name="entityLogicalName">The logical name of the entity.</param>
+        /// <param name="entityLogicalName">
+        /// The logical name of the entity.
+        /// </param>
         /// <param name="ct">A cancellation token.</param>
         /// <returns>The entity metadata, or null if retrieval fails.</returns>
         Task<EntityMetadata?> GetEntityMetadataAsync(
@@ -57,7 +61,9 @@ namespace dvmig.Core.Interfaces
         /// <summary>
         /// Deletes an entity record.
         /// </summary>
-        /// <param name="entityLogicalName">The logical name of the entity.</param>
+        /// <param name="entityLogicalName">
+        /// The logical name of the entity.
+        /// </param>
         /// <param name="id">The ID of the record to delete.</param>
         /// <param name="ct">A cancellation token.</param>
         Task DeleteAsync(
@@ -68,10 +74,14 @@ namespace dvmig.Core.Interfaces
         /// <summary>
         /// Associates records in an N:N relationship.
         /// </summary>
-        /// <param name="entityLogicalName">The logical name of the entity.</param>
+        /// <param name="entityLogicalName">
+        /// The logical name of the entity.
+        /// </param>
         /// <param name="entityId">The ID of the target record.</param>
         /// <param name="relationship">The relationship definition.</param>
-        /// <param name="relatedEntities">The collection of related entities.</param>
+        /// <param name="relatedEntities">
+        /// The collection of related entities.
+        /// </param>
         /// <param name="ct">A cancellation token.</param>
         Task AssociateAsync(
             string entityLogicalName,

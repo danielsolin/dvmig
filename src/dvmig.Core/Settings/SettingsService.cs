@@ -19,7 +19,8 @@ namespace dvmig.Core.Settings
             Encoding.UTF8.GetBytes("dvmig-entropy");
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="SettingsService"/> class.
+        /// Initializes a new instance of the 
+        /// <see cref="SettingsService"/> class.
         /// </summary>
         public SettingsService()
         {
@@ -30,9 +31,7 @@ namespace dvmig.Core.Settings
             var folder = Path.Combine(appData, "dvmig");
 
             if (!Directory.Exists(folder))
-            {
                 Directory.CreateDirectory(folder);
-            }
 
             _filePath = Path.Combine(folder, "settings.json");
         }
@@ -41,9 +40,7 @@ namespace dvmig.Core.Settings
         public UserSettings LoadSettings()
         {
             if (!File.Exists(_filePath))
-            {
                 return new UserSettings();
-            }
 
             try
             {
@@ -109,9 +106,7 @@ namespace dvmig.Core.Settings
         private string Encrypt(string text)
         {
             if (string.IsNullOrEmpty(text))
-            {
                 return string.Empty;
-            }
 
             try
             {
@@ -136,9 +131,7 @@ namespace dvmig.Core.Settings
         private string Decrypt(string base64)
         {
             if (string.IsNullOrEmpty(base64))
-            {
                 return string.Empty;
-            }
 
             try
             {

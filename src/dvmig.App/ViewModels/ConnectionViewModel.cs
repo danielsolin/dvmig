@@ -116,9 +116,7 @@ namespace dvmig.App.ViewModels
         private void SaveCurrentSettings()
         {
             if (_isSettingsLoading)
-            {
                 return;
-            }
 
             _settingsService.SaveSettings(
                 new UserSettings
@@ -211,15 +209,11 @@ namespace dvmig.App.ViewModels
                     {
                         if (_migrationService.SourceProvider == null &&
                             !string.IsNullOrEmpty(SourceConnectionString))
-                        {
                             _ = TestSourceConnectionAsync();
-                        }
 
                         if (_migrationService.TargetProvider == null &&
                             !string.IsNullOrEmpty(TargetConnectionString))
-                        {
                             _ = TestTargetConnectionAsync();
-                        }
                     }
                 }
             }
@@ -295,13 +289,11 @@ namespace dvmig.App.ViewModels
                 TargetStatus = result ? StatusConnected : StatusFailed;
 
                 if (result)
-                {
                     IsEnvironmentReady = await _setupService
                         .IsEnvironmentReadyAsync(
                             _migrationService.TargetProvider!,
                             _targetCts.Token
                         );
-                }
             }
             finally
             {
@@ -328,9 +320,7 @@ namespace dvmig.App.ViewModels
         private async Task InitializeEnvironmentAsync()
         {
             if (_migrationService.TargetProvider == null)
-            {
                 return;
-            }
 
             IsInitializing = true;
             InitializationStatus = StatusInitializing;

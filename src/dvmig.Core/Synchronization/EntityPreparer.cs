@@ -16,7 +16,8 @@ namespace dvmig.Core.Synchronization
         private readonly ILogger _logger;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="EntityPreparer"/> class.
+        /// Initializes a new instance of the 
+        /// <see cref="EntityPreparer"/> class.
         /// </summary>
         /// <param name="logger">The logger instance.</param>
         public EntityPreparer(ILogger logger)
@@ -33,23 +34,23 @@ namespace dvmig.Core.Synchronization
             ConcurrentDictionary<string, Guid> idMappingCache,
             CancellationToken ct = default)
         {
-            var targetEntity = new Entity(sourceEntity.LogicalName, sourceEntity.Id);
+            var targetEntity = new Entity(
+                sourceEntity.LogicalName,
+                sourceEntity.Id
+            );
 
             foreach (var attribute in sourceEntity.Attributes)
             {
                 if (IsForbiddenAttribute(attribute.Key))
-                {
                     continue;
-                }
 
                 var attrMetadata = metadata.Attributes?
                     .FirstOrDefault(a => a.LogicalName == attribute.Key);
 
-                if (attrMetadata != null && attrMetadata.IsValidForCreate == false &&
+                if (attrMetadata != null &&
+                    attrMetadata.IsValidForCreate == false &&
                     attrMetadata.IsValidForUpdate == false)
-                {
                     continue;
-                }
 
                 var value = attribute.Value;
 
@@ -62,8 +63,9 @@ namespace dvmig.Core.Synchronization
                         if (value == null)
                         {
                             _logger.Warning(
-                                "Skipping unmapped user field {Attr} for {Entity}:{Id}; " +
-                                "source user {UserId} was not found or could not be resolved.",
+                                "Skipping unmapped user field {Attr} for " +
+                                "{Entity}:{Id}; source user {UserId} was " +
+                                "not found or could not be resolved.",
                                 attribute.Key,
                                 sourceEntity.LogicalName,
                                 sourceEntity.Id,
@@ -76,9 +78,7 @@ namespace dvmig.Core.Synchronization
                     else if (idMappingCache.TryGetValue(
                         $"{er.LogicalName}:{er.Id}",
                         out var mappedId))
-                    {
                         value = new EntityReference(er.LogicalName, mappedId);
-                    }
                 }
 
                 targetEntity[attribute.Key] = value;
@@ -91,21 +91,18 @@ namespace dvmig.Core.Synchronization
         public async Task<Guid?> FindExistingOnTargetAsync(
             Entity entity,
             IDataverseProvider target,
-            Func<string, CancellationToken, Task<EntityMetadata?>> getMetadataFunc,
+            Func<string, CancellationToken, Task<EntityMetadata?>>
+                getMetadataFunc,
             CancellationToken ct = default)
         {
             var metadata = await getMetadataFunc(entity.LogicalName, ct);
             if (metadata == null)
-            {
                 return null;
-            }
 
             var primaryNameAttr = metadata.PrimaryNameAttribute;
             if (string.IsNullOrEmpty(primaryNameAttr) ||
                 !entity.Contains(primaryNameAttr))
-            {
                 return null;
-            }
 
             var query = new QueryByAttribute(entity.LogicalName)
             {

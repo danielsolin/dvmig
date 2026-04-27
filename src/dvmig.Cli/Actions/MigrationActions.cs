@@ -31,23 +31,95 @@ namespace dvmig.Cli.Actions
 
         public async Task HandleMigrationAsync()
         {
+            var (source, target, engine) = await SetupSyncEngineAsync();
+            if (source == null || target == null || engine == null)
+                return;
+
+            var selectedEntities = await CliUI.SelectEntitiesAsync(
+                _metadataService,
+                source
+            );
+
+            if (selectedEntities == null || selectedEntities.Count == 0)
+            {
+                CliUI.WriteWarning("No entities selected.");
+
+                return;
+            }
+
+            var threads = AnsiConsole.Prompt(
+                new SelectionPrompt<int>()
+                    .Title("Select [green]Max Parallelism[/] (Threads):")
+                    .AddChoices(new[] { 1, 5, 10, 20 })
+            );
+
+            await RunMigrationAsync(engine, source, selectedEntities, threads);
+            CliUI.WriteSuccess("Migration Finished!");
+        }
+
+        public async Task HandleRecommendedSyncAsync()
+        {
+            var (source, target, engine) = await SetupSyncEngineAsync();
+            if (source == null || target == null || engine == null)
+                return;
+
+            var recommendedEntities = new List<string>
+            {
+                "account",
+                "contact",
+                "task",
+                "phonecall",
+                "email",
+                "appointment"
+            };
+
+            AnsiConsole.MarkupLine(
+                "[bold cyan]Recommended Sync Order:[/]"
+            );
+            foreach (var entity in recommendedEntities)
+                AnsiConsole.MarkupLine($" - {entity}");
+
+            if (!AnsiConsole.Confirm("Proceed with this sync plan?", true))
+            {
+                CliUI.WriteWarning("Recommended sync cancelled.");
+
+                return;
+            }
+
+            var threads = AnsiConsole.Prompt(
+                new SelectionPrompt<int>()
+                    .Title("Select [green]Max Parallelism[/] (Threads):")
+                    .AddChoices(new[] { 1, 5, 10, 20 })
+            );
+
+            await RunMigrationAsync(
+                engine,
+                source,
+                recommendedEntities,
+                threads
+            );
+            CliUI.WriteSuccess("Recommended Migration Finished!");
+        }
+
+        private async Task<(
+            IDataverseProvider? Source,
+            IDataverseProvider? Target,
+            ISyncEngine? Engine
+        )> SetupSyncEngineAsync()
+        {
             var source = await _connectionManager.ConnectAsync(
                 ConnectionDirection.Source
             );
 
             if (source == null)
-            {
-                return;
-            }
+                return (null, null, null);
 
             var target = await _connectionManager.ConnectAsync(
                 ConnectionDirection.Target
             );
 
             if (target == null)
-            {
-                return;
-            }
+                return (null, null, null);
 
             bool isReady = await _setupService.IsEnvironmentReadyAsync(
                 target,
@@ -61,16 +133,14 @@ namespace dvmig.Cli.Actions
                                  "Prepare it now?[/]";
 
                 if (AnsiConsole.Confirm(prepareMsg, true))
-                {
                     await HandleInstallAsync(target);
-                }
                 else
                 {
                     CliUI.WriteError(
                         "Migration cannot proceed without components."
                     );
 
-                    return;
+                    return (null, null, null);
                 }
             }
 
@@ -78,7 +148,11 @@ namespace dvmig.Cli.Actions
 
             var retryStrategy = new RetryStrategy(_logger);
             var entityPreparer = new EntityPreparer(_logger);
-            var errorHandler = new SyncErrorHandler(target, _setupService, _logger);
+            var errorHandler = new SyncErrorHandler(
+                target,
+                _setupService,
+                _logger
+            );
             var dependencyResolver = new DependencyResolver(source, _logger);
             var statusTransitionHandler = new StatusTransitionHandler(
                 target,
@@ -104,20 +178,7 @@ namespace dvmig.Cli.Actions
                 failureLogger
             );
 
-            var selectedEntities = await CliUI.SelectEntitiesAsync(
-                _metadataService,
-                source
-            );
-
-            if (selectedEntities == null || selectedEntities.Count == 0)
-            {
-                CliUI.WriteWarning("No entities selected.");
-
-                return;
-            }
-
-            await RunMigrationAsync(engine, source, selectedEntities);
-            CliUI.WriteSuccess("Migration Finished!");
+            return (source, target, engine);
         }
 
         private async Task HandleInstallAsync(IDataverseProvider target)
@@ -137,7 +198,8 @@ namespace dvmig.Cli.Actions
         private async Task RunMigrationAsync(
             ISyncEngine engine,
             IDataverseProvider source,
-            List<string> entities
+            List<string> entities,
+            int maxThreads
         )
         {
             foreach (var logicalName in entities)
@@ -168,9 +230,7 @@ namespace dvmig.Cli.Actions
                             );
                         }
                         else
-                        {
                             processed = syncedIds.Count;
-                        }
                     }
                 }
 
@@ -203,29 +263,44 @@ namespace dvmig.Cli.Actions
                     .StartAsync(async ctx =>
                     {
                         var taskName = $"Syncing {logicalName} " +
-                                       $"({processed}/{totalCount})";
+                                       $"({processed}/{totalCount}) " +
+                                       $"[[{maxThreads} threads]]";
 
                         var task = ctx.AddTask(taskName, true, totalCount);
                         task.Value = processed;
 
                         var recordProgress = new Progress<bool>(success =>
                         {
-                            processed++;
-                            task.Value = processed;
-                            task.Description = $"Syncing {logicalName} " +
-                                               $"({processed}/{totalCount})";
+                            if (success)
+                            {
+                                processed++;
+                                task.Value = processed;
+                                task.Description =
+                                    $"Syncing {logicalName} " +
+                                    $"({processed}/{totalCount}) " +
+                                    $"[[{maxThreads} threads]]";
+                            }
                         });
 
                         var options = new SyncOptions
                         {
-                            StripMissingDependencies = true
+                            StripMissingDependencies = true,
+                            MaxDegreeOfParallelism = maxThreads
                         };
+
+                        var progressReporter = new Progress<string>(msg =>
+                        {
+                            // If we hit throttling, show it in the console
+                            // even during progress bars
+                            if (msg.Contains("Throttled"))
+                                AnsiConsole.MarkupLine($"[yellow]{msg}[/]");
+                        });
 
                         await engine.SyncEntityAsync(
                             logicalName,
                             options,
                             null,
-                            null,
+                            progressReporter,
                             recordProgress,
                             default
                         );

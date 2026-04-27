@@ -5,46 +5,15 @@ using Microsoft.Xrm.Sdk.Query;
 namespace dvmig.Core.Synchronization
 {
     /// <summary>
-    /// Represents a recorded migration failure.
-    /// </summary>
-    public class MigrationFailureRecord
-    {
-        public Guid Id { get; set; }
-        public string EntityLogicalName { get; set; } = string.Empty;
-        public string SourceId { get; set; } = string.Empty;
-        public string ErrorMessage { get; set; } = string.Empty;
-        public DateTime TimestampUtc { get; set; }
-    }
-
-    /// <summary>
-    /// Defines the contract for a service that retrieves and manages 
-    /// migration failure records.
-    /// </summary>
-    public interface IReconciliationService
-    {
-        /// <summary>
-        /// Checks if the failure logging entity is installed on the target.
-        /// </summary>
-        Task<bool> IsInitializedAsync(IDataverseProvider target, CancellationToken ct = default);
-
-        /// <summary>
-        /// Retrieves all recorded migration failures from the target.
-        /// </summary>
-        Task<List<MigrationFailureRecord>> GetFailuresAsync(IDataverseProvider target, CancellationToken ct = default);
-
-        /// <summary>
-        /// Clears all recorded migration failures from the target.
-        /// </summary>
-        Task ClearFailuresAsync(IDataverseProvider target, CancellationToken ct = default);
-    }
-
-    /// <summary>
     /// Implementation of the reconciliation service.
     /// </summary>
     public class ReconciliationService : IReconciliationService
     {
         /// <inheritdoc />
-        public async Task<bool> IsInitializedAsync(IDataverseProvider target, CancellationToken ct = default)
+        public async Task<bool> IsInitializedAsync(
+            IDataverseProvider target,
+            CancellationToken ct = default
+        )
         {
             var meta = await target.GetEntityMetadataAsync(
                 SystemConstants.MigrationFailure.EntityLogicalName,
@@ -55,9 +24,14 @@ namespace dvmig.Core.Synchronization
         }
 
         /// <inheritdoc />
-        public async Task<List<MigrationFailureRecord>> GetFailuresAsync(IDataverseProvider target, CancellationToken ct = default)
+        public async Task<List<MigrationFailureRecord>> GetFailuresAsync(
+            IDataverseProvider target,
+            CancellationToken ct = default
+        )
         {
-            var query = new QueryExpression(SystemConstants.MigrationFailure.EntityLogicalName)
+            var query = new QueryExpression(
+                SystemConstants.MigrationFailure.EntityLogicalName
+            )
             {
                 ColumnSet = new ColumnSet(
                     SystemConstants.MigrationFailure.SourceId,
@@ -66,24 +40,41 @@ namespace dvmig.Core.Synchronization
                     SystemConstants.MigrationFailure.Timestamp
                 )
             };
-            query.AddOrder(SystemConstants.MigrationFailure.Timestamp, OrderType.Descending);
+
+            query.AddOrder(
+                SystemConstants.MigrationFailure.Timestamp,
+                OrderType.Descending
+            );
 
             var result = await target.RetrieveMultipleAsync(query, ct);
 
             return result.Entities.Select(e => new MigrationFailureRecord
             {
                 Id = e.Id,
-                EntityLogicalName = e.GetAttributeValue<string>(SystemConstants.MigrationFailure.EntityLogicalNameAttr) ?? "N/A",
-                SourceId = e.GetAttributeValue<string>(SystemConstants.MigrationFailure.SourceId) ?? "N/A",
-                ErrorMessage = e.GetAttributeValue<string>(SystemConstants.MigrationFailure.ErrorMessage) ?? "N/A",
-                TimestampUtc = e.GetAttributeValue<DateTime>(SystemConstants.MigrationFailure.Timestamp)
+                EntityLogicalName = e.GetAttributeValue<string>(
+                    SystemConstants.MigrationFailure.EntityLogicalNameAttr
+                ) ?? "N/A",
+                SourceId = e.GetAttributeValue<string>(
+                    SystemConstants.MigrationFailure.SourceId
+                ) ?? "N/A",
+                ErrorMessage = e.GetAttributeValue<string>(
+                    SystemConstants.MigrationFailure.ErrorMessage
+                ) ?? "N/A",
+                TimestampUtc = e.GetAttributeValue<DateTime>(
+                    SystemConstants.MigrationFailure.Timestamp
+                )
             }).ToList();
         }
 
         /// <inheritdoc />
-        public async Task ClearFailuresAsync(IDataverseProvider target, CancellationToken ct = default)
+        public async Task ClearFailuresAsync(
+            IDataverseProvider target,
+            CancellationToken ct = default
+        )
         {
-            var query = new QueryExpression(SystemConstants.MigrationFailure.EntityLogicalName)
+            var query = new QueryExpression(
+                SystemConstants.MigrationFailure.EntityLogicalName
+            )
             {
                 ColumnSet = new ColumnSet(false)
             };
@@ -93,7 +84,12 @@ namespace dvmig.Core.Synchronization
             foreach (var entity in result.Entities)
             {
                 ct.ThrowIfCancellationRequested();
-                await target.DeleteAsync(SystemConstants.MigrationFailure.EntityLogicalName, entity.Id, ct);
+
+                await target.DeleteAsync(
+                    SystemConstants.MigrationFailure.EntityLogicalName,
+                    entity.Id,
+                    ct
+                );
             }
         }
     }

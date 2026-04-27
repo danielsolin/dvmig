@@ -16,7 +16,8 @@ namespace dvmig.Cli.Actions
             ConnectionManager connectionManager,
             ITestDataSeeder seeder,
             ISetupService setupService,
-            ILogger logger)
+            ILogger logger
+        )
         {
             _connectionManager = connectionManager;
             _seeder = seeder;
@@ -31,9 +32,7 @@ namespace dvmig.Cli.Actions
             );
 
             if (provider == null)
-            {
                 return;
-            }
 
             var prompt = "How many [bold blue]Accounts[/] would you like " +
                          "to generate?";
@@ -42,11 +41,12 @@ namespace dvmig.Cli.Actions
 
             await CliUI.RunStatusAsync(
                 "Seeding data...",
-                async progress => await _seeder.SeedTestDataAsync(
-                    provider,
-                    count,
-                    progress
-                )
+                async progress =>
+                    await _seeder.SeedTestDataAsync(
+                        provider,
+                        count,
+                        progress
+                    )
             );
 
             CliUI.WriteSuccess("Seeding Finished!");
@@ -59,9 +59,7 @@ namespace dvmig.Cli.Actions
             );
 
             if (provider == null)
-            {
                 return;
-            }
 
             await CliUI.RunStatusAsync(
                 "Installing components...",
@@ -82,45 +80,54 @@ namespace dvmig.Cli.Actions
             );
 
             if (provider == null)
-            {
                 return;
-            }
 
             var promptMsg = "[red]Are you sure you want to remove all dvmig " +
                             "system components (schema and plugins) from " +
                             "this environment?[/]";
 
             if (!AnsiConsole.Confirm(promptMsg, false))
-            {
                 return;
-            }
 
             await CliUI.RunStatusAsync(
                 "Uninstalling components...",
-                async progress => await _setupService.CleanEnvironmentAsync(
-                    provider,
-                    progress
-                )
+                async progress =>
+                    await _setupService.CleanEnvironmentAsync(
+                        provider,
+                        progress
+                    )
             );
 
             CliUI.WriteSuccess("Uninstallation Finished!");
         }
 
-        public async Task HandleSourceTestDataCleanupAsync()
+        public async Task HandleSourceDataCleanupAsync()
         {
-            var provider = await _connectionManager.ConnectAsync(
-                ConnectionDirection.Source
-            );
+            await HandleDataCleanupInternalAsync(ConnectionDirection.Source);
+        }
+
+        public async Task HandleTargetDataCleanupAsync()
+        {
+            await HandleDataCleanupInternalAsync(ConnectionDirection.Target);
+        }
+
+        private async Task HandleDataCleanupInternalAsync(
+            ConnectionDirection direction
+        )
+        {
+            var provider = await _connectionManager.ConnectAsync(direction);
 
             if (provider == null)
-            {
                 return;
-            }
+
+            var envName = direction == ConnectionDirection.Source
+                ? "SOURCE"
+                : "TARGET";
 
             AnsiConsole.MarkupLine(
-                "[bold red]CRITICAL WARNING:[/] This operation will delete " +
-                "[bold]EVERY SINGLE[/] Account, Contact, Task, Phone Call, " +
-                "and Email record from the selected environment."
+                $"[bold red]CRITICAL WARNING:[/] This operation will delete " +
+                $"[bold]EVERY SINGLE[/] Account, Contact, Task, Phone Call, " +
+                $"and Email record from the {envName} environment."
             );
             AnsiConsole.MarkupLine(
                 "[red]This is NOT restricted to test data. Real data will " +
@@ -143,13 +150,14 @@ namespace dvmig.Cli.Actions
 
             await CliUI.RunStatusAsync(
                 "Wiping data...",
-                async progress => await _seeder.CleanTestDataAsync(
-                    provider,
-                    progress
-                )
+                async progress =>
+                    await _seeder.CleanTestDataAsync(
+                        provider,
+                        progress
+                    )
             );
 
-            CliUI.WriteSuccess("Data Wipe Finished!");
+            CliUI.WriteSuccess($"Data Wipe Finished for {envName}!");
         }
     }
 }

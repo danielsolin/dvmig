@@ -36,19 +36,13 @@ namespace dvmig.Plugins
             // We allow depth 2 because SyncEngine might trigger an Update 
             // from within its fix logic.
             if (context.Depth > 2)
-            {
                 return;
-            }
 
             if (!context.InputParameters.Contains("Target"))
-            {
                 return;
-            }
 
             if (!(context.InputParameters["Target"] is Entity entity))
-            {
                 return;
-            }
 
             try
             {
@@ -87,18 +81,12 @@ namespace dvmig.Plugins
             );
 
             if (sourceDate == null)
-            {
                 return;
-            }
 
             if (messageName == "create")
-            {
                 ApplyCreateDates(entity, sourceDate);
-            }
             else if (messageName == "update")
-            {
                 ApplyUpdateDates(entity, sourceDate);
-            }
         }
 
         /// <summary>
@@ -111,17 +99,25 @@ namespace dvmig.Plugins
             string logicalName
         )
         {
+            var entityName = SystemConstants.SourceDate.EntityLogicalName;
+            var primaryId = SystemConstants.SourceDate.PrimaryId;
+            var createdDateAttr = SystemConstants.SourceDate.CreatedDate;
+            var modifiedDateAttr = SystemConstants.SourceDate.ModifiedDate;
+            var sourceEntityId = SystemConstants.SourceDate.EntityId;
+            var logicalNameAttr =
+                SystemConstants.SourceDate.EntityLogicalNameAttr;
+
             var fetchXml = $@"
                 <fetch version='1.0' output-format='xml-platform' 
                        mapping='logical' distinct='false' count='1'>
-                  <entity name='{SystemConstants.SourceDate.EntityLogicalName}'>
-                    <attribute name='{SystemConstants.SourceDate.PrimaryId}' />
-                    <attribute name='{SystemConstants.SourceDate.CreatedDate}' />
-                    <attribute name='{SystemConstants.SourceDate.ModifiedDate}' />
+                  <entity name='{entityName}'>
+                    <attribute name='{primaryId}' />
+                    <attribute name='{createdDateAttr}' />
+                    <attribute name='{modifiedDateAttr}' />
                     <filter type='and'>
-                      <condition attribute='{SystemConstants.SourceDate.EntityId}' 
+                      <condition attribute='{sourceEntityId}' 
                         operator='eq' value='{entityId}' />
-                      <condition attribute='{SystemConstants.SourceDate.EntityLogicalNameAttr}' 
+                      <condition attribute='{logicalNameAttr}' 
                         operator='eq' 
                         value='{logicalName.ToLower()}' />
                     </filter>
@@ -133,9 +129,7 @@ namespace dvmig.Plugins
             );
 
             if (result.Entities.Count > 0)
-            {
                 return result.Entities[0];
-            }
 
             return null;
         }
@@ -159,10 +153,8 @@ namespace dvmig.Plugins
             }
 
             if (sourceDate.Contains(SystemConstants.SourceDate.ModifiedDate))
-            {
                 entity["modifiedon"] =
                     sourceDate[SystemConstants.SourceDate.ModifiedDate];
-            }
         }
 
         /// <summary>
@@ -175,10 +167,8 @@ namespace dvmig.Plugins
         )
         {
             if (sourceDate.Contains(SystemConstants.SourceDate.ModifiedDate))
-            {
                 entity["modifiedon"] =
                     sourceDate[SystemConstants.SourceDate.ModifiedDate];
-            }
         }
     }
 }

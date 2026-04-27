@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Security.Cryptography;
 using System.Text;
 using dvmig.Core.Interfaces;
@@ -5,23 +6,36 @@ using dvmig.Core.Interfaces;
 namespace dvmig.Core.Synchronization
 {
     /// <summary>
-    /// Implements sync state tracking using local files in the AppData directory.
+    /// Implements sync state tracking using local files in the 
+    /// AppData directory.
     /// </summary>
     public class LocalFileStateTracker : ISyncStateTracker
     {
         private string? _filePath;
+        private string? _mainLogicalName;
         private readonly SemaphoreSlim _fileLock = new SemaphoreSlim(1, 1);
 
+        private readonly ConcurrentDictionary<Guid, byte> _syncedIds =
+            new ConcurrentDictionary<Guid, byte>();
+
         /// <inheritdoc />
-        public Task InitializeAsync(
-            string sourceKey, string targetKey, string logicalName)
+        public async Task InitializeAsync(
+            string sourceKey,
+            string targetKey,
+            string logicalName
+        )
         {
+            _syncedIds.Clear();
+            _mainLogicalName = logicalName;
+
             var appData = Environment.GetFolderPath(
                 Environment.SpecialFolder.ApplicationData
             );
 
-            var normalizedKey = $"{NormalizeConnectionString(sourceKey)}"
-                                + "|{NormalizeConnectionString(targetKey)}";
+            var normalizedKey = 
+                $"{NormalizeConnectionString(sourceKey)}|" +
+                $"{NormalizeConnectionString(targetKey)}";
+                
             var normalizedHash = GetHash(normalizedKey);
             var normalizedFolder = Path.Combine(
                 appData,
@@ -41,27 +55,27 @@ namespace dvmig.Core.Synchronization
             var rawPath = Path.Combine(rawFolder, $"{logicalName}.txt");
 
             if (File.Exists(rawPath))
-            {
                 _filePath = rawPath;
-                return Task.CompletedTask;
-            }
-
-            if (!Directory.Exists(normalizedFolder))
+            else
             {
-                Directory.CreateDirectory(normalizedFolder);
+                if (!Directory.Exists(normalizedFolder))
+                    Directory.CreateDirectory(normalizedFolder);
+
+                _filePath = normalizedPath;
             }
 
-            _filePath = normalizedPath;
-
-            return Task.CompletedTask;
+            if (StateExists())
+            {
+                var ids = await GetSyncedIdsAsync();
+                foreach (var id in ids)
+                    _syncedIds.TryAdd(id, 1);
+            }
         }
 
         private static string NormalizeConnectionString(string connectionString)
         {
             if (string.IsNullOrWhiteSpace(connectionString))
-            {
                 return string.Empty;
-            }
 
             var parts = connectionString.Split(
                 ';',
@@ -73,18 +87,14 @@ namespace dvmig.Core.Synchronization
             {
                 var kv = part.Split('=', 2);
                 if (kv.Length != 2)
-                {
                     continue;
-                }
 
                 var key = kv[0].Trim().ToLowerInvariant();
                 var value = kv[1].Trim();
 
                 if (string.IsNullOrEmpty(key) ||
                     IsSensitiveConnectionKey(key))
-                {
                     continue;
-                }
 
                 normalizedPairs.Add(
                     new KeyValuePair<string, string>(key, value)
@@ -108,16 +118,18 @@ namespace dvmig.Core.Synchronization
 
         private static bool IsSensitiveConnectionKey(string key)
         {
+            var comparison = StringComparison.OrdinalIgnoreCase;
+
             return
-                key.Contains("password", StringComparison.OrdinalIgnoreCase) ||
-                key.Contains("secret", StringComparison.OrdinalIgnoreCase) ||
-                key.Contains("token", StringComparison.OrdinalIgnoreCase) ||
-                key.Contains("thumbprint", StringComparison.OrdinalIgnoreCase) ||
-                key.Contains("clientid", StringComparison.OrdinalIgnoreCase) ||
-                key.Contains("appid", StringComparison.OrdinalIgnoreCase) ||
-                key.Contains("userid", StringComparison.OrdinalIgnoreCase) ||
-                key.Contains("user id", StringComparison.OrdinalIgnoreCase) ||
-                key.Contains("username", StringComparison.OrdinalIgnoreCase);
+                key.Contains("password", comparison) ||
+                key.Contains("secret", comparison) ||
+                key.Contains("token", comparison) ||
+                key.Contains("thumbprint", comparison) ||
+                key.Contains("clientid", comparison) ||
+                key.Contains("appid", comparison) ||
+                key.Contains("userid", comparison) ||
+                key.Contains("user id", comparison) ||
+                key.Contains("username", comparison);
         }
 
         /// <inheritdoc />
@@ -130,9 +142,7 @@ namespace dvmig.Core.Synchronization
         public async Task<HashSet<Guid>> GetSyncedIdsAsync()
         {
             if (!StateExists())
-            {
                 return new HashSet<Guid>();
-            }
 
             await _fileLock.WaitAsync();
             try
@@ -141,12 +151,8 @@ namespace dvmig.Core.Synchronization
                 var ids = new HashSet<Guid>();
 
                 foreach (var line in lines)
-                {
                     if (Guid.TryParse(line, out var id))
-                    {
                         ids.Add(id);
-                    }
-                }
 
                 return ids;
             }
@@ -157,30 +163,42 @@ namespace dvmig.Core.Synchronization
         }
 
         /// <inheritdoc />
-        public async Task MarkAsSyncedAsync(Guid id)
+        public async Task MarkAsSyncedAsync(string logicalName, Guid id)
         {
-            if (string.IsNullOrEmpty(_filePath))
-            {
+            if (string.IsNullOrEmpty(_filePath) || 
+                string.IsNullOrEmpty(_mainLogicalName))
                 throw new InvalidOperationException("Tracker not initialized.");
-            }
 
-            await _fileLock.WaitAsync();
-            try
+            if (!string.Equals(
+                    logicalName,
+                    _mainLogicalName,
+                    StringComparison.OrdinalIgnoreCase
+                ))
+                return;
+
+            // Only write if we haven't already synced this ID in this session.
+            if (_syncedIds.TryAdd(id, 1))
             {
-                await File.AppendAllLinesAsync(
-                    _filePath,
-                    new[] { id.ToString() }
-                );
-            }
-            finally
-            {
-                _fileLock.Release();
+                await _fileLock.WaitAsync();
+                try
+                {
+                    await File.AppendAllLinesAsync(
+                        _filePath,
+                        new[] { id.ToString() }
+                    );
+                }
+                finally
+                {
+                    _fileLock.Release();
+                }
             }
         }
 
         /// <inheritdoc />
         public async Task ClearStateAsync()
         {
+            _syncedIds.Clear();
+
             if (StateExists())
             {
                 await _fileLock.WaitAsync();
@@ -202,9 +220,7 @@ namespace dvmig.Core.Synchronization
 
             var sb = new StringBuilder();
             foreach (var b in hashBytes)
-            {
                 sb.Append(b.ToString("x2"));
-            }
 
             return sb.ToString().Substring(0, 16); // Short hash is enough
         }

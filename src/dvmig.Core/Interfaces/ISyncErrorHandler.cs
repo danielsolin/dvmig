@@ -47,17 +47,23 @@ namespace dvmig.Core.Interfaces
             Func<Entity, CancellationToken, Task>? updateFunc = null,
             Func<Entity, SyncOptions, IProgress<string>?, CancellationToken,
                 Task<bool>>? statusTransitionFunc = null,
-            Func<Exception, Entity, SyncOptions, IProgress<string>?, CancellationToken,
-                Task<bool>>? resolveMissingDependencyFunc = null,
-            Func<string, Entity, SyncOptions, IProgress<string>?, CancellationToken,
-                Task<bool>>? resolveSqlDependencyFunc = null,
-            Func<Exception, Entity, SyncOptions, IProgress<string>?, CancellationToken,
-                Task<bool>>? stripAttributeFunc = null);
+            Func<Exception, Entity, SyncOptions, IProgress<string>?,
+                CancellationToken, Task<bool>>?
+                resolveMissingDependencyFunc = null,
+            Func<string, Entity, SyncOptions, IProgress<string>?,
+                CancellationToken, Task<bool>>?
+                resolveSqlDependencyFunc = null,
+            Func<Exception, Entity, SyncOptions, IProgress<string>?,
+                CancellationToken, Task<bool>>? stripAttributeFunc = null,
+            Func<Entity, CancellationToken, Task<Guid?>>? 
+                findExistingFunc = null);
 
         /// <summary>
         /// Formats a failure message for logging purposes.
         /// </summary>
-        /// <param name="context">The context where the failure occurred.</param>
+        /// <param name="context">
+        /// The context where the failure occurred.
+        /// </param>
         /// <param name="ex">The exception that occurred.</param>
         /// <returns>A formatted failure message.</returns>
         string FormatFailureMessage(string context, Exception ex);

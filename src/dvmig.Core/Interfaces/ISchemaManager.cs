@@ -27,7 +27,9 @@ namespace dvmig.Core.Interfaces
         /// <param name="target">The target Dataverse provider.</param>
         /// <param name="progress">An optional progress reporter.</param>
         /// <param name="ct">A cancellation token.</param>
-        /// <returns>A task representing the asynchronous removal operation.</returns>
+        /// <returns>
+        /// A task representing the asynchronous removal operation.
+        /// </returns>
         Task DropSchemaAsync(
             IDataverseProvider target,
             IProgress<string>? progress = null,

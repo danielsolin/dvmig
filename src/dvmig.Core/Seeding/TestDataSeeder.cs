@@ -12,15 +12,20 @@ namespace dvmig.Core.Seeding
     public class TestDataSeeder : ITestDataSeeder
     {
         private readonly ILogger _logger;
+        private readonly IRetryStrategy _retryStrategy;
+        private readonly Polly.Retry.AsyncRetryPolicy _retryPolicy;
 
         /// <summary>
         /// Initializes a new instance of the 
         /// <see cref="TestDataSeeder"/> class.
         /// </summary>
         /// <param name="logger">The logger instance.</param>
-        public TestDataSeeder(ILogger logger)
+        /// <param name="retryStrategy">The retry strategy.</param>
+        public TestDataSeeder(ILogger logger, IRetryStrategy retryStrategy)
         {
             _logger = logger;
+            _retryStrategy = retryStrategy;
+            _retryPolicy = _retryStrategy.CreateRetryPolicy();
         }
 
         /// <inheritdoc />
@@ -254,46 +259,56 @@ namespace dvmig.Core.Seeding
             {
                 var results = await provider.RetrieveMultipleAsync(query, ct);
                 if (results.Entities.Count == 0)
-                {
                     break;
-                }
 
                 progress?.Report(
                     $"Deleting {results.Entities.Count} {logicalName} " +
                     $"records (Page {query.PageInfo.PageNumber})..."
                 );
 
-                int currentBatch = 0;
-                foreach (var entity in results.Entities)
+                var parallelOptions = new ParallelOptions
                 {
-                    ct.ThrowIfCancellationRequested();
-                    await provider.DeleteAsync(logicalName, entity.Id, ct);
-                    currentBatch++;
-                    totalDeleted++;
+                    MaxDegreeOfParallelism = 10,
+                    CancellationToken = ct
+                };
 
-                    if (currentBatch % 50 == 0 ||
-                        currentBatch == results.Entities.Count)
+                var context = new Polly.Context();
+                if (progress != null)
+                    context["progress"] = progress;
+
+                await Parallel.ForEachAsync(
+                    results.Entities,
+                    parallelOptions,
+                    async (entity, token) =>
                     {
-                        progress?.Report(
-                            $"Deletion progress ({logicalName}): " +
-                            $"{totalDeleted} total deleted."
+                        await _retryPolicy.ExecuteAsync(
+                            async (ctx) =>
+                                await provider.DeleteAsync(
+                                    logicalName,
+                                    entity.Id,
+                                    token
+                                ),
+                            context
                         );
+
+                        Interlocked.Increment(ref totalDeleted);
                     }
-                }
+                );
+
+                progress?.Report(
+                    $"Deletion progress ({logicalName}): " +
+                    $"{totalDeleted} total deleted."
+                );
 
                 if (!results.MoreRecords)
-                {
                     break;
-                }
 
                 query.PageInfo.PageNumber++;
                 query.PageInfo.PagingCookie = results.PagingCookie;
             }
 
             if (totalDeleted == 0)
-            {
                 progress?.Report($"No {logicalName} records found.");
-            }
 
             _logger.Information(
                 "Deleted {Count} records of type {Entity}",

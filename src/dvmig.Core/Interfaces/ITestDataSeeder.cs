@@ -11,10 +11,14 @@ namespace dvmig.Core.Interfaces
         /// the environment.
         /// </summary>
         /// <param name="provider">The Dataverse provider to use.</param>
-        /// <param name="count">The number of records to generate per entity.</param>
+        /// <param name="count">
+        /// The number of records to generate per entity.
+        /// </param>
         /// <param name="progress">An optional progress reporter.</param>
         /// <param name="ct">A cancellation token.</param>
-        /// <returns>A task representing the asynchronous seeding operation.</returns>
+        /// <returns>
+        /// A task representing the asynchronous seeding operation.
+        /// </returns>
         Task SeedTestDataAsync(
             IDataverseProvider provider,
             int count,
@@ -29,7 +33,9 @@ namespace dvmig.Core.Interfaces
         /// <param name="provider">The Dataverse provider to use.</param>
         /// <param name="progress">An optional progress reporter.</param>
         /// <param name="ct">A cancellation token.</param>
-        /// <returns>A task representing the asynchronous cleaning operation.</returns>
+        /// <returns>
+        /// A task representing the asynchronous cleaning operation.
+        /// </returns>
         Task CleanTestDataAsync(
             IDataverseProvider provider,
             IProgress<string>? progress = null,

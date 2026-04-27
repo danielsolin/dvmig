@@ -19,14 +19,10 @@ namespace dvmig.App.Views
             DependencyPropertyChangedEventArgs e)
         {
             if (e.OldValue is MigrationDashboardViewModel oldVm)
-            {
                 oldVm.Logs.CollectionChanged -= OnLogsCollectionChanged;
-            }
 
             if (e.NewValue is MigrationDashboardViewModel newVm)
-            {
                 newVm.Logs.CollectionChanged += OnLogsCollectionChanged;
-            }
         }
 
         private void OnLogsCollectionChanged(
@@ -34,7 +30,6 @@ namespace dvmig.App.Views
             NotifyCollectionChangedEventArgs e)
         {
             if (e.Action == NotifyCollectionChangedAction.Add)
-            {
                 // Wrap in Dispatcher.BeginInvoke to ensure the UI has finished
                 // updating the ItemsControl before we attempt to scroll.
                 // This prevents 'ItemsControl is inconsistent' exceptions.
@@ -52,7 +47,6 @@ namespace dvmig.App.Views
                         }
                     })
                 );
-            }
         }
     }
 }

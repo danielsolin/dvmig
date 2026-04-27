@@ -5,12 +5,14 @@ namespace dvmig.Core.Interfaces
     /// <summary>
     /// Defines the contract for a service that maps user references from a 
     /// source environment to the corresponding users in a target environment.
+    /// This resolves differences in systemuser GUIDs between environments 
+    /// by matching users based on their internal email address or domain name.
     /// </summary>
     public interface IUserMapper
     {
         /// <summary>
-        /// Asynchronously maps a source user reference to its equivalent in the 
-        /// target environment.
+        /// Asynchronously maps a source user reference to its equivalent 
+        /// in the target environment.
         /// </summary>
         /// <param name="sourceUser">
         /// The user reference from the source environment.

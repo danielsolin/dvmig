@@ -79,8 +79,8 @@ namespace dvmig.App.ViewModels
             new ObservableCollection<RecordSelectionItem>();
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="EntitySelectionViewModel"/> 
-        /// class.
+        /// Initializes a new instance of the 
+        /// <see cref="EntitySelectionViewModel"/> class.
         /// </summary>
         /// <param name="navigationService">The navigation service.</param>
         /// <param name="migrationService">The migration service.</param>
@@ -121,16 +121,16 @@ namespace dvmig.App.ViewModels
                         );
 
                         var existing = _migrationService.SelectedEntities
-                            .FirstOrDefault(e => e.LogicalName == meta.LogicalName);
+                            .FirstOrDefault(e =>
+                                e.LogicalName == meta.LogicalName
+                            );
 
                         if (existing != null)
                         {
                             item.IsSelected = true;
                             item.SyncAllRecords = existing.SyncAllRecords;
                             foreach (var id in existing.SelectedRecordIds)
-                            {
                                 item.SelectedRecordIds.Add(id);
-                            }
                         }
 
                         item.PropertyChanged += OnItemPropertyChanged;
@@ -162,23 +162,15 @@ namespace dvmig.App.ViewModels
         private bool FilterEntities(object obj)
         {
             if (obj is not EntitySelectionItem item)
-            {
                 return false;
-            }
 
             // Filter out non-standard entities if toggle is off
             if (!ShowSystemEntities)
-            {
                 if (!_migrationService.IsStandardEntity(item.LogicalName))
-                {
                     return false;
-                }
-            }
 
             if (string.IsNullOrWhiteSpace(SearchText))
-            {
                 return true;
-            }
 
             var search = SearchText;
             var comparison = StringComparison.OrdinalIgnoreCase;
@@ -254,9 +246,7 @@ namespace dvmig.App.ViewModels
             finally
             {
                 if (!token.IsCancellationRequested)
-                {
                     IsLoadingRecords = false;
-                }
             }
         }
 
@@ -275,9 +265,7 @@ namespace dvmig.App.ViewModels
                     ActiveEntity.IsSelected = true;
                 }
                 else
-                {
                     ActiveEntity.SelectedRecordIds.Remove(record.Id);
-                }
 
                 StartMigrationCommand.NotifyCanExecuteChanged();
                 _ = UpdateSyncCountAsync();
@@ -325,21 +313,19 @@ namespace dvmig.App.ViewModels
                 {
                     if (existing == null)
                     {
-                        existing = new EntitySyncConfiguration(item.LogicalName);
+                        existing = new EntitySyncConfiguration(
+                            item.LogicalName
+                        );
                         _migrationService.SelectedEntities.Add(existing);
                     }
 
                     existing.SyncAllRecords = item.SyncAllRecords;
                     existing.SelectedRecordIds.Clear();
                     foreach (var id in item.SelectedRecordIds)
-                    {
                         existing.SelectedRecordIds.Add(id);
-                    }
                 }
                 else if (existing != null)
-                {
                     _migrationService.SelectedEntities.Remove(existing);
-                }
             }
         }
 
@@ -376,26 +362,20 @@ namespace dvmig.App.ViewModels
                         }
                     }
                     else
-                    {
                         total += item.RecordCount;
-                    }
                 }
                 else
-                {
                     total += item.SelectedRecordIds.Count;
-                }
             }
 
             if (selectedCount == 0)
-            {
                 StatusText = StatusReady;
-            }
             else
-            {
                 StatusText = pendingCount
-                    ? $"Records to sync: {total}+ ({StatusFetchingCounts} {selectedCount} entities)"
-                    : $"Records to sync: {total} ({selectedCount} entities selected)";
-            }
+                    ? $"Records to sync: {total}+ ({StatusFetchingCounts} " +
+                      $"{selectedCount} entities)"
+                    : $"Records to sync: {total} ({selectedCount} " +
+                      $"entities selected)";
 
             return Task.CompletedTask;
         }
@@ -436,14 +416,14 @@ namespace dvmig.App.ViewModels
                 StartMigrationCommand.NotifyCanExecuteChanged();
                 _ = UpdateSyncCountAsync();
             }
-            else if (e.PropertyName == nameof(EntitySelectionItem.SyncAllRecords) &&
+            else if (e.PropertyName ==
+                     nameof(EntitySelectionItem.SyncAllRecords) &&
                      sender is EntitySelectionItem item)
             {
                 if (item.SyncAllRecords)
-                {
-                    // If "Sync All" is toggled on, ensure the entity is selected
+                    // If "Sync All" is toggled on, ensure the entity is 
+                    // selected.
                     item.IsSelected = true;
-                }
 
                 StartMigrationCommand.NotifyCanExecuteChanged();
                 _ = UpdateSyncCountAsync();

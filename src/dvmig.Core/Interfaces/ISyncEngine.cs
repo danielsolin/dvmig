@@ -10,18 +10,24 @@ namespace dvmig.Core.Interfaces
     public interface ISyncEngine
     {
         /// <summary>
-        /// Synchronizes a collection of entities from the source to the target.
+        /// Synchronizes a collection of entities from the source to 
+        /// the target.
         /// </summary>
         /// <param name="entities">The collection of entities to sync.</param>
-        /// <param name="options">The synchronization configuration options.</param>
+        /// <param name="options">
+        /// The synchronization configuration options.
+        /// </param>
         /// <param name="progress">
         /// An optional progress reporter for log messages.
         /// </param>
         /// <param name="recordProgress">
-        /// An optional progress reporter for individual record success/failure.
+        /// An optional progress reporter for individual record 
+        /// success/failure.
         /// </param>
         /// <param name="ct">A cancellation token.</param>
-        /// <returns>A task representing the asynchronous sync operation.</returns>
+        /// <returns>
+        /// A task representing the asynchronous sync operation.
+        /// </returns>
         Task SyncAsync(
             IEnumerable<Entity> entities,
             SyncOptions options,
@@ -34,7 +40,9 @@ namespace dvmig.Core.Interfaces
         /// Synchronizes a single entity record from the source to the target.
         /// </summary>
         /// <param name="entity">The entity record to synchronize.</param>
-        /// <param name="options">The synchronization configuration options.</param>
+        /// <param name="options">
+        /// The synchronization configuration options.
+        /// </param>
         /// <param name="progress">An optional progress reporter.</param>
         /// <param name="ct">A cancellation token.</param>
         /// <returns>
@@ -53,15 +61,17 @@ namespace dvmig.Core.Interfaces
         /// </summary>
         /// <param name="logicalName">The logical name of the entity.</param>
         /// <param name="ct">A cancellation token.</param>
-        /// <returns>A configured ColumnSet containing valid attributes.</returns>
+        /// <returns>
+        /// A configured ColumnSet containing valid attributes.
+        /// </returns>
         Task<Microsoft.Xrm.Sdk.Query.ColumnSet> GetValidColumnsAsync(
             string logicalName,
             CancellationToken ct = default
         );
 
         /// <summary>
-        /// Synchronizes all records of a specific entity type from the source 
-        /// to the target, handling pagination automatically.
+        /// Synchronizes all records of a specific entity type from the 
+        /// source to the target, handling pagination automatically.
         /// </summary>
         /// <param name="logicalName">The logical name of the entity.</param>
         /// <param name="options">The sync options.</param>

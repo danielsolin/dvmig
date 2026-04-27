@@ -36,9 +36,7 @@ namespace dvmig.Core.Synchronization
             CancellationToken ct = default)
         {
             if (_cache.TryGetValue(entityLogicalName, out var meta))
-            {
                 return meta;
-            }
 
             try
             {
@@ -46,9 +44,7 @@ namespace dvmig.Core.Synchronization
                     .GetEntityMetadataAsync(entityLogicalName, ct);
 
                 if (newMeta != null)
-                {
                     _cache[entityLogicalName] = newMeta;
-                }
 
                 return newMeta;
             }
@@ -71,12 +67,12 @@ namespace dvmig.Core.Synchronization
         {
             var meta = await GetMetadataAsync(logicalName, ct);
             if (meta == null || meta.Attributes == null)
-            {
                 return new ColumnSet(true);
-            }
 
             // Safety Whitelist: These columns MUST be included if they exist
-            var whitelist = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            var whitelist = new HashSet<string>(
+                StringComparer.OrdinalIgnoreCase
+            )
             {
                 meta.PrimaryIdAttribute,
                 meta.PrimaryNameAttribute ?? string.Empty,
@@ -104,9 +100,7 @@ namespace dvmig.Core.Synchronization
                 .ToArray();
 
             if (attributes.Length == 0)
-            {
                 return new ColumnSet(true);
-            }
 
             _logger.Debug(
                 "Configured ColumnSet for {Entity} with {Count} attributes.",

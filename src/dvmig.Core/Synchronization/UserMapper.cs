@@ -39,8 +39,9 @@ namespace dvmig.Core.Synchronization
         }
 
         /// <summary>
-        /// Manually adds a user mapping to the cache, bypassing the automatic 
-        /// lookup. Useful for handling known edge cases or system accounts.
+        /// Manually adds a user mapping to the cache, bypassing the 
+        /// automatic lookup. Useful for handling known edge cases or 
+        /// system accounts.
         /// </summary>
         /// <param name="sourceUserId">
         /// The GUID of the user in the source environment.
@@ -60,11 +61,11 @@ namespace dvmig.Core.Synchronization
         }
 
         /// <summary>
-        /// Asynchronously maps a source user reference to the corresponding 
-        /// target user reference. Queries the source environment for the 
-        /// user's email or domain name, and then searches the target 
-        /// environment for a matching user. Results are cached to improve 
-        /// performance.
+        /// Asynchronously maps a source user reference to the 
+        /// corresponding target user reference. Queries the source 
+        /// environment for the user's email or domain name, and then 
+        /// searches the target environment for a matching user. 
+        /// Results are cached to improve performance.
         /// </summary>
         /// <param name="sourceUser">
         /// The entity reference of the user from the source environment.
@@ -73,8 +74,8 @@ namespace dvmig.Core.Synchronization
         /// A cancellation token that can be used to cancel the operation.
         /// </param>
         /// <returns>
-        /// An entity reference for the mapped user in the target environment, 
-        /// or null if mapping fails.
+        /// An entity reference for the mapped user in the target 
+        /// environment, or null if mapping fails.
         /// </returns>
         public async Task<EntityReference?> MapUserAsync(
             EntityReference? sourceUser,
@@ -82,14 +83,10 @@ namespace dvmig.Core.Synchronization
         )
         {
             if (sourceUser == null)
-            {
                 return null;
-            }
 
             if (_mappingCache.TryGetValue(sourceUser.Id, out var targetRef))
-            {
                 return targetRef;
-            }
 
             _logger.Debug("Attempting to map source user {Id}", sourceUser.Id);
 
@@ -156,7 +153,9 @@ namespace dvmig.Core.Synchronization
         /// Searches the target environment for a user record matching a 
         /// specific attribute and value.
         /// </summary>
-        /// <param name="attribute">The logical name of the attribute to search by.</param>
+        /// <param name="attribute">
+        /// The logical name of the attribute to search by.
+        /// </param>
         /// <param name="value">The value to match.</param>
         /// <param name="ct">A cancellation token.</param>
         /// <returns>
@@ -179,9 +178,7 @@ namespace dvmig.Core.Synchronization
             var user = results.Entities.FirstOrDefault();
 
             if (user != null)
-            {
                 return user.ToEntityReference();
-            }
 
             return null;
         }

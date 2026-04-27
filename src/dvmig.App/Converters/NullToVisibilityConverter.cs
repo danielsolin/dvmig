@@ -23,9 +23,7 @@ namespace dvmig.App.Converters
             var inverse = parameter as string == "Inverse";
 
             if (inverse)
-            {
                 return isNull ? Visibility.Visible : Visibility.Collapsed;
-            }
 
             return isNull ? Visibility.Collapsed : Visibility.Visible;
         }

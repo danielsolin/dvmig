@@ -11,7 +11,9 @@ namespace dvmig.App.Services
         /// <summary>
         /// Navigates to the specified view model type.
         /// </summary>
-        /// <typeparam name="TViewModel">The type of the view model to navigate to.</typeparam>
+        /// <typeparam name="TViewModel">
+        /// The type of the view model to navigate to.
+        /// </typeparam>
         void NavigateTo<TViewModel>() where TViewModel : ViewModelBase;
 
         /// <summary>
@@ -31,7 +33,8 @@ namespace dvmig.App.Services
         public event Action<ViewModelBase>? OnNavigation;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="NavigationService"/> class.
+        /// Initializes a new instance of the 
+        /// <see cref="NavigationService"/> class.
         /// </summary>
         /// <param name="viewModelFactory">
         /// A factory function that creates view model instances by type.

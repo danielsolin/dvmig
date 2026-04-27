@@ -59,7 +59,9 @@ namespace dvmig.Core.Interfaces
         /// <param name="target">The target Dataverse provider.</param>
         /// <param name="progress">An optional progress reporter.</param>
         /// <param name="ct">A cancellation token.</param>
-        /// <returns>A task representing the asynchronous cleanup operation.</returns>
+        /// <returns>
+        /// A task representing the asynchronous cleanup operation.
+        /// </returns>
         Task CleanEnvironmentAsync(
             IDataverseProvider target,
             IProgress<string>? progress = null,

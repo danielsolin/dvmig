@@ -15,7 +15,9 @@ namespace dvmig.Core.Interfaces
         /// lookup records) by identifying the missing record, synchronizing
         /// it to the target, and retrying the parent record.
         /// </summary>
-        /// <param name="ex">The exception indicating the missing record.</param>
+        /// <param name="ex">
+        /// The exception indicating the missing record.
+        /// </param>
         /// <param name="entity">The parent entity record.</param>
         /// <param name="options">The synchronization configuration.</param>
         /// <param name="progress">The progress reporter.</param>
@@ -46,12 +48,16 @@ namespace dvmig.Core.Interfaces
             IProgress<string>? progress,
             CancellationToken ct = default,
             Func<Entity, SyncOptions, IProgress<string>?, CancellationToken,
-                Task<(bool Success, string? FailureMessage)>>? syncRecordFunc = null,
+                Task<(bool Success, string? FailureMessage)>>?
+                syncRecordFunc = null,
             Func<Entity, SyncOptions, IProgress<string>?, CancellationToken,
-                Task<bool>>? retryEntityFunc = null,
-            Func<Entity, CancellationToken, Task<Guid?>>? findExistingFunc = null,
+                Task<bool>>?
+                retryEntityFunc = null,
+            Func<Entity, CancellationToken, Task<Guid?>>?
+                findExistingFunc = null,
             ConcurrentDictionary<string, Guid>? idMappingCache = null,
-            ConcurrentDictionary<string, HashSet<string>>? triedDependencies = null);
+            ConcurrentDictionary<string, HashSet<string>>?
+                triedDependencies = null);
 
         /// <summary>
         /// Attempts to resolve missing SQL-level dependencies (foreign key
@@ -86,10 +92,13 @@ namespace dvmig.Core.Interfaces
             IProgress<string>? progress,
             CancellationToken ct = default,
             Func<Entity, SyncOptions, IProgress<string>?, CancellationToken,
-                Task<(bool Success, string? FailureMessage)>>? syncRecordFunc = null,
+                Task<(bool Success, string? FailureMessage)>>?
+                syncRecordFunc = null,
             Func<Entity, SyncOptions, IProgress<string>?, CancellationToken,
-                Task<bool>>? retryEntityFunc = null,
-            Func<Entity, CancellationToken, Task<Guid?>>? findExistingFunc = null,
+                Task<bool>>?
+                retryEntityFunc = null,
+            Func<Entity, CancellationToken, Task<Guid?>>?
+                findExistingFunc = null,
             ConcurrentDictionary<string, Guid>? idMappingCache = null);
     }
 }

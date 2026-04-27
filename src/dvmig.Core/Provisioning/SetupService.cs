@@ -71,7 +71,6 @@ namespace dvmig.Core.Provisioning
 
             // Fallback for development if not in same folder
             if (!File.Exists(assemblyPath))
-            {
                 assemblyPath = Path.Combine(
                     AppDomain.CurrentDomain.BaseDirectory,
                     "..", "..", "..", "..",
@@ -79,7 +78,6 @@ namespace dvmig.Core.Provisioning
                     "bin", "Debug", "netstandard2.0",
                     SystemConstants.AppConstants.PluginAssemblyName
                 );
-            }
 
             if (!File.Exists(assemblyPath))
             {
@@ -125,15 +123,11 @@ namespace dvmig.Core.Provisioning
         )
         {
             if (!await CheckDatePreservationSupportAsync(target, ct))
-            {
                 return;
-            }
 
             if (!sourceEntity.Contains("createdon") &&
                 !sourceEntity.Contains("modifiedon"))
-            {
                 return;
-            }
 
             var sourceDate = CreateSourceDateEntity(sourceEntity);
 
@@ -161,9 +155,7 @@ namespace dvmig.Core.Provisioning
         )
         {
             if (!await CheckDatePreservationSupportAsync(target, ct))
-            {
                 return;
-            }
 
             try
             {
@@ -218,9 +210,7 @@ namespace dvmig.Core.Provisioning
         )
         {
             if (_isDatePreservationSupported.HasValue)
-            {
                 return _isDatePreservationSupported.Value;
-            }
 
             try
             {
@@ -262,16 +252,12 @@ namespace dvmig.Core.Provisioning
                 entity.LogicalName.ToLower();
 
             if (entity.Contains("createdon"))
-            {
                 sourceDate[SystemConstants.SourceDate.CreatedDate] =
                     entity["createdon"];
-            }
 
             if (entity.Contains("modifiedon"))
-            {
                 sourceDate[SystemConstants.SourceDate.ModifiedDate] =
                     entity["modifiedon"];
-            }
 
             return sourceDate;
         }

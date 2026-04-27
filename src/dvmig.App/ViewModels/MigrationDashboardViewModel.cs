@@ -94,14 +94,13 @@ namespace dvmig.App.ViewModels
                 foreach (var config in entitiesToMigrate)
                 {
                     if (config.SyncAllRecords)
-                    {
                         overallTotal += (int)await _migrationService
-                            .GetRecordCountAsync(config.LogicalName, _cts.Token);
-                    }
+                            .GetRecordCountAsync(
+                                config.LogicalName,
+                                _cts.Token
+                            );
                     else
-                    {
                         overallTotal += config.SelectedRecordIds.Count;
-                    }
                 }
 
                 Progress.TotalRecords = overallTotal;
@@ -129,8 +128,9 @@ namespace dvmig.App.ViewModels
                         if (syncedIds.Count > 0)
                         {
                             var result = MessageBox.Show(
-                                $"Previous migration state found for {logicalName} " +
-                                $"({syncedIds.Count} records already synced). \n\n" +
+                                $"Previous migration state found for " +
+                                $"{logicalName} ({syncedIds.Count} records " +
+                                "already synced). \n\n" +
                                 "Do you want to resume from the checkpoint?",
                                 "Resume Migration",
                                 MessageBoxButton.YesNo,
@@ -140,11 +140,14 @@ namespace dvmig.App.ViewModels
                             if (result == MessageBoxResult.No)
                             {
                                 await _stateTracker.ClearStateAsync();
-                                await _syncEngine.InitializeEntitySyncAsync(logicalName);
+                                await _syncEngine.InitializeEntitySyncAsync(
+                                    logicalName
+                                );
                             }
                             else
                             {
-                                // Account for already synced records in overall progress
+                                // Account for already synced records in 
+                                // overall progress.
                                 cumulativeProcessed += syncedIds.Count;
                                 cumulativeSuccess += syncedIds.Count;
 
@@ -190,13 +193,9 @@ namespace dvmig.App.ViewModels
                     {
                         cumulativeProcessed++;
                         if (success)
-                        {
                             cumulativeSuccess++;
-                        }
                         else
-                        {
                             cumulativeFailure++;
-                        }
 
                         Progress.Update(
                             cumulativeProcessed,
@@ -206,9 +205,14 @@ namespace dvmig.App.ViewModels
                     });
 
                     // 2. Centralized Paginated Sync
+                    var options = new SyncOptions
+                    {
+                        StripMissingDependencies = true
+                    };
+
                     await _syncEngine.SyncEntityAsync(
                         logicalName,
-                        new SyncOptions { StripMissingDependencies = true },
+                        options,
                         query,
                         progressReporter,
                         recordProgress,

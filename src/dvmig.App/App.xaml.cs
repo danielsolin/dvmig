@@ -58,7 +58,11 @@ namespace dvmig.App
 
                 var retryStrategy = new RetryStrategy(logger);
                 var entityPreparer = new EntityPreparer(logger);
-                var errorHandler = new SyncErrorHandler(targetProvider, setupService, logger);
+                var errorHandler = new SyncErrorHandler(
+                    targetProvider,
+                    setupService,
+                    logger
+                );
                 var dependencyResolver = new DependencyResolver(
                     migrationService.SourceProvider!,
                     logger

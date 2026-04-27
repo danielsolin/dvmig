@@ -18,9 +18,7 @@ namespace dvmig.App.Converters
             CultureInfo culture)
         {
             if (value is bool b)
-            {
                 return !b;
-            }
 
             return false;
         }
@@ -35,9 +33,7 @@ namespace dvmig.App.Converters
             CultureInfo culture)
         {
             if (value is bool b)
-            {
                 return !b;
-            }
 
             return false;
         }

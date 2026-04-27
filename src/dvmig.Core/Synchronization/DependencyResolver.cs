@@ -16,7 +16,8 @@ namespace dvmig.Core.Synchronization
         private readonly ILogger _logger;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="DependencyResolver"/> class.
+        /// Initializes a new instance of the 
+        /// <see cref="DependencyResolver"/> class.
         /// </summary>
         /// <param name="source">The source Dataverse provider.</param>
         /// <param name="logger">The logger instance.</param>
@@ -36,12 +37,15 @@ namespace dvmig.Core.Synchronization
             IProgress<string>? progress,
             CancellationToken ct = default,
             Func<Entity, SyncOptions, IProgress<string>?, CancellationToken,
-                Task<(bool Success, string? FailureMessage)>>? syncRecordFunc = null,
+                Task<(bool Success, string? FailureMessage)>>? 
+                syncRecordFunc = null,
             Func<Entity, SyncOptions, IProgress<string>?, CancellationToken,
                 Task<bool>>? retryEntityFunc = null,
-            Func<Entity, CancellationToken, Task<Guid?>>? findExistingFunc = null,
+            Func<Entity, CancellationToken, Task<Guid?>>? 
+                findExistingFunc = null,
             ConcurrentDictionary<string, Guid>? idMappingCache = null,
-            ConcurrentDictionary<string, HashSet<string>>? triedDependencies = null)
+            ConcurrentDictionary<string, HashSet<string>>? 
+                triedDependencies = null)
         {
             // More robust regex to handle both:
             // "Account with Id=GUID does not exist"
@@ -56,9 +60,7 @@ namespace dvmig.Core.Synchronization
             );
 
             if (!match.Success)
-            {
                 return false;
-            }
 
             var missingType = match.Groups[1].Value.ToLower();
             var missingId = Guid.Parse(match.Groups[2].Value);
@@ -121,18 +123,33 @@ namespace dvmig.Core.Synchronization
                         idMappingCache[dependencyKey] = targetId.Value;
 
                         return retryEntityFunc != null
-                            ? await retryEntityFunc(entity, options, progress, ct)
+                            ? await retryEntityFunc(
+                                entity,
+                                options,
+                                progress,
+                                ct
+                            )
                             : false;
                     }
 
                     // Normal Sync: Try to sync the record over
                     var (success, _) = syncRecordFunc != null
-                        ? await syncRecordFunc(missingRecord, options, progress, ct)
+                        ? await syncRecordFunc(
+                            missingRecord,
+                            options,
+                            progress,
+                            ct
+                        )
                         : (false, "No sync function provided");
 
                     if (success && retryEntityFunc != null)
                     {
-                        return await retryEntityFunc(entity, options, progress, ct);
+                        return await retryEntityFunc(
+                            entity,
+                            options,
+                            progress,
+                            ct
+                        );
                     }
                 }
             }
@@ -168,7 +185,16 @@ namespace dvmig.Core.Synchronization
 
                     entity.Attributes.Remove(attrToStrip);
 
-                    // This will be handled by the retry logic in the caller
+                    // Actually execute the retry now that the attribute
+                    // is stripped.
+                    if (retryEntityFunc != null)
+                        return await retryEntityFunc(
+                            entity,
+                            options,
+                            progress,
+                            ct
+                        );
+
                     return true;
                 }
             }
@@ -184,19 +210,19 @@ namespace dvmig.Core.Synchronization
             IProgress<string>? progress,
             CancellationToken ct = default,
             Func<Entity, SyncOptions, IProgress<string>?, CancellationToken,
-                Task<(bool Success, string? FailureMessage)>>? syncRecordFunc = null,
+                Task<(bool Success, string? FailureMessage)>>? 
+                syncRecordFunc = null,
             Func<Entity, SyncOptions, IProgress<string>?, CancellationToken,
                 Task<bool>>? retryEntityFunc = null,
-            Func<Entity, CancellationToken, Task<Guid?>>? findExistingFunc = null,
+            Func<Entity, CancellationToken, Task<Guid?>>? 
+                findExistingFunc = null,
             ConcurrentDictionary<string, Guid>? idMappingCache = null)
         {
             // Extract column name from message (e.g., column
             // 'TransactionCurrencyId')
             var match = Regex.Match(message, @"column '(\w+)'");
             if (!match.Success)
-            {
                 return false;
-            }
 
             var columnName = match.Groups[1].Value.ToLower();
 
@@ -247,18 +273,33 @@ namespace dvmig.Core.Synchronization
                             targetId.Value;
 
                         return retryEntityFunc != null
-                            ? await retryEntityFunc(entity, options, progress, ct)
+                            ? await retryEntityFunc(
+                                entity,
+                                options,
+                                progress,
+                                ct
+                            )
                             : false;
                     }
 
                     // Re-use the existing logic to sync the missing record
                     var (success, _) = syncRecordFunc != null
-                        ? await syncRecordFunc(missingRecord, options, progress, ct)
+                        ? await syncRecordFunc(
+                            missingRecord,
+                            options,
+                            progress,
+                            ct
+                        )
                         : (false, "No sync function provided");
 
                     if (success && retryEntityFunc != null)
                     {
-                        return await retryEntityFunc(entity, options, progress, ct);
+                        return await retryEntityFunc(
+                            entity,
+                            options,
+                            progress,
+                            ct
+                        );
                     }
                 }
             }

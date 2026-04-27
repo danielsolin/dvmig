@@ -48,8 +48,10 @@ namespace dvmig.Core.Synchronization
                 failure[SystemConstants.MigrationFailure.SourceId] =
                     entity.Id.ToString();
 
-                failure[SystemConstants.MigrationFailure.EntityLogicalNameAttr] =
-                    entity.LogicalName;
+                var logicalNameAttr =
+                    SystemConstants.MigrationFailure.EntityLogicalNameAttr;
+
+                failure[logicalNameAttr] = entity.LogicalName;
 
                 failure[SystemConstants.MigrationFailure.ErrorMessage] =
                     errorMessage;

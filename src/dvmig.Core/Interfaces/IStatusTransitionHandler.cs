@@ -19,7 +19,8 @@ namespace dvmig.Core.Interfaces
         /// <param name="progress">The progress reporter.</param>
         /// <param name="ct">A cancellation token.</param>
         /// <param name="createOrUpdateFunc">
-        /// A function that performs the create/update operation for the entity.
+        /// A function that performs the create/update operation for the 
+        /// entity.
         /// </param>
         /// <returns>
         /// True if the entity was successfully synchronized and its status
@@ -31,6 +32,7 @@ namespace dvmig.Core.Interfaces
             IProgress<string>? progress,
             CancellationToken ct = default,
             Func<Entity, SyncOptions, IProgress<string>?, CancellationToken,
-                Task<(bool Success, string? FailureMessage)>>? createOrUpdateFunc = null);
+                Task<(bool Success, string? FailureMessage)>>?
+                createOrUpdateFunc = null);
     }
 }

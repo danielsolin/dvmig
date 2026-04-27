@@ -16,9 +16,7 @@ namespace dvmig.Core.Settings
         public static string MaskConnectionString(string connectionString)
         {
             if (string.IsNullOrEmpty(connectionString))
-            {
                 return string.Empty;
-            }
 
             var parts = connectionString.Split(
                 ';',
@@ -29,32 +27,19 @@ namespace dvmig.Core.Settings
             {
                 var kv = p.Split('=', 2);
                 if (kv.Length != 2)
-                {
                     return p;
-                }
 
                 var key = kv[0].Trim();
                 var val = kv[1].Trim();
 
-                var isPass = key.Contains(
-                    "Password",
-                    StringComparison.OrdinalIgnoreCase
-                );
+                var comparison = StringComparison.OrdinalIgnoreCase;
 
-                var isSec = key.Contains(
-                    "Secret",
-                    StringComparison.OrdinalIgnoreCase
-                );
-
-                var isTok = key.Contains(
-                    "Token",
-                    StringComparison.OrdinalIgnoreCase
-                );
+                var isPass = key.Contains("Password", comparison);
+                var isSec = key.Contains("Secret", comparison);
+                var isTok = key.Contains("Token", comparison);
 
                 if (isPass || isSec || isTok)
-                {
                     return $"{key}=********";
-                }
 
                 return p;
             });

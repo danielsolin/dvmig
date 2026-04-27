@@ -83,7 +83,8 @@ namespace dvmig.Core.Metadata
             var fetchXml = $@"
                 <fetch aggregate='true'>
                   <entity name='{logicalName}'>
-                    <attribute name='{logicalName}id' alias='count' aggregate='count' />
+                    <attribute name='{logicalName}id' alias='count' 
+                      aggregate='count' />
                   </entity>
                 </fetch>";
 
@@ -95,7 +96,8 @@ namespace dvmig.Core.Metadata
             if (response.Entities.Count > 0 &&
                 response.Entities[0].Contains("count"))
             {
-                var aliasedValue = (Microsoft.Xrm.Sdk.AliasedValue)response.Entities[0]["count"];
+                var aliasedValue = (Microsoft.Xrm.Sdk.AliasedValue)
+                    response.Entities[0]["count"];
 
                 return (int)aliasedValue.Value;
             }

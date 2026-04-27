@@ -15,7 +15,8 @@ namespace dvmig.Core.Synchronization
         private readonly ILogger _logger;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="StatusTransitionHandler"/> class.
+        /// Initializes a new instance of the 
+        /// <see cref="StatusTransitionHandler"/> class.
         /// </summary>
         /// <param name="target">The target Dataverse provider.</param>
         /// <param name="setupService">The setup service.</param>
@@ -37,7 +38,8 @@ namespace dvmig.Core.Synchronization
             IProgress<string>? progress,
             CancellationToken ct = default,
             Func<Entity, SyncOptions, IProgress<string>?, CancellationToken,
-                Task<(bool Success, string? FailureMessage)>>? createOrUpdateFunc = null)
+                Task<(bool Success, string? FailureMessage)>>? 
+                createOrUpdateFunc = null)
         {
             var recordKey = $"{entity.LogicalName}:{entity.Id}";
             _logger.Information(
@@ -125,14 +127,10 @@ namespace dvmig.Core.Synchronization
                         );
 
                         if (stateValue != null)
-                        {
                             transitionUpdate["statecode"] = stateValue;
-                        }
 
                         if (statusValue != null)
-                        {
                             transitionUpdate["statuscode"] = statusValue;
-                        }
 
                         await _target.UpdateAsync(transitionUpdate, ct);
                         _logger.Information(
@@ -165,19 +163,13 @@ namespace dvmig.Core.Synchronization
         private OptionSetValue? ToOptionSetValue(object? value)
         {
             if (value == null)
-            {
                 return null;
-            }
 
             if (value is OptionSetValue osv)
-            {
                 return osv;
-            }
 
             if (value is int i)
-            {
                 return new OptionSetValue(i);
-            }
 
             return null;
         }
@@ -187,14 +179,19 @@ namespace dvmig.Core.Synchronization
         /// </summary>
         /// <param name="entity">The entity to create.</param>
         /// <param name="ct">A cancellation token.</param>
-        /// <returns>A tuple indicating success and any failure message.</returns>
-        private async Task<(bool Success, string? FailureMessage)> BasicCreateAsync(
-            Entity entity,
-            CancellationToken ct)
+        /// <returns>
+        /// A tuple indicating success and any failure message.
+        /// </returns>
+        private async Task<(bool Success, string? FailureMessage)>
+            BasicCreateAsync(
+                Entity entity,
+                CancellationToken ct
+            )
         {
             try
             {
                 await _target.CreateAsync(entity, ct);
+
                 return (true, string.Empty);
             }
             catch (Exception ex)

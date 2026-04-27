@@ -68,9 +68,7 @@ namespace dvmig.Core.Shared
         public static bool IsStandardEntity(string logicalName)
         {
             if (string.IsNullOrWhiteSpace(logicalName))
-            {
                 return false;
-            }
 
             return StandardEntities.Contains(logicalName.ToLowerInvariant());
         }

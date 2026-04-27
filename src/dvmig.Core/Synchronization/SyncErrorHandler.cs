@@ -15,7 +15,8 @@ namespace dvmig.Core.Synchronization
         private readonly ILogger _logger;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="SyncErrorHandler"/> class.
+        /// Initializes a new instance of the 
+        /// <see cref="SyncErrorHandler"/> class.
         /// </summary>
         /// <param name="target">The target Dataverse provider.</param>
         /// <param name="setupService">The setup service.</param>
@@ -31,21 +32,28 @@ namespace dvmig.Core.Synchronization
         }
 
         /// <inheritdoc />
-        public async Task<(bool Success, string? FailureMessage)> HandleSyncExceptionAsync(
-            Exception ex,
-            Entity entity,
-            SyncOptions options,
-            IProgress<string>? progress,
-            CancellationToken ct = default,
-            Func<Entity, CancellationToken, Task>? updateFunc = null,
-            Func<Entity, SyncOptions, IProgress<string>?, CancellationToken,
-                Task<bool>>? statusTransitionFunc = null,
-            Func<Exception, Entity, SyncOptions, IProgress<string>?, CancellationToken,
-                Task<bool>>? resolveMissingDependencyFunc = null,
-            Func<string, Entity, SyncOptions, IProgress<string>?, CancellationToken,
-                Task<bool>>? resolveSqlDependencyFunc = null,
-            Func<Exception, Entity, SyncOptions, IProgress<string>?, CancellationToken,
-                Task<bool>>? stripAttributeFunc = null)
+        public async Task<(bool Success, string? FailureMessage)>
+            HandleSyncExceptionAsync(
+                Exception ex,
+                Entity entity,
+                SyncOptions options,
+                IProgress<string>? progress,
+                CancellationToken ct = default,
+                Func<Entity, CancellationToken, Task>? updateFunc = null,
+                Func<Entity, SyncOptions, IProgress<string>?,
+                    CancellationToken, Task<bool>>?
+                    statusTransitionFunc = null,
+                Func<Exception, Entity, SyncOptions, IProgress<string>?,
+                    CancellationToken, Task<bool>>?
+                    resolveMissingDependencyFunc = null,
+                Func<string, Entity, SyncOptions, IProgress<string>?,
+                    CancellationToken, Task<bool>>?
+                    resolveSqlDependencyFunc = null,
+                Func<Exception, Entity, SyncOptions, IProgress<string>?,
+                    CancellationToken, Task<bool>>?
+                    stripAttributeFunc = null,
+                Func<Entity, CancellationToken, Task<Guid?>>? 
+                    findExistingFunc = null)
         {
             var msg = ex.Message.ToLower();
 
@@ -62,20 +70,40 @@ namespace dvmig.Core.Synchronization
 
                 try
                 {
-                    if (options.PreserveDates)
+                    if (findExistingFunc != null)
                     {
-                        await _setupService.PreserveDatesAsync(_target, entity, ct);
+                        var targetId = await findExistingFunc(entity, ct);
+                        if (targetId.HasValue && targetId.Value != entity.Id)
+                        {
+                            _logger.Information(
+                                "Found alternate key duplicate for " +
+                                "{Key}:{Id}. Updating existing record " +
+                                "{TargetId} instead.",
+                                entity.LogicalName,
+                                entity.Id,
+                                targetId.Value
+                            );
+                            
+                            entity.Id = targetId.Value;
+
+                            var pkName = $"{entity.LogicalName}id";
+                            if (entity.Attributes.Contains(pkName))
+                                entity[pkName] = targetId.Value;
+                        }
                     }
+
+                    if (options.PreserveDates)
+                        await _setupService.PreserveDatesAsync(
+                            _target,
+                            entity,
+                            ct
+                        );
 
                     // Try standard update first
                     if (updateFunc != null)
-                    {
                         await updateFunc(entity, ct);
-                    }
                     else
-                    {
                         await _target.UpdateAsync(entity, ct);
-                    }
 
                     return (true, string.Empty);
                 }
@@ -93,17 +121,25 @@ namespace dvmig.Core.Synchronization
                             ct
                         );
 
-                        return success
-                            ? (true, string.Empty)
-                            : (false, FormatFailureMessage(
+                        if (success)
+                            return (true, string.Empty);
+
+                        return (
+                            false,
+                            FormatFailureMessage(
                                 "Status transition failed",
                                 updateEx
-                            ));
+                            )
+                        );
                     }
 
-                    if ((updateMsg.Contains("conflicted with the foreign key constraint") ||
-                         updateMsg.Contains("conflicted with a constraint")) &&
-                        resolveSqlDependencyFunc != null)
+                    var isSqlError =
+                        updateMsg.Contains(
+                            "conflicted with the foreign key constraint"
+                        ) ||
+                        updateMsg.Contains("conflicted with a constraint");
+
+                    if (isSqlError && resolveSqlDependencyFunc != null)
                     {
                         var success = await resolveSqlDependencyFunc(
                             updateEx.Message,
@@ -113,12 +149,16 @@ namespace dvmig.Core.Synchronization
                             ct
                         );
 
-                        return success
-                            ? (true, string.Empty)
-                            : (false, FormatFailureMessage(
+                        if (success)
+                            return (true, string.Empty);
+
+                        return (
+                            false,
+                            FormatFailureMessage(
                                 "SQL dependency resolution failed",
                                 updateEx
-                            ));
+                            )
+                        );
                     }
 
                     _logger.Warning(
@@ -128,10 +168,13 @@ namespace dvmig.Core.Synchronization
                         updateEx.Message
                     );
 
-                    return (false, FormatFailureMessage(
-                        "Update failed for existing record",
-                        updateEx
-                    ));
+                    return (
+                        false,
+                        FormatFailureMessage(
+                            "Update failed for existing record",
+                            updateEx
+                        )
+                    );
                 }
             }
 
@@ -145,12 +188,16 @@ namespace dvmig.Core.Synchronization
                     ct
                 );
 
-                return success
-                    ? (true, string.Empty)
-                    : (false, FormatFailureMessage(
+                if (success)
+                    return (true, string.Empty);
+
+                return (
+                    false,
+                    FormatFailureMessage(
                         "Status transition failed",
                         ex
-                    ));
+                    )
+                );
             }
 
             if (msg.Contains("does not exist") &&
@@ -164,12 +211,16 @@ namespace dvmig.Core.Synchronization
                     ct
                 );
 
-                return success
-                    ? (true, string.Empty)
-                    : (false, FormatFailureMessage(
+                if (success)
+                    return (true, string.Empty);
+
+                return (
+                    false,
+                    FormatFailureMessage(
                         "Missing dependency resolution failed",
                         ex
-                    ));
+                    )
+                );
             }
 
             if (msg.Contains("conflicted with the foreign key constraint") &&
@@ -183,18 +234,24 @@ namespace dvmig.Core.Synchronization
                     ct
                 );
 
-                return success
-                    ? (true, string.Empty)
-                    : (false, FormatFailureMessage(
+                if (success)
+                    return (true, string.Empty);
+
+                return (
+                    false,
+                    FormatFailureMessage(
                         "SQL dependency resolution failed",
                         ex
-                    ));
+                    )
+                );
             }
 
-            if ((msg.Contains("cannot be modified") ||
-                 msg.Contains("cannot be set on creation") ||
-                 msg.Contains("outside the valid range")) &&
-                stripAttributeFunc != null)
+            var isAttributeError =
+                msg.Contains("cannot be modified") ||
+                msg.Contains("cannot be set on creation") ||
+                msg.Contains("outside the valid range");
+
+            if (isAttributeError && stripAttributeFunc != null)
             {
                 var success = await stripAttributeFunc(
                     ex,
@@ -204,12 +261,16 @@ namespace dvmig.Core.Synchronization
                     ct
                 );
 
-                return success
-                    ? (true, string.Empty)
-                    : (false, FormatFailureMessage(
+                if (success)
+                    return (true, string.Empty);
+
+                return (
+                    false,
+                    FormatFailureMessage(
                         "Strip attribute retry failed",
                         ex
-                    ));
+                    )
+                );
             }
 
             _logger.Error(
@@ -223,10 +284,13 @@ namespace dvmig.Core.Synchronization
                 $"FAILED {entity.LogicalName}:{entity.Id} - {ex.Message}"
             );
 
-            return (false, FormatFailureMessage(
-                "Unresolved error",
-                ex
-            ));
+            return (
+                false,
+                FormatFailureMessage(
+                    "Unresolved error",
+                    ex
+                )
+            );
         }
 
         /// <inheritdoc />

@@ -29,5 +29,11 @@ namespace dvmig.Core.Synchronization
         /// unresolvable lookups and retry the sync.
         /// </summary>
         public bool StripMissingDependencies { get; set; } = false;
+
+        /// <summary>
+        /// Gets or sets the maximum number of concurrent requests to the
+        /// target environment.
+        /// </summary>
+        public int MaxDegreeOfParallelism { get; set; } = 10;
     }
 }

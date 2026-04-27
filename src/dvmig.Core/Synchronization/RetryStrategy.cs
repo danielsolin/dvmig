@@ -28,9 +28,7 @@ namespace dvmig.Core.Synchronization
             var msg = ex.Message.ToLower();
 
             if (msg.Contains("8004410d") || msg.Contains("too many requests"))
-            {
                 return true;
-            }
 
             return msg.Contains("generic sql error") ||
                    msg.Contains("timeout");
@@ -57,7 +55,9 @@ namespace dvmig.Core.Synchronization
         /// <summary>
         /// Creates a retry policy for handling transient errors.
         /// </summary>
-        /// <param name="maxRetries">The maximum number of retry attempts.</param>
+        /// <param name="maxRetries">
+        /// The maximum number of retry attempts.
+        /// </param>
         /// <returns>A configured retry policy.</returns>
         public AsyncRetryPolicy CreateRetryPolicy(int maxRetries = 5)
         {
@@ -65,7 +65,8 @@ namespace dvmig.Core.Synchronization
                 .Handle<Exception>(IsTransientError)
                 .WaitAndRetryAsync(
                     maxRetries,
-                    retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)),
+                    retryAttempt =>
+                        TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)),
                     (ex, time, count, ctx) =>
                     {
                         _logger.Warning(

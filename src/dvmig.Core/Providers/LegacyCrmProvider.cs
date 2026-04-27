@@ -20,7 +20,8 @@ namespace dvmig.Core.Interfaces
         public string ConnectionString { get; }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="LegacyCrmProvider"/> class.
+        /// Initializes a new instance of the 
+        /// <see cref="LegacyCrmProvider"/> class.
         /// </summary>
         /// <param name="connectionString">
         /// The connection string to the legacy CRM environment.
@@ -30,11 +31,9 @@ namespace dvmig.Core.Interfaces
             ConnectionString = connectionString;
             _client = new CrmServiceClient(connectionString);
             if (!_client.IsReady)
-            {
                 throw new Exception(
                     $"Legacy CRM connection failed: {_client.LastCrmError}"
                 );
-            }
         }
 
         /// <inheritdoc />
@@ -75,9 +74,7 @@ namespace dvmig.Core.Interfaces
             {
                 if (ex.Message.Contains("80040217") ||
                     ex.Message.Contains("Does Not Exist"))
-                {
                     return Task.FromResult<Entity?>(null);
-                }
 
                 throw;
             }

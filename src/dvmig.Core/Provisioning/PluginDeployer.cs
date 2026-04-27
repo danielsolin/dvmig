@@ -31,12 +31,10 @@ namespace dvmig.Core.Provisioning
         )
         {
             if (!File.Exists(pluginAssemblyPath))
-            {
                 throw new FileNotFoundException(
                     "Plugin assembly DLL not found.",
                     pluginAssemblyPath
                 );
-            }
 
             _logger.Information("Deploying plugin assembly...");
             progress?.Report("Deploying plugin assembly...");
@@ -184,9 +182,7 @@ namespace dvmig.Core.Provisioning
             var msgs = await target.RetrieveMultipleAsync(msgQuery, ct);
 
             if (!msgs.Entities.Any())
-            {
                 throw new Exception($"SdkMessage '{messageName}' not found.");
-            }
 
             var messageId = msgs.Entities.First().Id;
 
@@ -271,7 +267,10 @@ namespace dvmig.Core.Provisioning
             if (result.Entities.Any())
             {
                 var assemblyId = result.Entities.First().Id;
-                progress?.Report("Found plugin assembly. Identifying dependent components...");
+                progress?.Report(
+                    "Found plugin assembly. " +
+                    "Identifying dependent components..."
+                );
 
                 // 1. Find all types in this assembly
                 var typeQuery = new QueryByAttribute("plugintype")
@@ -286,18 +285,33 @@ namespace dvmig.Core.Provisioning
                     var typeName = type.GetAttributeValue<string>("typename");
 
                     // 2. Find and delete steps for each type
-                    var stepQuery = new QueryByAttribute("sdkmessageprocessingstep")
+                    var stepQuery = new QueryByAttribute(
+                        "sdkmessageprocessingstep"
+                    )
                     {
-                        ColumnSet = new ColumnSet("sdkmessageprocessingstepid", "name")
+                        ColumnSet = new ColumnSet(
+                            "sdkmessageprocessingstepid",
+                            "name"
+                        )
                     };
                     stepQuery.AddAttributeValue("plugintypeid", type.Id);
-                    var steps = await target.RetrieveMultipleAsync(stepQuery, ct);
+                    var steps = await target.RetrieveMultipleAsync(
+                        stepQuery,
+                        ct
+                    );
 
                     foreach (var step in steps.Entities)
                     {
                         var stepName = step.GetAttributeValue<string>("name");
-                        _logger.Debug("Deleting plugin step {Name} ({Id})", stepName, step.Id);
-                        progress?.Report($"Deleting plugin step: {stepName}...");
+                        _logger.Debug(
+                            "Deleting plugin step {Name} ({Id})",
+                            stepName,
+                            step.Id
+                        );
+
+                        progress?.Report(
+                            $"Deleting plugin step: {stepName}..."
+                        );
 
                         await target.DeleteAsync(
                             "sdkmessageprocessingstep",
@@ -306,7 +320,12 @@ namespace dvmig.Core.Provisioning
                         );
                     }
 
-                    _logger.Debug("Deleting plugin type {Name} ({Id})", typeName, type.Id);
+                    _logger.Debug(
+                        "Deleting plugin type {Name} ({Id})",
+                        typeName,
+                        type.Id
+                    );
+
                     progress?.Report($"Deleting plugin type: {typeName}...");
                     await target.DeleteAsync("plugintype", type.Id, ct);
                 }

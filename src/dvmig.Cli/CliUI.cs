@@ -110,9 +110,7 @@ namespace dvmig.Cli
             );
 
             if (entities == null || entities.Count == 0)
-            {
                 return null;
-            }
 
             var prompt = new MultiSelectionPrompt<string>()
                 .Title("Select [green]Entities[/] to migrate:")
@@ -124,9 +122,7 @@ namespace dvmig.Cli
                 );
 
             foreach (var entity in entities)
-            {
                 prompt.AddChoice(entity.LogicalName);
-            }
 
             return AnsiConsole.Prompt(prompt);
         }

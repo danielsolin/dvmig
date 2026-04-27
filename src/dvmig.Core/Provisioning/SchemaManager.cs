@@ -61,7 +61,10 @@ namespace dvmig.Core.Provisioning
 
             if (existingMeta == null)
             {
-                _logger.Information("Creating '{Entity}' entity...", entityName);
+                _logger.Information(
+                    "Creating '{Entity}' entity...",
+                    entityName
+                );
                 progress?.Report($"Creating '{entityName}' entity...");
 
                 var entityReq = new CreateEntityRequest
@@ -163,7 +166,10 @@ namespace dvmig.Core.Provisioning
 
             if (existingMeta == null)
             {
-                _logger.Information("Creating '{Entity}' entity...", entityName);
+                _logger.Information(
+                    "Creating '{Entity}' entity...",
+                    entityName
+                );
                 progress?.Report($"Creating '{entityName}' entity...");
 
                 var entityReq = new CreateEntityRequest

@@ -41,9 +41,7 @@ namespace dvmig.Core.Provisioning
                 var assembly = assemblies.Entities.FirstOrDefault();
 
                 if (assembly == null)
-                {
                     return false;
-                }
 
                 var typeQuery = new QueryByAttribute("plugintype")
                 {
@@ -59,9 +57,7 @@ namespace dvmig.Core.Provisioning
                 var pluginType = types.Entities.FirstOrDefault();
 
                 if (pluginType == null)
-                {
                     return false;
-                }
 
                 var stepQuery = new QueryByAttribute("sdkmessageprocessingstep")
                 {
@@ -72,6 +68,7 @@ namespace dvmig.Core.Provisioning
                 var steps = await target.RetrieveMultipleAsync(stepQuery, ct);
 
                 // Both Create and Update steps should be present:
+
                 return steps.Entities.Count >= 2;
             }
             catch

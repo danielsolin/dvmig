@@ -49,23 +49,32 @@ namespace dvmig.Core.Interfaces
         Task<Guid?> FindExistingOnTargetAsync(
             Entity entity,
             IDataverseProvider target,
-            Func<string, CancellationToken, Task<EntityMetadata?>> getMetadataFunc,
+            Func<string, CancellationToken, Task<EntityMetadata?>>
+                getMetadataFunc,
             CancellationToken ct = default);
 
         /// <summary>
-        /// Determines whether an attribute is forbidden from being synchronized
-        /// (e.g., system-managed fields like versionnumber).
+        /// Determines whether an attribute is forbidden from being 
+        /// synchronized (e.g., system-managed fields like versionnumber).
         /// </summary>
-        /// <param name="attributeName">The logical name of the attribute.</param>
-        /// <returns>True if the attribute is forbidden; otherwise, false.</returns>
+        /// <param name="attributeName">
+        /// The logical name of the attribute.
+        /// </param>
+        /// <returns>
+        /// True if the attribute is forbidden; otherwise, false.
+        /// </returns>
         bool IsForbiddenAttribute(string attributeName);
 
         /// <summary>
         /// Determines whether an attribute is a user reference field (e.g.,
         /// ownerid, createdby).
         /// </summary>
-        /// <param name="attributeName">The logical name of the attribute.</param>
-        /// <returns>True if the attribute is a user field; otherwise, false.</returns>
+        /// <param name="attributeName">
+        /// The logical name of the attribute.
+        /// </param>
+        /// <returns>
+        /// True if the attribute is a user field; otherwise, false.
+        /// </returns>
         bool IsUserAttribute(string attributeName);
     }
 }

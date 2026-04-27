@@ -63,9 +63,7 @@ namespace dvmig.App.Models
             FailureCount = failure;
 
             if (TotalRecords > 0)
-            {
                 ProgressPercentage = (double)processed / TotalRecords * 100;
-            }
         }
     }
 }

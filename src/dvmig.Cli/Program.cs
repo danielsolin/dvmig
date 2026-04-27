@@ -12,7 +12,7 @@ using Spectre.Console;
 namespace dvmig.Cli
 {
     /// <summary>
-    /// Entry point for the Terminal User Interface (TUI) version of the 
+    /// Entry point for the Terminal User Interface (TUI) version of the
     /// Dataverse Migrator.
     /// </summary>
     [SupportedOSPlatform("windows")]
@@ -23,9 +23,11 @@ namespace dvmig.Cli
         static async Task Main(string[] args)
         {
             var logger = LoggerInitializer.Initialize("dvmig.Cli");
+            var retryStrategy = new RetryStrategy(logger);
+
             var settingsService = new SettingsService();
             var stateTracker = new LocalFileStateTracker();
-            var seeder = new TestDataSeeder(logger);
+            var seeder = new TestDataSeeder(logger, retryStrategy);
             var metadataService = new MetadataService();
             var reconciliationService = new ReconciliationService();
             var setupService = new SetupService(
@@ -59,6 +61,7 @@ namespace dvmig.Cli
             );
 
             bool enableSourceCleanup = args.Contains("--enable-source-cleanup");
+            bool enableTargetCleanup = args.Contains("--enable-target-cleanup");
             CliUI.WriteHeader();
 
             bool exit = false;
@@ -66,6 +69,7 @@ namespace dvmig.Cli
             {
                 var menu = GetMenu(
                     enableSourceCleanup,
+                    enableTargetCleanup,
                     migrationActions,
                     reconciliationActions,
                     maintenanceActions,
@@ -77,7 +81,8 @@ namespace dvmig.Cli
                         .Title("What would you like to do?")
                         .PageSize(10)
                         .UseConverter(m => m.Label)
-                        .AddChoices(menu));
+                        .AddChoices(menu)
+                );
 
                 await choice.Action();
 
@@ -91,6 +96,7 @@ namespace dvmig.Cli
 
         private static List<MenuItem> GetMenu(
             bool enableSourceCleanup,
+            bool enableTargetCleanup,
             MigrationActions migrationActions,
             ReconciliationActions reconciliationActions,
             MaintenanceActions maintenanceActions,
@@ -100,7 +106,11 @@ namespace dvmig.Cli
             var menu = new List<MenuItem>
             {
                 new MenuItem(
-                    "Migrate Data",
+                    "Recommended Sync (Accounts, Contacts, Activities)",
+                    migrationActions.HandleRecommendedSyncAsync
+                ),
+                new MenuItem(
+                    "Migrate Data (Custom Selection)",
                     migrationActions.HandleMigrationAsync
                 ),
                 new MenuItem(
@@ -122,17 +132,23 @@ namespace dvmig.Cli
             };
 
             if (enableSourceCleanup)
-            {
                 menu.Add(new MenuItem(
-                    "Wipe ALL Accounts, Contacts, and Activities from " +
-                    "Source (DANGEROUS)",
-                    maintenanceActions.HandleSourceTestDataCleanupAsync
+                    "Wipe SOURCE: Delete ALL Accounts, Contacts, and " +
+                    "Activities (DANGEROUS!)",
+                    maintenanceActions.HandleSourceDataCleanupAsync
                 ));
-            }
+
+            if (enableTargetCleanup)
+                menu.Add(new MenuItem(
+                    "Wipe TARGET: Delete ALL Accounts, Contacts, and " +
+                    "Activities (DANGEROUS!)",
+                    maintenanceActions.HandleTargetDataCleanupAsync
+                ));
 
             menu.Add(new MenuItem("Exit", () =>
             {
                 onExit();
+
                 return Task.CompletedTask;
             }));
 

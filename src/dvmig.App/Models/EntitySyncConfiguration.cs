@@ -24,8 +24,8 @@ namespace dvmig.App.Models
         public HashSet<Guid> SelectedRecordIds { get; } = new();
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="EntitySyncConfiguration"/> 
-        /// class.
+        /// Initializes a new instance of the 
+        /// <see cref="EntitySyncConfiguration"/> class.
         /// </summary>
         /// <param name="logicalName">The logical name of the entity.</param>
         public EntitySyncConfiguration(string logicalName)

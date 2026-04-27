@@ -15,7 +15,8 @@ namespace dvmig.Core.Shared
             public const string PrimaryId = "dm_sourcedateid";
             public const string Name = "dm_name";
             public const string EntityId = "dm_sourceentityid";
-            public const string EntityLogicalNameAttr = "dm_sourceentitylogicalname";
+            public const string EntityLogicalNameAttr = "dm_" +
+                "sourceentitylogicalname";
             public const string CreatedDate = "dm_sourcecreateddate";
             public const string ModifiedDate = "dm_sourcemodifieddate";
         }
@@ -35,7 +36,8 @@ namespace dvmig.Core.Shared
         }
 
         /// <summary>
-        /// Application-wide constants for configuration, batch sizes, and file names.
+        /// Application-wide constants for configuration, batch sizes, 
+        /// and file names.
         /// </summary>
         public static class AppConstants
         {

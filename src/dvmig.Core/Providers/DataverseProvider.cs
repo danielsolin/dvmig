@@ -19,7 +19,8 @@ namespace dvmig.Core.Interfaces
         public string ConnectionString { get; }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="DataverseProvider"/> class.
+        /// Initializes a new instance of the 
+        /// <see cref="DataverseProvider"/> class.
         /// </summary>
         /// <param name="connectionString">
         /// The connection string to the Dataverse environment.
@@ -29,11 +30,9 @@ namespace dvmig.Core.Interfaces
             ConnectionString = connectionString;
             _client = new ServiceClient(connectionString);
             if (!_client.IsReady)
-            {
                 throw new Exception(
                     $"Dataverse connection failed: {_client.LastError}"
                 );
-            }
         }
 
         /// <inheritdoc />
@@ -74,9 +73,7 @@ namespace dvmig.Core.Interfaces
                 // 0x80040217 = Object does not exist
                 if (ex.Message.Contains("80040217") ||
                     ex.Message.Contains("Does Not Exist"))
-                {
                     return null;
-                }
 
                 throw;
             }
@@ -104,6 +101,7 @@ namespace dvmig.Core.Interfaces
             {
                 // If entity doesn't exist, RetrieveEntityRequest throws.
                 // We return null to indicate missing metadata.
+
                 return null;
             }
         }

@@ -12,9 +12,13 @@ namespace dvmig.Core.Interfaces
         /// Retrieves entity metadata from the target environment, utilizing
         /// an internal cache to improve performance.
         /// </summary>
-        /// <param name="entityLogicalName">The logical name of the entity.</param>
+        /// <param name="entityLogicalName">
+        /// The logical name of the entity.
+        /// </param>
         /// <param name="ct">A cancellation token.</param>
-        /// <returns>The entity metadata, or null if it cannot be retrieved.</returns>
+        /// <returns>
+        /// The entity metadata, or null if it cannot be retrieved.
+        /// </returns>
         Task<EntityMetadata?> GetMetadataAsync(
             string entityLogicalName,
             CancellationToken ct = default);
@@ -23,9 +27,13 @@ namespace dvmig.Core.Interfaces
         /// Retrieves a set of valid attributes for extraction, excluding
         /// logical or non-readable columns to optimize query performance.
         /// </summary>
-        /// <param name="logicalName">The logical name of the entity.</param>
+        /// <param name="logicalName">
+        /// The logical name of the entity.
+        /// </param>
         /// <param name="ct">A cancellation token.</param>
-        /// <returns>A configured ColumnSet containing valid attributes.</returns>
+        /// <returns>
+        /// A configured ColumnSet containing valid attributes.
+        /// </returns>
         Task<ColumnSet> GetValidColumnsAsync(
             string logicalName,
             CancellationToken ct = default);

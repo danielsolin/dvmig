@@ -6,10 +6,11 @@ namespace dvmig.Core.Synchronization
     public partial class SyncEngine
     {
         /// <inheritdoc />
-        public async Task<Microsoft.Xrm.Sdk.Query.ColumnSet> GetValidColumnsAsync(
-            string logicalName,
-            CancellationToken ct = default
-        )
+        public async Task<Microsoft.Xrm.Sdk.Query.ColumnSet>
+            GetValidColumnsAsync(
+                string logicalName,
+                CancellationToken ct = default
+            )
         {
             return await _metadataCache.GetValidColumnsAsync(logicalName, ct);
         }
@@ -67,7 +68,9 @@ namespace dvmig.Core.Synchronization
         /// </summary>
         /// <param name="logicalName">The logical name of the entity.</param>
         /// <param name="ct">A cancellation token.</param>
-        /// <returns>The entity metadata, or null if it cannot be retrieved.</returns>
+        /// <returns>
+        /// The entity metadata, or null if it cannot be retrieved.
+        /// </returns>
         private async Task<EntityMetadata?> GetMetadataAsync(
             string logicalName,
             CancellationToken ct)
@@ -76,11 +79,13 @@ namespace dvmig.Core.Synchronization
         }
 
         /// <summary>
-        /// Determines whether an attribute is forbidden from being synchronized
-        /// (e.g., system-managed fields like versionnumber).
+        /// Determines whether an attribute is forbidden from being 
+        /// synchronized (e.g., system-managed fields like versionnumber).
         /// </summary>
         /// <param name="attrName">The logical name of the attribute.</param>
-        /// <returns>True if the attribute is forbidden; otherwise, false.</returns>
+        /// <returns>
+        /// True if the attribute is forbidden; otherwise, false.
+        /// </returns>
         private bool IsForbiddenAttribute(string attrName)
         {
             return _entityPreparer.IsForbiddenAttribute(attrName);
@@ -91,7 +96,9 @@ namespace dvmig.Core.Synchronization
         /// ownerid, createdby).
         /// </summary>
         /// <param name="attrName">The logical name of the attribute.</param>
-        /// <returns>True if the attribute is a user field; otherwise, false.</returns>
+        /// <returns>
+        /// True if the attribute is a user field; otherwise, false.
+        /// </returns>
         private bool IsUserAttribute(string attrName)
         {
             return _entityPreparer.IsUserAttribute(attrName);

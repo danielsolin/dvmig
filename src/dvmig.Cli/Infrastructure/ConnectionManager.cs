@@ -70,6 +70,7 @@ namespace dvmig.Cli.Infrastructure
                             : new DataverseProvider(connStr);
 
                         await p.ExecuteAsync(new WhoAmIRequest(), default);
+
                         return p;
                     }
                     catch (Exception ex)
@@ -97,13 +98,9 @@ namespace dvmig.Cli.Infrastructure
                     {
                         settings.RememberConnections = true;
                         if (direction == ConnectionDirection.Source)
-                        {
                             settings.SourceConnectionString = connStr;
-                        }
                         else
-                        {
                             settings.TargetConnectionString = connStr;
-                        }
 
                         _settingsService.SaveSettings(settings);
                         AnsiConsole.MarkupLine("[grey]Settings saved.[/]");
