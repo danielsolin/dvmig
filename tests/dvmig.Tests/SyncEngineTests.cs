@@ -427,7 +427,7 @@ namespace dvmig.Tests
                 .ThrowsAsync(new Exception("Create failed"));
 
             _targetMock.Setup(t => t.CreateAsync(
-                It.Is<Entity>(e => e.LogicalName == SchemaConstants.MigrationFailure.EntityLogicalName),
+                It.Is<Entity>(e => e.LogicalName == Constants.MigrationFailure.EntityLogicalName),
                 It.IsAny<CancellationToken>()
             ))
                 .ReturnsAsync(Guid.NewGuid());
@@ -443,7 +443,7 @@ namespace dvmig.Tests
             // Assert
             _targetMock.Verify(t => t.CreateAsync(
                 It.Is<Entity>(e =>
-                    e.LogicalName == SchemaConstants.MigrationFailure.EntityLogicalName
+                    e.LogicalName == Constants.MigrationFailure.EntityLogicalName
                 ),
                 It.IsAny<CancellationToken>()
             ), Times.Once);

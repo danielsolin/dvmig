@@ -319,7 +319,7 @@ namespace dvmig.App.Services
             var query = new QueryExpression(logicalName)
             {
                 ColumnSet = new ColumnSet(primaryId, primaryName),
-                TopCount = SchemaConstants.AppConstants.RecordFetchLimit
+                TopCount = Constants.AppConstants.RecordFetchLimit
             };
 
             if (!string.IsNullOrWhiteSpace(searchText))

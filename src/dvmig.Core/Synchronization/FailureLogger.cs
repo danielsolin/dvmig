@@ -37,25 +37,25 @@ namespace dvmig.Core.Synchronization
             try
             {
                 var failure = new Entity(
-                    SchemaConstants.MigrationFailure.EntityLogicalName
+                    Constants.MigrationFailure.EntityLogicalName
                 );
 
                 var failureName = $"{entity.LogicalName}:{entity.Id}";
-                failure[SchemaConstants.MigrationFailure.Name] =
+                failure[Constants.MigrationFailure.Name] =
                     failureName.Length <= 100
                         ? failureName
                         : failureName.Substring(0, 100);
 
-                failure[SchemaConstants.MigrationFailure.SourceId] =
+                failure[Constants.MigrationFailure.SourceId] =
                     entity.Id.ToString();
 
-                failure[SchemaConstants.MigrationFailure.EntityLogicalNameAttr] =
+                failure[Constants.MigrationFailure.EntityLogicalNameAttr] =
                     entity.LogicalName;
 
-                failure[SchemaConstants.MigrationFailure.ErrorMessage] =
+                failure[Constants.MigrationFailure.ErrorMessage] =
                     errorMessage;
 
-                failure[SchemaConstants.MigrationFailure.Timestamp] =
+                failure[Constants.MigrationFailure.Timestamp] =
                     DateTime.UtcNow;
 
                 await _target.CreateAsync(failure, ct);

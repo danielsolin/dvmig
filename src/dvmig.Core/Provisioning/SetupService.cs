@@ -64,7 +64,7 @@ namespace dvmig.Core.Provisioning
         {
             var assemblyPath = Path.Combine(
                 AppDomain.CurrentDomain.BaseDirectory,
-                SchemaConstants.AppConstants.PluginAssemblyName
+                Constants.AppConstants.PluginAssemblyName
             );
 
             // Fallback for development if not in same folder
@@ -73,9 +73,9 @@ namespace dvmig.Core.Provisioning
                 assemblyPath = Path.Combine(
                     AppDomain.CurrentDomain.BaseDirectory,
                     "..", "..", "..", "..",
-                    SchemaConstants.AppConstants.PluginName,
+                    Constants.AppConstants.PluginName,
                     "bin", "Debug", "netstandard2.0",
-                    SchemaConstants.AppConstants.PluginAssemblyName
+                    Constants.AppConstants.PluginAssemblyName
                 );
             }
 

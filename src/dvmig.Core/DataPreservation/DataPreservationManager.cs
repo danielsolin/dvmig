@@ -56,7 +56,7 @@ namespace dvmig.Core.DataPreservation
             try
             {
                 var meta = await _target.GetEntityMetadataAsync(
-                    SchemaConstants.SourceDate.EntityLogicalName,
+                    Constants.SourceDate.EntityLogicalName,
                     ct
                 );
 
@@ -73,7 +73,7 @@ namespace dvmig.Core.DataPreservation
                     "Date preservation entity '{Entity}' not found " +
                     "on target. Date preservation will be disabled " +
                     "for this session.",
-                    SchemaConstants.SourceDate.EntityLogicalName
+                    Constants.SourceDate.EntityLogicalName
                 );
             }
 
@@ -123,24 +123,24 @@ namespace dvmig.Core.DataPreservation
         private Entity CreateSourceDateEntity(Entity entity)
         {
             var sourceDate = new Entity(
-                SchemaConstants.SourceDate.EntityLogicalName
+                Constants.SourceDate.EntityLogicalName
             );
 
-            sourceDate[SchemaConstants.SourceDate.EntityId] =
+            sourceDate[Constants.SourceDate.EntityId] =
                 entity.Id.ToString();
 
-            sourceDate[SchemaConstants.SourceDate.EntityLogicalNameAttr] =
+            sourceDate[Constants.SourceDate.EntityLogicalNameAttr] =
                 entity.LogicalName.ToLower();
 
             if (entity.Contains("createdon"))
             {
-                sourceDate[SchemaConstants.SourceDate.CreatedDate] =
+                sourceDate[Constants.SourceDate.CreatedDate] =
                     entity["createdon"];
             }
 
             if (entity.Contains("modifiedon"))
             {
-                sourceDate[SchemaConstants.SourceDate.ModifiedDate] =
+                sourceDate[Constants.SourceDate.ModifiedDate] =
                     entity["modifiedon"];
             }
 
@@ -161,11 +161,11 @@ namespace dvmig.Core.DataPreservation
 
             try
             {
-                var entityName = SchemaConstants.SourceDate.EntityLogicalName;
-                var primaryId = SchemaConstants.SourceDate.PrimaryId;
-                var sourceEntityId = SchemaConstants.SourceDate.EntityId;
+                var entityName = Constants.SourceDate.EntityLogicalName;
+                var primaryId = Constants.SourceDate.PrimaryId;
+                var sourceEntityId = Constants.SourceDate.EntityId;
                 var logicalNameAttr =
-                    SchemaConstants.SourceDate.EntityLogicalNameAttr;
+                    Constants.SourceDate.EntityLogicalNameAttr;
 
                 var fetchXml = $@"
                     <fetch version='1.0' output-format='xml-platform' 
@@ -189,7 +189,7 @@ namespace dvmig.Core.DataPreservation
                 if (result.Entities.Any())
                 {
                     await _target.DeleteAsync(
-                        SchemaConstants.SourceDate.EntityLogicalName,
+                        Constants.SourceDate.EntityLogicalName,
                         result.Entities[0].Id,
                         ct
                     );

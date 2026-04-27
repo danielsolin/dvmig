@@ -51,7 +51,7 @@ namespace dvmig.Tests
         public async Task IsEnvironmentReadyAsync_ReturnsFalse_WhenPluginNotFound()
         {
             _targetMock.Setup(t => t.GetEntityMetadataAsync(
-                SchemaConstants.SourceDate.EntityLogicalName,
+                Constants.SourceDate.EntityLogicalName,
                 It.IsAny<CancellationToken>())
             ).ReturnsAsync(new EntityMetadata());
 
@@ -72,12 +72,12 @@ namespace dvmig.Tests
         public async Task IsEnvironmentReadyAsync_ReturnsFalse_WhenPluginTypeNotFound()
         {
             _targetMock.Setup(t => t.GetEntityMetadataAsync(
-                SchemaConstants.SourceDate.EntityLogicalName,
+                Constants.SourceDate.EntityLogicalName,
                 It.IsAny<CancellationToken>())
             ).ReturnsAsync(new EntityMetadata());
 
             _targetMock.Setup(t => t.GetEntityMetadataAsync(
-                SchemaConstants.MigrationFailure.EntityLogicalName,
+                Constants.MigrationFailure.EntityLogicalName,
                 It.IsAny<CancellationToken>())
             ).ReturnsAsync(new EntityMetadata());
 
@@ -108,12 +108,12 @@ namespace dvmig.Tests
         public async Task IsEnvironmentReadyAsync_ReturnsTrue_WhenSchemaAndPluginAndStepsFound()
         {
             _targetMock.Setup(t => t.GetEntityMetadataAsync(
-                SchemaConstants.SourceDate.EntityLogicalName,
+                Constants.SourceDate.EntityLogicalName,
                 It.IsAny<CancellationToken>())
             ).ReturnsAsync(new EntityMetadata());
 
             _targetMock.Setup(t => t.GetEntityMetadataAsync(
-                SchemaConstants.MigrationFailure.EntityLogicalName,
+                Constants.MigrationFailure.EntityLogicalName,
                 It.IsAny<CancellationToken>())
             ).ReturnsAsync(new EntityMetadata());
 
@@ -164,14 +164,14 @@ namespace dvmig.Tests
 
             // Mock dm_sourcedate
             _targetMock.SetupSequence(t => t.GetEntityMetadataAsync(
-                SchemaConstants.SourceDate.EntityLogicalName,
+                Constants.SourceDate.EntityLogicalName,
                 It.IsAny<CancellationToken>())
             ).ReturnsAsync((EntityMetadata?)null)
              .ReturnsAsync(entityMetadata);
 
             // Mock dm_migrationfailure
             _targetMock.SetupSequence(t => t.GetEntityMetadataAsync(
-                SchemaConstants.MigrationFailure.EntityLogicalName,
+                Constants.MigrationFailure.EntityLogicalName,
                 It.IsAny<CancellationToken>())
             ).ReturnsAsync((EntityMetadata?)null)
              .ReturnsAsync(entityMetadata);
