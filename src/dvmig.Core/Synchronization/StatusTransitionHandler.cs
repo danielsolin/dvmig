@@ -12,22 +12,22 @@ namespace dvmig.Core.Synchronization
     public class StatusTransitionHandler : IStatusTransitionHandler
     {
         private readonly IDataverseProvider _target;
-        private readonly IDataPreservationManager _dataPreservation;
+        private readonly ISetupService _setupService;
         private readonly ILogger _logger;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="StatusTransitionHandler"/> class.
         /// </summary>
         /// <param name="target">The target Dataverse provider.</param>
-        /// <param name="dataPreservation">The data preservation manager.</param>
+        /// <param name="setupService">The setup service.</param>
         /// <param name="logger">The logger instance.</param>
         public StatusTransitionHandler(
             IDataverseProvider target,
-            IDataPreservationManager dataPreservation,
+            ISetupService setupService,
             ILogger logger)
         {
             _target = target;
-            _dataPreservation = dataPreservation;
+            _setupService = setupService;
             _logger = logger;
         }
 

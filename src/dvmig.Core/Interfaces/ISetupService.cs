@@ -1,3 +1,4 @@
+using Microsoft.Xrm.Sdk;
 using dvmig.Core.Providers;
 
 namespace dvmig.Core.Interfaces
@@ -63,6 +64,51 @@ namespace dvmig.Core.Interfaces
         Task CleanEnvironmentAsync(
             IDataverseProvider target,
             IProgress<string>? progress = null,
+            CancellationToken ct = default
+        );
+
+        /// <summary>
+        /// Captures the original creation and modification dates from the 
+        /// source entity and preserves them by creating a temporary 
+        /// side-car record in the target environment.
+        /// </summary>
+        /// <param name="target">The target Dataverse provider.</param>
+        /// <param name="sourceEntity">
+        /// The entity from the source environment whose dates need to be 
+        /// preserved.
+        /// </param>
+        /// <param name="ct">
+        /// A cancellation token that can be used to cancel the operation.
+        /// </param>
+        /// <returns>
+        /// A task that represents the asynchronous operation.
+        /// </returns>
+        Task PreserveDatesAsync(
+            IDataverseProvider target,
+            Entity sourceEntity,
+            CancellationToken ct = default
+        );
+
+        /// <summary>
+        /// Deletes the temporary side-car record used for date preservation 
+        /// once the primary entity has been successfully synchronized to 
+        /// the target environment.
+        /// </summary>
+        /// <param name="target">The target Dataverse provider.</param>
+        /// <param name="logicalName">
+        /// The logical name of the primary entity.
+        /// </param>
+        /// <param name="entityId">
+        /// The unique identifier of the primary entity.
+        /// </param>
+        /// <param name="ct">
+        /// A cancellation token that can be used to cancel the operation.
+        /// </param>
+        /// <returns>A task that represents the asynchronous deletion.</returns>
+        Task DeleteSourceDateAsync(
+            IDataverseProvider target,
+            string logicalName,
+            Guid entityId,
             CancellationToken ct = default
         );
     }

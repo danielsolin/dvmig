@@ -19,14 +19,14 @@ namespace dvmig.Core.Provisioning
             try
             {
                 var md = await target.GetEntityMetadataAsync(
-                    Constants.SourceDate.EntityLogicalName,
+                    SchemaConstants.SourceDate.EntityLogicalName,
                     ct
                 );
                 if (md == null)
                     return false;
 
                 md = await target.GetEntityMetadataAsync(
-                    Constants.MigrationFailure.EntityLogicalName,
+                    SchemaConstants.MigrationFailure.EntityLogicalName,
                     ct
                 );
                 if (md == null)

@@ -244,7 +244,7 @@ namespace dvmig.Core.Seeding
                 ColumnSet = new Microsoft.Xrm.Sdk.Query.ColumnSet(false),
                 PageInfo = new Microsoft.Xrm.Sdk.Query.PagingInfo
                 {
-                    Count = dvmig.Core.Shared.Constants.AppConstants
+                    Count = dvmig.Core.Shared.SchemaConstants.AppConstants
                         .DefaultDeletionBatchSize,
                     PageNumber = 1
                 }

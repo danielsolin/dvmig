@@ -1,5 +1,4 @@
 using dvmig.Cli.Infrastructure;
-using dvmig.Core.DataPreservation;
 using dvmig.Core.Interfaces;
 using dvmig.Core.Metadata;
 using dvmig.Core.Providers;
@@ -77,18 +76,14 @@ namespace dvmig.Cli.Actions
             }
 
             var userMapper = new UserMapper(source, target, _logger);
-            var dataPreservation = new DataPreservationManager(
-                target,
-                _logger
-            );
 
             var retryStrategy = new RetryStrategy(_logger);
             var entityPreparer = new EntityPreparer(_logger);
-            var errorHandler = new SyncErrorHandler(target, dataPreservation, _logger);
+            var errorHandler = new SyncErrorHandler(target, _setupService, _logger);
             var dependencyResolver = new DependencyResolver(source, _logger);
             var statusTransitionHandler = new StatusTransitionHandler(
                 target,
-                dataPreservation,
+                _setupService,
                 _logger
             );
             var metadataCache = new MetadataCache(target, _logger);
@@ -98,7 +93,7 @@ namespace dvmig.Cli.Actions
                 source,
                 target,
                 userMapper,
-                dataPreservation,
+                _setupService,
                 _stateTracker,
                 _logger,
                 retryStrategy,

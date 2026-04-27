@@ -1,6 +1,8 @@
 using dvmig.Core.Interfaces;
 using dvmig.Core.Providers;
 using dvmig.Core.Shared;
+using Microsoft.Xrm.Sdk;
+using Microsoft.Xrm.Sdk.Query;
 using Serilog;
 
 namespace dvmig.Core.Provisioning
@@ -15,6 +17,7 @@ namespace dvmig.Core.Provisioning
         private readonly ISchemaManager _schemaManager;
         private readonly IPluginDeployer _pluginDeployer;
         private readonly ILogger _logger;
+        private bool? _isDatePreservationSupported;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SetupService"/> class.
@@ -64,7 +67,7 @@ namespace dvmig.Core.Provisioning
         {
             var assemblyPath = Path.Combine(
                 AppDomain.CurrentDomain.BaseDirectory,
-                Constants.AppConstants.PluginAssemblyName
+                SchemaConstants.AppConstants.PluginAssemblyName
             );
 
             // Fallback for development if not in same folder
@@ -73,9 +76,9 @@ namespace dvmig.Core.Provisioning
                 assemblyPath = Path.Combine(
                     AppDomain.CurrentDomain.BaseDirectory,
                     "..", "..", "..", "..",
-                    Constants.AppConstants.PluginName,
+                    SchemaConstants.AppConstants.PluginName,
                     "bin", "Debug", "netstandard2.0",
-                    Constants.AppConstants.PluginAssemblyName
+                    SchemaConstants.AppConstants.PluginAssemblyName
                 );
             }
 
@@ -113,6 +116,165 @@ namespace dvmig.Core.Provisioning
 
             _logger.Information("Environment cleanup completed.");
             progress?.Report("Environment cleanup completed.");
+        }
+
+        /// <inheritdoc />
+        public async Task PreserveDatesAsync(
+            IDataverseProvider target,
+            Entity sourceEntity,
+            CancellationToken ct = default
+        )
+        {
+            if (!await CheckDatePreservationSupportAsync(target, ct))
+            {
+                return;
+            }
+
+            if (!sourceEntity.Contains("createdon") &&
+                !sourceEntity.Contains("modifiedon"))
+            {
+                return;
+            }
+
+            var sourceDate = CreateSourceDateEntity(sourceEntity);
+
+            try
+            {
+                await target.CreateAsync(sourceDate, ct);
+            }
+            catch (Exception ex)
+            {
+                _logger.Warning(
+                    ex,
+                    "Failed to create source date for {Entity}:{Id}",
+                    sourceEntity.LogicalName,
+                    sourceEntity.Id
+                );
+            }
+        }
+
+        /// <inheritdoc />
+        public async Task DeleteSourceDateAsync(
+            IDataverseProvider target,
+            string logicalName,
+            Guid entityId,
+            CancellationToken ct = default
+        )
+        {
+            if (!await CheckDatePreservationSupportAsync(target, ct))
+            {
+                return;
+            }
+
+            try
+            {
+                var entityName = SchemaConstants.SourceDate.EntityLogicalName;
+                var primaryId = SchemaConstants.SourceDate.PrimaryId;
+                var sourceEntityId = SchemaConstants.SourceDate.EntityId;
+                var logicalNameAttr =
+                    SchemaConstants.SourceDate.EntityLogicalNameAttr;
+
+                var fetchXml = $@"
+                    <fetch version='1.0' output-format='xml-platform' 
+                           mapping='logical' distinct='false' count='1'>
+                      <entity name='{entityName}'>
+                        <attribute name='{primaryId}' />
+                        <filter type='and'>
+                          <condition attribute='{sourceEntityId}' 
+                            operator='eq' value='{entityId}' />
+                          <condition attribute='{logicalNameAttr}' 
+                            operator='eq' value='{logicalName.ToLower()}' />
+                        </filter>
+                      </entity>
+                    </fetch>";
+
+                var result = await target.RetrieveMultipleAsync(
+                    new FetchExpression(fetchXml),
+                    ct
+                );
+
+                if (result.Entities.Any())
+                {
+                    await target.DeleteAsync(
+                        SchemaConstants.SourceDate.EntityLogicalName,
+                        result.Entities[0].Id,
+                        ct
+                    );
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Warning(
+                    ex,
+                    "Failed to delete source date record for {Entity}:{Id}",
+                    logicalName,
+                    entityId
+                );
+            }
+        }
+
+        private async Task<bool> CheckDatePreservationSupportAsync(
+            IDataverseProvider target,
+            CancellationToken ct
+        )
+        {
+            if (_isDatePreservationSupported.HasValue)
+            {
+                return _isDatePreservationSupported.Value;
+            }
+
+            try
+            {
+                var meta = await target.GetEntityMetadataAsync(
+                    SchemaConstants.SourceDate.EntityLogicalName,
+                    ct
+                );
+
+                _isDatePreservationSupported = meta != null;
+            }
+            catch
+            {
+                _isDatePreservationSupported = false;
+            }
+
+            if (_isDatePreservationSupported == false)
+            {
+                _logger.Warning(
+                    "Date preservation entity '{Entity}' not found " +
+                    "on target. Date preservation will be disabled " +
+                    "for this session.",
+                    SchemaConstants.SourceDate.EntityLogicalName
+                );
+            }
+
+            return _isDatePreservationSupported.Value;
+        }
+
+        private Entity CreateSourceDateEntity(Entity entity)
+        {
+            var sourceDate = new Entity(
+                SchemaConstants.SourceDate.EntityLogicalName
+            );
+
+            sourceDate[SchemaConstants.SourceDate.EntityId] =
+                entity.Id.ToString();
+
+            sourceDate[SchemaConstants.SourceDate.EntityLogicalNameAttr] =
+                entity.LogicalName.ToLower();
+
+            if (entity.Contains("createdon"))
+            {
+                sourceDate[SchemaConstants.SourceDate.CreatedDate] =
+                    entity["createdon"];
+            }
+
+            if (entity.Contains("modifiedon"))
+            {
+                sourceDate[SchemaConstants.SourceDate.ModifiedDate] =
+                    entity["modifiedon"];
+            }
+
+            return sourceDate;
         }
     }
 }

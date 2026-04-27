@@ -12,7 +12,7 @@ The solution is built on .NET 9.0 and follows a service-oriented architecture:
 -   **dvmig.Cli**: The primary interface for V1.0. A Terminal User Interface (TUI) built with **Spectre.Console**.
 -   **dvmig.Plugins**: .NET Standard 2.0 plugins for Dataverse that facilitate date preservation via the `dm_sourcedate` entity.
 -   **dvmig.App**: A WPF application (MVVM) maintained for legacy reasons but not the primary focus.
--   **src/shared**: Linked code for metadata constants and helpers.
+-   **src/dvmig.Core/Shared**: Shared code for metadata constants and helpers under the `dvmig.Core.Shared` namespace.
 
 ### Key Technical Features
 
@@ -59,6 +59,6 @@ The solution is built on .NET 9.0 and follows a service-oriented architecture:
 -   **Logging**: Use `Serilog` for structured logging. Avoid `Console.WriteLine` in core logic.
 
 ### Migration Specifics
--   **Schema Constants**: Always use `SchemaConstants.cs` for entity and attribute logical names.
+-   **Schema Constants**: Always use `Constants.cs` (in `dvmig.Core.Shared`) for entity and attribute logical names.
 -   **Provider Abstraction**: Never use `IOrganizationService` directly in the `SyncEngine`; use `IDataverseProvider`.
 -   **Failure Handling**: Records that fail to sync must be logged via `IFailureLogger` to the `dm_migrationfailure` entity on the target.

@@ -75,6 +75,6 @@ dotnet run --project src/dvmig.App/dvmig.App.csproj
 ## Important Notes
 
 - The `old/` directory contains legacy source projects for reference only - **DO NOT MODIFY**
-- Shared code (e.g., `EntityMetadataHelper.cs`, `SchemaConstants.cs`) lives in `src/shared/` and is linked into multiple projects
+- Shared code (e.g., `EntityMetadataHelper.cs`, `Constants.cs`) lives in `src/dvmig.Core/Shared/` under the `dvmig.Core.Shared` namespace
 - Plugin assembly must be signed (`dvmig.snk`) for deployment to Dataverse
 - Metadata caching and ID mapping are critical for performance during large migrations

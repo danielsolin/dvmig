@@ -47,7 +47,7 @@ namespace dvmig.Core.Synchronization
         public async Task<bool> IsInitializedAsync(IDataverseProvider target, CancellationToken ct = default)
         {
             var meta = await target.GetEntityMetadataAsync(
-                Constants.MigrationFailure.EntityLogicalName,
+                SchemaConstants.MigrationFailure.EntityLogicalName,
                 ct
             );
 
@@ -57,33 +57,33 @@ namespace dvmig.Core.Synchronization
         /// <inheritdoc />
         public async Task<List<MigrationFailureRecord>> GetFailuresAsync(IDataverseProvider target, CancellationToken ct = default)
         {
-            var query = new QueryExpression(Constants.MigrationFailure.EntityLogicalName)
+            var query = new QueryExpression(SchemaConstants.MigrationFailure.EntityLogicalName)
             {
                 ColumnSet = new ColumnSet(
-                    Constants.MigrationFailure.SourceId,
-                    Constants.MigrationFailure.EntityLogicalNameAttr,
-                    Constants.MigrationFailure.ErrorMessage,
-                    Constants.MigrationFailure.Timestamp
+                    SchemaConstants.MigrationFailure.SourceId,
+                    SchemaConstants.MigrationFailure.EntityLogicalNameAttr,
+                    SchemaConstants.MigrationFailure.ErrorMessage,
+                    SchemaConstants.MigrationFailure.Timestamp
                 )
             };
-            query.AddOrder(Constants.MigrationFailure.Timestamp, OrderType.Descending);
+            query.AddOrder(SchemaConstants.MigrationFailure.Timestamp, OrderType.Descending);
 
             var result = await target.RetrieveMultipleAsync(query, ct);
 
             return result.Entities.Select(e => new MigrationFailureRecord
             {
                 Id = e.Id,
-                EntityLogicalName = e.GetAttributeValue<string>(Constants.MigrationFailure.EntityLogicalNameAttr) ?? "N/A",
-                SourceId = e.GetAttributeValue<string>(Constants.MigrationFailure.SourceId) ?? "N/A",
-                ErrorMessage = e.GetAttributeValue<string>(Constants.MigrationFailure.ErrorMessage) ?? "N/A",
-                TimestampUtc = e.GetAttributeValue<DateTime>(Constants.MigrationFailure.Timestamp)
+                EntityLogicalName = e.GetAttributeValue<string>(SchemaConstants.MigrationFailure.EntityLogicalNameAttr) ?? "N/A",
+                SourceId = e.GetAttributeValue<string>(SchemaConstants.MigrationFailure.SourceId) ?? "N/A",
+                ErrorMessage = e.GetAttributeValue<string>(SchemaConstants.MigrationFailure.ErrorMessage) ?? "N/A",
+                TimestampUtc = e.GetAttributeValue<DateTime>(SchemaConstants.MigrationFailure.Timestamp)
             }).ToList();
         }
 
         /// <inheritdoc />
         public async Task ClearFailuresAsync(IDataverseProvider target, CancellationToken ct = default)
         {
-            var query = new QueryExpression(Constants.MigrationFailure.EntityLogicalName)
+            var query = new QueryExpression(SchemaConstants.MigrationFailure.EntityLogicalName)
             {
                 ColumnSet = new ColumnSet(false)
             };
@@ -93,7 +93,7 @@ namespace dvmig.Core.Synchronization
             foreach (var entity in result.Entities)
             {
                 ct.ThrowIfCancellationRequested();
-                await target.DeleteAsync(Constants.MigrationFailure.EntityLogicalName, entity.Id, ct);
+                await target.DeleteAsync(SchemaConstants.MigrationFailure.EntityLogicalName, entity.Id, ct);
             }
         }
     }

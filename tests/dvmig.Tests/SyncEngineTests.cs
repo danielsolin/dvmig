@@ -15,7 +15,7 @@ namespace dvmig.Tests
         private readonly Mock<IDataverseProvider> _sourceMock;
         private readonly Mock<IDataverseProvider> _targetMock;
         private readonly Mock<IUserMapper> _userMapperMock;
-        private readonly Mock<IDataPreservationManager> _dataPreservationMock;
+        private readonly Mock<ISetupService> _setupServiceMock;
         private readonly Mock<ISyncStateTracker> _stateTrackerMock;
         private readonly Mock<ILogger> _loggerMock;
         private readonly SyncEngine _engine;
@@ -25,7 +25,7 @@ namespace dvmig.Tests
             _sourceMock = new Mock<IDataverseProvider>();
             _targetMock = new Mock<IDataverseProvider>();
             _userMapperMock = new Mock<IUserMapper>();
-            _dataPreservationMock = new Mock<IDataPreservationManager>();
+            _setupServiceMock = new Mock<ISetupService>();
             _stateTrackerMock = new Mock<ISyncStateTracker>();
             _loggerMock = new Mock<ILogger>();
 
@@ -48,7 +48,7 @@ namespace dvmig.Tests
             var entityPreparer = new EntityPreparer(_loggerMock.Object);
             var errorHandler = new SyncErrorHandler(
                 _targetMock.Object,
-                _dataPreservationMock.Object,
+                _setupServiceMock.Object,
                 _loggerMock.Object
             );
             var dependencyResolver = new DependencyResolver(
@@ -57,7 +57,7 @@ namespace dvmig.Tests
             );
             var statusTransitionHandler = new StatusTransitionHandler(
                 _targetMock.Object,
-                _dataPreservationMock.Object,
+                _setupServiceMock.Object,
                 _loggerMock.Object
             );
             var metadataCache = new MetadataCache(_targetMock.Object, _loggerMock.Object);
@@ -67,7 +67,7 @@ namespace dvmig.Tests
                 _sourceMock.Object,
                 _targetMock.Object,
                 _userMapperMock.Object,
-                _dataPreservationMock.Object,
+                _setupServiceMock.Object,
                 _stateTrackerMock.Object,
                 _loggerMock.Object,
                 retryStrategy,
@@ -304,8 +304,9 @@ namespace dvmig.Tests
             await _engine.SyncRecordAsync(account, options);
 
             // Assert
-            _dataPreservationMock.Verify(
+            _setupServiceMock.Verify(
                 p => p.PreserveDatesAsync(
+                    _targetMock.Object,
                     account,
                     It.IsAny<CancellationToken>()
                 ),
@@ -427,7 +428,7 @@ namespace dvmig.Tests
                 .ThrowsAsync(new Exception("Create failed"));
 
             _targetMock.Setup(t => t.CreateAsync(
-                It.Is<Entity>(e => e.LogicalName == Constants.MigrationFailure.EntityLogicalName),
+                It.Is<Entity>(e => e.LogicalName == SchemaConstants.MigrationFailure.EntityLogicalName),
                 It.IsAny<CancellationToken>()
             ))
                 .ReturnsAsync(Guid.NewGuid());
@@ -443,7 +444,7 @@ namespace dvmig.Tests
             // Assert
             _targetMock.Verify(t => t.CreateAsync(
                 It.Is<Entity>(e =>
-                    e.LogicalName == Constants.MigrationFailure.EntityLogicalName
+                    e.LogicalName == SchemaConstants.MigrationFailure.EntityLogicalName
                 ),
                 It.IsAny<CancellationToken>()
             ), Times.Once);

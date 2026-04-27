@@ -19,7 +19,7 @@ namespace dvmig.Core.Synchronization
         private readonly IDataverseProvider _source;
         private readonly IDataverseProvider _target;
         private readonly IUserMapper _userMapper;
-        private readonly IDataPreservationManager _dataPreservation;
+        private readonly ISetupService _setupService;
         private readonly ISyncStateTracker _stateTracker;
         private readonly ILogger _logger;
         private readonly IRetryStrategy _retryStrategy;
@@ -69,7 +69,7 @@ namespace dvmig.Core.Synchronization
             IDataverseProvider source,
             IDataverseProvider target,
             IUserMapper userMapper,
-            IDataPreservationManager dataPreservation,
+            ISetupService setupService,
             ISyncStateTracker stateTracker,
             ILogger logger,
             IRetryStrategy retryStrategy,
@@ -84,7 +84,7 @@ namespace dvmig.Core.Synchronization
             _source = source;
             _target = target;
             _userMapper = userMapper;
-            _dataPreservation = dataPreservation;
+            _setupService = setupService;
             _stateTracker = stateTracker;
             _logger = logger;
             _retryStrategy = retryStrategy;
@@ -325,7 +325,11 @@ namespace dvmig.Core.Synchronization
                 {
                     try
                     {
-                        await _dataPreservation.PreserveDatesAsync(entity, ct);
+                        await _setupService.PreserveDatesAsync(
+                            _target,
+                            entity,
+                            ct
+                        );
                     }
                     catch (Exception ex)
                     {
@@ -364,7 +368,8 @@ namespace dvmig.Core.Synchronization
 
                     if (options.PreserveDates)
                     {
-                        await _dataPreservation.DeleteSourceDateAsync(
+                        await _setupService.DeleteSourceDateAsync(
+                            _target,
                             entity.LogicalName,
                             entity.Id,
                             ct

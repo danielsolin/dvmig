@@ -4,7 +4,7 @@ namespace dvmig.Core.Shared
     /// Centralized repository for custom Dataverse entity and attribute names 
     /// used by the dvmig tool.
     /// </summary>
-    public static class Constants
+    public static class SchemaConstants
     {
         /// <summary>
         /// Constants for the date preservation entity.

@@ -54,7 +54,7 @@ namespace dvmig.Core.Provisioning
             CancellationToken ct
         )
         {
-            var entityName = Constants.SourceDate.EntityLogicalName;
+            var entityName = SchemaConstants.SourceDate.EntityLogicalName;
             var existingMeta = await target.GetEntityMetadataAsync(
                 entityName,
                 ct
@@ -84,8 +84,8 @@ namespace dvmig.Core.Provisioning
                     },
                     PrimaryAttribute = new StringAttributeMetadata
                     {
-                        SchemaName = Constants.SourceDate.Name,
-                        LogicalName = Constants.SourceDate.Name,
+                        SchemaName = SchemaConstants.SourceDate.Name,
+                        LogicalName = SchemaConstants.SourceDate.Name,
                         DisplayName = new Label("Name", LanguageCode),
                         RequiredLevel =
                             new AttributeRequiredLevelManagedProperty(
@@ -97,7 +97,7 @@ namespace dvmig.Core.Provisioning
 
                 await target.ExecuteAsync(entityReq, ct);
                 await Task.Delay(
-                    Constants.AppConstants.MetadataPropagationDelayMs,
+                    SchemaConstants.AppConstants.MetadataPropagationDelayMs,
                     ct
                 ); // Wait for propagation
 
@@ -111,7 +111,7 @@ namespace dvmig.Core.Provisioning
                 target,
                 entityName,
                 existingMeta!,
-                Constants.SourceDate.EntityId,
+                SchemaConstants.SourceDate.EntityId,
                 "Source Entity ID",
                 progress,
                 ct
@@ -121,7 +121,7 @@ namespace dvmig.Core.Provisioning
                 target,
                 entityName,
                 existingMeta!,
-                Constants.SourceDate.EntityLogicalNameAttr,
+                SchemaConstants.SourceDate.EntityLogicalNameAttr,
                 "Source Entity Logical Name",
                 progress,
                 ct
@@ -131,7 +131,7 @@ namespace dvmig.Core.Provisioning
                 target,
                 entityName,
                 existingMeta!,
-                Constants.SourceDate.CreatedDate,
+                SchemaConstants.SourceDate.CreatedDate,
                 "Source Created Date",
                 progress,
                 ct,
@@ -142,7 +142,7 @@ namespace dvmig.Core.Provisioning
                 target,
                 entityName,
                 existingMeta!,
-                Constants.SourceDate.ModifiedDate,
+                SchemaConstants.SourceDate.ModifiedDate,
                 "Source Modified Date",
                 progress,
                 ct,
@@ -156,7 +156,7 @@ namespace dvmig.Core.Provisioning
             CancellationToken ct
         )
         {
-            var entityName = Constants.MigrationFailure.EntityLogicalName;
+            var entityName = SchemaConstants.MigrationFailure.EntityLogicalName;
             var existingMeta = await target.GetEntityMetadataAsync(
                 entityName,
                 ct
@@ -183,8 +183,8 @@ namespace dvmig.Core.Provisioning
                     },
                     PrimaryAttribute = new StringAttributeMetadata
                     {
-                        SchemaName = Constants.MigrationFailure.Name,
-                        LogicalName = Constants.MigrationFailure.Name,
+                        SchemaName = SchemaConstants.MigrationFailure.Name,
+                        LogicalName = SchemaConstants.MigrationFailure.Name,
                         DisplayName = new Label("Name", LanguageCode),
                         MaxLength = 100
                     }
@@ -192,7 +192,7 @@ namespace dvmig.Core.Provisioning
 
                 await target.ExecuteAsync(entityReq, ct);
                 await Task.Delay(
-                    Constants.AppConstants.MetadataPropagationDelayMs,
+                    SchemaConstants.AppConstants.MetadataPropagationDelayMs,
                     ct
                 );
 
@@ -206,7 +206,7 @@ namespace dvmig.Core.Provisioning
                 target,
                 entityName,
                 existingMeta!,
-                Constants.MigrationFailure.SourceId,
+                SchemaConstants.MigrationFailure.SourceId,
                 "Source Record ID",
                 progress,
                 ct
@@ -216,7 +216,7 @@ namespace dvmig.Core.Provisioning
                 target,
                 entityName,
                 existingMeta!,
-                Constants.MigrationFailure.EntityLogicalNameAttr,
+                SchemaConstants.MigrationFailure.EntityLogicalNameAttr,
                 "Entity Logical Name",
                 progress,
                 ct
@@ -226,7 +226,7 @@ namespace dvmig.Core.Provisioning
                 target,
                 entityName,
                 existingMeta!,
-                Constants.MigrationFailure.ErrorMessage,
+                SchemaConstants.MigrationFailure.ErrorMessage,
                 "Error Message",
                 progress,
                 ct,
@@ -238,7 +238,7 @@ namespace dvmig.Core.Provisioning
                 target,
                 entityName,
                 existingMeta!,
-                Constants.MigrationFailure.Timestamp,
+                SchemaConstants.MigrationFailure.Timestamp,
                 "Failure Timestamp",
                 progress,
                 ct,
@@ -282,7 +282,7 @@ namespace dvmig.Core.Provisioning
                         SchemaName = schemaName,
                         LogicalName = schemaName.ToLower(),
                         DisplayName = new Label(displayName, LanguageCode),
-                        MaxLength = Constants.AppConstants
+                        MaxLength = SchemaConstants.AppConstants
                                         .MaxMemoFieldLength
                     };
                 }
@@ -328,7 +328,7 @@ namespace dvmig.Core.Provisioning
             // 1. dm_sourcedate
             await DropEntityIfPresentAsync(
                 target,
-                Constants.SourceDate.EntityLogicalName,
+                SchemaConstants.SourceDate.EntityLogicalName,
                 progress,
                 ct
             );
@@ -336,7 +336,7 @@ namespace dvmig.Core.Provisioning
             // 2. dm_migrationfailure
             await DropEntityIfPresentAsync(
                 target,
-                Constants.MigrationFailure.EntityLogicalName,
+                SchemaConstants.MigrationFailure.EntityLogicalName,
                 progress,
                 ct
             );

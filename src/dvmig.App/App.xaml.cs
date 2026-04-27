@@ -1,7 +1,6 @@
 using System.Windows;
 using dvmig.App.Services;
 using dvmig.App.ViewModels;
-using dvmig.Core.DataPreservation;
 using dvmig.Core.Interfaces;
 using dvmig.Core.Logging;
 using dvmig.Core.Providers;
@@ -50,35 +49,24 @@ namespace dvmig.App
                 );
             });
 
-            services.AddTransient<IDataPreservationManager>(provider =>
-            {
-                var migrationService = provider
-                    .GetRequiredService<IMigrationService>();
-
-                return new DataPreservationManager(
-                    migrationService.TargetProvider!,
-                    provider.GetRequiredService<ILogger>()
-                );
-            });
-
             services.AddTransient<ISyncEngine>(provider =>
             {
                 var migrationService = provider
                     .GetRequiredService<IMigrationService>();
                 var logger = provider.GetRequiredService<ILogger>();
                 var targetProvider = migrationService.TargetProvider!;
-                var dataPreservation = provider.GetRequiredService<IDataPreservationManager>();
+                var setupService = provider.GetRequiredService<ISetupService>();
 
                 var retryStrategy = new RetryStrategy(logger);
                 var entityPreparer = new EntityPreparer(logger);
-                var errorHandler = new SyncErrorHandler(targetProvider, dataPreservation, logger);
+                var errorHandler = new SyncErrorHandler(targetProvider, setupService, logger);
                 var dependencyResolver = new DependencyResolver(
                     migrationService.SourceProvider!,
                     logger
                 );
                 var statusTransitionHandler = new StatusTransitionHandler(
                     targetProvider,
-                    dataPreservation,
+                    setupService,
                     logger
                 );
                 var metadataCache = new MetadataCache(targetProvider, logger);
@@ -88,7 +76,7 @@ namespace dvmig.App
                     migrationService.SourceProvider!,
                     migrationService.TargetProvider!,
                     provider.GetRequiredService<IUserMapper>(),
-                    dataPreservation,
+                    setupService,
                     provider.GetRequiredService<ISyncStateTracker>(),
                     logger,
                     retryStrategy,

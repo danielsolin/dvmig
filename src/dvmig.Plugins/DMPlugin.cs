@@ -114,14 +114,14 @@ namespace dvmig.Plugins
             var fetchXml = $@"
                 <fetch version='1.0' output-format='xml-platform' 
                        mapping='logical' distinct='false' count='1'>
-                  <entity name='{Constants.SourceDate.EntityLogicalName}'>
-                    <attribute name='{Constants.SourceDate.PrimaryId}' />
-                    <attribute name='{Constants.SourceDate.CreatedDate}' />
-                    <attribute name='{Constants.SourceDate.ModifiedDate}' />
+                  <entity name='{SchemaConstants.SourceDate.EntityLogicalName}'>
+                    <attribute name='{SchemaConstants.SourceDate.PrimaryId}' />
+                    <attribute name='{SchemaConstants.SourceDate.CreatedDate}' />
+                    <attribute name='{SchemaConstants.SourceDate.ModifiedDate}' />
                     <filter type='and'>
-                      <condition attribute='{Constants.SourceDate.EntityId}' 
+                      <condition attribute='{SchemaConstants.SourceDate.EntityId}' 
                         operator='eq' value='{entityId}' />
-                      <condition attribute='{Constants.SourceDate.EntityLogicalNameAttr}' 
+                      <condition attribute='{SchemaConstants.SourceDate.EntityLogicalNameAttr}' 
                         operator='eq' 
                         value='{logicalName.ToLower()}' />
                     </filter>
@@ -149,19 +149,19 @@ namespace dvmig.Plugins
             Entity sourceDate
         )
         {
-            if (sourceDate.Contains(Constants.SourceDate.CreatedDate))
+            if (sourceDate.Contains(SchemaConstants.SourceDate.CreatedDate))
             {
                 var createdDate =
-                    sourceDate[Constants.SourceDate.CreatedDate];
+                    sourceDate[SchemaConstants.SourceDate.CreatedDate];
 
                 entity["createdon"] = createdDate;
                 entity["overriddencreatedon"] = createdDate;
             }
 
-            if (sourceDate.Contains(Constants.SourceDate.ModifiedDate))
+            if (sourceDate.Contains(SchemaConstants.SourceDate.ModifiedDate))
             {
                 entity["modifiedon"] =
-                    sourceDate[Constants.SourceDate.ModifiedDate];
+                    sourceDate[SchemaConstants.SourceDate.ModifiedDate];
             }
         }
 
@@ -174,10 +174,10 @@ namespace dvmig.Plugins
             Entity sourceDate
         )
         {
-            if (sourceDate.Contains(Constants.SourceDate.ModifiedDate))
+            if (sourceDate.Contains(SchemaConstants.SourceDate.ModifiedDate))
             {
                 entity["modifiedon"] =
-                    sourceDate[Constants.SourceDate.ModifiedDate];
+                    sourceDate[SchemaConstants.SourceDate.ModifiedDate];
             }
         }
     }
