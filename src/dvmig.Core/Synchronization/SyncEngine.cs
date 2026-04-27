@@ -425,11 +425,154 @@ namespace dvmig.Core.Synchronization
         }
 
         private async Task<(bool success, string failureMessage)>
+            HandleSyncExceptionWithRetryAsync(
+            Exception ex,
+            Entity entity,
+            SyncOptions options,
+            IProgress<string>? progress,
+            CancellationToken ct,
+            bool treatAlreadyExistsAsSuccess = false
+        )
+        {
+            if (treatAlreadyExistsAsSuccess &&
+                ex.Message.Contains("already exists"))
+            {
+                return (true, string.Empty);
+            }
+
+            var (success, failureMessage) =
+                await _errorHandler.HandleSyncExceptionAsync(
+                    ex,
+                    entity,
+                    options,
+                    progress,
+                    ct,
+                    updateFunc: _target.UpdateAsync,
+                    statusTransitionFunc: async (
+                        entityToTransition,
+                        syncOptions,
+                        progressReporter,
+                        token
+                    ) =>
+                        await _statusTransitionHandler
+                            .HandleStatusTransitionAsync(
+                                entityToTransition,
+                                syncOptions,
+                                progressReporter,
+                                token
+                            ),
+                    resolveMissingDependencyFunc: async (
+                        exception,
+                        entityWithDependency,
+                        syncOptions,
+                        progressReporter,
+                        token
+                    ) =>
+                        await _dependencyResolver
+                            .ResolveMissingDependencyAsync(
+                                exception,
+                                entityWithDependency,
+                                syncOptions,
+                                progressReporter,
+                                token,
+                                syncRecordFunc: async (
+                                    recordToSync,
+                                    recordOptions,
+                                    recordProgress,
+                                    recordToken
+                                ) =>
+                                    await SyncRecordAsync(
+                                        recordToSync,
+                                        recordOptions,
+                                        recordProgress,
+                                        recordToken
+                                    ),
+                                retryEntityFunc: async (
+                                    entityToRetry,
+                                    retryOptions,
+                                    retryProgress,
+                                    retryToken
+                                ) =>
+                                    await RetryEntityAsync(
+                                        entityToRetry,
+                                        retryOptions,
+                                        retryProgress,
+                                        retryToken
+                                    ),
+                                findExistingFunc: async (
+                                    entityToFind,
+                                    findToken
+                                ) =>
+                                    await FindExistingOnTargetAsync(
+                                        entityToFind,
+                                        findToken
+                                    ),
+                                idMappingCache: _idMappingCache,
+                                triedDependencies: _triedDependencies
+                            ),
+                    resolveSqlDependencyFunc: async (
+                        errorMessage,
+                        entityWithSqlDependency,
+                        syncOptions,
+                        progressReporter,
+                        token
+                    ) =>
+                        await _dependencyResolver
+                            .ResolveSqlDependencyAsync(
+                                errorMessage,
+                                entityWithSqlDependency,
+                                syncOptions,
+                                progressReporter,
+                                token,
+                                syncRecordFunc: async (
+                                    recordToSync,
+                                    recordOptions,
+                                    recordProgress,
+                                    recordToken
+                                ) =>
+                                    await SyncRecordAsync(
+                                        recordToSync,
+                                        recordOptions,
+                                        recordProgress,
+                                        recordToken
+                                    ),
+                                retryEntityFunc: async (
+                                    entityToRetry,
+                                    retryOptions,
+                                    retryProgress,
+                                    retryToken
+                                ) =>
+                                    await RetryEntityAsync(
+                                        entityToRetry,
+                                        retryOptions,
+                                        retryProgress,
+                                        retryToken
+                                    ),
+                                findExistingFunc: async (
+                                    entityToFind,
+                                    findToken
+                                ) =>
+                                    await FindExistingOnTargetAsync(
+                                        entityToFind,
+                                        findToken
+                                    ),
+                                idMappingCache: _idMappingCache
+                            ),
+                    stripAttributeFunc: StripAttributeAndRetryAsync
+                );
+
+            return success
+                ? (true, string.Empty)
+                : (false, failureMessage ?? "Unknown error");
+        }
+
+        private async Task<(bool success, string failureMessage)>
             SyncIntersectEntityAsync(
             Entity entity,
             SyncOptions options,
             IProgress<string>? progress,
-            CancellationToken ct)
+            CancellationToken ct
+        )
         {
             try
             {
@@ -452,152 +595,14 @@ namespace dvmig.Core.Synchronization
             }
             catch (Exception ex)
             {
-                if (ex.Message.Contains("already exists"))
-                {
-                    return (true, string.Empty);
-                }
-
-                var (success, failureMessage) =
-                    await _errorHandler.HandleSyncExceptionAsync(
-                        ex,
-                        entity,
-                        options,
-                        progress,
-                        ct,
-                        updateFunc: async (entityToUpdate, token) =>
-                            await _target.UpdateAsync(
-                                entityToUpdate,
-                                token
-                            ),
-                        statusTransitionFunc: async (
-                            entityToTransition,
-                            syncOptions,
-                            progressReporter,
-                            token
-                        ) =>
-                            await _statusTransitionHandler
-                                .HandleStatusTransitionAsync(
-                                    entityToTransition,
-                                    syncOptions,
-                                    progressReporter,
-                                    token
-                                ),
-                        resolveMissingDependencyFunc: async (
-                            exception,
-                            entityWithDependency,
-                            syncOptions,
-                            progressReporter,
-                            token
-                        ) =>
-                            await _dependencyResolver
-                                .ResolveMissingDependencyAsync(
-                                    exception,
-                                    entityWithDependency,
-                                    syncOptions,
-                                    progressReporter,
-                                    token,
-                                    syncRecordFunc: async (
-                                        recordToSync,
-                                        recordOptions,
-                                        recordProgress,
-                                        recordToken
-                                    ) =>
-                                        await SyncRecordAsync(
-                                            recordToSync,
-                                            recordOptions,
-                                            recordProgress,
-                                            recordToken
-                                        ),
-                                    retryEntityFunc: async (
-                                        entityToRetry,
-                                        retryOptions,
-                                        retryProgress,
-                                        retryToken
-                                    ) =>
-                                        await RetryEntityAsync(
-                                            entityToRetry,
-                                            retryOptions,
-                                            retryProgress,
-                                            retryToken
-                                        ),
-                                    findExistingFunc: async (
-                                        entityToFind,
-                                        findToken
-                                    ) =>
-                                        await FindExistingOnTargetAsync(
-                                            entityToFind,
-                                            findToken
-                                        ),
-                                    idMappingCache: _idMappingCache,
-                                    triedDependencies: _triedDependencies
-                                ),
-                        resolveSqlDependencyFunc: async (
-                            errorMessage,
-                            entityWithSqlDependency,
-                            syncOptions,
-                            progressReporter,
-                            token
-                        ) =>
-                            await _dependencyResolver
-                                .ResolveSqlDependencyAsync(
-                                    errorMessage,
-                                    entityWithSqlDependency,
-                                    syncOptions,
-                                    progressReporter,
-                                    token,
-                                    syncRecordFunc: async (
-                                        recordToSync,
-                                        recordOptions,
-                                        recordProgress,
-                                        recordToken
-                                    ) =>
-                                        await SyncRecordAsync(
-                                            recordToSync,
-                                            recordOptions,
-                                            recordProgress,
-                                            recordToken
-                                        ),
-                                    retryEntityFunc: async (
-                                        entityToRetry,
-                                        retryOptions,
-                                        retryProgress,
-                                        retryToken
-                                    ) =>
-                                        await RetryEntityAsync(
-                                            entityToRetry,
-                                            retryOptions,
-                                            retryProgress,
-                                            retryToken
-                                        ),
-                                    findExistingFunc: async (
-                                        entityToFind,
-                                        findToken
-                                    ) =>
-                                        await FindExistingOnTargetAsync(
-                                            entityToFind,
-                                            findToken
-                                        ),
-                                    idMappingCache: _idMappingCache
-                                ),
-                        stripAttributeFunc: async (
-                            exception,
-                            entityToStrip,
-                            syncOptions,
-                            progressReporter,
-                            token
-                        ) =>
-                            await StripAttributeAndRetryAsync(
-                                exception,
-                                entityToStrip,
-                                syncOptions,
-                                progressReporter,
-                                token
-                            )
-                    );
-
-                return success
-                    ? (true, string.Empty)
-                    : (false, failureMessage ?? "Unknown error");
+                return await HandleSyncExceptionWithRetryAsync(
+                    ex,
+                    entity,
+                    options,
+                    progress,
+                    ct,
+                    treatAlreadyExistsAsSuccess: true
+                );
             }
         }
 
@@ -606,7 +611,8 @@ namespace dvmig.Core.Synchronization
             Entity entity,
             SyncOptions options,
             IProgress<string>? progress,
-            CancellationToken ct)
+            CancellationToken ct
+        )
         {
             try
             {
@@ -624,130 +630,13 @@ namespace dvmig.Core.Synchronization
             }
             catch (Exception ex)
             {
-                var (success, failureMessage) =
-                    await _errorHandler.HandleSyncExceptionAsync(
-                        ex,
-                        entity,
-                        options,
-                        progress,
-                        ct,
-                        updateFunc: _target.UpdateAsync,
-                        statusTransitionFunc: async (
-                            entityToTransition,
-                            syncOptions,
-                            progressReporter,
-                            token
-                        ) =>
-                            await _statusTransitionHandler
-                                .HandleStatusTransitionAsync(
-                                    entityToTransition,
-                                    syncOptions,
-                                    progressReporter,
-                                    token
-                                ),
-                        resolveMissingDependencyFunc: async (
-                            exception,
-                            entityWithDependency,
-                            syncOptions,
-                            progressReporter,
-                            token
-                        ) =>
-                            await _dependencyResolver
-                                .ResolveMissingDependencyAsync(
-                                    exception,
-                                    entityWithDependency,
-                                    syncOptions,
-                                    progressReporter,
-                                    token,
-                                    syncRecordFunc: async (
-                                        recordToSync,
-                                        recordOptions,
-                                        recordProgress,
-                                        recordToken
-                                    ) =>
-                                        await SyncRecordAsync(
-                                            recordToSync,
-                                            recordOptions,
-                                            recordProgress,
-                                            recordToken
-                                        ),
-                                    retryEntityFunc: async (
-                                        entityToRetry,
-                                        retryOptions,
-                                        retryProgress,
-                                        retryToken
-                                    ) =>
-                                        await RetryEntityAsync(
-                                            entityToRetry,
-                                            retryOptions,
-                                            retryProgress,
-                                            retryToken
-                                        ),
-                                    findExistingFunc: async (
-                                        entityToFind,
-                                        findToken
-                                    ) =>
-                                        await FindExistingOnTargetAsync(
-                                            entityToFind,
-                                            findToken
-                                        ),
-                                    idMappingCache: _idMappingCache,
-                                    triedDependencies: _triedDependencies
-                                ),
-                        resolveSqlDependencyFunc: async (
-                            errorMessage,
-                            entityWithSqlDependency,
-                            syncOptions,
-                            progressReporter,
-                            token
-                        ) =>
-                            await _dependencyResolver
-                                .ResolveSqlDependencyAsync(
-                                    errorMessage,
-                                    entityWithSqlDependency,
-                                    syncOptions,
-                                    progressReporter,
-                                    token,
-                                    syncRecordFunc: async (
-                                        recordToSync,
-                                        recordOptions,
-                                        recordProgress,
-                                        recordToken
-                                    ) =>
-                                        await SyncRecordAsync(
-                                            recordToSync,
-                                            recordOptions,
-                                            recordProgress,
-                                            recordToken
-                                        ),
-                                    retryEntityFunc: async (
-                                        entityToRetry,
-                                        retryOptions,
-                                        retryProgress,
-                                        retryToken
-                                    ) =>
-                                        await RetryEntityAsync(
-                                            entityToRetry,
-                                            retryOptions,
-                                            retryProgress,
-                                            retryToken
-                                        ),
-                                    findExistingFunc: async (
-                                        entityToFind,
-                                        findToken
-                                    ) =>
-                                        await FindExistingOnTargetAsync(
-                                            entityToFind,
-                                            findToken
-                                        ),
-                                    idMappingCache: _idMappingCache
-                                ),
-                        stripAttributeFunc: StripAttributeAndRetryAsync
-                    );
-
-                return success
-                    ? (true, string.Empty)
-                    : (false, failureMessage ?? "Unknown error");
+                return await HandleSyncExceptionWithRetryAsync(
+                    ex,
+                    entity,
+                    options,
+                    progress,
+                    ct
+                );
             }
         }
     }
