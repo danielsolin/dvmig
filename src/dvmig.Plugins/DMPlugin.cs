@@ -1,5 +1,5 @@
 using System;
-using dvmig.Shared.Metadata;
+using dvmig.Core.Shared;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Query;
 

@@ -1,4 +1,4 @@
-namespace dvmig.Shared.Metadata
+namespace dvmig.Core.Shared
 {
     /// <summary>
     /// Centralized repository for custom Dataverse entity and attribute names 

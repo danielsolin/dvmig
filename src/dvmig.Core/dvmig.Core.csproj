@@ -18,8 +18,5 @@
     <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="10.0.7" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Compile Include="..\shared\*.cs" Link="Metadata\%(RecursiveDir)%(FileName)%(Extension)" />
-  </ItemGroup>
 
 </Project>

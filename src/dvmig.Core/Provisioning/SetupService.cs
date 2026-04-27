@@ -1,6 +1,6 @@
 using dvmig.Core.Interfaces;
 using dvmig.Core.Providers;
-using dvmig.Shared.Metadata;
+using dvmig.Core.Shared;
 using Serilog;
 
 namespace dvmig.Core.Provisioning

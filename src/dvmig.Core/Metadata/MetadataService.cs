@@ -1,5 +1,5 @@
 using dvmig.Core.Providers;
-using dvmig.Shared.Metadata;
+using dvmig.Core.Shared;
 using Microsoft.Xrm.Sdk.Messages;
 using Microsoft.Xrm.Sdk.Metadata;
 

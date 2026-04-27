@@ -15,7 +15,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="..\shared\*.cs" Link="Shared\%(RecursiveDir)%(FileName)%(Extension)" />
+    <Compile Include="..\dvmig.Core\Shared\*.cs" Link="Shared\%(RecursiveDir)%(FileName)%(Extension)" />
   </ItemGroup>
 
 </Project>
