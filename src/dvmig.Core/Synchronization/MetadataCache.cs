@@ -87,10 +87,12 @@ namespace dvmig.Core.Synchronization
             };
 
          // Filter for attributes that are valid for reading and NOT purely
-         // logical/calculated to avoid performance issues.
+         // logical/calculated to avoid performance issues. ActivityParty
+         // lists (PartyList) are often marked as logical but are critical.
          var attributes = meta.Attributes
              .Where(a =>
                  whitelist.Contains(a.LogicalName) ||
+                 a.AttributeType == AttributeTypeCode.PartyList ||
                  (a.IsLogical == false &&
                   a.IsValidForRead == true &&
                   (a.IsValidForCreate == true ||

@@ -64,7 +64,7 @@ namespace dvmig.Cli
              metadataService,
              logger
          );
-         bool devoplerMode =
+         bool developerMode =
             args.Contains(SystemConstants.CliSettings.DevShort) ||
             args.Contains(SystemConstants.CliSettings.DevLong) ||
             args.Contains(SystemConstants.CliSettings.DevFull);
@@ -76,7 +76,7 @@ namespace dvmig.Cli
          while (!exit)
          {
             var menu = GetMenu(
-               devoplerMode,
+               developerMode,
                migrationActions,
                reconciliationActions,
                maintenanceActions,

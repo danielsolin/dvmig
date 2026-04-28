@@ -71,6 +71,8 @@ namespace dvmig.Core.Shared
          public const string ActivityPartyId = "activitypartyid";
          public const string ActivityId = "activityid";
          public const string PartyId = "partyid";
+         public const string ParticipationTypeMask = "participationtypemask";
+         public const string AddressUsed = "addressused";
          public const string Address1Id = "address1_addressid";
          public const string Address2Id = "address2_addressid";
       }
