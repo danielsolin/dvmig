@@ -271,13 +271,17 @@ namespace dvmig.Cli.Actions
                   )
                   .StartAsync(async ctx =>
                   {
-                     var taskName = $"Syncing {logicalName} " +
+                     var displayName = char.ToUpper(logicalName[0]) +
+                        logicalName.Substring(1);
+
+                     var taskName = $"{displayName} " +
                         $"({processed}/{totalCount}) " +
                         $"[[{maxThreads} threads]]";
 
                      var task = ctx.AddTask(taskName, true, totalCount);
                      task.Value = processed;
 
+                     var sw = System.Diagnostics.Stopwatch.StartNew();
                      var lastUpdate = DateTime.MinValue;
                      var recordProgress = new Progress<bool>(success =>
                      {
@@ -294,9 +298,11 @@ namespace dvmig.Cli.Actions
                         lastUpdate = now;
                         task.Value = processed;
 
-                        var desc = $"Syncing {logicalName} " +
+                        var recsPerSec = processed / sw.Elapsed.TotalSeconds;
+
+                        var desc = $"{displayName} " +
                            $"({processed}/{totalCount}) " +
-                           $"[[{maxThreads} threads]]";
+                           $"[[[green]{maxThreads}t - {recsPerSec:F1} r/s[/]]] ";
 
                         if (failedCount > 0)
                            desc += $" [red]({failedCount} failed)[/]";

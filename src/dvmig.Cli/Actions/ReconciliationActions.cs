@@ -179,13 +179,17 @@ namespace dvmig.Cli.Actions
                   )
                   .StartAsync(async ctx =>
                   {
-                     var taskName = $"Reconciling {logicalName} " +
+                     var displayName = char.ToUpper(logicalName[0]) +
+                        logicalName.Substring(1);
+
+                     var taskName = $"{displayName} " +
                         $"({processed}/{sourceCount}) " +
                         $"[[{threads} threads]]";
 
                      var task = ctx.AddTask(taskName, true, sourceCount);
                      task.Value = processed;
 
+                     var sw = System.Diagnostics.Stopwatch.StartNew();
                      var lastUpdate = DateTime.MinValue;
                      var recordProgress = new Progress<bool>(success =>
                      {
@@ -202,9 +206,11 @@ namespace dvmig.Cli.Actions
                         lastUpdate = now;
                         task.Value = processed;
 
-                        var desc = $"Reconciling {logicalName} " +
+                        var recsPerSec = processed / sw.Elapsed.TotalSeconds;
+
+                        var desc = $"{displayName} " +
                            $"({processed}/{sourceCount}) " +
-                           $"[[{threads} threads]]";
+                           $"[[[green]{threads}t - {recsPerSec:F1} r/s[/]]] ";
 
                         if (failedCount > 0)
                            desc += $" [red]({failedCount} failed)[/]";
