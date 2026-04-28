@@ -46,7 +46,7 @@ The solution is built on .NET 9.0 and follows a service-oriented architecture:
 
 ### Code Style (Strictly Enforced)
 -   **Line Width**: Maximum **80 characters**. This is a hard limit.
--   **Indentation**: 4 spaces (no tabs).
+-   **Indentation**: 3 spaces (no tabs).
 -   **Line Endings**: LF (Line Feed).
 -   **Naming**: Standard C# PascalCase for classes/methods, camelCase for private fields (prefixed with `_`).
 -   **List Formatting**: For multi-line lists (arguments, initializers), place every item AND the closing brace/bracket on its own line.
