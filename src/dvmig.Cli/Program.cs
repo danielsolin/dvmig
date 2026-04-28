@@ -58,12 +58,12 @@ namespace dvmig.Cli
          );
 
          var maintenanceActions = new MaintenanceActions(
-            connectionManager,
-            seeder,
-            setupService,
-            logger
+             connectionManager,
+             seeder,
+             setupService,
+             metadataService,
+             logger
          );
-
          bool devoplerMode =
             args.Contains(SystemConstants.CliSettings.DevShort) ||
             args.Contains(SystemConstants.CliSettings.DevLong) ||

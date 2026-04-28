@@ -1,5 +1,6 @@
 using dvmig.Cli.Infrastructure;
 using dvmig.Core.Interfaces;
+using dvmig.Core.Metadata;
 using Serilog;
 using Spectre.Console;
 
@@ -10,18 +11,21 @@ namespace dvmig.Cli.Actions
       private readonly ConnectionManager _connectionManager;
       private readonly ITestDataSeeder _seeder;
       private readonly ISetupService _setupService;
+      private readonly IMetadataService _metadataService;
       private readonly ILogger _logger;
 
       public MaintenanceActions(
           ConnectionManager connectionManager,
           ITestDataSeeder seeder,
           ISetupService setupService,
+          IMetadataService metadataService,
           ILogger logger
       )
       {
          _connectionManager = connectionManager;
          _seeder = seeder;
          _setupService = setupService;
+         _metadataService = metadataService;
          _logger = logger;
       }
 
@@ -124,11 +128,41 @@ namespace dvmig.Cli.Actions
              ? "SOURCE"
              : "TARGET";
 
-         AnsiConsole.MarkupLine(
-             $"[bold red]CRITICAL WARNING:[/] This operation will delete " +
-             $"[bold]EVERY SINGLE[/] Account, Contact, Task, Phone Call, " +
-             $"and Email record from the {envName} environment."
+         var wipeChoice = AnsiConsole.Prompt(
+             new SelectionPrompt<string>()
+                 .Title($"What data do you want to wipe on {envName}?")
+                 .AddChoices(new[]
+                 {
+                     "All Recommended Entities (Account, Contact, Activities)",
+                     "Select Specific Entities"
+                 })
          );
+
+         List<string>? selectedEntities = null;
+
+         if (wipeChoice == "Select Specific Entities")
+         {
+            selectedEntities = await CliUI.SelectEntitiesAsync(
+                _metadataService,
+                provider
+            );
+
+            if (selectedEntities == null || selectedEntities.Count == 0)
+            {
+               CliUI.WriteWarning("No entities selected. Wipe cancelled.");
+
+               return;
+            }
+         }
+         else
+         {
+            AnsiConsole.MarkupLine(
+                $"[bold red]CRITICAL WARNING:[/] This operation will delete " +
+                $"[bold]EVERY SINGLE[/] Account, Contact, Task, Phone Call, " +
+                $"and Email record from the {envName} environment."
+            );
+         }
+
          AnsiConsole.MarkupLine(
              "[red]This is NOT restricted to test data. Real data will " +
              "be destroyed.[/]"
@@ -153,6 +187,7 @@ namespace dvmig.Cli.Actions
              async progress =>
                  await _seeder.CleanTestDataAsync(
                      provider,
+                     selectedEntities,
                      progress
                  )
          );

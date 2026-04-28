@@ -1,4 +1,5 @@
 using dvmig.Core.Interfaces;
+using dvmig.Core.Logging;
 using dvmig.Core.Shared;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Query;
@@ -102,8 +103,7 @@ namespace dvmig.Core.Provisioning
          CancellationToken ct = default
       )
       {
-         _logger.Information("Cleaning target environment...");
-         progress?.Report("Cleaning target environment...");
+         _logger.Information(progress, "Cleaning target environment...");
 
          // 1. Remove Plugin
          await _pluginDeployer.RemovePluginAsync(target, progress, ct);
@@ -111,8 +111,7 @@ namespace dvmig.Core.Provisioning
          // 2. Drop Schema
          await _schemaManager.DropSchemaAsync(target, progress, ct);
 
-         _logger.Information("Environment cleanup completed.");
-         progress?.Report("Environment cleanup completed.");
+         _logger.Information(progress, "Environment cleanup completed.");
       }
 
       /// <inheritdoc />
@@ -179,7 +178,7 @@ namespace dvmig.Core.Provisioning
                           <condition attribute='{sourceEntityId}' 
                             operator='eq' value='{entityId}' />
                           <condition attribute='{logicalNameAttr}' 
-                            operator='eq' value='{logicalName.ToLower()}' />
+                            operator='eq' value='{logicalName.ToLowerInvariant()}' />
                         </filter>
                       </entity>
                     </fetch>";
@@ -254,7 +253,7 @@ namespace dvmig.Core.Provisioning
             entity.Id.ToString();
 
          sourceDate[SystemConstants.SourceDate.EntityLogicalNameAttr] =
-            entity.LogicalName.ToLower();
+            entity.LogicalName.ToLowerInvariant();
 
          if (entity.Contains(SystemConstants.DataverseAttributes.CreatedOn))
             sourceDate[SystemConstants.SourceDate.CreatedDate] =

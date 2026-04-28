@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using dvmig.Core.Interfaces;
+using dvmig.Core.Shared;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Query;
 using Serilog;
@@ -55,7 +56,7 @@ namespace dvmig.Core.Synchronization
       )
       {
          _mappingCache[sourceUserId] = new EntityReference(
-             "systemuser",
+             SystemConstants.DataverseEntities.SystemUser,
              targetUserId
          );
       }
@@ -91,9 +92,14 @@ namespace dvmig.Core.Synchronization
          _logger.Debug("Attempting to map source user {Id}", sourceUser.Id);
 
          var sourceUserData = await _source.RetrieveAsync(
-             "systemuser",
+             SystemConstants.DataverseEntities.SystemUser,
              sourceUser.Id,
-             new[] { "internalemailaddress", "domainname", "fullname" },
+             new[]
+             {
+                SystemConstants.DataverseAttributes.InternalEmailAddress,
+                SystemConstants.DataverseAttributes.DomainName,
+                SystemConstants.DataverseAttributes.FullName
+             },
              ct
          );
 
@@ -105,11 +111,13 @@ namespace dvmig.Core.Synchronization
          }
 
          var email = sourceUserData
-             .GetAttributeValue<string>("internalemailaddress");
+             .GetAttributeValue<string>(
+                 SystemConstants.DataverseAttributes.InternalEmailAddress
+             );
          if (!string.IsNullOrEmpty(email))
          {
             var mapped = await FindTargetUserAsync(
-                "internalemailaddress",
+                SystemConstants.DataverseAttributes.InternalEmailAddress,
                 email,
                 ct
             );
@@ -123,11 +131,13 @@ namespace dvmig.Core.Synchronization
          }
 
          var domainName = sourceUserData
-             .GetAttributeValue<string>("domainname");
+             .GetAttributeValue<string>(
+                 SystemConstants.DataverseAttributes.DomainName
+             );
          if (!string.IsNullOrEmpty(domainName))
          {
             var mapped = await FindTargetUserAsync(
-                "domainname",
+                SystemConstants.DataverseAttributes.DomainName,
                 domainName,
                 ct
             );
@@ -142,7 +152,9 @@ namespace dvmig.Core.Synchronization
 
          _logger.Warning(
              "Could not map source user {FullName} ({Id})",
-             sourceUserData.GetAttributeValue<string>("fullname"),
+             sourceUserData.GetAttributeValue<string>(
+                 SystemConstants.DataverseAttributes.FullName
+             ),
              sourceUser.Id
          );
 
@@ -168,9 +180,13 @@ namespace dvmig.Core.Synchronization
           CancellationToken ct
       )
       {
-         var query = new QueryByAttribute("systemuser")
+         var query = new QueryByAttribute(
+             SystemConstants.DataverseEntities.SystemUser
+         )
          {
-            ColumnSet = new ColumnSet("systemuserid")
+            ColumnSet = new ColumnSet(
+                SystemConstants.DataverseAttributes.SystemUserId
+            )
          };
          query.AddAttributeValue(attribute, value);
 

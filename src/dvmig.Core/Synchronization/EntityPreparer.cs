@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using dvmig.Core.Interfaces;
+using dvmig.Core.Shared;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Metadata;
 using Microsoft.Xrm.Sdk.Query;
@@ -80,6 +81,79 @@ namespace dvmig.Core.Synchronization
                    out var mappedId))
                   value = new EntityReference(er.LogicalName, mappedId);
             }
+            // Handle EntityCollection mapping (for Activity Parties)
+            else if (value is EntityCollection collection &&
+                     collection.Entities.Count > 0 &&
+                     collection.Entities[0].LogicalName ==
+                        SystemConstants.DataverseEntities.ActivityParty)
+            {
+               var newCollection = new EntityCollection
+               {
+                  EntityName = collection.EntityName
+               };
+
+               foreach (var party in collection.Entities)
+               {
+                  var targetParty = new Entity(
+                      SystemConstants.DataverseEntities.ActivityParty
+                  );
+                  bool skipParty = false;
+
+                  foreach (var partyAttr in party.Attributes)
+                  {
+                     // Strip system-generated IDs to ensure proper linkage
+                     // on the target Dataverse environment.
+                     if (partyAttr.Key ==
+                            SystemConstants.DataverseAttributes.ActivityPartyId ||
+                         partyAttr.Key ==
+                            SystemConstants.DataverseAttributes.ActivityId)
+                        continue;
+
+                     var partyValue = partyAttr.Value;
+
+                     if (partyAttr.Key ==
+                            SystemConstants.DataverseAttributes.PartyId &&
+                         partyValue is EntityReference pr)
+                     {
+                        if (pr.LogicalName ==
+                               SystemConstants.DataverseEntities.SystemUser)
+                        {
+                           partyValue = await userMapper.MapUserAsync(pr, ct);
+                           if (partyValue == null)
+                           {
+                              _logger.Warning(
+                                  "Skipping unmapped user partyid for " +
+                                  "{Entity}:{Id}; source user {UserId} was " +
+                                  "not found or could not be resolved.",
+                                  sourceEntity.LogicalName,
+                                  sourceEntity.Id,
+                                  pr.Id
+                              );
+
+                              skipParty = true;
+                              break;
+                           }
+                        }
+                        else if (idMappingCache.TryGetValue(
+                            $"{pr.LogicalName}:{pr.Id}",
+                            out var mappedId))
+                        {
+                           partyValue = new EntityReference(
+                               pr.LogicalName,
+                               mappedId
+                           );
+                        }
+                     }
+
+                     targetParty[partyAttr.Key] = partyValue;
+                  }
+
+                  if (!skipParty)
+                     newCollection.Entities.Add(targetParty);
+               }
+
+               value = newCollection;
+            }
 
             targetEntity[attribute.Key] = value;
          }
@@ -120,15 +194,15 @@ namespace dvmig.Core.Synchronization
       {
          var forbidden = new[]
          {
-                "versionnumber",
-                "createdby",
-                "modifiedby",
-                "createdonbehalfby",
-                "modifiedonbehalfby",
-                "overriddencreatedon",
-                "importsequencenumber",
-                "address1_addressid",
-                "address2_addressid"
+                SystemConstants.DataverseAttributes.VersionNumber,
+                SystemConstants.DataverseAttributes.CreatedBy,
+                SystemConstants.DataverseAttributes.ModifiedBy,
+                SystemConstants.DataverseAttributes.CreatedOnBehalfBy,
+                SystemConstants.DataverseAttributes.ModifiedOnBehalfBy,
+                SystemConstants.DataverseAttributes.OverriddenCreatedOn,
+                SystemConstants.DataverseAttributes.ImportSequenceNumber,
+                SystemConstants.DataverseAttributes.Address1Id,
+                SystemConstants.DataverseAttributes.Address2Id
             };
 
          return forbidden.Contains(attributeName.ToLower());
@@ -137,7 +211,12 @@ namespace dvmig.Core.Synchronization
       /// <inheritdoc />
       public bool IsUserAttribute(string attributeName)
       {
-         var userFields = new[] { "ownerid", "createdby", "modifiedby" };
+         var userFields = new[]
+         {
+                SystemConstants.DataverseAttributes.OwnerId,
+                SystemConstants.DataverseAttributes.CreatedBy,
+                SystemConstants.DataverseAttributes.ModifiedBy
+            };
 
          return userFields.Contains(attributeName.ToLower());
       }

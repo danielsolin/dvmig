@@ -36,7 +36,7 @@ namespace dvmig.Tests
       public async Task PreserveDatesAsync_DoesNothing_WhenNotSupported()
       {
          var entity = new Entity("account", Guid.NewGuid());
-         entity["createdon"] = DateTime.UtcNow;
+         entity[SystemConstants.DataverseAttributes.CreatedOn] = DateTime.UtcNow;
 
          _targetMock.Setup(t => t.GetEntityMetadataAsync(
              SystemConstants.SourceDate.EntityLogicalName,
@@ -76,8 +76,8 @@ namespace dvmig.Tests
          var entity = new Entity("account", entityId);
          var createdOn = DateTime.UtcNow.AddDays(-1);
          var modifiedOn = DateTime.UtcNow;
-         entity["createdon"] = createdOn;
-         entity["modifiedon"] = modifiedOn;
+         entity[SystemConstants.DataverseAttributes.CreatedOn] = createdOn;
+         entity[SystemConstants.DataverseAttributes.ModifiedOn] = modifiedOn;
 
          _targetMock.Setup(t => t.GetEntityMetadataAsync(
              SystemConstants.SourceDate.EntityLogicalName,

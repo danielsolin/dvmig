@@ -1,4 +1,5 @@
 using dvmig.Core.Interfaces;
+using dvmig.Core.Shared;
 using dvmig.Core.Synchronization;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Query;
@@ -75,7 +76,8 @@ namespace dvmig.Tests
          var sourceRef = new EntityReference("systemuser", sourceId);
 
          var sourceEntity = new Entity("systemuser", sourceId);
-         sourceEntity["internalemailaddress"] = "test@example.com";
+         sourceEntity[SystemConstants.DataverseAttributes.InternalEmailAddress] =
+             "test@example.com";
 
          var targetEntity = new Entity("systemuser", targetId);
          var targetCollection = new EntityCollection(new[] { targetEntity });
@@ -89,7 +91,9 @@ namespace dvmig.Tests
 
          _targetMock.Setup(t => t.RetrieveMultipleAsync(
              It.Is<QueryByAttribute>(q =>
-                 q.Attributes.Contains("internalemailaddress") &&
+                 q.Attributes.Contains(
+                     SystemConstants.DataverseAttributes.InternalEmailAddress
+                 ) &&
                  q.Values.Contains("test@example.com")),
              It.IsAny<CancellationToken>())
          ).ReturnsAsync(targetCollection);
@@ -108,7 +112,8 @@ namespace dvmig.Tests
          var sourceRef = new EntityReference("systemuser", sourceId);
 
          var sourceEntity = new Entity("systemuser", sourceId);
-         sourceEntity["domainname"] = "domain\\user";
+         sourceEntity[SystemConstants.DataverseAttributes.DomainName] =
+             "domain\\user";
 
          var targetCollection = new EntityCollection(
              new[] { new Entity("systemuser", targetId) }
@@ -124,13 +129,17 @@ namespace dvmig.Tests
 
          _targetMock.Setup(t => t.RetrieveMultipleAsync(
              It.Is<QueryByAttribute>(q =>
-                 q.Attributes.Contains("internalemailaddress")),
+                 q.Attributes.Contains(
+                     SystemConstants.DataverseAttributes.InternalEmailAddress
+                 )),
              It.IsAny<CancellationToken>())
          ).ReturnsAsync(emptyCollection);
 
          _targetMock.Setup(t => t.RetrieveMultipleAsync(
              It.Is<QueryByAttribute>(q =>
-                 q.Attributes.Contains("domainname") &&
+                 q.Attributes.Contains(
+                     SystemConstants.DataverseAttributes.DomainName
+                 ) &&
                  q.Values.Contains("domain\\user")),
              It.IsAny<CancellationToken>())
          ).ReturnsAsync(targetCollection);

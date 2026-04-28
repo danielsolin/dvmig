@@ -6,6 +6,7 @@ using dvmig.Core.Shared;
 
 namespace dvmig.Core.Synchronization
 {
+   //DMSFIX: Move repeated magic string to SystemConstants.
    /// <summary>
    /// Implements sync state tracking using local files in the 
    /// AppData directory.

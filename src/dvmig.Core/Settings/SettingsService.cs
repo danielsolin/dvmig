@@ -33,6 +33,7 @@ namespace dvmig.Core.Settings
          if (!Directory.Exists(folder))
             Directory.CreateDirectory(folder);
 
+         //DMSFIX: "settings.json" should be moved to a constant.
          _filePath = Path.Combine(folder, "settings.json");
       }
 

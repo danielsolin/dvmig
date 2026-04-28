@@ -285,7 +285,7 @@ namespace dvmig.Tests
          // Arrange
          var account = new Entity("account", Guid.NewGuid());
          account["name"] = "Date Test";
-         account["createdon"] = DateTime.UtcNow;
+         account[SystemConstants.DataverseAttributes.CreatedOn] = DateTime.UtcNow;
 
          _targetMock.Setup(t => t.CreateAsync(
              It.IsAny<Entity>(),
@@ -333,7 +333,9 @@ namespace dvmig.Tests
              {
                 createCalls++;
 
-                throw new Exception("A record with this ID already exists.");
+                throw new Exception(
+                    $"A record with this ID {SystemConstants.ErrorKeywords.AlreadyExists}."
+                );
              });
 
          _targetMock.Setup(t => t.UpdateAsync(
@@ -382,7 +384,8 @@ namespace dvmig.Tests
                 if (callCount == 1)
                 {
                    throw new Exception(
-                          "Rate limit exceeded. Error Code: 0x8004410d"
+                          "Rate limit exceeded. Error Code: 0x" +
+                          SystemConstants.ErrorCodes.ServiceProtectionLimit
                       );
                 }
 

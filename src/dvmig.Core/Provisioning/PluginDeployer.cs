@@ -1,4 +1,6 @@
 using dvmig.Core.Interfaces;
+using dvmig.Core.Logging;
+using dvmig.Core.Shared;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Query;
 using Serilog;
@@ -36,29 +38,40 @@ namespace dvmig.Core.Provisioning
                 pluginAssemblyPath
             );
 
-         _logger.Information("Deploying plugin assembly...");
-         progress?.Report("Deploying plugin assembly...");
+         _logger.Information(progress, "Deploying plugin assembly...");
 
          var assemblyBytes = await File.ReadAllBytesAsync(
              pluginAssemblyPath,
              ct
          );
 
-         var assembly = new Entity("pluginassembly");
-         assembly["name"] = "dvmig.Plugins";
-         assembly["content"] = Convert.ToBase64String(assemblyBytes);
-         assembly["isolationmode"] = new OptionSetValue(2); // Sandbox
-         assembly["sourcetype"] = new OptionSetValue(0);    // Database
-         assembly["publickeytoken"] = "397f674bbcd3d607";
-         assembly["version"] = "1.0.0.0";
-         assembly["culture"] = "neutral";
+         var assembly = new Entity(SystemConstants.PluginRegistration.AssemblyEntity);
+         assembly[SystemConstants.PluginRegistration.AssemblyName] =
+             SystemConstants.AppConstants.PluginName;
+         assembly[SystemConstants.PluginRegistration.Content] =
+             Convert.ToBase64String(assemblyBytes);
+         assembly[SystemConstants.PluginRegistration.IsolationMode] =
+             new OptionSetValue(2); // Sandbox
+         assembly[SystemConstants.PluginRegistration.SourceType] =
+             new OptionSetValue(0);    // Database
+         assembly[SystemConstants.PluginRegistration.PublicKeyToken] =
+             "397f674bbcd3d607";
+         assembly[SystemConstants.PluginRegistration.Version] = "1.0.0.0";
+         assembly[SystemConstants.PluginRegistration.Culture] = "neutral";
 
          // Check if exists for update vs create
-         var query = new QueryByAttribute("pluginassembly")
+         var query = new QueryByAttribute(
+             SystemConstants.PluginRegistration.AssemblyEntity
+         )
          {
-            ColumnSet = new ColumnSet("pluginassemblyid")
+            ColumnSet = new ColumnSet(
+                SystemConstants.PluginRegistration.AssemblyId
+            )
          };
-         query.AddAttributeValue("name", "dvmig.Plugins");
+         query.AddAttributeValue(
+             SystemConstants.PluginRegistration.AssemblyName,
+             SystemConstants.AppConstants.PluginName
+         );
 
          var existing = await target.RetrieveMultipleAsync(query, ct);
          Guid assemblyId;
@@ -70,15 +83,13 @@ namespace dvmig.Core.Provisioning
 
             await target.UpdateAsync(assembly, ct);
 
-            _logger.Information("Updated existing plugin assembly.");
-            progress?.Report("Updated existing plugin assembly.");
+            _logger.Information(progress, "Updated existing plugin assembly.");
          }
          else
          {
             assemblyId = await target.CreateAsync(assembly, ct);
 
-            _logger.Information("Created new plugin assembly.");
-            progress?.Report("Created new plugin assembly.");
+            _logger.Information(progress, "Created new plugin assembly.");
          }
 
          await RegisterPluginStepAsync(target, assemblyId, progress, ct);
@@ -99,16 +110,28 @@ namespace dvmig.Core.Provisioning
           CancellationToken ct
       )
       {
-         _logger.Information("Registering plugin type and step...");
-         progress?.Report("Registering plugin type and step...");
+         _logger.Information(progress, "Registering plugin type and step...");
+
+         var pluginTypeName =
+             $"{SystemConstants.AppConstants.PluginName}.DMPlugin";
 
          // 1. Ensure Plugin Type exists
-         var typeQuery = new QueryByAttribute("plugintype")
+         var typeQuery = new QueryByAttribute(
+             SystemConstants.PluginRegistration.TypeEntity
+         )
          {
-            ColumnSet = new ColumnSet("plugintypeid")
+            ColumnSet = new ColumnSet(
+                SystemConstants.PluginRegistration.TypeId
+            )
          };
-         typeQuery.AddAttributeValue("pluginassemblyid", assemblyId);
-         typeQuery.AddAttributeValue("typename", "dvmig.Plugins.DMPlugin");
+         typeQuery.AddAttributeValue(
+             SystemConstants.PluginRegistration.AssemblyId,
+             assemblyId
+         );
+         typeQuery.AddAttributeValue(
+             SystemConstants.PluginRegistration.TypeName,
+             pluginTypeName
+         );
 
          var types = await target.RetrieveMultipleAsync(typeQuery, ct);
          Guid typeId;
@@ -117,24 +140,24 @@ namespace dvmig.Core.Provisioning
          {
             typeId = types.Entities.First().Id;
 
-            _logger.Information("Plugin type already registered.");
-            progress?.Report("Plugin type already registered.");
+            _logger.Information(progress, "Plugin type already registered.");
          }
          else
          {
-            var type = new Entity("plugintype");
-            type["pluginassemblyid"] = new EntityReference(
-                "pluginassembly",
-                assemblyId
-            );
-            type["typename"] = "dvmig.Plugins.DMPlugin";
-            type["name"] = "dvmig.Plugins.DMPlugin";
-            type["friendlyname"] = "DMPlugin";
+            var type = new Entity(SystemConstants.PluginRegistration.TypeEntity);
+            type[SystemConstants.PluginRegistration.AssemblyId] =
+                new EntityReference(
+                    SystemConstants.PluginRegistration.AssemblyEntity,
+                    assemblyId
+                );
+            type[SystemConstants.PluginRegistration.TypeName] = pluginTypeName;
+            type[SystemConstants.PluginRegistration.AssemblyName] =
+                pluginTypeName;
+            type[SystemConstants.PluginRegistration.FriendlyName] = "DMPlugin";
 
             typeId = await target.CreateAsync(type, ct);
 
-            _logger.Information("Registered plugin type.");
-            progress?.Report("Registered plugin type.");
+            _logger.Information(progress, "Registered plugin type.");
          }
 
          await RegisterStepForMessageAsync(
@@ -173,11 +196,18 @@ namespace dvmig.Core.Provisioning
       )
       {
          // 1. Find Message ID
-         var msgQuery = new QueryByAttribute("sdkmessage")
+         var msgQuery = new QueryByAttribute(
+             SystemConstants.PluginRegistration.MessageEntity
+         )
          {
-            ColumnSet = new ColumnSet("sdkmessageid")
+            ColumnSet = new ColumnSet(
+                SystemConstants.PluginRegistration.MessageId
+            )
          };
-         msgQuery.AddAttributeValue("name", messageName);
+         msgQuery.AddAttributeValue(
+             SystemConstants.PluginRegistration.MessageName,
+             messageName
+         );
 
          var msgs = await target.RetrieveMultipleAsync(msgQuery, ct);
 
@@ -186,31 +216,51 @@ namespace dvmig.Core.Provisioning
 
          var messageId = msgs.Entities.First().Id;
 
+         var pluginTypeName =
+             $"{SystemConstants.AppConstants.PluginName}.DMPlugin";
+
          // 2. Define Step
-         var step = new Entity("sdkmessageprocessingstep");
-         step["name"] = $"dvmig.Plugins.DMPlugin: {messageName}";
-         step["configuration"] = "";
-         step["invocationsource"] = new OptionSetValue(0); // Internal
-         step["sdkmessageid"] = new EntityReference(
-             "sdkmessage",
-             messageId
-         );
-         step["plugintypeid"] = new EntityReference(
-             "plugintype",
-             typeId
-         );
-         step["stage"] = new OptionSetValue(20);           // Pre-operation
-         step["supporteddeployment"] = new OptionSetValue(0); // Server
-         step["rank"] = 1;
-         step["mode"] = new OptionSetValue(0);             // Synchronous
+         var step = new Entity(SystemConstants.PluginRegistration.StepEntity);
+         step[SystemConstants.PluginRegistration.MessageName] =
+             $"{pluginTypeName}: {messageName}";
+         step[SystemConstants.PluginRegistration.Configuration] = "";
+         step[SystemConstants.PluginRegistration.InvocationSource] =
+             new OptionSetValue(0); // Internal
+         step[SystemConstants.PluginRegistration.MessageId] =
+             new EntityReference(
+                 SystemConstants.PluginRegistration.MessageEntity,
+                 messageId
+             );
+         step[SystemConstants.PluginRegistration.TypeId] =
+             new EntityReference(
+                 SystemConstants.PluginRegistration.TypeEntity,
+                 typeId
+             );
+         step[SystemConstants.PluginRegistration.Stage] =
+             new OptionSetValue(20);           // Pre-operation
+         step[SystemConstants.PluginRegistration.SupportedDeployment] =
+             new OptionSetValue(0); // Server
+         step[SystemConstants.PluginRegistration.Rank] = 1;
+         step[SystemConstants.PluginRegistration.Mode] =
+             new OptionSetValue(0);             // Synchronous
 
          // 3. Check if exists
-         var stepQuery = new QueryByAttribute("sdkmessageprocessingstep")
+         var stepQuery = new QueryByAttribute(
+             SystemConstants.PluginRegistration.StepEntity
+         )
          {
-            ColumnSet = new ColumnSet("sdkmessageprocessingstepid")
+            ColumnSet = new ColumnSet(
+                SystemConstants.PluginRegistration.StepId
+            )
          };
-         stepQuery.AddAttributeValue("plugintypeid", typeId);
-         stepQuery.AddAttributeValue("sdkmessageid", messageId);
+         stepQuery.AddAttributeValue(
+             SystemConstants.PluginRegistration.TypeId,
+             typeId
+         );
+         stepQuery.AddAttributeValue(
+             SystemConstants.PluginRegistration.MessageId,
+             messageId
+         );
 
          var existingSteps = await target.RetrieveMultipleAsync(
              stepQuery,
@@ -223,12 +273,9 @@ namespace dvmig.Core.Provisioning
             await target.UpdateAsync(step, ct);
 
             _logger.Information(
+                progress,
                 "Updated existing plugin step for {0}.",
                 messageName
-            );
-
-            progress?.Report(
-                $"Updated existing plugin step for {messageName}."
             );
          }
          else
@@ -236,12 +283,9 @@ namespace dvmig.Core.Provisioning
             await target.CreateAsync(step, ct);
 
             _logger.Information(
+                progress,
                 "Created new plugin step for {0}.",
                 messageName
-            );
-
-            progress?.Report(
-                $"Created new plugin step for {messageName}."
             );
          }
       }
@@ -253,14 +297,23 @@ namespace dvmig.Core.Provisioning
           CancellationToken ct = default
       )
       {
-         _logger.Information("Searching for plugin assembly to remove...");
-         progress?.Report("Searching for plugin assembly to remove...");
+         _logger.Information(
+             progress,
+             "Searching for plugin assembly to remove..."
+         );
 
-         var query = new QueryByAttribute("pluginassembly")
+         var query = new QueryByAttribute(
+             SystemConstants.PluginRegistration.AssemblyEntity
+         )
          {
-            ColumnSet = new ColumnSet("pluginassemblyid")
+            ColumnSet = new ColumnSet(
+                SystemConstants.PluginRegistration.AssemblyId
+            )
          };
-         query.AddAttributeValue("name", "dvmig.Plugins");
+         query.AddAttributeValue(
+             SystemConstants.PluginRegistration.AssemblyName,
+             SystemConstants.AppConstants.PluginName
+         );
 
          var result = await target.RetrieveMultipleAsync(query, ct);
 
@@ -273,28 +326,41 @@ namespace dvmig.Core.Provisioning
             );
 
             // 1. Find all types in this assembly
-            var typeQuery = new QueryByAttribute("plugintype")
+            var typeQuery = new QueryByAttribute(
+                SystemConstants.PluginRegistration.TypeEntity
+            )
             {
-               ColumnSet = new ColumnSet("plugintypeid", "typename")
+               ColumnSet = new ColumnSet(
+                   SystemConstants.PluginRegistration.TypeId,
+                   SystemConstants.PluginRegistration.TypeName
+               )
             };
-            typeQuery.AddAttributeValue("pluginassemblyid", assemblyId);
+            typeQuery.AddAttributeValue(
+                SystemConstants.PluginRegistration.AssemblyId,
+                assemblyId
+            );
             var types = await target.RetrieveMultipleAsync(typeQuery, ct);
 
             foreach (var type in types.Entities)
             {
-               var typeName = type.GetAttributeValue<string>("typename");
+               var typeName = type.GetAttributeValue<string>(
+                   SystemConstants.PluginRegistration.TypeName
+               );
 
                // 2. Find and delete steps for each type
                var stepQuery = new QueryByAttribute(
-                   "sdkmessageprocessingstep"
+                   SystemConstants.PluginRegistration.StepEntity
                )
                {
                   ColumnSet = new ColumnSet(
-                       "sdkmessageprocessingstepid",
-                       "name"
+                       SystemConstants.PluginRegistration.StepId,
+                       SystemConstants.PluginRegistration.MessageName
                    )
                };
-               stepQuery.AddAttributeValue("plugintypeid", type.Id);
+               stepQuery.AddAttributeValue(
+                   SystemConstants.PluginRegistration.TypeId,
+                   type.Id
+               );
                var steps = await target.RetrieveMultipleAsync(
                    stepQuery,
                    ct
@@ -302,7 +368,9 @@ namespace dvmig.Core.Provisioning
 
                foreach (var step in steps.Entities)
                {
-                  var stepName = step.GetAttributeValue<string>("name");
+                  var stepName = step.GetAttributeValue<string>(
+                      SystemConstants.PluginRegistration.MessageName
+                  );
                   _logger.Debug(
                       "Deleting plugin step {Name} ({Id})",
                       stepName,
@@ -314,7 +382,7 @@ namespace dvmig.Core.Provisioning
                   );
 
                   await target.DeleteAsync(
-                      "sdkmessageprocessingstep",
+                      SystemConstants.PluginRegistration.StepEntity,
                       step.Id,
                       ct
                   );
@@ -327,7 +395,11 @@ namespace dvmig.Core.Provisioning
                );
 
                progress?.Report($"Deleting plugin type: {typeName}...");
-               await target.DeleteAsync("plugintype", type.Id, ct);
+               await target.DeleteAsync(
+                   SystemConstants.PluginRegistration.TypeEntity,
+                   type.Id,
+                   ct
+               );
             }
 
             _logger.Information(
@@ -337,15 +409,17 @@ namespace dvmig.Core.Provisioning
 
             progress?.Report("Deleting plugin assembly...");
 
-            await target.DeleteAsync("pluginassembly", assemblyId, ct);
+            await target.DeleteAsync(
+                SystemConstants.PluginRegistration.AssemblyEntity,
+                assemblyId,
+                ct
+            );
 
-            _logger.Information("Plugin assembly removed successfully.");
-            progress?.Report("Plugin assembly removed successfully.");
+            _logger.Information(progress, "Plugin assembly removed successfully.");
          }
          else
          {
-            _logger.Information("No plugin assembly found to remove.");
-            progress?.Report("No plugin assembly found to remove.");
+            _logger.Information(progress, "No plugin assembly found to remove.");
          }
       }
    }

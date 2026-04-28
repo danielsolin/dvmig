@@ -1,10 +1,12 @@
 using Bogus;
 using dvmig.Core.Interfaces;
+using dvmig.Core.Logging;
 using Microsoft.Xrm.Sdk;
 using Serilog;
 
 namespace dvmig.Core.Seeding
 {
+   ///DMSFIX: A lot of hard-coded attributes and entity logical names here. Should be moved to constants.
    /// <summary>
    /// Implementation of the test data seeder using the Bogus library for 
    /// realistic data generation.
@@ -184,8 +186,7 @@ namespace dvmig.Core.Seeding
                    $"Contacts: {totalContactsCreated}, " +
                    $"Activities: {totalActivitiesCreated}";
 
-               _logger.Information(msg);
-               progress?.Report(msg);
+               _logger.Information(progress, msg);
             }
          }
 
@@ -214,24 +215,35 @@ namespace dvmig.Core.Seeding
       /// <inheritdoc />
       public async Task CleanTestDataAsync(
           IDataverseProvider provider,
+          List<string>? entitiesToWipe = null,
           IProgress<string>? progress = null,
           CancellationToken ct = default
       )
       {
          _logger.Warning(
-             "Starting test data cleanup (Activities, Contacts, Accounts)..."
+             "Starting data cleanup..."
          );
-         progress?.Report("Cleaning up activities...");
+         progress?.Report("Starting data cleanup...");
 
-         // Delete in order of dependency
-         await DeleteAllOfEntityAsync(provider, "email", progress, ct);
-         await DeleteAllOfEntityAsync(provider, "phonecall", progress, ct);
-         await DeleteAllOfEntityAsync(provider, "task", progress, ct);
-         await DeleteAllOfEntityAsync(provider, "contact", progress, ct);
-         await DeleteAllOfEntityAsync(provider, "account", progress, ct);
+         var entitiesToDelete = entitiesToWipe ?? new List<string>
+         {
+             "email",
+             "phonecall",
+             "task",
+             "contact",
+             "account"
+         };
 
-         _logger.Information("Cleanup completed successfully.");
-         progress?.Report("Cleanup completed successfully.");
+         // If using the default list, we rely on the pre-defined order 
+         // (activities first, then contacts, then accounts) to avoid 
+         // dependency errors. If a custom list is provided, we process 
+         // them in the order given.
+         foreach (var entity in entitiesToDelete)
+         {
+            await DeleteAllOfEntityAsync(provider, entity, progress, ct);
+         }
+
+         _logger.Information(progress, "Cleanup completed successfully.");
       }
 
       private async Task DeleteAllOfEntityAsync(

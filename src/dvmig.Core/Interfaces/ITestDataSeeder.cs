@@ -38,6 +38,7 @@ namespace dvmig.Core.Interfaces
       /// </returns>
       Task CleanTestDataAsync(
           IDataverseProvider provider,
+          List<string>? entitiesToWipe = null,
           IProgress<string>? progress = null,
           CancellationToken ct = default
       );

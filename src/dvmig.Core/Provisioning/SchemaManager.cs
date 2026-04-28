@@ -1,4 +1,5 @@
 using dvmig.Core.Interfaces;
+using dvmig.Core.Logging;
 using dvmig.Core.Shared;
 using Microsoft.Crm.Sdk.Messages;
 using Microsoft.Xrm.Sdk;
@@ -38,13 +39,11 @@ namespace dvmig.Core.Provisioning
          // 2. dm_migrationfailure
          await EnsureFailureLogEntityAsync(target, progress, ct);
 
-         _logger.Information("Publishing changes...");
-         progress?.Report("Publishing changes...");
+         _logger.Information(progress, "Publishing changes...");
 
          await target.ExecuteAsync(new PublishAllXmlRequest(), ct);
 
-         _logger.Information("Schema creation completed.");
-         progress?.Report("Schema creation completed.");
+         _logger.Information(progress, "Schema creation completed.");
       }
 
       private async Task EnsureSourceDateEntityAsync(
@@ -62,10 +61,10 @@ namespace dvmig.Core.Provisioning
          if (existingMeta == null)
          {
             _logger.Information(
+                progress,
                 "Creating '{Entity}' entity...",
                 entityName
             );
-            progress?.Report($"Creating '{entityName}' entity...");
 
             var entityReq = new CreateEntityRequest
             {
@@ -167,10 +166,10 @@ namespace dvmig.Core.Provisioning
          if (existingMeta == null)
          {
             _logger.Information(
+                progress,
                 "Creating '{Entity}' entity...",
                 entityName
             );
-            progress?.Report($"Creating '{entityName}' entity...");
 
             var entityReq = new CreateEntityRequest
             {
@@ -270,11 +269,11 @@ namespace dvmig.Core.Provisioning
          }
 
          _logger.Information(
+             progress,
              "Creating attribute {Attr} on {Entity}...",
              schemaName,
              entityLogicalName
          );
-         progress?.Report($"Creating attribute {schemaName}...");
 
          AttributeMetadata attr;
 
@@ -346,13 +345,11 @@ namespace dvmig.Core.Provisioning
              ct
          );
 
-         _logger.Information("Publishing changes...");
-         progress?.Report("Publishing changes...");
+         _logger.Information(progress, "Publishing changes...");
 
          await target.ExecuteAsync(new PublishAllXmlRequest(), ct);
 
-         _logger.Information("Schema removal completed.");
-         progress?.Report("Schema removal completed.");
+         _logger.Information(progress, "Schema removal completed.");
       }
 
       private async Task DropEntityIfPresentAsync(

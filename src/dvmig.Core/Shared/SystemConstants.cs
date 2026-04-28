@@ -36,6 +36,15 @@ namespace dvmig.Core.Shared
       }
 
       /// <summary>
+      /// Logical names for common Dataverse entities.
+      /// </summary>
+      public static class DataverseEntities
+      {
+         public const string SystemUser = "systemuser";
+         public const string ActivityParty = "activityparty";
+      }
+
+      /// <summary>
       /// Common Dataverse attribute names.
       /// </summary>
       public static class DataverseAttributes
@@ -47,6 +56,23 @@ namespace dvmig.Core.Shared
          public const string Count = "count";
          public const string InternalEmailAddress = "internalemailaddress";
          public const string DomainName = "domainname";
+         public const string SystemUserId = "systemuserid";
+         public const string FullName = "fullname";
+         public const string OwnerId = "ownerid";
+         public const string CreatedBy = "createdby";
+         public const string ModifiedBy = "modifiedby";
+         public const string CreatedOnBehalfBy = "createdonbehalfby";
+         public const string ModifiedOnBehalfBy = "modifiedonbehalfby";
+         public const string OverriddenCreatedOn = "overriddencreatedon";
+         public const string ImportSequenceNumber = "importsequencenumber";
+         public const string VersionNumber = "versionnumber";
+         public const string TransactionCurrencyId = "transactioncurrencyid";
+         public const string ExchangeRate = "exchangerate";
+         public const string ActivityPartyId = "activitypartyid";
+         public const string ActivityId = "activityid";
+         public const string PartyId = "partyid";
+         public const string Address1Id = "address1_addressid";
+         public const string Address2Id = "address2_addressid";
       }
 
       /// <summary>
@@ -118,7 +144,43 @@ namespace dvmig.Core.Shared
          public const string Yellow = "[yellow]";
          public const string Red = "[red]";
          public const string Grey = "[grey]";
+         public const string Green = "[green]";
+         public const string BoldGreen = "[bold green]";
          public const string Wait = "WAIT";
+      }
+
+      /// <summary>
+      /// Constants for Dataverse plugin registration entities and attributes.
+      /// </summary>
+      public static class PluginRegistration
+      {
+         public const string AssemblyEntity = "pluginassembly";
+         public const string AssemblyId = "pluginassemblyid";
+         public const string AssemblyName = "name";
+         public const string Content = "content";
+         public const string IsolationMode = "isolationmode";
+         public const string SourceType = "sourcetype";
+         public const string PublicKeyToken = "publickeytoken";
+         public const string Version = "version";
+         public const string Culture = "culture";
+
+         public const string TypeEntity = "plugintype";
+         public const string TypeId = "plugintypeid";
+         public const string TypeName = "typename";
+         public const string FriendlyName = "friendlyname";
+
+         public const string StepEntity = "sdkmessageprocessingstep";
+         public const string StepId = "sdkmessageprocessingstepid";
+         public const string Configuration = "configuration";
+         public const string InvocationSource = "invocationsource";
+         public const string Stage = "stage";
+         public const string SupportedDeployment = "supporteddeployment";
+         public const string Rank = "rank";
+         public const string Mode = "mode";
+
+         public const string MessageEntity = "sdkmessage";
+         public const string MessageId = "sdkmessageid";
+         public const string MessageName = "name";
       }
 
       /// <summary>

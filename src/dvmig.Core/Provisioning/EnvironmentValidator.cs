@@ -31,11 +31,18 @@ namespace dvmig.Core.Provisioning
             if (md == null)
                return false;
 
-            var query = new QueryByAttribute("pluginassembly")
+            var query = new QueryByAttribute(
+                SystemConstants.PluginRegistration.AssemblyEntity
+            )
             {
-               ColumnSet = new ColumnSet("pluginassemblyid")
+               ColumnSet = new ColumnSet(
+                   SystemConstants.PluginRegistration.AssemblyId
+               )
             };
-            query.AddAttributeValue("name", "dvmig.Plugins");
+            query.AddAttributeValue(
+                SystemConstants.PluginRegistration.AssemblyName,
+                SystemConstants.AppConstants.PluginName
+            );
 
             var assemblies = await target.RetrieveMultipleAsync(query, ct);
             var assembly = assemblies.Entities.FirstOrDefault();
@@ -43,14 +50,21 @@ namespace dvmig.Core.Provisioning
             if (assembly == null)
                return false;
 
-            var typeQuery = new QueryByAttribute("plugintype")
+            var typeQuery = new QueryByAttribute(
+                SystemConstants.PluginRegistration.TypeEntity
+            )
             {
-               ColumnSet = new ColumnSet("plugintypeid")
+               ColumnSet = new ColumnSet(
+                   SystemConstants.PluginRegistration.TypeId
+               )
             };
-            typeQuery.AddAttributeValue("pluginassemblyid", assembly.Id);
             typeQuery.AddAttributeValue(
-                "typename",
-                "dvmig.Plugins.DMPlugin"
+                SystemConstants.PluginRegistration.AssemblyId,
+                assembly.Id
+            );
+            typeQuery.AddAttributeValue(
+                SystemConstants.PluginRegistration.TypeName,
+                $"{SystemConstants.AppConstants.PluginName}.DMPlugin"
             );
 
             var types = await target.RetrieveMultipleAsync(typeQuery, ct);
@@ -59,11 +73,18 @@ namespace dvmig.Core.Provisioning
             if (pluginType == null)
                return false;
 
-            var stepQuery = new QueryByAttribute("sdkmessageprocessingstep")
+            var stepQuery = new QueryByAttribute(
+                SystemConstants.PluginRegistration.StepEntity
+            )
             {
-               ColumnSet = new ColumnSet("sdkmessageprocessingstepid")
+               ColumnSet = new ColumnSet(
+                   SystemConstants.PluginRegistration.StepId
+               )
             };
-            stepQuery.AddAttributeValue("plugintypeid", pluginType.Id);
+            stepQuery.AddAttributeValue(
+                SystemConstants.PluginRegistration.TypeId,
+                pluginType.Id
+            );
 
             var steps = await target.RetrieveMultipleAsync(stepQuery, ct);
 

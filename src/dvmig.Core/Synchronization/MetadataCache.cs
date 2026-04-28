@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using dvmig.Core.Interfaces;
+using dvmig.Core.Shared;
 using Microsoft.Xrm.Sdk.Metadata;
 using Microsoft.Xrm.Sdk.Query;
 using Serilog;
@@ -76,13 +77,13 @@ namespace dvmig.Core.Synchronization
             {
                 meta.PrimaryIdAttribute,
                 meta.PrimaryNameAttribute ?? string.Empty,
-                "ownerid",
-                "statecode",
-                "statuscode",
-                "createdon",
-                "modifiedon",
-                "transactioncurrencyid",
-                "exchangerate"
+                SystemConstants.DataverseAttributes.OwnerId,
+                SystemConstants.DataverseAttributes.StateCode,
+                SystemConstants.DataverseAttributes.StatusCode,
+                SystemConstants.DataverseAttributes.CreatedOn,
+                SystemConstants.DataverseAttributes.ModifiedOn,
+                SystemConstants.DataverseAttributes.TransactionCurrencyId,
+                SystemConstants.DataverseAttributes.ExchangeRate
             };
 
          // Filter for attributes that are valid for reading and NOT purely
