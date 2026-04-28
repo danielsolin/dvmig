@@ -16,11 +16,11 @@ namespace dvmig.Cli.Actions
       private readonly ILogger _logger;
 
       public MigrationActions(
-          ConnectionManager connectionManager,
-          IMetadataService metadataService,
-          ISetupService setupService,
-          ISyncStateTracker stateTracker,
-          ILogger logger)
+         ConnectionManager connectionManager,
+         IMetadataService metadataService,
+         ISetupService setupService,
+         ISyncStateTracker stateTracker,
+         ILogger logger)
       {
          _connectionManager = connectionManager;
          _metadataService = metadataService;
@@ -65,12 +65,12 @@ namespace dvmig.Cli.Actions
 
          var recommendedEntities = new List<string>
             {
-                "account",
-                "contact",
-                "task",
-                "phonecall",
-                "email",
-                "appointment"
+               "account",
+               "contact",
+               "task",
+               "phonecall",
+               "email",
+               "appointment"
             };
 
          AnsiConsole.MarkupLine(
@@ -249,65 +249,83 @@ namespace dvmig.Cli.Actions
                continue;
             }
 
-            await AnsiConsole.Progress()
-                .Columns(
-                    new ProgressColumn[]
-                    {
+            try
+            {
+               await AnsiConsole.Progress()
+                   .Columns(
+                       new ProgressColumn[]
+                       {
                             new TaskDescriptionColumn(),
                             new ProgressBarColumn(),
                             new PercentageColumn(),
                             new RemainingTimeColumn(),
                             new SpinnerColumn(),
-                    }
-                )
-                .StartAsync(async ctx =>
-                {
-                   var taskName = $"Syncing {logicalName} " +
-                                      $"({processed}/{totalCount}) " +
-                                      $"[[{maxThreads} threads]]";
-
-                   var task = ctx.AddTask(taskName, true, totalCount);
-                   task.Value = processed;
-
-                   var recordProgress = new Progress<bool>(success =>
-                       {
-                          if (success)
-                          {
-                             processed++;
-                             task.Value = processed;
-                             task.Description =
-                                     $"Syncing {logicalName} " +
-                                     $"({processed}/{totalCount}) " +
-                                     $"[[{maxThreads} threads]]";
-                          }
-                       });
-
-                   var options = new SyncOptions
+                       }
+                   )
+                   .StartAsync(async ctx =>
                    {
-                      StripMissingDependencies = true,
-                      MaxDegreeOfParallelism = maxThreads
-                   };
+                      var taskName = $"Syncing {logicalName} " +
+                                         $"({processed}/{totalCount}) " +
+                                         $"[[{maxThreads} threads]]";
 
-                   var progressReporter = new Progress<string>(msg =>
-                       {
-                          // Ensure we show wait/retry/throttle messages even
-                          // during the progress bar display.
-                          if (msg.Contains("WAIT", StringComparison.Ordinal) || 
-                              msg.Contains("throttle", StringComparison.OrdinalIgnoreCase) ||
-                              msg.StartsWith("[yellow]") || 
-                              msg.StartsWith("[red]"))
-                             AnsiConsole.MarkupLine(msg);
-                       });
+                      var task = ctx.AddTask(taskName, true, totalCount);
+                      task.Value = processed;
 
-                   await engine.SyncEntityAsync(
-                           logicalName,
-                           options,
-                           null,
-                           progressReporter,
-                           recordProgress,
-                           default
-                       );
-                });
+                      var recordProgress = new Progress<bool>(success =>
+                          {
+                             if (success)
+                             {
+                                processed++;
+                                task.Value = processed;
+                                task.Description =
+                                        $"Syncing {logicalName} " +
+                                        $"({processed}/{totalCount}) " +
+                                        $"[[{maxThreads} threads]]";
+                             }
+                          });
+
+                      var options = new SyncOptions
+                      {
+                         StripMissingDependencies = true,
+                         MaxDegreeOfParallelism = maxThreads
+                      };
+
+                      var progressReporter = new Progress<string>(msg =>
+                          {
+                             // Ensure we show wait/retry/throttle messages even
+                             // during the progress bar display.
+                             if (msg.Contains(
+                                    "WAIT",
+                                    StringComparison.Ordinal
+                                 ) || 
+                                 msg.Contains(
+                                    "throttle",
+                                    StringComparison.OrdinalIgnoreCase
+                                 ) ||
+                                 msg.StartsWith("[yellow]") || 
+                                 msg.StartsWith("[red]"))
+                                AnsiConsole.MarkupLine(msg);
+                          });
+
+                      await engine.SyncEntityAsync(
+                              logicalName,
+                              options,
+                              null,
+                              progressReporter,
+                              recordProgress,
+                              default
+                          );
+                   });
+            }
+            catch (Exception ex)
+            {
+               var baseEx = ex.GetBaseException();
+               CliUI.WriteError(
+                   $"Sync aborted due to a critical error: {baseEx.Message}"
+               );
+               
+               break;
+            }
          }
       }
    }

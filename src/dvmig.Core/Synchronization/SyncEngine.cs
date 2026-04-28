@@ -232,15 +232,37 @@ namespace dvmig.Core.Synchronization
                       if (progress != null)
                          pollyCtx["progress"] = progress;
 
-                      await _retryPolicy.ExecuteAsync(
-                          async (ctx) => await _failureLogger
-                           .LogFailureToTargetAsync(
-                             entity,
-                             errorMsg,
-                             token
-                           ),
-                          pollyCtx
-                      );
+                      try
+                      {
+                         await _retryPolicy.ExecuteAsync(
+                             async (ctx) => await _failureLogger
+                              .LogFailureToTargetAsync(
+                                entity,
+                                errorMsg,
+                                token
+                              ),
+                             pollyCtx
+                         );
+                      }
+                      catch (OperationCanceledException)
+                      {
+                         throw;
+                      }
+                      catch (Exception logEx)
+                      {
+                         _logger.Error(
+                             logEx,
+                             "Failed to persist failure log for {Entity}:{Id}.",
+                             entity.LogicalName,
+                             entity.Id
+                         );
+
+                         progress?.Report(
+                             $"[red]ERROR[/] Fatal sync failure: {logEx.Message}"
+                         );
+
+                         throw; // Abort parallel loop
+                      }
                    }
 
                    recordProgress?.Report(success);
@@ -263,14 +285,36 @@ namespace dvmig.Core.Synchronization
                    if (progress != null)
                       pollyCtx["progress"] = progress;
 
-                   await _retryPolicy.ExecuteAsync(
-                       async (ctx) => await _failureLogger.LogFailureToTargetAsync(
-                          entity,
-                          failureMessage,
-                          token
-                       ),
-                       pollyCtx
-                   );
+                   try
+                   {
+                      await _retryPolicy.ExecuteAsync(
+                          async (ctx) => await _failureLogger.LogFailureToTargetAsync(
+                             entity,
+                             failureMessage,
+                             token
+                          ),
+                          pollyCtx
+                      );
+                   }
+                   catch (OperationCanceledException)
+                   {
+                      throw;
+                   }
+                   catch (Exception logEx)
+                   {
+                      _logger.Error(
+                          logEx,
+                          "Failed to persist failure log for {Entity}:{Id}.",
+                          entity.LogicalName,
+                          entity.Id
+                      );
+
+                      progress?.Report(
+                          $"[red]ERROR[/] Fatal sync failure: {logEx.Message}"
+                      );
+
+                      throw; // Abort parallel loop
+                   }
 
                    recordProgress?.Report(false);
                 }

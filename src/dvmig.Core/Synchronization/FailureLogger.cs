@@ -61,6 +61,10 @@ namespace dvmig.Core.Synchronization
 
             await _target.CreateAsync(failure, ct);
          }
+         catch (OperationCanceledException)
+         {
+            throw;
+         }
          catch (Exception ex)
          {
             var message =
