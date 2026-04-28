@@ -1,6 +1,7 @@
 using dvmig.Cli.Infrastructure;
 using dvmig.Core.Interfaces;
 using dvmig.Core.Metadata;
+using dvmig.Core.Shared;
 using Serilog;
 using Spectre.Console;
 
@@ -172,10 +173,10 @@ namespace dvmig.Cli.Actions
          );
 
          var confirmation = AnsiConsole.Ask<string>(
-             "Type [bold red]WIPE ALL DATA[/] to confirm:"
+             $"Type [bold red]{SystemConstants.UiMarkup.WipeDataConfirmation}[/] to confirm:"
          );
 
-         if (confirmation != "WIPE ALL DATA")
+         if (confirmation != SystemConstants.UiMarkup.WipeDataConfirmation)
          {
             CliUI.WriteWarning("Wipe cancelled.");
 

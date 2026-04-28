@@ -1,12 +1,12 @@
 using Bogus;
 using dvmig.Core.Interfaces;
 using dvmig.Core.Logging;
+using dvmig.Core.Shared;
 using Microsoft.Xrm.Sdk;
 using Serilog;
 
 namespace dvmig.Core.Seeding
 {
-   ///DMSFIX: A lot of hard-coded attributes and entity logical names here. Should be moved to constants.
    /// <summary>
    /// Implementation of the test data seeder using the Bogus library for 
    /// realistic data generation.
@@ -47,52 +47,80 @@ namespace dvmig.Core.Seeding
          );
 
          var accountFaker = new Faker<Entity>()
-             .CustomInstantiator(f => new Entity("account"))
+             .CustomInstantiator(f => new Entity(
+                SystemConstants.DataverseEntities.Account
+             ))
              .FinishWith((f, e) =>
              {
-                e["name"] = f.Company.CompanyName();
-                e["telephone1"] = f.Phone.PhoneNumber();
-                e["address1_line1"] = f.Address.StreetAddress();
-                e["address1_city"] = f.Address.City();
-                e["address1_postalcode"] = f.Address.ZipCode();
-                e["websiteurl"] = f.Internet.Url();
+                e[SystemConstants.DataverseAttributes.Name] =
+                   f.Company.CompanyName();
+                e[SystemConstants.DataverseAttributes.Telephone1] =
+                   f.Phone.PhoneNumber();
+                e[SystemConstants.DataverseAttributes.Address1Line1] =
+                   f.Address.StreetAddress();
+                e[SystemConstants.DataverseAttributes.Address1City] =
+                   f.Address.City();
+                e[SystemConstants.DataverseAttributes.Address1PostalCode] =
+                   f.Address.ZipCode();
+                e[SystemConstants.DataverseAttributes.WebsiteUrl] =
+                   f.Internet.Url();
              });
 
          var contactFaker = new Faker<Entity>()
-             .CustomInstantiator(f => new Entity("contact"))
+             .CustomInstantiator(f => new Entity(
+                SystemConstants.DataverseEntities.Contact
+             ))
              .FinishWith((f, e) =>
              {
-                e["firstname"] = f.Name.FirstName();
-                e["lastname"] = f.Name.LastName();
-                e["emailaddress1"] = f.Internet.Email();
-                e["telephone1"] = f.Phone.PhoneNumber();
-                e["jobtitle"] = f.Name.JobTitle();
+                e[SystemConstants.DataverseAttributes.FirstName] =
+                   f.Name.FirstName();
+                e[SystemConstants.DataverseAttributes.LastName] =
+                   f.Name.LastName();
+                e[SystemConstants.DataverseAttributes.EmailAddress1] =
+                   f.Internet.Email();
+                e[SystemConstants.DataverseAttributes.Telephone1] =
+                   f.Phone.PhoneNumber();
+                e[SystemConstants.DataverseAttributes.JobTitle] =
+                   f.Name.JobTitle();
              });
 
          var taskFaker = new Faker<Entity>()
-             .CustomInstantiator(f => new Entity("task"))
+             .CustomInstantiator(f => new Entity(
+                SystemConstants.DataverseEntities.Task
+             ))
              .FinishWith((f, e) =>
              {
-                e["subject"] = f.Lorem.Sentence();
-                e["description"] = f.Lorem.Paragraph();
-                e["scheduledend"] = f.Date.Soon();
+                e[SystemConstants.DataverseAttributes.Subject] =
+                   f.Lorem.Sentence();
+                e[SystemConstants.DataverseAttributes.Description] =
+                   f.Lorem.Paragraph();
+                e[SystemConstants.DataverseAttributes.ScheduledEnd] =
+                   f.Date.Soon();
              });
 
          var phoneCallFaker = new Faker<Entity>()
-             .CustomInstantiator(f => new Entity("phonecall"))
+             .CustomInstantiator(f => new Entity(
+                SystemConstants.DataverseEntities.PhoneCall
+             ))
              .FinishWith((f, e) =>
              {
-                e["subject"] = $"Follow up: {f.Company.CatchPhrase()}";
-                e["description"] = f.Lorem.Sentences(2);
-                e["phonenumber"] = f.Phone.PhoneNumber();
+                e[SystemConstants.DataverseAttributes.Subject] =
+                   $"Follow up: {f.Company.CatchPhrase()}";
+                e[SystemConstants.DataverseAttributes.Description] =
+                   f.Lorem.Sentences(2);
+                e[SystemConstants.DataverseAttributes.PhoneNumber] =
+                   f.Phone.PhoneNumber();
              });
 
          var emailFaker = new Faker<Entity>()
-             .CustomInstantiator(f => new Entity("email"))
+             .CustomInstantiator(f => new Entity(
+                SystemConstants.DataverseEntities.Email
+             ))
              .FinishWith((f, e) =>
              {
-                e["subject"] = f.Commerce.ProductName();
-                e["description"] =
+                e[SystemConstants.DataverseAttributes.Subject] =
+                   f.Commerce.ProductName();
+                e[SystemConstants.DataverseAttributes.Description] =
                        string.Join("\n", f.Lorem.Paragraphs(3));
              });
 
@@ -108,7 +136,10 @@ namespace dvmig.Core.Seeding
             var account = accountFaker.Generate();
             var accountId = await provider.CreateAsync(account, ct);
             account.Id = accountId;
-            var accountRef = new EntityReference("account", accountId);
+            var accountRef = new EntityReference(
+               SystemConstants.DataverseEntities.Account,
+               accountId
+            );
 
             // 2. Create related Contacts
             int contactCount = random.Next(1, 11);
@@ -117,7 +148,8 @@ namespace dvmig.Core.Seeding
 
             foreach (var contact in relatedContacts)
             {
-               contact["parentcustomerid"] = accountRef;
+               contact[SystemConstants.DataverseAttributes.ParentCustomerId] =
+                  accountRef;
                var contactId = await provider.CreateAsync(contact, ct);
                createdContactIds.Add(contactId);
                totalContactsCreated++;
@@ -127,11 +159,15 @@ namespace dvmig.Core.Seeding
             var primaryContactId = createdContactIds[
                 random.Next(createdContactIds.Count)
             ];
-            var accountUpdate = new Entity("account", accountId);
-            accountUpdate["primarycontactid"] = new EntityReference(
-                "contact",
-                primaryContactId
+            var accountUpdate = new Entity(
+               SystemConstants.DataverseEntities.Account,
+               accountId
             );
+            accountUpdate[SystemConstants.DataverseAttributes.PrimaryContactId] =
+               new EntityReference(
+                  SystemConstants.DataverseEntities.Contact,
+                  primaryContactId
+               );
 
             await provider.UpdateAsync(accountUpdate, ct);
 
@@ -141,7 +177,8 @@ namespace dvmig.Core.Seeding
             int taskCount = random.Next(1, 6);
             foreach (var task in taskFaker.Generate(taskCount))
             {
-               task["regardingobjectid"] = accountRef;
+               task[SystemConstants.DataverseAttributes.RegardingObjectId] =
+                  accountRef;
                await provider.CreateAsync(task, ct);
                totalActivitiesCreated++;
             }
@@ -150,14 +187,16 @@ namespace dvmig.Core.Seeding
             int phoneCount = random.Next(1, 4);
             foreach (var phone in phoneCallFaker.Generate(phoneCount))
             {
-               phone["regardingobjectid"] = accountRef;
+               phone[SystemConstants.DataverseAttributes.RegardingObjectId] =
+                  accountRef;
 
                // To: Random related contact
                var toRef = new EntityReference(
-                   "contact",
+                   SystemConstants.DataverseEntities.Contact,
                    createdContactIds[random.Next(createdContactIds.Count)]
                );
-               phone["to"] = CreatePartyList(toRef);
+               phone[SystemConstants.DataverseAttributes.To] =
+                  CreatePartyList(toRef);
 
                await provider.CreateAsync(phone, ct);
                totalActivitiesCreated++;
@@ -167,14 +206,16 @@ namespace dvmig.Core.Seeding
             int emailCount = random.Next(1, 3);
             foreach (var email in emailFaker.Generate(emailCount))
             {
-               email["regardingobjectid"] = accountRef;
+               email[SystemConstants.DataverseAttributes.RegardingObjectId] =
+                  accountRef;
 
                // To: Primary contact
                var toRef = new EntityReference(
-                   "contact",
+                   SystemConstants.DataverseEntities.Contact,
                    primaryContactId
                );
-               email["to"] = CreatePartyList(toRef);
+               email[SystemConstants.DataverseAttributes.To] =
+                  CreatePartyList(toRef);
 
                await provider.CreateAsync(email, ct);
                totalActivitiesCreated++;
@@ -206,8 +247,8 @@ namespace dvmig.Core.Seeding
 
       private EntityCollection CreatePartyList(EntityReference reference)
       {
-         var party = new Entity("activityparty");
-         party["partyid"] = reference;
+         var party = new Entity(SystemConstants.DataverseEntities.ActivityParty);
+         party[SystemConstants.DataverseAttributes.PartyId] = reference;
 
          return new EntityCollection(new List<Entity> { party });
       }
@@ -227,11 +268,11 @@ namespace dvmig.Core.Seeding
 
          var entitiesToDelete = entitiesToWipe ?? new List<string>
          {
-             "email",
-             "phonecall",
-             "task",
-             "contact",
-             "account"
+             SystemConstants.DataverseEntities.Email,
+             SystemConstants.DataverseEntities.PhoneCall,
+             SystemConstants.DataverseEntities.Task,
+             SystemConstants.DataverseEntities.Contact,
+             SystemConstants.DataverseEntities.Account
          };
 
          // If using the default list, we rely on the pre-defined order 

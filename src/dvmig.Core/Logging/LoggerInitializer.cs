@@ -1,4 +1,5 @@
 using Serilog;
+using dvmig.Core.Shared;
 
 namespace dvmig.Core.Logging
 {
@@ -24,7 +25,7 @@ namespace dvmig.Core.Logging
 
          var logPath = Path.Combine(
              appData,
-             "dvmig",
+             SystemConstants.AppConstants.AppName,
              "logs",
              $"{appName}.log"
          );

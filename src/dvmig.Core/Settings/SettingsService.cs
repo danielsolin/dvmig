@@ -3,6 +3,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using dvmig.Core.Interfaces;
+using dvmig.Core.Shared;
 
 namespace dvmig.Core.Settings
 {
@@ -28,13 +29,18 @@ namespace dvmig.Core.Settings
              Environment.SpecialFolder.ApplicationData
          );
 
-         var folder = Path.Combine(appData, "dvmig");
+         var folder = Path.Combine(
+            appData,
+            SystemConstants.AppConstants.AppName
+         );
 
          if (!Directory.Exists(folder))
             Directory.CreateDirectory(folder);
 
-         //DMSFIX: "settings.json" should be moved to a constant.
-         _filePath = Path.Combine(folder, "settings.json");
+         _filePath = Path.Combine(
+            folder,
+            SystemConstants.AppConstants.SettingsFileName
+         );
       }
 
       /// <inheritdoc />

@@ -59,16 +59,15 @@ namespace dvmig.Core.Synchronization
          return result.Entities.Select(e => new MigrationFailureRecord
          {
             Id = e.Id,
-            //DMSFIX: Move "N/A" to SystemConstants.
             EntityLogicalName = e.GetAttributeValue<string>(
                  SystemConstants.MigrationFailure.EntityLogicalNameAttr
-             ) ?? "N/A",
+             ) ?? SystemConstants.MigrationFailure.NotAvailable,
             SourceId = e.GetAttributeValue<string>(
                  SystemConstants.MigrationFailure.SourceId
-             ) ?? "N/A",
+             ) ?? SystemConstants.MigrationFailure.NotAvailable,
             ErrorMessage = e.GetAttributeValue<string>(
                  SystemConstants.MigrationFailure.ErrorMessage
-             ) ?? "N/A",
+             ) ?? SystemConstants.MigrationFailure.NotAvailable,
             TimestampUtc = e.GetAttributeValue<DateTime>(
                  SystemConstants.MigrationFailure.Timestamp
              )

@@ -33,6 +33,7 @@ namespace dvmig.Core.Shared
          public const string EntityLogicalNameAttr = "dm_entitylogicalname";
          public const string ErrorMessage = "dm_errormessage";
          public const string Timestamp = "dm_timestamp";
+         public const string NotAvailable = "N/A";
       }
 
       /// <summary>
@@ -42,6 +43,11 @@ namespace dvmig.Core.Shared
       {
          public const string SystemUser = "systemuser";
          public const string ActivityParty = "activityparty";
+         public const string Account = "account";
+         public const string Contact = "contact";
+         public const string Task = "task";
+         public const string PhoneCall = "phonecall";
+         public const string Email = "email";
       }
 
       /// <summary>
@@ -75,6 +81,24 @@ namespace dvmig.Core.Shared
          public const string AddressUsed = "addressused";
          public const string Address1Id = "address1_addressid";
          public const string Address2Id = "address2_addressid";
+         public const string Name = "name";
+         public const string Telephone1 = "telephone1";
+         public const string Address1Line1 = "address1_line1";
+         public const string Address1City = "address1_city";
+         public const string Address1PostalCode = "address1_postalcode";
+         public const string WebsiteUrl = "websiteurl";
+         public const string FirstName = "firstname";
+         public const string LastName = "lastname";
+         public const string EmailAddress1 = "emailaddress1";
+         public const string JobTitle = "jobtitle";
+         public const string Subject = "subject";
+         public const string Description = "description";
+         public const string ScheduledEnd = "scheduledend";
+         public const string PhoneNumber = "phonenumber";
+         public const string RegardingObjectId = "regardingobjectid";
+         public const string To = "to";
+         public const string ParentCustomerId = "parentcustomerid";
+         public const string PrimaryContactId = "primarycontactid";
       }
 
       /// <summary>
@@ -149,6 +173,7 @@ namespace dvmig.Core.Shared
          public const string Green = "[green]";
          public const string BoldGreen = "[bold green]";
          public const string Wait = "WAIT";
+         public const string WipeDataConfirmation = "WIPE DATA";
       }
 
       /// <summary>
@@ -195,6 +220,9 @@ namespace dvmig.Core.Shared
          public const int MetadataPropagationDelayMs = 5000;
          public const int MaxMemoFieldLength = 5000;
          public const int RecordFetchLimit = 100;
+         public const string AppName = "dvmig";
+         public const string SettingsFileName = "settings.json";
+         public const string StateFolderName = "state";
          public const string PluginAssemblyName = "dvmig.Plugins.dll";
          public const string PluginName = "dvmig.Plugins";
       }

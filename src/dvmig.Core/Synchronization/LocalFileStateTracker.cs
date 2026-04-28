@@ -6,7 +6,6 @@ using dvmig.Core.Shared;
 
 namespace dvmig.Core.Synchronization
 {
-   //DMSFIX: Move repeated magic string to SystemConstants.
    /// <summary>
    /// Implements sync state tracking using local files in the 
    /// AppData directory.
@@ -41,8 +40,8 @@ namespace dvmig.Core.Synchronization
          var normalizedHash = GetHash(normalizedKey);
          var normalizedFolder = Path.Combine(
             appData,
-            "dvmig",
-            "state",
+            SystemConstants.AppConstants.AppName,
+            SystemConstants.AppConstants.StateFolderName,
             normalizedHash
          );
 
@@ -54,7 +53,12 @@ namespace dvmig.Core.Synchronization
          // Fallback to the old raw-hash path if state already exists there.
          var rawKey = $"{sourceKey}|{targetKey}";
          var rawHash = GetHash(rawKey);
-         var rawFolder = Path.Combine(appData, "dvmig", "state", rawHash);
+         var rawFolder = Path.Combine(
+            appData,
+            SystemConstants.AppConstants.AppName,
+            SystemConstants.AppConstants.StateFolderName,
+            rawHash
+         );
          var rawPath = Path.Combine(rawFolder, $"{logicalName}.txt");
 
          if (File.Exists(rawPath))

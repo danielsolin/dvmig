@@ -278,6 +278,7 @@ namespace dvmig.Cli.Actions
                      var task = ctx.AddTask(taskName, true, totalCount);
                      task.Value = processed;
 
+                     var lastUpdate = DateTime.MinValue;
                      var recordProgress = new Progress<bool>(success =>
                      {
                         processed++;
@@ -285,6 +286,12 @@ namespace dvmig.Cli.Actions
                         if (!success)
                            failedCount++;
 
+                        var now = DateTime.Now;
+                        if (now - lastUpdate < TimeSpan.FromSeconds(1) &&
+                            processed < totalCount)
+                           return;
+
+                        lastUpdate = now;
                         task.Value = processed;
 
                         var desc = $"Syncing {logicalName} " +
