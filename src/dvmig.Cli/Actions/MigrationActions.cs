@@ -1,6 +1,7 @@
 using dvmig.Cli.Infrastructure;
 using dvmig.Core.Interfaces;
 using dvmig.Core.Metadata;
+using dvmig.Core.Shared;
 using dvmig.Core.Synchronization;
 using Serilog;
 using Spectre.Console;
@@ -20,7 +21,8 @@ namespace dvmig.Cli.Actions
          IMetadataService metadataService,
          ISetupService setupService,
          ISyncStateTracker stateTracker,
-         ILogger logger)
+         ILogger logger
+      )
       {
          _connectionManager = connectionManager;
          _metadataService = metadataService;
@@ -32,12 +34,13 @@ namespace dvmig.Cli.Actions
       public async Task HandleMigrationAsync()
       {
          var (source, target, engine) = await SetupSyncEngineAsync();
+
          if (source == null || target == null || engine == null)
             return;
 
          var selectedEntities = await CliUI.SelectEntitiesAsync(
-             _metadataService,
-             source
+            _metadataService,
+            source
          );
 
          if (selectedEntities == null || selectedEntities.Count == 0)
@@ -48,9 +51,9 @@ namespace dvmig.Cli.Actions
          }
 
          var threads = AnsiConsole.Prompt(
-             new SelectionPrompt<int>()
-                 .Title("Select [green]Max Parallelism[/] (Threads):")
-                 .AddChoices(new[] { 10, 20, 5, 1 })
+            new SelectionPrompt<int>()
+               .Title("Select [green]Max Parallelism[/] (Threads):")
+               .AddChoices(new[] { 10, 20, 5, 1 })
          );
 
          await RunMigrationAsync(engine, source, selectedEntities, threads);
@@ -60,22 +63,22 @@ namespace dvmig.Cli.Actions
       public async Task HandleRecommendedSyncAsync()
       {
          var (source, target, engine) = await SetupSyncEngineAsync();
+
          if (source == null || target == null || engine == null)
             return;
 
          var recommendedEntities = new List<string>
-            {
-               "account",
-               "contact",
-               "task",
-               "phonecall",
-               "email",
-               "appointment"
-            };
+         {
+            "account",
+            "contact",
+            "task",
+            "phonecall",
+            "email",
+            "appointment"
+         };
 
-         AnsiConsole.MarkupLine(
-             "[bold cyan]Recommended Sync Order:[/]"
-         );
+         AnsiConsole.MarkupLine("[bold cyan]Recommended Sync Order:[/]");
+
          foreach (var entity in recommendedEntities)
             AnsiConsole.MarkupLine($" - {entity}");
 
@@ -87,57 +90,58 @@ namespace dvmig.Cli.Actions
          }
 
          var threads = AnsiConsole.Prompt(
-             new SelectionPrompt<int>()
-                 .Title("Select [green]Max Parallelism[/] (Threads):")
-                 .AddChoices(new[] { 10, 20, 5, 1 })
+            new SelectionPrompt<int>()
+               .Title("Select [green]Max Parallelism[/] (Threads):")
+               .AddChoices(new[] { 10, 20, 5, 1 })
          );
 
          await RunMigrationAsync(
-             engine,
-             source,
-             recommendedEntities,
-             threads
+            engine,
+            source,
+            recommendedEntities,
+            threads
          );
+
          CliUI.WriteSuccess("Recommended Migration Finished!");
       }
 
       private async Task<(
-          IDataverseProvider? Source,
-          IDataverseProvider? Target,
-          ISyncEngine? Engine
+         IDataverseProvider? Source,
+         IDataverseProvider? Target,
+         ISyncEngine? Engine
       )> SetupSyncEngineAsync()
       {
          var source = await _connectionManager.ConnectAsync(
-             ConnectionDirection.Source
+            ConnectionDirection.Source
          );
 
          if (source == null)
             return (null, null, null);
 
          var target = await _connectionManager.ConnectAsync(
-             ConnectionDirection.Target
+            ConnectionDirection.Target
          );
 
          if (target == null)
             return (null, null, null);
 
          bool isReady = await _setupService.IsEnvironmentReadyAsync(
-             target,
-             default
+            target,
+            default
          );
 
          if (!isReady)
          {
-            var prepareMsg = "[yellow]Target environment is not " +
-                             "prepared for migration. " +
-                             "Prepare it now?[/]";
+            var prepareMsg = $"{SystemConstants.UiMarkup.Yellow}" +
+               "Target environment is not prepared for migration. " +
+               "Prepare it now?[/]";
 
             if (AnsiConsole.Confirm(prepareMsg, true))
                await HandleInstallAsync(target);
             else
             {
                CliUI.WriteError(
-                   "Migration cannot proceed without components."
+                  "Migration cannot proceed without components."
                );
 
                return (null, null, null);
@@ -145,37 +149,38 @@ namespace dvmig.Cli.Actions
          }
 
          var userMapper = new UserMapper(source, target, _logger);
-
          var retryStrategy = new RetryStrategy(_logger);
          var entityPreparer = new EntityPreparer(_logger);
          var errorHandler = new SyncErrorHandler(
-             target,
-             _setupService,
-             _logger
+            target,
+            _setupService,
+            _logger
          );
+
          var dependencyResolver = new DependencyResolver(source, _logger);
          var statusTransitionHandler = new StatusTransitionHandler(
-             target,
-             _setupService,
-             _logger
+            target,
+            _setupService,
+            _logger
          );
+
          var metadataCache = new MetadataCache(target, _logger);
          var failureLogger = new FailureLogger(target, _logger);
 
          var engine = new SyncEngine(
-             source,
-             target,
-             userMapper,
-             _setupService,
-             _stateTracker,
-             _logger,
-             retryStrategy,
-             entityPreparer,
-             errorHandler,
-             dependencyResolver,
-             statusTransitionHandler,
-             metadataCache,
-             failureLogger
+            source,
+            target,
+            userMapper,
+            _setupService,
+            _stateTracker,
+            _logger,
+            retryStrategy,
+            entityPreparer,
+            errorHandler,
+            dependencyResolver,
+            statusTransitionHandler,
+            metadataCache,
+            failureLogger
          );
 
          return (source, target, engine);
@@ -184,50 +189,51 @@ namespace dvmig.Cli.Actions
       private async Task HandleInstallAsync(IDataverseProvider target)
       {
          await CliUI.RunStatusAsync(
-             "Installing components...",
-             async progress =>
-             {
-                await _setupService.CreateSchemaAsync(target, progress);
-                await _setupService.DeployPluginAsync(target, progress);
-             }
+            "Installing components...",
+            async progress =>
+            {
+               await _setupService.CreateSchemaAsync(target, progress);
+               await _setupService.DeployPluginAsync(target, progress);
+            }
          );
 
          CliUI.WriteSuccess("Installation Finished!");
       }
 
       private async Task RunMigrationAsync(
-          ISyncEngine engine,
-          IDataverseProvider source,
-          List<string> entities,
-          int maxThreads
+         ISyncEngine engine,
+         IDataverseProvider source,
+         List<string> entities,
+         int maxThreads
       )
       {
          foreach (var logicalName in entities)
          {
             AnsiConsole.MarkupLine(
-                $"[bold yellow]Migrating {logicalName}...[/]"
+               $"[bold yellow]Migrating {logicalName}...[/]"
             );
 
             await engine.InitializeEntitySyncAsync(logicalName);
 
             int processed = 0;
+            int failedCount = 0;
+
             if (_stateTracker.StateExists())
             {
                var syncedIds = await _stateTracker.GetSyncedIdsAsync();
+
                if (syncedIds.Count > 0)
                {
                   var resumeMsg = $"Previous migration state found " +
-                                  $"for {logicalName} " +
-                                  $"({syncedIds.Count} " +
-                                  "records already synced). " +
-                                  "Resume (y) or start over (n) ?";
+                     $"for {logicalName} " +
+                     $"({syncedIds.Count} " +
+                     "records already synced). " +
+                     "Resume (y) or start over (n) ?";
 
                   if (!AnsiConsole.Confirm(resumeMsg, true))
                   {
                      await _stateTracker.ClearStateAsync();
-                     await engine.InitializeEntitySyncAsync(
-                         logicalName
-                     );
+                     await engine.InitializeEntitySyncAsync(logicalName);
                   }
                   else
                      processed = syncedIds.Count;
@@ -235,15 +241,16 @@ namespace dvmig.Cli.Actions
             }
 
             long totalCount = await _metadataService.GetRecordCountAsync(
-                source,
-                logicalName,
-                default
+               source,
+               logicalName,
+               default
             );
 
             if (totalCount == 0)
             {
                AnsiConsole.MarkupLine(
-                   $"[grey]No records found for {logicalName}.[/]"
+                  $"{SystemConstants.UiMarkup.Grey}" +
+                  $"No records found for {logicalName}.[/]"
                );
 
                continue;
@@ -252,78 +259,91 @@ namespace dvmig.Cli.Actions
             try
             {
                await AnsiConsole.Progress()
-                   .Columns(
-                       new ProgressColumn[]
-                       {
-                            new TaskDescriptionColumn(),
-                            new ProgressBarColumn(),
-                            new PercentageColumn(),
-                            new RemainingTimeColumn(),
-                            new SpinnerColumn(),
-                       }
-                   )
-                   .StartAsync(async ctx =>
-                   {
-                      var taskName = $"Syncing {logicalName} " +
-                                         $"({processed}/{totalCount}) " +
-                                         $"[[{maxThreads} threads]]";
+                  .Columns(
+                     new ProgressColumn[]
+                     {
+                        new TaskDescriptionColumn(),
+                        new ProgressBarColumn(),
+                        new PercentageColumn(),
+                        new RemainingTimeColumn(),
+                        new SpinnerColumn(),
+                     }
+                  )
+                  .StartAsync(async ctx =>
+                  {
+                     var taskName = $"Syncing {logicalName} " +
+                        $"({processed}/{totalCount}) " +
+                        $"[[{maxThreads} threads]]";
 
-                      var task = ctx.AddTask(taskName, true, totalCount);
-                      task.Value = processed;
+                     var task = ctx.AddTask(taskName, true, totalCount);
+                     task.Value = processed;
 
-                      var recordProgress = new Progress<bool>(success =>
-                          {
-                             if (success)
-                             {
-                                processed++;
-                                task.Value = processed;
-                                task.Description =
-                                        $"Syncing {logicalName} " +
-                                        $"({processed}/{totalCount}) " +
-                                        $"[[{maxThreads} threads]]";
-                             }
-                          });
+                     var recordProgress = new Progress<bool>(success =>
+                     {
+                        processed++;
 
-                      var options = new SyncOptions
-                      {
-                         StripMissingDependencies = true,
-                         MaxDegreeOfParallelism = maxThreads
-                      };
+                        if (!success)
+                           failedCount++;
 
-                      var progressReporter = new Progress<string>(msg =>
-                          {
-                             // Ensure we show wait/retry/throttle messages even
-                             // during the progress bar display.
-                             if (msg.Contains(
-                                    "WAIT",
-                                    StringComparison.Ordinal
-                                 ) || 
-                                 msg.Contains(
-                                    "throttle",
-                                    StringComparison.OrdinalIgnoreCase
-                                 ) ||
-                                 msg.StartsWith("[yellow]") || 
-                                 msg.StartsWith("[red]"))
-                                AnsiConsole.MarkupLine(msg);
-                          });
+                        task.Value = processed;
 
-                      await engine.SyncEntityAsync(
-                              logicalName,
-                              options,
-                              null,
-                              progressReporter,
-                              recordProgress,
-                              default
-                          );
-                   });
+                        var desc = $"Syncing {logicalName} " +
+                           $"({processed}/{totalCount}) " +
+                           $"[[{maxThreads} threads]]";
+
+                        if (failedCount > 0)
+                           desc += $" [red]({failedCount} failed)[/]";
+
+                        task.Description = desc;
+                     });
+
+                     var options = new SyncOptions
+                     {
+                        StripMissingDependencies = true,
+                        MaxDegreeOfParallelism = maxThreads
+                     };
+
+                     var progressReporter = new Progress<string>(msg =>
+                     {
+                        // Ensure we show wait/retry/throttle messages even
+                        // during the progress bar display.
+                        bool isCritical =
+                           msg.Contains(
+                              SystemConstants.UiMarkup.Wait,
+                              StringComparison.Ordinal
+                           ) ||
+                           msg.Contains(
+                              SystemConstants.ErrorKeywords.TooManyRequests,
+                              StringComparison.OrdinalIgnoreCase
+                           ) ||
+                           msg.StartsWith(SystemConstants.UiMarkup.Yellow) ||
+                           msg.StartsWith(SystemConstants.UiMarkup.Red);
+
+                        if (isCritical)
+                           AnsiConsole.MarkupLine(msg);
+                     });
+
+                     await engine.SyncEntityAsync(
+                             logicalName,
+                             options,
+                             null,
+                             progressReporter,
+                             recordProgress,
+                             default
+                         );
+
+                     // Ensure it hits 100% even if there were rounding or 
+                     // async reporting skips.
+                     task.Value = totalCount;
+                  });
             }
             catch (Exception ex)
             {
                var baseEx = ex.GetBaseException();
                CliUI.WriteError(
-                   $"Sync aborted due to a critical error: {baseEx.Message}"
+                  $"Sync aborted due to a critical error: {baseEx.Message}"
                );
-               
+
                break;
             }
          }

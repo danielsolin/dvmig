@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using dvmig.App.Services;
 using dvmig.Core.Interfaces;
+using dvmig.Core.Shared;
 using dvmig.Core.Settings;
 
 namespace dvmig.App.ViewModels
@@ -20,7 +21,7 @@ namespace dvmig.App.ViewModels
       private const string StatusCancelled = "Cancelled";
       private const string StatusInitializing = "Initializing...";
       private const string StatusInitSuccess =
-          "Environment initialized successfully.";
+         "Environment initialized successfully.";
       private const string StatusInitFailedPrefix = "Initialization failed: ";
 
       private readonly INavigationService _navigationService;
@@ -119,13 +120,13 @@ namespace dvmig.App.ViewModels
             return;
 
          _settingsService.SaveSettings(
-             new UserSettings
-             {
-                RememberConnections = RememberConnections,
-                AutoConnect = AutoConnect,
-                SourceConnectionString = SourceConnectionString,
-                TargetConnectionString = TargetConnectionString
-             }
+            new UserSettings
+            {
+               RememberConnections = RememberConnections,
+               AutoConnect = AutoConnect,
+               SourceConnectionString = SourceConnectionString,
+               TargetConnectionString = TargetConnectionString
+            }
          );
       }
 
@@ -162,10 +163,11 @@ namespace dvmig.App.ViewModels
       /// <param name="settingsService">The settings service.</param>
       /// <param name="setupService">The environment setup service.</param>
       public ConnectionViewModel(
-          INavigationService navigationService,
-          IMigrationService migrationService,
-          ISettingsService settingsService,
-          ISetupService setupService)
+         INavigationService navigationService,
+         IMigrationService migrationService,
+         ISettingsService settingsService,
+         ISetupService setupService
+      )
       {
          _navigationService = navigationService;
          _migrationService = migrationService;
@@ -235,13 +237,15 @@ namespace dvmig.App.ViewModels
          try
          {
             bool isLegacy =
-                SourceConnectionString.Contains("AuthType=AD") ||
-                SourceConnectionString.Contains("AuthType=IFD");
+               SourceConnectionString.Contains(
+                  SystemConstants.CliSettings.AuthAd) ||
+               SourceConnectionString.Contains(
+                  SystemConstants.CliSettings.AuthIfd);
 
             var result = await _migrationService.ConnectSourceAsync(
-                SourceConnectionString,
-                isLegacy,
-                _sourceCts.Token
+               SourceConnectionString,
+               isLegacy,
+               _sourceCts.Token
             );
 
             IsSourceConnected = result;
@@ -280,9 +284,9 @@ namespace dvmig.App.ViewModels
          try
          {
             var result = await _migrationService.ConnectTargetAsync(
-                TargetConnectionString,
-                false,
-                _targetCts.Token
+               TargetConnectionString,
+               false,
+               _targetCts.Token
             );
 
             IsTargetConnected = result;
@@ -290,10 +294,10 @@ namespace dvmig.App.ViewModels
 
             if (result)
                IsEnvironmentReady = await _setupService
-                   .IsEnvironmentReadyAsync(
-                       _migrationService.TargetProvider!,
-                       _targetCts.Token
-                   );
+                  .IsEnvironmentReadyAsync(
+                     _migrationService.TargetProvider!,
+                     _targetCts.Token
+                  );
          }
          finally
          {
@@ -333,32 +337,32 @@ namespace dvmig.App.ViewModels
          try
          {
             await _setupService.CreateSchemaAsync(
-                _migrationService.TargetProvider,
-                progress
+               _migrationService.TargetProvider,
+               progress
             );
 
             await _setupService.DeployPluginAsync(
-                _migrationService.TargetProvider,
-                progress
+               _migrationService.TargetProvider,
+               progress
             );
 
             IsEnvironmentReady = true;
             InitializationStatus = StatusInitSuccess;
             MessageBox.Show(
-                StatusInitSuccess,
-                "Success",
-                MessageBoxButton.OK,
-                MessageBoxImage.Information
+               StatusInitSuccess,
+               "Success",
+               MessageBoxButton.OK,
+               MessageBoxImage.Information
             );
          }
          catch (Exception ex)
          {
             InitializationStatus = $"{StatusInitFailedPrefix}{ex.Message}";
             MessageBox.Show(
-                $"{StatusInitFailedPrefix}{ex.Message}",
-                "Error",
-                MessageBoxButton.OK,
-                MessageBoxImage.Error
+               $"{StatusInitFailedPrefix}{ex.Message}",
+               "Error",
+               MessageBoxButton.OK,
+               MessageBoxImage.Error
             );
          }
          finally

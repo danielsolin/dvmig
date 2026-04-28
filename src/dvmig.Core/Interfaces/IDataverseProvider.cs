@@ -26,10 +26,11 @@ namespace dvmig.Core.Interfaces
       /// <param name="ct">A cancellation token.</param>
       /// <returns>The retrieved entity, or null if not found.</returns>
       Task<Entity?> RetrieveAsync(
-          string entityLogicalName,
-          Guid id,
-          string[]? columns = null,
-          CancellationToken ct = default);
+         string entityLogicalName,
+         Guid id,
+         string[]? columns = null,
+         CancellationToken ct = default
+      );
 
       /// <summary>
       /// Retrieves metadata for a specific entity.
@@ -40,8 +41,9 @@ namespace dvmig.Core.Interfaces
       /// <param name="ct">A cancellation token.</param>
       /// <returns>The entity metadata, or null if retrieval fails.</returns>
       Task<EntityMetadata?> GetEntityMetadataAsync(
-          string entityLogicalName,
-          CancellationToken ct = default);
+         string entityLogicalName,
+         CancellationToken ct = default
+      );
 
       /// <summary>
       /// Creates a new entity record.
@@ -67,9 +69,10 @@ namespace dvmig.Core.Interfaces
       /// <param name="id">The ID of the record to delete.</param>
       /// <param name="ct">A cancellation token.</param>
       Task DeleteAsync(
-          string entityLogicalName,
-          Guid id,
-          CancellationToken ct = default);
+         string entityLogicalName,
+         Guid id,
+         CancellationToken ct = default
+      );
 
       /// <summary>
       /// Associates records in an N:N relationship.
@@ -84,11 +87,12 @@ namespace dvmig.Core.Interfaces
       /// </param>
       /// <param name="ct">A cancellation token.</param>
       Task AssociateAsync(
-          string entityLogicalName,
-          Guid entityId,
-          Relationship relationship,
-          EntityReferenceCollection relatedEntities,
-          CancellationToken ct = default);
+         string entityLogicalName,
+         Guid entityId,
+         Relationship relationship,
+         EntityReferenceCollection relatedEntities,
+         CancellationToken ct = default
+      );
 
       /// <summary>
       /// Executes a query and returns a collection of entities.
@@ -97,8 +101,9 @@ namespace dvmig.Core.Interfaces
       /// <param name="ct">A cancellation token.</param>
       /// <returns>The resulting entity collection.</returns>
       Task<EntityCollection> RetrieveMultipleAsync(
-          QueryBase query,
-          CancellationToken ct = default);
+         QueryBase query,
+         CancellationToken ct = default
+      );
 
       /// <summary>
       /// Executes an organization request.
@@ -107,8 +112,9 @@ namespace dvmig.Core.Interfaces
       /// <param name="ct">A cancellation token.</param>
       /// <returns>The organization response.</returns>
       Task<OrganizationResponse> ExecuteAsync(
-          OrganizationRequest request,
-          CancellationToken ct = default);
+         OrganizationRequest request,
+         CancellationToken ct = default
+      );
 
       /// <summary>
       /// Gets the total record count for a specific entity type.
@@ -117,8 +123,9 @@ namespace dvmig.Core.Interfaces
       /// <param name="ct">A cancellation token.</param>
       /// <returns>The total number of records.</returns>
       Task<long> GetRecordCountAsync(
-          string entityLogicalName,
-          CancellationToken ct = default);
+         string entityLogicalName,
+         CancellationToken ct = default
+      );
 
       /// <summary>
       /// Gets or sets the ID of the user on whose behalf the operations

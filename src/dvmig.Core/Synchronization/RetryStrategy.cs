@@ -1,4 +1,5 @@
 using dvmig.Core.Interfaces;
+using dvmig.Core.Shared;
 using Polly;
 using Polly.Retry;
 using Serilog;
@@ -30,12 +31,15 @@ namespace dvmig.Core.Synchronization
 
          var msg = ex.Message.ToLower();
 
-         if (msg.Contains("8004410d") || 
-             msg.Contains("80072321") ||
-             msg.Contains("too many requests") ||
-             msg.Contains("combined execution time") ||
-             msg.Contains("generic sql error") ||
-             msg.Contains("timeout"))
+         bool isTransient =
+            msg.Contains(SystemConstants.ErrorCodes.ServiceProtectionLimit) ||
+            msg.Contains(SystemConstants.ErrorCodes.ConnectionTimeout) ||
+            msg.Contains(SystemConstants.ErrorKeywords.TooManyRequests) ||
+            msg.Contains(SystemConstants.ErrorKeywords.CombinedExecutionTime) ||
+            msg.Contains(SystemConstants.ErrorKeywords.GenericSqlError) ||
+            msg.Contains(SystemConstants.ErrorKeywords.Timeout);
+
+         if (isTransient)
             return true;
 
          return IsTransientError(ex.InnerException!);
@@ -45,15 +49,21 @@ namespace dvmig.Core.Synchronization
       public TimeSpan GetRetryDelay(int retryCount, Exception ex)
       {
          var msg = ex.Message.ToLower();
-         if (msg.Contains("8004410d") || msg.Contains("80072321") || msg.Contains("combined execution time"))
+
+         bool isThrottled =
+            msg.Contains(SystemConstants.ErrorCodes.ServiceProtectionLimit) ||
+            msg.Contains(SystemConstants.ErrorCodes.ConnectionTimeout) ||
+            msg.Contains(SystemConstants.ErrorKeywords.CombinedExecutionTime);
+
+         if (isThrottled)
          {
             _logger.Information(
-                "Service Protection Limit reached. " +
-                "Applying throttled backoff."
+               "Service Protection Limit reached. " +
+               "Applying throttled backoff."
             );
 
             return TimeSpan.FromSeconds(
-                Math.Min(Math.Pow(2, retryCount), 30)
+               Math.Min(Math.Pow(2, retryCount), 30)
             );
          }
 
@@ -70,23 +80,28 @@ namespace dvmig.Core.Synchronization
       public AsyncRetryPolicy CreateRetryPolicy(int maxRetries = 5)
       {
          return Policy
-             .Handle<Exception>(IsTransientError)
-             .WaitAndRetryAsync(
-                 maxRetries,
-                 retryAttempt =>
-                     TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)),
-                 (ex, time, count, ctx) =>
-                 {
-                    var msg = $"Throttling or transient error. Retry {count} in {time.TotalMilliseconds}ms";
-                    _logger.Warning(ex, msg);
+            .Handle<Exception>(IsTransientError)
+            .WaitAndRetryAsync(
+               maxRetries,
+               retryAttempt =>
+                  TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)),
+               (ex, time, count, ctx) =>
+               {
+                  var msg = $"Throttling or transient error. Retry {count} " +
+                     $"in {time.TotalMilliseconds}ms";
 
-                    if (ctx.TryGetValue("progress", out var progressObj) && 
-                        progressObj is IProgress<string> progress)
-                    {
-                       progress.Report($"[yellow]WAIT[/] {msg}");
-                    }
-                 }
-             );
+                  _logger.Warning(ex, msg);
+
+                  if (ctx.TryGetValue("progress", out var progressObj) &&
+                      progressObj is IProgress<string> progress)
+                  {
+                     progress.Report(
+                        $"{SystemConstants.UiMarkup.Yellow}" +
+                        $"{SystemConstants.UiMarkup.Wait}[/] {msg}"
+                     );
+                  }
+               }
+            );
       }
    }
 }

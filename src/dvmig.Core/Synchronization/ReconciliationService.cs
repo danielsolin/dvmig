@@ -123,6 +123,7 @@ namespace dvmig.Core.Synchronization
           ISyncEngine engine,
           SyncOptions options,
           IProgress<string>? progress = null,
+          IProgress<bool>? recordProgress = null,
           CancellationToken ct = default
       )
       {
@@ -175,6 +176,7 @@ namespace dvmig.Core.Synchronization
                       "Skipping failure re-sync."
                   );
 
+                  recordProgress?.Report(false);
                   continue;
                }
 
@@ -190,6 +192,8 @@ namespace dvmig.Core.Synchronization
                   await DeleteFailureAsync(target, failure.Id, ct);
                   fixedCount++;
                }
+
+               recordProgress?.Report(success);
             }
 
             progress?.Report($"Fixed {fixedCount}/{failures.Count} " +
@@ -210,7 +214,7 @@ namespace dvmig.Core.Synchronization
                 options,
                 null,
                 progress,
-                null,
+                recordProgress,
                 ct
             );
 

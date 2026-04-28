@@ -1,3 +1,5 @@
+using dvmig.Core.Shared;
+
 namespace dvmig.Core.Settings
 {
    /// <summary>
@@ -19,26 +21,28 @@ namespace dvmig.Core.Settings
             return string.Empty;
 
          var parts = connectionString.Split(
-             ';',
-             StringSplitOptions.RemoveEmptyEntries
+            ';',
+            StringSplitOptions.RemoveEmptyEntries
          );
 
          var maskedParts = parts.Select(p =>
          {
             var kv = p.Split('=', 2);
+
             if (kv.Length != 2)
                return p;
 
             var key = kv[0].Trim();
             var val = kv[1].Trim();
 
-            var comparison = StringComparison.OrdinalIgnoreCase;
+            var comp = StringComparison.OrdinalIgnoreCase;
 
-            var isPass = key.Contains("Password", comparison);
-            var isSec = key.Contains("Secret", comparison);
-            var isTok = key.Contains("Token", comparison);
+            bool isSensitive =
+               key.Contains(SystemConstants.MaskingKeywords.Password, comp) ||
+               key.Contains(SystemConstants.MaskingKeywords.Secret, comp) ||
+               key.Contains(SystemConstants.MaskingKeywords.Token, comp);
 
-            if (isPass || isSec || isTok)
+            if (isSensitive)
                return $"{key}=********";
 
             return p;

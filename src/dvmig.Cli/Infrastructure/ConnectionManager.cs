@@ -1,4 +1,5 @@
 using dvmig.Core.Interfaces;
+using dvmig.Core.Providers;
 using dvmig.Core.Settings;
 using Microsoft.Crm.Sdk.Messages;
 using Spectre.Console;
@@ -14,8 +15,9 @@ namespace dvmig.Cli.Infrastructure
    public class ConnectionManager
    {
       private readonly ISettingsService _settingsService;
-      private readonly Dictionary<ConnectionDirection, IDataverseProvider> 
-          _activeConnections = new();
+
+      private readonly Dictionary<ConnectionDirection, IDataverseProvider>
+         _activeConnections = new();
 
       public ConnectionManager(ISettingsService settingsService)
       {
@@ -23,82 +25,86 @@ namespace dvmig.Cli.Infrastructure
       }
 
       public async Task<IDataverseProvider?> ConnectAsync(
-          ConnectionDirection direction,
-          string? label = null
+         ConnectionDirection direction,
+         string? label = null
       )
       {
          label ??= direction.ToString();
 
          if (_activeConnections.TryGetValue(direction, out var existing))
          {
-             var reuse = AnsiConsole.Confirm(
-                 $"An active connection to [green]{label}[/] already " +
-                 "exists. Reuse it?",
-                 true
-             );
+            var reuse = AnsiConsole.Confirm(
+               $"An active connection to [green]{label}[/] already " +
+               "exists. Reuse it?",
+               true
+            );
 
-             if (reuse)
-                 return existing;
-             
-             _activeConnections.Remove(direction);
+            if (reuse)
+               return existing;
+
+            _activeConnections.Remove(direction);
          }
 
          var settings = _settingsService.LoadSettings();
+
          string? storedConn = direction == ConnectionDirection.Source
-             ? settings.SourceConnectionString
-             : settings.TargetConnectionString;
+            ? settings.SourceConnectionString
+            : settings.TargetConnectionString;
 
          string connStr;
+
          if (!string.IsNullOrEmpty(storedConn))
          {
             var preview = StringMasker.MaskConnectionString(storedConn);
 
             var useStored = AnsiConsole.Confirm(
-                $"Use [green]stored[/] {label} connection string?\n" +
-                $"[grey]({preview})[/]",
-                true
+               $"Use [green]stored[/] {label} connection string?\n" +
+               $"[grey]({preview})[/]",
+               true
             );
 
-            connStr = useStored ? storedConn : AnsiConsole.Ask<string>(
-                $"Enter [bold blue]{label}[/] Connection String:"
-            );
+            connStr = useStored
+               ? storedConn
+               : AnsiConsole.Ask<string>(
+                  $"Enter [bold blue]{label}[/] Connection String:"
+               );
          }
          else
          {
             connStr = AnsiConsole.Ask<string>(
-                $"Enter [bold blue]{label}[/] Connection String:"
+               $"Enter [bold blue]{label}[/] Connection String:"
             );
          }
 
          var isLegacy = AnsiConsole.Confirm(
-             $"Is [bold blue]{label}[/] Legacy CRM (OnPrem)?",
-             false
+            $"Is [bold blue]{label}[/] Legacy CRM (OnPrem)?",
+            false
          );
 
          IDataverseProvider? provider = await CliUI.RunStatusAsync(
-             $"Connecting to {label}...",
-             async () =>
-             {
-                try
-                {
-                   IDataverseProvider p = isLegacy
-                          ? new LegacyCrmProvider(connStr)
-                          : new DataverseProvider(connStr);
+            $"Connecting to {label}...",
+            async () =>
+            {
+               try
+               {
+                  IDataverseProvider p = isLegacy
+                     ? new LegacyCrmProvider(connStr)
+                     : new DataverseProvider(connStr);
 
-                   await p.ExecuteAsync(new WhoAmIRequest(), default);
+                  await p.ExecuteAsync(new WhoAmIRequest(), default);
 
-                   return p;
-                }
-                catch (Exception ex)
-                {
-                   AnsiConsole.MarkupLine(
-                          $"[red]×[/] Failed to connect to {label}: " +
-                          $"{ex.Message}"
-                      );
+                  return p;
+               }
+               catch (Exception ex)
+               {
+                  AnsiConsole.MarkupLine(
+                     $"[red]×[/] Failed to connect to {label}: " +
+                     $"{ex.Message}"
+                  );
 
-                   return null;
-                }
-             }
+                  return null;
+               }
+            }
          );
 
          if (provider != null)
@@ -114,6 +120,7 @@ namespace dvmig.Cli.Infrastructure
                if (AnsiConsole.Confirm(savePrompt, true))
                {
                   settings.RememberConnections = true;
+
                   if (direction == ConnectionDirection.Source)
                      settings.SourceConnectionString = connStr;
                   else

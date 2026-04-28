@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using dvmig.Core.Interfaces;
+using dvmig.Core.Shared;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Messages;
 using Microsoft.Xrm.Sdk.Query;
@@ -532,7 +533,7 @@ namespace dvmig.Core.Synchronization
           )
       {
          if (treatAlreadyExistsAsSuccess &&
-             ex.Message.Contains("already exists"))
+             ex.Message.Contains(SystemConstants.ErrorKeywords.AlreadyExists))
             return (true, string.Empty);
 
          var (success, failureMessage) =

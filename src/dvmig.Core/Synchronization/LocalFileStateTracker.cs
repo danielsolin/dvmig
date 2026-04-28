@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Security.Cryptography;
 using System.Text;
 using dvmig.Core.Interfaces;
+using dvmig.Core.Shared;
 
 namespace dvmig.Core.Synchronization
 {
@@ -20,32 +21,33 @@ namespace dvmig.Core.Synchronization
 
       /// <inheritdoc />
       public async Task InitializeAsync(
-          string sourceKey,
-          string targetKey,
-          string logicalName
+         string sourceKey,
+         string targetKey,
+         string logicalName
       )
       {
          _syncedIds.Clear();
          _mainLogicalName = logicalName;
 
          var appData = Environment.GetFolderPath(
-             Environment.SpecialFolder.ApplicationData
+            Environment.SpecialFolder.ApplicationData
          );
 
          var normalizedKey =
-             $"{NormalizeConnectionString(sourceKey)}|" +
-             $"{NormalizeConnectionString(targetKey)}";
+            $"{NormalizeConnectionString(sourceKey)}|" +
+            $"{NormalizeConnectionString(targetKey)}";
 
          var normalizedHash = GetHash(normalizedKey);
          var normalizedFolder = Path.Combine(
-             appData,
-             "dvmig",
-             "state",
-             normalizedHash
+            appData,
+            "dvmig",
+            "state",
+            normalizedHash
          );
+
          var normalizedPath = Path.Combine(
-             normalizedFolder,
-             $"{logicalName}.txt"
+            normalizedFolder,
+            $"{logicalName}.txt"
          );
 
          // Fallback to the old raw-hash path if state already exists there.
@@ -78,8 +80,8 @@ namespace dvmig.Core.Synchronization
             return string.Empty;
 
          var parts = connectionString.Split(
-             ';',
-             StringSplitOptions.RemoveEmptyEntries
+            ';',
+            StringSplitOptions.RemoveEmptyEntries
          );
 
          var normalizedPairs = new List<KeyValuePair<string, string>>();
@@ -97,12 +99,12 @@ namespace dvmig.Core.Synchronization
                continue;
 
             normalizedPairs.Add(
-                new KeyValuePair<string, string>(key, value)
+               new KeyValuePair<string, string>(key, value)
             );
          }
 
          normalizedPairs.Sort((a, b) =>
-             string.CompareOrdinal(a.Key, b.Key));
+            string.CompareOrdinal(a.Key, b.Key));
 
          var sb = new StringBuilder();
          foreach (var pair in normalizedPairs)
@@ -120,16 +122,18 @@ namespace dvmig.Core.Synchronization
       {
          var comparison = StringComparison.OrdinalIgnoreCase;
 
-         return
-             key.Contains("password", comparison) ||
-             key.Contains("secret", comparison) ||
-             key.Contains("token", comparison) ||
-             key.Contains("thumbprint", comparison) ||
-             key.Contains("clientid", comparison) ||
-             key.Contains("appid", comparison) ||
-             key.Contains("userid", comparison) ||
-             key.Contains("user id", comparison) ||
-             key.Contains("username", comparison);
+         bool isSensitive =
+            key.Contains(SystemConstants.MaskingKeywords.Password, comparison) ||
+            key.Contains(SystemConstants.MaskingKeywords.Secret, comparison) ||
+            key.Contains(SystemConstants.MaskingKeywords.Token, comparison) ||
+            key.Contains(SystemConstants.MaskingKeywords.Thumbprint, comparison) ||
+            key.Contains(SystemConstants.MaskingKeywords.ClientId, comparison) ||
+            key.Contains(SystemConstants.MaskingKeywords.AppId, comparison) ||
+            key.Contains(SystemConstants.MaskingKeywords.UserId, comparison) ||
+            key.Contains("user id", comparison) || // Keep manual as it has space
+            key.Contains(SystemConstants.MaskingKeywords.Username, comparison);
+
+         return isSensitive;
       }
 
       /// <inheritdoc />
@@ -183,8 +187,8 @@ namespace dvmig.Core.Synchronization
             try
             {
                await File.AppendAllLinesAsync(
-                   _filePath,
-                   new[] { id.ToString() }
+                  _filePath,
+                  new[] { id.ToString() }
                );
             }
             finally

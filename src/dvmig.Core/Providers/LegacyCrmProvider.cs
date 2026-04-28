@@ -1,11 +1,13 @@
 using System.ServiceModel;
+using dvmig.Core.Interfaces;
+using dvmig.Core.Shared;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Messages;
 using Microsoft.Xrm.Sdk.Metadata;
 using Microsoft.Xrm.Sdk.Query;
 using Microsoft.Xrm.Tooling.Connector;
 
-namespace dvmig.Core.Interfaces
+namespace dvmig.Core.Providers
 {
    /// <summary>
    /// Implementation of <see cref="IDataverseProvider"/> using the legacy
@@ -30,9 +32,10 @@ namespace dvmig.Core.Interfaces
       {
          ConnectionString = connectionString;
          _client = new CrmServiceClient(connectionString);
+
          if (!_client.IsReady)
             throw new Exception(
-                $"Legacy CRM connection failed: {_client.LastCrmError}"
+               $"Legacy CRM connection failed: {_client.LastCrmError}"
             );
       }
 
@@ -51,29 +54,36 @@ namespace dvmig.Core.Interfaces
 
       /// <inheritdoc />
       public Task<Entity?> RetrieveAsync(
-          string entityLogicalName,
-          Guid id,
-          string[]? columns = null,
-          CancellationToken ct = default)
+         string entityLogicalName,
+         Guid id,
+         string[]? columns = null,
+         CancellationToken ct = default
+      )
       {
          try
          {
             var columnSet = columns == null
-                ? new ColumnSet(true)
-                : new ColumnSet(columns);
+               ? new ColumnSet(true)
+               : new ColumnSet(columns);
 
             return Task.FromResult<Entity?>(
-                _client.Retrieve(
-                    entityLogicalName,
-                    id,
-                    columnSet
-                )
+               _client.Retrieve(
+                  entityLogicalName,
+                  id,
+                  columnSet
+               )
             );
          }
          catch (FaultException ex)
          {
-            if (ex.Message.Contains("80040217") ||
-                ex.Message.Contains("Does Not Exist"))
+            bool isNotFound =
+               ex.Message.Contains(SystemConstants.ErrorCodes.DoesNotExist) ||
+               ex.Message.Contains(
+                  SystemConstants.ErrorKeywords.DoesNotExist,
+                  StringComparison.OrdinalIgnoreCase
+               );
+
+            if (isNotFound)
                return Task.FromResult<Entity?>(null);
 
             throw;
@@ -82,15 +92,16 @@ namespace dvmig.Core.Interfaces
 
       /// <inheritdoc />
       public Task<EntityMetadata?> GetEntityMetadataAsync(
-          string entityLogicalName,
-          CancellationToken ct = default)
+         string entityLogicalName,
+         CancellationToken ct = default
+      )
       {
          var response = _client.Execute(
-             new RetrieveEntityRequest
-             {
-                LogicalName = entityLogicalName,
-                EntityFilters = EntityFilters.Attributes
-             }
+            new RetrieveEntityRequest
+            {
+               LogicalName = entityLogicalName,
+               EntityFilters = EntityFilters.Attributes
+            }
          ) as RetrieveEntityResponse;
 
          return Task.FromResult(response?.EntityMetadata);
@@ -98,16 +109,18 @@ namespace dvmig.Core.Interfaces
 
       /// <inheritdoc />
       public Task<Guid> CreateAsync(
-          Entity entity,
-          CancellationToken ct = default)
+         Entity entity,
+         CancellationToken ct = default
+      )
       {
          return Task.FromResult(_client.Create(entity));
       }
 
       /// <inheritdoc />
       public Task UpdateAsync(
-          Entity entity,
-          CancellationToken ct = default)
+         Entity entity,
+         CancellationToken ct = default
+      )
       {
          _client.Update(entity);
 
@@ -116,9 +129,10 @@ namespace dvmig.Core.Interfaces
 
       /// <inheritdoc />
       public Task DeleteAsync(
-          string entityLogicalName,
-          Guid id,
-          CancellationToken ct = default)
+         string entityLogicalName,
+         Guid id,
+         CancellationToken ct = default
+      )
       {
          _client.Delete(entityLogicalName, id);
 
@@ -127,17 +141,18 @@ namespace dvmig.Core.Interfaces
 
       /// <inheritdoc />
       public Task AssociateAsync(
-          string entityLogicalName,
-          Guid entityId,
-          Relationship relationship,
-          EntityReferenceCollection relatedEntities,
-          CancellationToken ct = default)
+         string entityLogicalName,
+         Guid entityId,
+         Relationship relationship,
+         EntityReferenceCollection relatedEntities,
+         CancellationToken ct = default
+      )
       {
          _client.Associate(
-             entityLogicalName,
-             entityId,
-             relationship,
-             relatedEntities
+            entityLogicalName,
+            entityId,
+            relationship,
+            relatedEntities
          );
 
          return Task.CompletedTask;
@@ -145,28 +160,32 @@ namespace dvmig.Core.Interfaces
 
       /// <inheritdoc />
       public Task<EntityCollection> RetrieveMultipleAsync(
-          QueryBase query,
-          CancellationToken ct = default)
+         QueryBase query,
+         CancellationToken ct = default
+      )
       {
          return Task.FromResult(_client.RetrieveMultiple(query));
       }
 
       /// <inheritdoc />
       public Task<OrganizationResponse> ExecuteAsync(
-          OrganizationRequest request,
-          CancellationToken ct = default)
+         OrganizationRequest request,
+         CancellationToken ct = default
+      )
       {
          return Task.FromResult(_client.Execute(request));
       }
 
       /// <inheritdoc />
       public async Task<long> GetRecordCountAsync(
-          string entityLogicalName,
-          CancellationToken ct = default)
+         string entityLogicalName,
+         CancellationToken ct = default
+      )
       {
          var metadata = await GetEntityMetadataAsync(entityLogicalName, ct);
-         var primaryId = metadata?.PrimaryIdAttribute ?? 
-                         $"{entityLogicalName}id";
+
+         var primaryId = metadata?.PrimaryIdAttribute ??
+            $"{entityLogicalName}id";
 
          var fetchXml = $@"
             <fetch aggregate='true'>
@@ -178,9 +197,12 @@ namespace dvmig.Core.Interfaces
          var result = _client.RetrieveMultiple(new FetchExpression(fetchXml));
 
          if (result.Entities.Count > 0 &&
-             result.Entities[0].Contains("count"))
+             result.Entities[0].Contains(
+                SystemConstants.DataverseAttributes.Count))
          {
-            var aliasedValue = (AliasedValue)result.Entities[0]["count"];
+            var aliasedValue = (AliasedValue)result.Entities[0][
+               SystemConstants.DataverseAttributes.Count
+            ];
 
             return Convert.ToInt64(aliasedValue.Value);
          }

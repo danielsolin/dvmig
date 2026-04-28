@@ -1,6 +1,7 @@
 using dvmig.Cli.Infrastructure;
 using dvmig.Core.Interfaces;
 using dvmig.Core.Metadata;
+using dvmig.Core.Shared;
 using dvmig.Core.Synchronization;
 using Serilog;
 using Spectre.Console;
@@ -55,7 +56,8 @@ namespace dvmig.Cli.Actions
             );
 
             AnsiConsole.MarkupLine(
-               "[grey]Please use 'Install/Update dvmig Components' " +
+               $"{SystemConstants.UiMarkup.Grey}" +
+               "Please use 'Install/Update dvmig Components' " +
                "to enable this feature.[/]"
             );
 
@@ -116,6 +118,7 @@ namespace dvmig.Cli.Actions
       public async Task HandlePerformReconciliationAsync()
       {
          var (source, target, engine) = await SetupSyncEngineAsync();
+
          if (source == null || target == null || engine == null)
             return;
 
@@ -153,34 +156,91 @@ namespace dvmig.Cli.Actions
 
          foreach (var logicalName in selectedEntities)
          {
+            AnsiConsole.MarkupLine(
+               $"[bold yellow]Reconciling {logicalName}...[/]"
+            );
+
+            var sourceCount = await source.GetRecordCountAsync(logicalName);
+            int processed = 0;
+            int failedCount = 0;
+
             try
             {
-               await _reconciliationService.PerformReconciliationAsync(
-                  logicalName,
-                  source,
-                  target,
-                  engine,
-                  options,
-                  new Progress<string>(
-                     msg => 
+               await AnsiConsole.Progress()
+                  .Columns(
+                     new ProgressColumn[]
                      {
-                        bool isCritical =
-                           msg.Contains("WAIT", StringComparison.Ordinal) ||
-                           msg.Contains(
-                              "throttle",
-                              StringComparison.OrdinalIgnoreCase
-                           ) ||
-                           msg.StartsWith("[yellow]") ||
-                           msg.StartsWith("[red]");
-
-                        if (isCritical)
-                           AnsiConsole.MarkupLine(msg);
-                        else
-                           AnsiConsole.MarkupLine($"[grey]{msg}[/]");
+                        new TaskDescriptionColumn(),
+                        new ProgressBarColumn(),
+                        new PercentageColumn(),
+                        new RemainingTimeColumn(),
+                        new SpinnerColumn(),
                      }
-                  ),
-                  default
-               );
+                  )
+                  .StartAsync(async ctx =>
+                  {
+                     var taskName = $"Reconciling {logicalName} " +
+                        $"({processed}/{sourceCount}) " +
+                        $"[[{threads} threads]]";
+
+                     var task = ctx.AddTask(taskName, true, sourceCount);
+                     task.Value = processed;
+
+                     var recordProgress = new Progress<bool>(success =>
+                     {
+                        processed++;
+
+                        if (!success)
+                           failedCount++;
+
+                        task.Value = processed;
+
+                        var desc = $"Reconciling {logicalName} " +
+                           $"({processed}/{sourceCount}) " +
+                           $"[[{threads} threads]]";
+
+                        if (failedCount > 0)
+                           desc += $" [red]({failedCount} failed)[/]";
+
+                        task.Description = desc;
+                     });
+
+                     await _reconciliationService.PerformReconciliationAsync(
+                        logicalName,
+                        source,
+                        target,
+                        engine,
+                        options,
+                        new Progress<string>(
+                           msg => 
+                           {
+                              bool isCritical =
+                                 msg.Contains(
+                                    SystemConstants.UiMarkup.Wait,
+                                    StringComparison.Ordinal
+                                 ) ||
+                                 msg.Contains(
+                                    SystemConstants.ErrorKeywords.TooManyRequests,
+                                    StringComparison.OrdinalIgnoreCase
+                                 ) ||
+                                 msg.StartsWith(SystemConstants.UiMarkup.Yellow) ||
+                                 msg.StartsWith(SystemConstants.UiMarkup.Red);
+
+                              if (isCritical)
+                                 AnsiConsole.MarkupLine(msg);
+                              else
+                                 AnsiConsole.MarkupLine(
+                                    $"{SystemConstants.UiMarkup.Grey}{msg}[/]"
+                                 );
+                           }
+                        ),
+                        recordProgress,
+                        default
+                     );
+
+                     // Ensure it hits 100% if finished but logic doesn't align
+                     task.Value = sourceCount;
+                  });
             }
             catch (Exception ex)
             {

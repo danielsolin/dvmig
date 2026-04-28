@@ -26,10 +26,10 @@ namespace dvmig.Core.Provisioning
       /// <param name="pluginDeployer">The plugin deployer.</param>
       /// <param name="logger">The logger instance.</param>
       public SetupService(
-          IEnvironmentValidator validator,
-          ISchemaManager schemaManager,
-          IPluginDeployer pluginDeployer,
-          ILogger logger
+         IEnvironmentValidator validator,
+         ISchemaManager schemaManager,
+         IPluginDeployer pluginDeployer,
+         ILogger logger
       )
       {
          _validator = validator;
@@ -40,8 +40,8 @@ namespace dvmig.Core.Provisioning
 
       /// <inheritdoc />
       public async Task<bool> IsEnvironmentReadyAsync(
-          IDataverseProvider target,
-          CancellationToken ct = default
+         IDataverseProvider target,
+         CancellationToken ct = default
       )
       {
          return await _validator.IsEnvironmentReadyAsync(target, ct);
@@ -49,9 +49,9 @@ namespace dvmig.Core.Provisioning
 
       /// <inheritdoc />
       public async Task CreateSchemaAsync(
-          IDataverseProvider target,
-          IProgress<string>? progress = null,
-          CancellationToken ct = default
+         IDataverseProvider target,
+         IProgress<string>? progress = null,
+         CancellationToken ct = default
       )
       {
          await _schemaManager.CreateSchemaAsync(target, progress, ct);
@@ -59,24 +59,24 @@ namespace dvmig.Core.Provisioning
 
       /// <inheritdoc />
       public async Task DeployPluginAsync(
-          IDataverseProvider target,
-          IProgress<string>? progress = null,
-          CancellationToken ct = default
+         IDataverseProvider target,
+         IProgress<string>? progress = null,
+         CancellationToken ct = default
       )
       {
          var assemblyPath = Path.Combine(
-             AppDomain.CurrentDomain.BaseDirectory,
-             SystemConstants.AppConstants.PluginAssemblyName
+            AppDomain.CurrentDomain.BaseDirectory,
+            SystemConstants.AppConstants.PluginAssemblyName
          );
 
          // Fallback for development if not in same folder
          if (!File.Exists(assemblyPath))
             assemblyPath = Path.Combine(
-                AppDomain.CurrentDomain.BaseDirectory,
-                "..", "..", "..", "..",
-                SystemConstants.AppConstants.PluginName,
-                "bin", "Debug", "netstandard2.0",
-                SystemConstants.AppConstants.PluginAssemblyName
+               AppDomain.CurrentDomain.BaseDirectory,
+               "..", "..", "..", "..",
+               SystemConstants.AppConstants.PluginName,
+               "bin", "Debug", "netstandard2.0",
+               SystemConstants.AppConstants.PluginAssemblyName
             );
 
          if (!File.Exists(assemblyPath))
@@ -88,18 +88,18 @@ namespace dvmig.Core.Provisioning
          }
 
          await _pluginDeployer.DeployPluginAsync(
-             target,
-             assemblyPath,
-             progress,
-             ct
+            target,
+            assemblyPath,
+            progress,
+            ct
          );
       }
 
       /// <inheritdoc />
       public async Task CleanEnvironmentAsync(
-          IDataverseProvider target,
-          IProgress<string>? progress = null,
-          CancellationToken ct = default
+         IDataverseProvider target,
+         IProgress<string>? progress = null,
+         CancellationToken ct = default
       )
       {
          _logger.Information("Cleaning target environment...");
@@ -117,16 +117,21 @@ namespace dvmig.Core.Provisioning
 
       /// <inheritdoc />
       public async Task PreserveDatesAsync(
-          IDataverseProvider target,
-          Entity sourceEntity,
-          CancellationToken ct = default
+         IDataverseProvider target,
+         Entity sourceEntity,
+         CancellationToken ct = default
       )
       {
          if (!await CheckDatePreservationSupportAsync(target, ct))
             return;
 
-         if (!sourceEntity.Contains("createdon") &&
-             !sourceEntity.Contains("modifiedon"))
+         bool hasDates =
+            sourceEntity.Contains(
+               SystemConstants.DataverseAttributes.CreatedOn) ||
+            sourceEntity.Contains(
+               SystemConstants.DataverseAttributes.ModifiedOn);
+
+         if (!hasDates)
             return;
 
          var sourceDate = CreateSourceDateEntity(sourceEntity);
@@ -138,20 +143,20 @@ namespace dvmig.Core.Provisioning
          catch (Exception ex)
          {
             _logger.Warning(
-                ex,
-                "Failed to create source date for {Entity}:{Id}",
-                sourceEntity.LogicalName,
-                sourceEntity.Id
+               ex,
+               "Failed to create source date for {Entity}:{Id}",
+               sourceEntity.LogicalName,
+               sourceEntity.Id
             );
          }
       }
 
       /// <inheritdoc />
       public async Task DeleteSourceDateAsync(
-          IDataverseProvider target,
-          string logicalName,
-          Guid entityId,
-          CancellationToken ct = default
+         IDataverseProvider target,
+         string logicalName,
+         Guid entityId,
+         CancellationToken ct = default
       )
       {
          if (!await CheckDatePreservationSupportAsync(target, ct))
@@ -163,7 +168,7 @@ namespace dvmig.Core.Provisioning
             var primaryId = SystemConstants.SourceDate.PrimaryId;
             var sourceEntityId = SystemConstants.SourceDate.EntityId;
             var logicalNameAttr =
-                SystemConstants.SourceDate.EntityLogicalNameAttr;
+               SystemConstants.SourceDate.EntityLogicalNameAttr;
 
             var fetchXml = $@"
                     <fetch version='1.0' output-format='xml-platform' 
@@ -180,33 +185,33 @@ namespace dvmig.Core.Provisioning
                     </fetch>";
 
             var result = await target.RetrieveMultipleAsync(
-                new FetchExpression(fetchXml),
-                ct
+               new FetchExpression(fetchXml),
+               ct
             );
 
             if (result.Entities.Any())
             {
                await target.DeleteAsync(
-                   SystemConstants.SourceDate.EntityLogicalName,
-                   result.Entities[0].Id,
-                   ct
+                  SystemConstants.SourceDate.EntityLogicalName,
+                  result.Entities[0].Id,
+                  ct
                );
             }
          }
          catch (Exception ex)
          {
             _logger.Warning(
-                ex,
-                "Failed to delete source date record for {Entity}:{Id}",
-                logicalName,
-                entityId
+               ex,
+               "Failed to delete source date record for {Entity}:{Id}",
+               logicalName,
+               entityId
             );
          }
       }
 
       private async Task<bool> CheckDatePreservationSupportAsync(
-          IDataverseProvider target,
-          CancellationToken ct
+         IDataverseProvider target,
+         CancellationToken ct
       )
       {
          if (_isDatePreservationSupported.HasValue)
@@ -215,8 +220,8 @@ namespace dvmig.Core.Provisioning
          try
          {
             var meta = await target.GetEntityMetadataAsync(
-                SystemConstants.SourceDate.EntityLogicalName,
-                ct
+               SystemConstants.SourceDate.EntityLogicalName,
+               ct
             );
 
             _isDatePreservationSupported = meta != null;
@@ -229,10 +234,10 @@ namespace dvmig.Core.Provisioning
          if (_isDatePreservationSupported == false)
          {
             _logger.Warning(
-                "Date preservation entity '{Entity}' not found " +
-                "on target. Date preservation will be disabled " +
-                "for this session.",
-                SystemConstants.SourceDate.EntityLogicalName
+               "Date preservation entity '{Entity}' not found " +
+               "on target. Date preservation will be disabled " +
+               "for this session.",
+               SystemConstants.SourceDate.EntityLogicalName
             );
          }
 
@@ -242,22 +247,22 @@ namespace dvmig.Core.Provisioning
       private Entity CreateSourceDateEntity(Entity entity)
       {
          var sourceDate = new Entity(
-             SystemConstants.SourceDate.EntityLogicalName
+            SystemConstants.SourceDate.EntityLogicalName
          );
 
          sourceDate[SystemConstants.SourceDate.EntityId] =
-             entity.Id.ToString();
+            entity.Id.ToString();
 
          sourceDate[SystemConstants.SourceDate.EntityLogicalNameAttr] =
-             entity.LogicalName.ToLower();
+            entity.LogicalName.ToLower();
 
-         if (entity.Contains("createdon"))
+         if (entity.Contains(SystemConstants.DataverseAttributes.CreatedOn))
             sourceDate[SystemConstants.SourceDate.CreatedDate] =
-                entity["createdon"];
+               entity[SystemConstants.DataverseAttributes.CreatedOn];
 
-         if (entity.Contains("modifiedon"))
+         if (entity.Contains(SystemConstants.DataverseAttributes.ModifiedOn))
             sourceDate[SystemConstants.SourceDate.ModifiedDate] =
-                entity["modifiedon"];
+               entity[SystemConstants.DataverseAttributes.ModifiedOn];
 
          return sourceDate;
       }

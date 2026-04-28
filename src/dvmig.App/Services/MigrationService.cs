@@ -1,5 +1,6 @@
 using dvmig.App.Models;
 using dvmig.Core.Interfaces;
+using dvmig.Core.Providers;
 using dvmig.Core.Shared;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Messages;
@@ -26,9 +27,9 @@ namespace dvmig.App.Services
       /// True if connection was successful; otherwise, false.
       /// </returns>
       Task<bool> ConnectSourceAsync(
-          string connectionString,
-          bool isLegacy,
-          CancellationToken ct = default
+         string connectionString,
+         bool isLegacy,
+         CancellationToken ct = default
       );
 
       /// <summary>
@@ -43,9 +44,9 @@ namespace dvmig.App.Services
       /// True if connection was successful; otherwise, false.
       /// </returns>
       Task<bool> ConnectTargetAsync(
-          string connectionString,
-          bool isLegacy,
-          CancellationToken ct = default
+         string connectionString,
+         bool isLegacy,
+         CancellationToken ct = default
       );
 
       /// <summary>
@@ -54,7 +55,7 @@ namespace dvmig.App.Services
       /// <param name="ct">A cancellation token.</param>
       /// <returns>A list of entity metadata.</returns>
       Task<List<EntityMetadata>> GetSourceEntitiesAsync(
-          CancellationToken ct = default
+         CancellationToken ct = default
       );
 
       /// <summary>
@@ -65,8 +66,8 @@ namespace dvmig.App.Services
       /// <param name="ct">A cancellation token.</param>
       /// <returns>The total number of records.</returns>
       Task<long> GetRecordCountAsync(
-          string logicalName,
-          CancellationToken ct = default
+         string logicalName,
+         CancellationToken ct = default
       );
 
       /// <summary>
@@ -80,9 +81,9 @@ namespace dvmig.App.Services
       /// <param name="ct">A cancellation token.</param>
       /// <returns>A list of record selection items.</returns>
       Task<List<RecordSelectionItem>> GetRecordsAsync(
-          string logicalName,
-          string? searchText = null,
-          CancellationToken ct = default
+         string logicalName,
+         string? searchText = null,
+         CancellationToken ct = default
       );
 
       /// <summary>
@@ -138,7 +139,7 @@ namespace dvmig.App.Services
 
       /// <inheritdoc />
       public List<EntitySyncConfiguration> SelectedEntities { get; } =
-          new List<EntitySyncConfiguration>();
+         new List<EntitySyncConfiguration>();
 
       /// <inheritdoc />
       public void DisconnectSource()
@@ -155,14 +156,15 @@ namespace dvmig.App.Services
 
       /// <inheritdoc />
       public async Task<bool> ConnectSourceAsync(
-          string connectionString,
-          bool isLegacy,
-          CancellationToken ct = default)
+         string connectionString,
+         bool isLegacy,
+         CancellationToken ct = default
+      )
       {
          SourceProvider = await ConnectProviderAsync(
-             connectionString,
-             isLegacy,
-             ct
+            connectionString,
+            isLegacy,
+            ct
          );
 
          return SourceProvider != null;
@@ -170,44 +172,43 @@ namespace dvmig.App.Services
 
       /// <inheritdoc />
       public async Task<bool> ConnectTargetAsync(
-          string connectionString,
-          bool isLegacy,
-          CancellationToken ct = default)
+         string connectionString,
+         bool isLegacy,
+         CancellationToken ct = default
+      )
       {
          TargetProvider = await ConnectProviderAsync(
-             connectionString,
-             isLegacy,
-             ct
+            connectionString,
+            isLegacy,
+            ct
          );
 
          return TargetProvider != null;
       }
 
       private async Task<IDataverseProvider?> ConnectProviderAsync(
-          string connectionString,
-          bool isLegacy,
-          CancellationToken ct)
+         string connectionString,
+         bool isLegacy,
+         CancellationToken ct
+      )
       {
          try
          {
             return await Task.Run(
-                () =>
-                {
-                   ct.ThrowIfCancellationRequested();
+               () =>
+               {
+                  ct.ThrowIfCancellationRequested();
 
-                   IDataverseProvider provider;
-                   if (isLegacy)
-                      provider = new LegacyCrmProvider(
-                              connectionString
-                          );
-                   else
-                      provider = new DataverseProvider(
-                              connectionString
-                          );
+                  IDataverseProvider provider;
 
-                   return provider;
-                },
-                ct
+                  if (isLegacy)
+                     provider = new LegacyCrmProvider(connectionString);
+                  else
+                     provider = new DataverseProvider(connectionString);
+
+                  return provider;
+               },
+               ct
             );
          }
          catch (OperationCanceledException)
@@ -220,10 +221,10 @@ namespace dvmig.App.Services
          }
       }
 
-
       /// <inheritdoc />
       public async Task<List<EntityMetadata>> GetSourceEntitiesAsync(
-          CancellationToken ct = default)
+         CancellationToken ct = default
+      )
       {
          if (SourceProvider == null)
             return new List<EntityMetadata>();
@@ -238,29 +239,30 @@ namespace dvmig.App.Services
          };
 
          var response = (RetrieveAllEntitiesResponse)await SourceProvider
-             .ExecuteAsync(request, ct);
+            .ExecuteAsync(request, ct);
 
          _cachedMetadata = response.EntityMetadata
-             .OrderBy(e =>
-                 e.DisplayName?.UserLocalizedLabel?.Label ??
-                 e.LogicalName
-             )
-             .ToList();
+            .OrderBy(e =>
+               e.DisplayName?.UserLocalizedLabel?.Label ??
+               e.LogicalName
+            )
+            .ToList();
 
          return _cachedMetadata;
       }
 
       /// <inheritdoc />
       public async Task<long> GetRecordCountAsync(
-          string logicalName,
-          CancellationToken ct = default)
+         string logicalName,
+         CancellationToken ct = default
+      )
       {
          if (SourceProvider == null)
             return 0;
 
          var metadata = await GetSourceEntitiesAsync(ct);
          var entityMeta = metadata.FirstOrDefault(e =>
-             e.LogicalName == logicalName
+            e.LogicalName == logicalName
          );
 
          if (entityMeta == null)
@@ -277,14 +279,17 @@ namespace dvmig.App.Services
                 </fetch>";
 
          var response = await SourceProvider.RetrieveMultipleAsync(
-             new FetchExpression(fetchXml),
-             ct
+            new FetchExpression(fetchXml),
+            ct
          );
 
          if (response.Entities.Count > 0 &&
-             response.Entities[0].Contains("count"))
+             response.Entities[0].Contains(
+                SystemConstants.DataverseAttributes.Count))
          {
-            var aliasedValue = (AliasedValue)response.Entities[0]["count"];
+            var aliasedValue = (AliasedValue)response.Entities[0][
+               SystemConstants.DataverseAttributes.Count
+            ];
 
             return (int)aliasedValue.Value;
          }
@@ -294,16 +299,17 @@ namespace dvmig.App.Services
 
       /// <inheritdoc />
       public async Task<List<RecordSelectionItem>> GetRecordsAsync(
-          string logicalName,
-          string? searchText = null,
-          CancellationToken ct = default)
+         string logicalName,
+         string? searchText = null,
+         CancellationToken ct = default
+      )
       {
          if (SourceProvider == null)
             return new List<RecordSelectionItem>();
 
          var metadata = await GetSourceEntitiesAsync(ct);
          var entityMeta = metadata.FirstOrDefault(e =>
-             e.LogicalName == logicalName
+            e.LogicalName == logicalName
          );
 
          if (entityMeta == null)
@@ -320,26 +326,26 @@ namespace dvmig.App.Services
 
          if (!string.IsNullOrWhiteSpace(searchText))
             query.Criteria.AddCondition(
-                primaryName,
-                ConditionOperator.Like,
-                $"%{searchText}%"
+               primaryName,
+               ConditionOperator.Like,
+               $"%{searchText}%"
             );
 
          var results = await SourceProvider.RetrieveMultipleAsync(
-             query,
-             ct
+            query,
+            ct
          );
 
          var config = SelectedEntities.FirstOrDefault(c =>
-             c.LogicalName == logicalName
+            c.LogicalName == logicalName
          );
 
          return results.Entities.Select(e => new RecordSelectionItem(
-             e.Id,
-             e.Contains(primaryName)
-                 ? e[primaryName].ToString()!
-                 : e.Id.ToString(),
-             config?.SelectedRecordIds.Contains(e.Id) ?? false
+            e.Id,
+            e.Contains(primaryName)
+               ? e[primaryName].ToString()!
+               : e.Id.ToString(),
+            config?.SelectedRecordIds.Contains(e.Id) ?? false
          )).ToList();
       }
 

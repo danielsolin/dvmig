@@ -1,5 +1,8 @@
 using dvmig.Core.Interfaces;
+using dvmig.Core.Shared;
 using Microsoft.Xrm.Sdk;
+using Microsoft.Xrm.Sdk.Messages;
+using Microsoft.Crm.Sdk.Messages;
 using Serilog;
 
 namespace dvmig.Core.Synchronization
@@ -22,9 +25,10 @@ namespace dvmig.Core.Synchronization
       /// <param name="setupService">The setup service.</param>
       /// <param name="logger">The logger instance.</param>
       public StatusTransitionHandler(
-          IDataverseProvider target,
-          ISetupService setupService,
-          ILogger logger)
+         IDataverseProvider target,
+         ISetupService setupService,
+         ILogger logger
+      )
       {
          _target = target;
          _setupService = setupService;
@@ -33,42 +37,49 @@ namespace dvmig.Core.Synchronization
 
       /// <inheritdoc />
       public async Task<bool> HandleStatusTransitionAsync(
-          Entity entity,
-          SyncOptions options,
-          IProgress<string>? progress,
-          CancellationToken ct = default,
-          Func<Entity, SyncOptions, IProgress<string>?, CancellationToken,
-              Task<(bool Success, string? FailureMessage)>>?
-              createOrUpdateFunc = null)
+         Entity entity,
+         SyncOptions options,
+         IProgress<string>? progress,
+         CancellationToken ct = default,
+         Func<Entity, SyncOptions, IProgress<string>?, CancellationToken,
+            Task<(bool Success, string? FailureMessage)>>?
+            createOrUpdateFunc = null
+      )
       {
          var recordKey = $"{entity.LogicalName}:{entity.Id}";
+
          _logger.Information(
-             "Handling state/status transition for {Key}",
-             recordKey
+            "Handling state/status transition for {Key}",
+            recordKey
          );
 
-         var stateValue = entity.Contains("statecode")
-             ? entity["statecode"]
-             : null;
-         var statusValue = entity.Contains("statuscode")
-             ? entity["statuscode"]
-             : null;
+         var stateValue = entity.Contains(
+            SystemConstants.DataverseAttributes.StateCode)
+            ? entity[SystemConstants.DataverseAttributes.StateCode]
+            : null;
+
+         var statusValue = entity.Contains(
+            SystemConstants.DataverseAttributes.StatusCode)
+            ? entity[SystemConstants.DataverseAttributes.StatusCode]
+            : null;
 
          _logger.Debug(
-             "Transition for {Key} - State: {State}, Status: {Status}",
-             recordKey,
-             stateValue ?? "NULL",
-             statusValue ?? "NULL"
+            "Transition for {Key} - State: {State}, Status: {Status}",
+            recordKey,
+            stateValue ?? "NULL",
+            statusValue ?? "NULL"
          );
 
          // Remove status/state to allow basic creation/update
-         entity.Attributes.Remove("statecode");
-         entity.Attributes.Remove("statuscode");
+         entity.Attributes.Remove(
+            SystemConstants.DataverseAttributes.StateCode);
+         entity.Attributes.Remove(
+            SystemConstants.DataverseAttributes.StatusCode);
 
          // Use the provided function or default to basic create
          var (success, _) = createOrUpdateFunc != null
-             ? await createOrUpdateFunc(entity, options, progress, ct)
-             : await BasicCreateAsync(entity, ct);
+            ? await createOrUpdateFunc(entity, options, progress, ct)
+            : await BasicCreateAsync(entity, ct);
 
          if (success && (stateValue != null || statusValue != null))
          {
@@ -81,29 +92,26 @@ namespace dvmig.Core.Synchronization
                if (stateOsv != null)
                {
                   _logger.Information(
-                      "Applying SetState for {Key} (State: {State})",
-                      recordKey,
-                      stateOsv.Value
+                     "Applying SetState for {Key} (State: {State})",
+                     recordKey,
+                     stateOsv.Value
                   );
 
-                  var stateReq = new OrganizationRequest("SetState");
-                  stateReq.Parameters["EntityMoniker"] =
-                      new EntityReference(
-                          entity.LogicalName,
-                          entity.Id
-                      );
-                  stateReq.Parameters["State"] = stateOsv;
-                  stateReq.Parameters["Status"] =
-                      statusOsv ?? new OptionSetValue(-1);
+                  var request = new SetStateRequest
+                  {
+                     EntityMoniker = entity.ToEntityReference(),
+                     State = stateOsv,
+                     Status = statusOsv ?? new OptionSetValue(-1)
+                  };
 
-                  await _target.ExecuteAsync(stateReq, ct);
+                  await _target.ExecuteAsync(request, ct);
                }
                else
                {
                   _logger.Warning(
-                      "Cannot apply SetState for {Key}: State is null. " +
-                      "Trying fallback Update for status only.",
-                      recordKey
+                     "Cannot apply SetState for {Key}: State is null. " +
+                     "Trying fallback Update for status only.",
+                     recordKey
                   );
 
                   // Throw to trigger the fallback logic in catch block
@@ -113,37 +121,42 @@ namespace dvmig.Core.Synchronization
             catch (Exception stateEx)
             {
                _logger.Warning(
-                   "SetState failed for {Key}: {Msg}",
-                   recordKey,
-                   stateEx.Message
+                  "SetState failed for {Key}: {Msg}",
+                  recordKey,
+                  stateEx.Message
                );
 
                // Fallback: Modern Update with only state/status
                try
                {
                   var transitionUpdate = new Entity(
-                      entity.LogicalName,
-                      entity.Id
+                     entity.LogicalName,
+                     entity.Id
                   );
 
                   if (stateValue != null)
-                     transitionUpdate["statecode"] = stateValue;
+                     transitionUpdate[
+                        SystemConstants.DataverseAttributes.StateCode
+                     ] = stateValue;
 
                   if (statusValue != null)
-                     transitionUpdate["statuscode"] = statusValue;
+                     transitionUpdate[
+                        SystemConstants.DataverseAttributes.StatusCode
+                     ] = statusValue;
 
                   await _target.UpdateAsync(transitionUpdate, ct);
+
                   _logger.Information(
-                      "Applied transition via fallback Update for {Key}",
-                      recordKey
+                     "Applied transition via fallback Update for {Key}",
+                     recordKey
                   );
                }
                catch (Exception finalEx)
                {
                   _logger.Warning(
-                      "All transition attempts failed for {Key}: {Msg}",
-                      recordKey,
-                      finalEx.Message
+                     "All transition attempts failed for {Key}: {Msg}",
+                     recordKey,
+                     finalEx.Message
                   );
                }
             }
@@ -183,10 +196,10 @@ namespace dvmig.Core.Synchronization
       /// A tuple indicating success and any failure message.
       /// </returns>
       private async Task<(bool Success, string? FailureMessage)>
-          BasicCreateAsync(
-              Entity entity,
-              CancellationToken ct
-          )
+         BasicCreateAsync(
+            Entity entity,
+            CancellationToken ct
+         )
       {
          try
          {
