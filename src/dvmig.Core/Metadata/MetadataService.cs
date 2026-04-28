@@ -81,34 +81,7 @@ namespace dvmig.Core.Metadata
           CancellationToken ct = default
       )
       {
-         var primaryId = await provider.GetPrimaryIdAttributeAsync(
-             logicalName,
-             ct
-         ) ?? $"{logicalName}id";
-
-         var fetchXml = $@"
-                <fetch aggregate='true'>
-                  <entity name='{logicalName}'>
-                    <attribute name='{primaryId}' alias='count' 
-                      aggregate='count' />
-                  </entity>
-                </fetch>";
-
-         var response = await provider.RetrieveMultipleAsync(
-             new Microsoft.Xrm.Sdk.Query.FetchExpression(fetchXml),
-             ct
-         );
-
-         if (response.Entities.Count > 0 &&
-             response.Entities[0].Contains("count"))
-         {
-            var aliasedValue = (Microsoft.Xrm.Sdk.AliasedValue)
-                response.Entities[0]["count"];
-
-            return (int)aliasedValue.Value;
-         }
-
-         return 0;
+         return await provider.GetRecordCountAsync(logicalName, ct);
       }
    }
 }

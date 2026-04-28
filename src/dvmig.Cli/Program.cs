@@ -50,6 +50,9 @@ namespace dvmig.Cli
          var reconciliationActions = new ReconciliationActions(
              connectionManager,
              reconciliationService,
+             metadataService,
+             setupService,
+             stateTracker,
              logger
          );
 
@@ -60,8 +63,10 @@ namespace dvmig.Cli
              logger
          );
 
-         bool devoplerMode = args.Contains("--dev")
-                                ||
+         bool devoplerMode = args.Contains("-dev")
+                              ||
+                             args.Contains("--dev")
+                              ||
                              args.Contains("--developer-mode");
 
          CliUI.WriteHeader();
@@ -112,37 +117,43 @@ namespace dvmig.Cli
                 new MenuItem(
                     "SYNC: Custom (Select Entities)",
                     migrationActions.HandleMigrationAsync
-                ),
-                new MenuItem(
-                    "FAILURES: View and Reconcile",
-                    reconciliationActions.HandleReconcileAsync
                 )
             };
 
          if (developerMode)
          {
             menu.Add(new MenuItem(
-                "GENERATE: Test Data",
-                maintenanceActions.HandleSeedingAsync
+               "RECON: View Recorded Failures",
+               reconciliationActions.HandleViewFailuresAsync
             ));
 
             menu.Add(new MenuItem(
-                "INSTALL: DVMig Components on Target",
+               "RECON: Reconcile Data (Fix Discrepancies)",
+               reconciliationActions.HandlePerformReconciliationAsync
+            ));
+            
+            menu.Add(new MenuItem(
+                "COMP: Install DVMig Components on Target",
                 maintenanceActions.HandleInstallAsync
             ));
 
             menu.Add(new MenuItem(
-                "UNINSTALL: DVMig Components from Target",
+                "COMP: Uninstall DVMig Components from Target",
                 maintenanceActions.HandleTargetComponentsCleanupAsync
             ));
 
             menu.Add(new MenuItem(
-                "WIPE: SOURCE Data",
+                "DATA: Generate Sample Data on Source",
+                maintenanceActions.HandleSeedingAsync
+            ));
+
+            menu.Add(new MenuItem(
+                "DATA: Wipe Data on Source (Use with caution!)",
                 maintenanceActions.HandleSourceDataCleanupAsync
             ));
 
             menu.Add(new MenuItem(
-                "WIPE: TARGET Data",
+                "DATA: Wipe Data on Target (Use with caution!)",
                 maintenanceActions.HandleTargetDataCleanupAsync
             ));
          }

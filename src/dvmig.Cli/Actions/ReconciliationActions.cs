@@ -1,5 +1,7 @@
 using dvmig.Cli.Infrastructure;
 using dvmig.Core.Interfaces;
+using dvmig.Core.Metadata;
+using dvmig.Core.Synchronization;
 using Serilog;
 using Spectre.Console;
 
@@ -9,20 +11,29 @@ namespace dvmig.Cli.Actions
    {
       private readonly ConnectionManager _connectionManager;
       private readonly IReconciliationService _reconciliationService;
+      private readonly IMetadataService _metadataService;
+      private readonly ISetupService _setupService;
+      private readonly ISyncStateTracker _stateTracker;
       private readonly ILogger _logger;
 
       public ReconciliationActions(
           ConnectionManager connectionManager,
           IReconciliationService reconciliationService,
+          IMetadataService metadataService,
+          ISetupService setupService,
+          ISyncStateTracker stateTracker,
           ILogger logger
       )
       {
          _connectionManager = connectionManager;
          _reconciliationService = reconciliationService;
+         _metadataService = metadataService;
+         _setupService = setupService;
+         _stateTracker = stateTracker;
          _logger = logger;
       }
 
-      public async Task HandleReconcileAsync()
+      public async Task HandleViewFailuresAsync()
       {
          var target = await _connectionManager.ConnectAsync(
              ConnectionDirection.Target
@@ -56,6 +67,7 @@ namespace dvmig.Cli.Actions
              async () =>
                  await _reconciliationService.GetFailuresAsync(
                      target,
+                     null,
                      default
                  )
          );
@@ -101,6 +113,132 @@ namespace dvmig.Cli.Actions
 
             CliUI.WriteSuccess("Failure log cleared.");
          }
+      }
+
+      public async Task HandlePerformReconciliationAsync()
+      {
+         var (source, target, engine) = await SetupSyncEngineAsync();
+         if (source == null || target == null || engine == null)
+            return;
+
+         var selectedEntities = await CliUI.SelectEntitiesAsync(
+             _metadataService,
+             source
+         );
+
+         if (selectedEntities == null || selectedEntities.Count == 0)
+         {
+            CliUI.WriteWarning("No entities selected for reconciliation.");
+
+            return;
+         }
+
+         var threads = AnsiConsole.Prompt(
+             new SelectionPrompt<int>()
+                 .Title("Select [green]Max Parallelism[/] (Threads):")
+                 .AddChoices(new[] { 10, 20, 5, 1 })
+         );
+
+         var options = new SyncOptions
+         {
+            StripMissingDependencies = true,
+            MaxDegreeOfParallelism = threads
+         };
+
+         foreach (var logicalName in selectedEntities)
+         {
+            await _reconciliationService.PerformReconciliationAsync(
+                logicalName,
+                source,
+                target,
+                engine,
+                options,
+                new Progress<string>(msg => 
+                {
+                   if (msg.Contains("WAIT", StringComparison.Ordinal) || 
+                       msg.Contains("throttle", StringComparison.OrdinalIgnoreCase) ||
+                       msg.StartsWith("[yellow]") || 
+                       msg.StartsWith("[red]"))
+                      AnsiConsole.MarkupLine(msg);
+                   else
+                      AnsiConsole.MarkupLine($"[grey]{msg}[/]");
+                }),
+                default
+            );
+         }
+
+         CliUI.WriteSuccess("Reconciliation process finished!");
+      }
+
+      private async Task<(
+          IDataverseProvider? Source,
+          IDataverseProvider? Target,
+          ISyncEngine? Engine
+      )> SetupSyncEngineAsync()
+      {
+         var source = await _connectionManager.ConnectAsync(
+             ConnectionDirection.Source
+         );
+
+         if (source == null)
+            return (null, null, null);
+
+         var target = await _connectionManager.ConnectAsync(
+             ConnectionDirection.Target
+         );
+
+         if (target == null)
+            return (null, null, null);
+
+         bool isReady = await _setupService.IsEnvironmentReadyAsync(
+             target,
+             default
+         );
+
+         if (!isReady)
+         {
+            CliUI.WriteError(
+                "Target environment is not prepared. " +
+                "Please run 'Install dvmig Components' first."
+            );
+
+            return (null, null, null);
+         }
+
+         var userMapper = new UserMapper(source, target, _logger);
+         var retryStrategy = new RetryStrategy(_logger);
+         var entityPreparer = new EntityPreparer(_logger);
+         var errorHandler = new SyncErrorHandler(
+             target,
+             _setupService,
+             _logger
+         );
+         var dependencyResolver = new DependencyResolver(source, _logger);
+         var statusTransitionHandler = new StatusTransitionHandler(
+             target,
+             _setupService,
+             _logger
+         );
+         var metadataCache = new MetadataCache(target, _logger);
+         var failureLogger = new FailureLogger(target, _logger);
+
+         var engine = new SyncEngine(
+             source,
+             target,
+             userMapper,
+             _setupService,
+             _stateTracker,
+             _logger,
+             retryStrategy,
+             entityPreparer,
+             errorHandler,
+             dependencyResolver,
+             statusTransitionHandler,
+             metadataCache,
+             failureLogger
+         );
+
+         return (source, target, engine);
       }
    }
 }

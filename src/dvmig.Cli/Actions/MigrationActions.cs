@@ -290,10 +290,13 @@ namespace dvmig.Cli.Actions
 
                    var progressReporter = new Progress<string>(msg =>
                        {
-                          // If we hit throttling, show it in the console
-                          // even during progress bars
-                          if (msg.Contains("Throttled"))
-                             AnsiConsole.MarkupLine($"[yellow]{msg}[/]");
+                          // Ensure we show wait/retry/throttle messages even
+                          // during the progress bar display.
+                          if (msg.Contains("WAIT", StringComparison.Ordinal) || 
+                              msg.Contains("throttle", StringComparison.OrdinalIgnoreCase) ||
+                              msg.StartsWith("[yellow]") || 
+                              msg.StartsWith("[red]"))
+                             AnsiConsole.MarkupLine(msg);
                        });
 
                    await engine.SyncEntityAsync(

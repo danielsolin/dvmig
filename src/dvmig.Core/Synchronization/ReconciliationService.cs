@@ -26,6 +26,7 @@ namespace dvmig.Core.Synchronization
       /// <inheritdoc />
       public async Task<List<MigrationFailureRecord>> GetFailuresAsync(
           IDataverseProvider target,
+          string? entityLogicalName = null,
           CancellationToken ct = default
       )
       {
@@ -40,6 +41,13 @@ namespace dvmig.Core.Synchronization
                  SystemConstants.MigrationFailure.Timestamp
              )
          };
+
+         if (!string.IsNullOrEmpty(entityLogicalName))
+            query.Criteria.AddCondition(
+                SystemConstants.MigrationFailure.EntityLogicalNameAttr,
+                ConditionOperator.Equal,
+                entityLogicalName
+            );
 
          query.AddOrder(
              SystemConstants.MigrationFailure.Timestamp,
@@ -91,6 +99,128 @@ namespace dvmig.Core.Synchronization
                 ct
             );
          }
+      }
+
+      /// <inheritdoc />
+      public async Task DeleteFailureAsync(
+          IDataverseProvider target,
+          Guid failureId,
+          CancellationToken ct = default
+      )
+      {
+         await target.DeleteAsync(
+             SystemConstants.MigrationFailure.EntityLogicalName,
+             failureId,
+             ct
+         );
+      }
+
+      /// <inheritdoc />
+      public async Task PerformReconciliationAsync(
+          string logicalName,
+          IDataverseProvider source,
+          IDataverseProvider target,
+          ISyncEngine engine,
+          SyncOptions options,
+          IProgress<string>? progress = null,
+          CancellationToken ct = default
+      )
+      {
+         progress?.Report($"Reconciling {logicalName}...");
+
+         var sourceCount = await source.GetRecordCountAsync(logicalName, ct);
+         var targetCount = await target.GetRecordCountAsync(logicalName, ct);
+
+         progress?.Report(
+             $"Counts: Source={sourceCount}, Target={targetCount}"
+         );
+
+         if (sourceCount <= targetCount)
+         {
+            progress?.Report("Counts match or target has more records. " +
+                             "No action needed.");
+
+            return;
+         }
+
+         var diff = sourceCount - targetCount;
+         progress?.Report($"Discrepancy found: {diff} records missing.");
+
+         // 1. Try to re-sync logged failures
+         var failures = await GetFailuresAsync(target, logicalName, ct);
+         if (failures.Count > 0)
+         {
+            progress?.Report($"Found {failures.Count} logged failures. " +
+                             "Attempting re-sync...");
+
+            int fixedCount = 0;
+            foreach (var failure in failures)
+            {
+               ct.ThrowIfCancellationRequested();
+
+               if (!Guid.TryParse(failure.SourceId, out var sourceId))
+                  continue;
+
+               var sourceRecord = await source.RetrieveAsync(
+                   logicalName,
+                   sourceId,
+                   null,
+                   ct
+               );
+
+               if (sourceRecord == null)
+               {
+                  progress?.Report(
+                      $"Source record {sourceId} not found. " +
+                      "Skipping failure re-sync."
+                  );
+
+                  continue;
+               }
+
+               var (success, _) = await engine.SyncRecordAsync(
+                   sourceRecord,
+                   options,
+                   progress,
+                   ct
+               );
+
+               if (success)
+               {
+                  await DeleteFailureAsync(target, failure.Id, ct);
+                  fixedCount++;
+               }
+            }
+
+            progress?.Report($"Fixed {fixedCount}/{failures.Count} " +
+                             "logged failures.");
+         }
+
+         // 2. Check counts again
+         targetCount = await target.GetRecordCountAsync(logicalName, ct);
+         if (sourceCount > targetCount)
+         {
+            progress?.Report(
+                $"Still missing {sourceCount - targetCount} records. " +
+                "Performing a full sync pass using state log..."
+            );
+
+            await engine.SyncEntityAsync(
+                logicalName,
+                options,
+                null,
+                progress,
+                null,
+                ct
+            );
+
+            targetCount = await target.GetRecordCountAsync(logicalName, ct);
+            progress?.Report(
+                $"Final counts: Source={sourceCount}, Target={targetCount}"
+            );
+         }
+         else
+            progress?.Report("All records successfully reconciled.");
       }
    }
 }

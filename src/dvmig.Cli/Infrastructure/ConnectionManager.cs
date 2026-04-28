@@ -14,6 +14,8 @@ namespace dvmig.Cli.Infrastructure
    public class ConnectionManager
    {
       private readonly ISettingsService _settingsService;
+      private readonly Dictionary<ConnectionDirection, IDataverseProvider> 
+          _activeConnections = new();
 
       public ConnectionManager(ISettingsService settingsService)
       {
@@ -26,6 +28,20 @@ namespace dvmig.Cli.Infrastructure
       )
       {
          label ??= direction.ToString();
+
+         if (_activeConnections.TryGetValue(direction, out var existing))
+         {
+             var reuse = AnsiConsole.Confirm(
+                 $"An active connection to [green]{label}[/] already " +
+                 "exists. Reuse it?",
+                 true
+             );
+
+             if (reuse)
+                 return existing;
+             
+             _activeConnections.Remove(direction);
+         }
 
          var settings = _settingsService.LoadSettings();
          string? storedConn = direction == ConnectionDirection.Source
@@ -87,6 +103,7 @@ namespace dvmig.Cli.Infrastructure
 
          if (provider != null)
          {
+            _activeConnections[direction] = provider;
             CliUI.WriteSuccess($"Connected to {label}");
 
             if (connStr != storedConn)

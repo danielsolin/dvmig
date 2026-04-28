@@ -111,6 +111,16 @@ namespace dvmig.Core.Interfaces
           CancellationToken ct = default);
 
       /// <summary>
+      /// Gets the total record count for a specific entity type.
+      /// </summary>
+      /// <param name="entityLogicalName">The logical name of the entity.</param>
+      /// <param name="ct">A cancellation token.</param>
+      /// <returns>The total number of records.</returns>
+      Task<long> GetRecordCountAsync(
+          string entityLogicalName,
+          CancellationToken ct = default);
+
+      /// <summary>
       /// Gets or sets the ID of the user on whose behalf the operations
       /// are executed.
       /// </summary>

@@ -233,11 +233,12 @@ namespace dvmig.Core.Synchronization
                          pollyCtx["progress"] = progress;
 
                       await _retryPolicy.ExecuteAsync(
-                          async (ctx) => await _failureLogger.LogFailureToTargetAsync(
+                          async (ctx) => await _failureLogger
+                           .LogFailureToTargetAsync(
                              entity,
                              errorMsg,
                              token
-                          ),
+                           ),
                           pollyCtx
                       );
                    }
