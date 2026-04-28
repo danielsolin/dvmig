@@ -140,8 +140,11 @@ namespace dvmig.Cli.Actions
                .AddChoices(
                   new[]
                   {
-                     10,
                      20,
+                     10,
+                     30,
+                     40,
+                     50,
                      5,
                      1
                   }
