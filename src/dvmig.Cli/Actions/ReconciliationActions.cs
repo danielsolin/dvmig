@@ -299,17 +299,12 @@ namespace dvmig.Cli.Actions
 
          if (!isReady)
          {
-            // DMSFIX: The menu option for installing dvmig components are no
-            // longer available unless you are in dev mode. The installation
-            // of the components should be automatic. Just make sure the user
-            // is informed of what is happing (why things are taking longer
-            // than expected because are being installed).
-            CliUI.WriteError(
-               "Target environment is not prepared. " +
-               "Please run 'Install dvmig Components' first."
+            AnsiConsole.MarkupLine(
+               $"{SystemConstants.UiMarkup.Yellow}Target environment is " +
+               "not prepared. Installing required dvmig components...[/]"
             );
 
-            return (null, null, null);
+            await HandleInstallAsync(target);
          }
 
          var userMapper = new UserMapper(source, target, _logger);
@@ -348,6 +343,20 @@ namespace dvmig.Cli.Actions
          );
 
          return (source, target, engine);
+      }
+
+      private async Task HandleInstallAsync(IDataverseProvider target)
+      {
+         await CliUI.RunStatusAsync(
+            "Installing components...",
+            async progress =>
+            {
+               await _setupService.CreateSchemaAsync(target, progress);
+               await _setupService.DeployPluginAsync(target, progress);
+            }
+         );
+
+         CliUI.WriteSuccess("Installation Finished!");
       }
    }
 }
