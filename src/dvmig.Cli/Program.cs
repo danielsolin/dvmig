@@ -114,17 +114,16 @@ namespace dvmig.Cli
          var syncGroup = new List<MenuItem>
          {
             new MenuItem(
-               "Migrate Recommended Data [grey](Accounts, Contacts, " +
+               "Migrate Recommended [grey](Accounts, Contacts, " +
                "Activities)[/]",
                migrationActions.HandleRecommendedSyncAsync
             ),
             new MenuItem(
-               "Migrate Custom Selection [grey](Choose specific " +
-               "entities)[/]",
+               "Migrate Selected [grey](Choose specific entities)[/]",
                migrationActions.HandleMigrationAsync
             ),
             new MenuItem(
-               "Find & Fix Errors (from Previous Migrations)",
+               "Find & Fix Errors [grey](from Previous Migrations)[/]",
                reconciliationActions.HandlePerformReconciliationAsync
             )
          };
@@ -139,17 +138,17 @@ namespace dvmig.Cli
             var maintenanceGroup = new List<MenuItem>
             {
                new MenuItem(
-                  "View Recorded Migration Failures",
-                  reconciliationActions.HandleViewFailuresAsync
-               ),
-               new MenuItem(
                   "Install DVMig Components [grey](Target)[/]",
                   maintenanceActions.HandleInstallMenuAsync
                ),
                new MenuItem(
                   "Uninstall DVMig Components [grey](Target)[/]",
                   maintenanceActions.HandleTargetComponentsCleanupAsync
-               )
+               ),
+               new MenuItem(
+                  "View Recorded Migration Failures",
+                  reconciliationActions.HandleViewFailuresAsync
+               ),
             };
 
             prompt.AddChoiceGroup(
