@@ -15,6 +15,20 @@
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
+    <NoWarn>$(NoWarn);NU1605</NoWarn>
+  </PropertyGroup>
+
+  <!-- Automated Minimal Release Settings -->
+  <PropertyGroup Condition="'$(Minimal)' == 'true'">
+    <PublishMinimal>true</PublishMinimal>
+    <Configuration>Release</Configuration>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <SelfContained>false</SelfContained>
+    <PublishSingleFile>true</PublishSingleFile>
+    <DebugType>none</DebugType>
+    <DebugSymbols>false</DebugSymbols>
+    <PublishDir>bin\Minimal\</PublishDir>
   </PropertyGroup>
 
 </Project>
