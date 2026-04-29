@@ -48,6 +48,9 @@ dotnet test tests/dvmig.Tests/dvmig.Tests.csproj --filter "FullyQualifiedName~Sy
 # CLI/TUI (primary interface)
 dotnet run --project src/dvmig.Cli/dvmig.Cli.csproj
 
+# CLI with developer mode (enables Maintenance and Data Management menus)
+dotnet run --project src/dvmig.Cli/dvmig.Cli.csproj -- -dev
+
 # WPF App (maintained but not prioritized for V1.0)
 dotnet run --project src/dvmig.App/dvmig.App.csproj
 ```
@@ -55,7 +58,7 @@ dotnet run --project src/dvmig.App/dvmig.App.csproj
 ## Code Style Requirements
 
 - **Line Length**: Maximum 80 characters for C# files (enforced via .editorconfig)
-- **Indentation**: 4 spaces, UTF-8, LF line endings
+- **Indentation**: 3 spaces, UTF-8, LF line endings
 - **Nullable Reference Types**: Enabled throughout
 - **Using Directives**: System usings first, no separate import directive groups
 
@@ -75,6 +78,7 @@ dotnet run --project src/dvmig.App/dvmig.App.csproj
 ## Important Notes
 
 - The `old/` directory contains legacy source projects for reference only - **DO NOT MODIFY**
-- Shared code (e.g., `EntityMetadataHelper.cs`, `Constants.cs`) lives in `src/dvmig.Core/Shared/` under the `dvmig.Core.Shared` namespace
+- Shared code (e.g., `EntityMetadataHelper.cs`, `SystemConstants.cs`) lives in `src/dvmig.Core/Shared/` under the `dvmig.Core.Shared` namespace
 - Plugin assembly must be signed (`dvmig.snk`) for deployment to Dataverse
 - Metadata caching and ID mapping are critical for performance during large migrations
+- Custom entities on target: `dm_sourcedate` (date preservation), `dm_migrationfailure` (failure logging)

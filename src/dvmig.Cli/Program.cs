@@ -1,4 +1,5 @@
 using System.Runtime.Versioning;
+using System.Text;
 using dvmig.Cli.Actions;
 using dvmig.Cli.Infrastructure;
 using dvmig.Core.Logging;
@@ -17,10 +18,12 @@ namespace dvmig.Cli
    [SupportedOSPlatform("windows")]
    class Program
    {
-      private record MenuItem(string Label, Func<Task> Action);
+      private record MenuItem(string Label, Func<Task>? Action);
 
       static async Task Main(string[] args)
       {
+         Console.OutputEncoding = Encoding.UTF8;
+
          var logger = LoggerInitializer.Initialize("dvmig.Cli");
          var retryStrategy = new RetryStrategy(logger);
 
@@ -74,7 +77,7 @@ namespace dvmig.Cli
 
          while (!exit)
          {
-            var menu = GetMenu(
+            var prompt = GetMenu(
                developerMode,
                migrationActions,
                reconciliationActions,
@@ -82,15 +85,10 @@ namespace dvmig.Cli
                () => exit = true
             );
 
-            var choice = AnsiConsole.Prompt(
-               new SelectionPrompt<MenuItem>()
-                  .Title("What would you like to do?")
-                  .PageSize(10)
-                  .UseConverter(m => m.Label)
-                  .AddChoices(menu)
-            );
+            var choice = AnsiConsole.Prompt(prompt);
 
-            await choice.Action();
+            if (choice.Action != null)
+               await choice.Action();
 
             if (!exit)
             {
@@ -100,7 +98,7 @@ namespace dvmig.Cli
          }
       }
 
-      private static List<MenuItem> GetMenu(
+      private static SelectionPrompt<MenuItem> GetMenu(
          bool developerMode,
          MigrationActions migrationActions,
          ReconciliationActions reconciliationActions,
@@ -108,68 +106,81 @@ namespace dvmig.Cli
          Action onExit
       )
       {
-         var menu = new List<MenuItem>
+         var prompt = new SelectionPrompt<MenuItem>()
+            .Title("What would you like to do?")
+            .PageSize(15)
+            .UseConverter(m => m.Label);
+
+         var syncGroup = new List<MenuItem>
          {
             new MenuItem(
-               "SYNC: Recommended (Accounts, Contacts, Activities)",
+               "Migrate Recommended Data [grey](Accounts, Contacts, " +
+               "Activities)[/]",
                migrationActions.HandleRecommendedSyncAsync
             ),
             new MenuItem(
-               "SYNC: Custom (Select Entities)",
+               "Migrate Custom Selection [grey](Choose specific " +
+               "entities)[/]",
                migrationActions.HandleMigrationAsync
             ),
             new MenuItem(
-               "SYNC: Reconcile Data (Fix Discrepancies)",
+               "Find & Fix Errors (from Previous Migrations)",
                reconciliationActions.HandlePerformReconciliationAsync
             )
          };
 
+         prompt.AddChoiceGroup(
+            new MenuItem("🚀 [bold green]Synchronization[/]", null),
+            syncGroup
+         );
+
          if (developerMode)
          {
-            menu.Add(
+            var maintenanceGroup = new List<MenuItem>
+            {
                new MenuItem(
-                  "VIEW: Recorded Failures",
+                  "View Recorded Migration Failures",
                   reconciliationActions.HandleViewFailuresAsync
-               )
-            );
-
-            menu.Add(
+               ),
                new MenuItem(
-                  "PREP: Install DVMig Components on Target",
+                  "Install DVMig Components [grey](Target)[/]",
                   maintenanceActions.HandleInstallMenuAsync
-               )
-            );
-
-            menu.Add(
+               ),
                new MenuItem(
-                  "PREP: Uninstall DVMig Components from Target",
+                  "Uninstall DVMig Components [grey](Target)[/]",
                   maintenanceActions.HandleTargetComponentsCleanupAsync
                )
+            };
+
+            prompt.AddChoiceGroup(
+               new MenuItem("🛠️ [bold cyan]Maintenance[/]", null),
+               maintenanceGroup
             );
 
-            menu.Add(
+            var dataGroup = new List<MenuItem>
+            {
                new MenuItem(
-                  "DATA: Generate Sample Data on Source",
+                  "Generate Sample Data [grey](Source)[/]",
                   maintenanceActions.HandleSeedingAsync
-               )
-            );
-
-            menu.Add(
+               ),
                new MenuItem(
-                  "DATA: Wipe Data on Source (Use with caution!)",
+                  "Wipe Data on Source [grey](Caution!)[/]",
                   maintenanceActions.HandleSourceDataCleanupAsync
-               )
-            );
-
-            menu.Add(
+               ),
                new MenuItem(
-                  "DATA: Wipe Data on Target (Use with caution!)",
+                  "Wipe Data on Target [grey](Caution!)[/]",
                   maintenanceActions.HandleTargetDataCleanupAsync
                )
+            };
+
+            prompt.AddChoiceGroup(
+               new MenuItem("🧪 [bold magenta]Data Management[/]", null),
+               dataGroup
             );
          }
 
-         menu.Add(
+         prompt.AddChoices(new[]
+         {
             new MenuItem(
                "Exit",
                () =>
@@ -179,9 +190,9 @@ namespace dvmig.Cli
                   return Task.CompletedTask;
                }
             )
-         );
+         });
 
-         return menu;
+         return prompt;
       }
    }
 }
