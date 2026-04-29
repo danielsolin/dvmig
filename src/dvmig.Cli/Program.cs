@@ -2,7 +2,6 @@ using System.Runtime.Versioning;
 using dvmig.Cli.Actions;
 using dvmig.Cli.Infrastructure;
 using dvmig.Core.Logging;
-using dvmig.Core.Metadata;
 using dvmig.Core.Provisioning;
 using dvmig.Core.Shared;
 using dvmig.Core.Settings;

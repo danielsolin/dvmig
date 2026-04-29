@@ -3,7 +3,7 @@ using dvmig.Core.Shared;
 using Microsoft.Xrm.Sdk.Messages;
 using Microsoft.Xrm.Sdk.Metadata;
 
-namespace dvmig.Core.Metadata
+namespace dvmig.Core.Synchronization
 {
    /// <summary>
    /// Implementation of the metadata service that retrieves and filters 
