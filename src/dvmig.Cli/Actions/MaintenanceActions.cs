@@ -93,16 +93,26 @@ namespace dvmig.Cli.Actions
          if (!AnsiConsole.Confirm(promptMsg, false))
             return;
 
-         await CliUI.RunStatusAsync(
-             "Uninstalling components...",
-             async progress =>
-                 await _setupService.CleanEnvironmentAsync(
-                     provider,
-                     progress
-                 )
-         );
+         try
+         {
+            await CliUI.RunStatusAsync(
+                "Uninstalling components...",
+                async progress =>
+                    await _setupService.CleanEnvironmentAsync(
+                        provider,
+                        progress
+                    )
+            );
 
-         CliUI.WriteSuccess("Uninstallation Finished!");
+            CliUI.WriteSuccess("Uninstallation Finished!");
+         }
+         catch (Exception ex)
+         {
+            var baseEx = ex.GetBaseException();
+            CliUI.WriteError(
+               "Cleanup failed. " + baseEx.Message
+            );
+         }
       }
 
       public async Task HandleSourceDataCleanupAsync()

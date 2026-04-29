@@ -187,16 +187,26 @@ namespace dvmig.Cli.Actions
 
       private async Task HandleInstallAsync(IDataverseProvider target)
       {
-         await CliUI.RunStatusAsync(
-            "Installing components...",
-            async progress =>
-            {
-               await _setupService.CreateSchemaAsync(target, progress);
-               await _setupService.DeployPluginAsync(target, progress);
-            }
-         );
+         try
+         {
+            await CliUI.RunStatusAsync(
+               "Installing components...",
+               async progress =>
+               {
+                  await _setupService.CreateSchemaAsync(target, progress);
+                  await _setupService.DeployPluginAsync(target, progress);
+               }
+            );
 
-         CliUI.WriteSuccess("Installation Finished!");
+            CliUI.WriteSuccess("Installation Finished!");
+         }
+         catch (Exception ex)
+         {
+            var baseEx = ex.GetBaseException();
+            CliUI.WriteError(
+               $"Installation failed: {baseEx.Message}"
+            );
+         }
       }
 
       private async Task RunMigrationAsync(

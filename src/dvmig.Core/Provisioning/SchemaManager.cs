@@ -5,7 +5,9 @@ using Microsoft.Crm.Sdk.Messages;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Messages;
 using Microsoft.Xrm.Sdk.Metadata;
+using Microsoft.Xrm.Sdk.Query;
 using Serilog;
+using System.ServiceModel;
 
 namespace dvmig.Core.Provisioning
 {
@@ -329,15 +331,8 @@ namespace dvmig.Core.Provisioning
           CancellationToken ct = default
       )
       {
-         // 1. dm_sourcedate
-         await DropEntityIfPresentAsync(
-             target,
-             SystemConstants.SourceDate.EntityLogicalName,
-             progress,
-             ct
-         );
-
-         // 2. dm_migrationfailure
+         // 1. dm_migrationfailure (Delete this first as it might reference 
+         //    dm_sourcedate if lookup was manually added)
          await DropEntityIfPresentAsync(
              target,
              SystemConstants.MigrationFailure.EntityLogicalName,
@@ -346,7 +341,17 @@ namespace dvmig.Core.Provisioning
          );
 
          _logger.Information(progress, "Publishing changes...");
+         await target.ExecuteAsync(new PublishAllXmlRequest(), ct);
 
+         // 2. dm_sourcedate
+         await DropEntityIfPresentAsync(
+             target,
+             SystemConstants.SourceDate.EntityLogicalName,
+             progress,
+             ct
+         );
+
+         _logger.Information(progress, "Publishing changes...");
          await target.ExecuteAsync(new PublishAllXmlRequest(), ct);
 
          _logger.Information(progress, "Schema removal completed.");
@@ -380,12 +385,73 @@ namespace dvmig.Core.Provisioning
 
             progress?.Report($"Deleting '{logicalName}' entity...");
 
-            var request = new DeleteEntityRequest
+            try
             {
-               LogicalName = logicalName
-            };
+               var request = new DeleteEntityRequest
+               {
+                  LogicalName = logicalName
+               };
 
-            await target.ExecuteAsync(request, ct);
+               await target.ExecuteAsync(request, ct);
+            }
+            catch (FaultException ex) when (ex.Message.Contains("referenced by"))
+            {
+               _logger.Warning(
+                  "Deletion of {Entity} failed due to dependencies.",
+                  logicalName
+               );
+
+               progress?.Report($"Identifying blockers for {logicalName}...");
+
+               var depReq = new RetrieveDependenciesForDeleteRequest
+               {
+                  ComponentType = 1, // Entity
+                  ObjectId = existingMeta.MetadataId ?? Guid.Empty
+               };
+
+               var depRes = await target.ExecuteAsync(depReq, ct) 
+                  as RetrieveDependenciesForDeleteResponse;
+
+               var blockers = new List<string>();
+
+               if (depRes?.EntityCollection.Entities.Any() == true)
+               {
+                  foreach (var dep in depRes.EntityCollection.Entities)
+                  {
+                     var depType = dep.GetAttributeValue<OptionSetValue>(
+                        "dependentcomponenttype")?.Value;
+                     var depId = dep.GetAttributeValue<Guid>(
+                        "dependentcomponentobjectid");
+
+                     string? depName = await TryGetDependencyNameAsync(
+                        target, 
+                        depType ?? 0, 
+                        depId, 
+                        ct
+                     );
+
+                     if (!string.IsNullOrEmpty(depName))
+                        blockers.Add($"{depName} (Type {depType})");
+                     else
+                        blockers.Add($"Unknown Component {depId} (Type {depType})");
+                  }
+               }
+
+               var blockerList = blockers.Count > 0 
+                  ? string.Join(", ", blockers) 
+                  : "unidentified components";
+
+               var errorMsg = 
+                  $"Cannot delete entity '{logicalName}' because it is " +
+                  $"referenced by: {blockerList}. Please manually remove " +
+                  "these references (e.g., from Model-driven Apps, " +
+                  "Sitemaps, or Solutions) before trying again.";
+
+               _logger.Error(errorMsg);
+               progress?.Report($"ERROR: {errorMsg}");
+
+               throw new InvalidOperationException(errorMsg, ex);
+            }
          }
          else
          {
@@ -395,6 +461,37 @@ namespace dvmig.Core.Provisioning
             );
 
             progress?.Report($"'{logicalName}' entity not found.");
+         }
+      }
+
+      private async Task<string?> TryGetDependencyNameAsync(
+         IDataverseProvider target,
+         int type,
+         Guid id,
+         CancellationToken ct
+      )
+      {
+         try
+         {
+            string? entityName = type switch
+            {
+               62 => "sdkmessageprocessingstep",
+               80 => "appmodule",
+               29 => "workflow",
+               60 => "systemform",
+               24 => "systemform",
+               _ => null
+            };
+
+            if (entityName == null)
+               return null;
+
+            var result = await target.RetrieveAsync(entityName, id, new[] { "name" }, ct);
+            return result?.GetAttributeValue<string>("name");
+         }
+         catch
+         {
+            return null;
          }
       }
    }

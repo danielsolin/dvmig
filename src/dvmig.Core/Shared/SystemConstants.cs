@@ -205,6 +205,8 @@ namespace dvmig.Core.Shared
          public const string Rank = "rank";
          public const string Mode = "mode";
 
+         public const string EventHandler = "eventhandler";
+
          public const string MessageEntity = "sdkmessage";
          public const string MessageId = "sdkmessageid";
          public const string MessageName = "name";

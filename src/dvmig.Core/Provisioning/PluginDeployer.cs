@@ -243,6 +243,11 @@ namespace dvmig.Core.Provisioning
          step[SystemConstants.PluginRegistration.Rank] = 1;
          step[SystemConstants.PluginRegistration.Mode] =
              new OptionSetValue(0);             // Synchronous
+         step[SystemConstants.PluginRegistration.EventHandler] =
+             new EntityReference(
+                 SystemConstants.PluginRegistration.TypeEntity,
+                 typeId
+             );
 
          // 3. Check if exists
          var stepQuery = new QueryByAttribute(
@@ -254,7 +259,7 @@ namespace dvmig.Core.Provisioning
             )
          };
          stepQuery.AddAttributeValue(
-             SystemConstants.PluginRegistration.TypeId,
+             SystemConstants.PluginRegistration.EventHandler,
              typeId
          );
          stepQuery.AddAttributeValue(
@@ -358,7 +363,7 @@ namespace dvmig.Core.Provisioning
                    )
                };
                stepQuery.AddAttributeValue(
-                   SystemConstants.PluginRegistration.TypeId,
+                   SystemConstants.PluginRegistration.EventHandler,
                    type.Id
                );
                var steps = await target.RetrieveMultipleAsync(

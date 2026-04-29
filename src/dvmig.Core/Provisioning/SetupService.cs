@@ -1,6 +1,7 @@
 using dvmig.Core.Interfaces;
 using dvmig.Core.Logging;
 using dvmig.Core.Shared;
+using Microsoft.Crm.Sdk.Messages;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Query;
 using Serilog;
@@ -107,6 +108,9 @@ namespace dvmig.Core.Provisioning
 
          // 1. Remove Plugin
          await _pluginDeployer.RemovePluginAsync(target, progress, ct);
+
+         // Ensure plugin changes are published before schema removal
+         await target.ExecuteAsync(new PublishAllXmlRequest(), ct);
 
          // 2. Drop Schema
          await _schemaManager.DropSchemaAsync(target, progress, ct);
