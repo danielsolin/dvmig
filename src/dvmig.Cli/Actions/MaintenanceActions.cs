@@ -1,6 +1,5 @@
 using dvmig.Cli.Infrastructure;
 using dvmig.Core.Interfaces;
-using dvmig.Core.Metadata;
 using dvmig.Core.Shared;
 using Serilog;
 using Spectre.Console;
