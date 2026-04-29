@@ -100,13 +100,15 @@ namespace dvmig.Core.Logging
          object[] propertyValues
       )
       {
-         if (progress == null) return;
+         if (progress == null)
+            return;
 
          try
          {
             if (propertyValues == null || propertyValues.Length == 0)
             {
                progress.Report(messageTemplate);
+
                return;
             }
 

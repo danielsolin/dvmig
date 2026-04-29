@@ -119,13 +119,42 @@ namespace dvmig.Core.Interfaces
       /// <summary>
       /// Gets the total record count for a specific entity type.
       /// </summary>
-      /// <param name="entityLogicalName">The logical name of the entity.</param>
+      /// <param name="entityName">The logical name of the entity.</param>
       /// <param name="ct">A cancellation token.</param>
       /// <returns>The total number of records.</returns>
-      Task<long> GetRecordCountAsync(
-         string entityLogicalName,
+      public async Task<long> GetRecordCountAsync(
+         string entityName,
          CancellationToken ct = default
-      );
+      )
+      {
+         var metadata = await GetEntityMetadataAsync(entityName, ct);
+
+         var primaryId = metadata?.PrimaryIdAttribute ??
+            $"{entityName}id";
+
+         var fetchXml = $@"
+            <fetch aggregate='true'>
+              <entity name='{entityName}'>
+                <attribute name='{primaryId}' alias='count' aggregate='count' />
+              </entity>
+            </fetch>";
+
+         var result = await RetrieveMultipleAsync(
+            new Microsoft.Xrm.Sdk.Query.FetchExpression(fetchXml),
+            ct
+         );
+
+         if (result.Entities.Count > 0 &&
+             result.Entities[0].Contains("count"))
+         {
+            var entity = result.Entities[0];
+            var aliasedValue = (AliasedValue)entity["count"];
+
+            return Convert.ToInt64(aliasedValue.Value);
+         }
+
+         return 0;
+      }
 
       /// <summary>
       /// Gets or sets the ID of the user on whose behalf the operations

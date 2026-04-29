@@ -7,14 +7,10 @@ using Spectre.Console;
 
 namespace dvmig.Cli.Actions
 {
-   public class ReconciliationActions
+   public class ReconciliationActions : BaseActions
    {
-      private readonly ConnectionManager _connectionManager;
       private readonly IReconciliationService _reconciliationService;
       private readonly IMetadataService _metadataService;
-      private readonly ISetupService _setupService;
-      private readonly ISyncStateTracker _stateTracker;
-      private readonly ILogger _logger;
 
       public ReconciliationActions(
          ConnectionManager connectionManager,
@@ -23,19 +19,15 @@ namespace dvmig.Cli.Actions
          ISetupService setupService,
          ISyncStateTracker stateTracker,
          ILogger logger
-      )
+      ) : base(connectionManager, setupService, stateTracker, logger)
       {
-         _connectionManager = connectionManager;
          _reconciliationService = reconciliationService;
          _metadataService = metadataService;
-         _setupService = setupService;
-         _stateTracker = stateTracker;
-         _logger = logger;
       }
 
       public async Task HandleViewFailuresAsync()
       {
-         var target = await _connectionManager.ConnectAsync(
+         var target = await ConnectionManager.ConnectAsync(
             ConnectionDirection.Target
          );
 
@@ -227,19 +219,30 @@ namespace dvmig.Cli.Actions
                         engine,
                         options,
                         new Progress<string>(
-                           msg => 
+                           msg =>
                            {
-                              bool isCritical =
-                                 msg.Contains(
-                                    SystemConstants.UiMarkup.Wait,
-                                    StringComparison.Ordinal
-                                 ) ||
-                                 msg.Contains(
-                                    SystemConstants.ErrorKeywords.TooManyRequests,
-                                    StringComparison.OrdinalIgnoreCase
-                                 ) ||
-                                 msg.StartsWith(SystemConstants.UiMarkup.Yellow) ||
-                                 msg.StartsWith(SystemConstants.UiMarkup.Red);
+                              var waitMark = SystemConstants.UiMarkup.Wait;
+                              var throttleKey = SystemConstants
+                                 .ErrorKeywords.TooManyRequests;
+
+                              var ordinal = StringComparison.Ordinal;
+                              var ignoreCase = 
+                                 StringComparison.OrdinalIgnoreCase;
+
+                              bool isWait = msg.Contains(waitMark, ordinal);
+                              bool isThrottled = msg.Contains(
+                                 throttleKey, 
+                                 ignoreCase
+                              );
+                              bool isYellow = msg.StartsWith(
+                                 SystemConstants.UiMarkup.Yellow
+                              );
+                              bool isRed = msg.StartsWith(
+                                 SystemConstants.UiMarkup.Red
+                              );
+
+                              bool isCritical = isWait || isThrottled || 
+                                                isYellow || isRed;
 
                               if (isCritical)
                                  AnsiConsole.MarkupLine(msg);
@@ -270,103 +273,6 @@ namespace dvmig.Cli.Actions
          }
 
          CliUI.WriteSuccess("Reconciliation process finished!");
-      }
-
-      private async Task<(
-         IDataverseProvider? Source,
-         IDataverseProvider? Target,
-         ISyncEngine? Engine
-      )> SetupSyncEngineAsync()
-      {
-         var source = await _connectionManager.ConnectAsync(
-            ConnectionDirection.Source
-         );
-
-         if (source == null)
-            return (null, null, null);
-
-         var target = await _connectionManager.ConnectAsync(
-            ConnectionDirection.Target
-         );
-
-         if (target == null)
-            return (null, null, null);
-
-         bool isReady = await _setupService.IsEnvironmentReadyAsync(
-            target,
-            default
-         );
-
-         if (!isReady)
-         {
-            AnsiConsole.MarkupLine(
-               $"{SystemConstants.UiMarkup.Yellow}Target environment is " +
-               "not prepared. Installing required dvmig components...[/]"
-            );
-
-            await HandleInstallAsync(target);
-         }
-
-         var userMapper = new UserMapper(source, target, _logger);
-         var retryStrategy = new RetryStrategy(_logger);
-         var entityPreparer = new EntityPreparer(_logger);
-         var errorHandler = new SyncErrorHandler(
-            target,
-            _setupService,
-            _logger
-         );
-
-         var dependencyResolver = new DependencyResolver(source, _logger);
-         var statusTransitionHandler = new StatusTransitionHandler(
-            target,
-            _setupService,
-            _logger
-         );
-
-         var metadataCache = new MetadataCache(target, _logger);
-         var failureLogger = new FailureLogger(target, _logger);
-
-         var engine = new SyncEngine(
-            source,
-            target,
-            userMapper,
-            _setupService,
-            _stateTracker,
-            _logger,
-            retryStrategy,
-            entityPreparer,
-            errorHandler,
-            dependencyResolver,
-            statusTransitionHandler,
-            metadataCache,
-            failureLogger
-         );
-
-         return (source, target, engine);
-      }
-
-      private async Task HandleInstallAsync(IDataverseProvider target)
-      {
-         try
-         {
-            await CliUI.RunStatusAsync(
-               "Installing components...",
-               async progress =>
-               {
-                  await _setupService.CreateSchemaAsync(target, progress);
-                  await _setupService.DeployPluginAsync(target, progress);
-               }
-            );
-
-            CliUI.WriteSuccess("Installation Finished!");
-         }
-         catch (Exception ex)
-         {
-            var baseEx = ex.GetBaseException();
-            CliUI.WriteError(
-               $"Installation failed: {baseEx.Message}"
-            );
-         }
       }
    }
 }

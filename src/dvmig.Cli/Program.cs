@@ -61,6 +61,7 @@ namespace dvmig.Cli
              seeder,
              setupService,
              metadataService,
+             stateTracker,
              logger
          );
          bool developerMode =
@@ -136,7 +137,7 @@ namespace dvmig.Cli
             menu.Add(
                new MenuItem(
                   "PREP: Install DVMig Components on Target",
-                  maintenanceActions.HandleInstallAsync
+                  maintenanceActions.HandleInstallMenuAsync
                )
             );
 

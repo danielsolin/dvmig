@@ -259,7 +259,8 @@ namespace dvmig.Core.Synchronization
                          );
 
                          progress?.Report(
-                             $"[red]ERROR[/] Fatal sync failure: {logEx.Message}"
+                             $"[red]ERROR[/] Fatal sync failure: " +
+                             $"{logEx.Message}"
                          );
 
                          throw; // Abort parallel loop
@@ -289,11 +290,12 @@ namespace dvmig.Core.Synchronization
                    try
                    {
                       await _retryPolicy.ExecuteAsync(
-                          async (ctx) => await _failureLogger.LogFailureToTargetAsync(
-                             entity,
-                             failureMessage,
-                             token
-                          ),
+                          async (ctx) =>
+                             await _failureLogger.LogFailureToTargetAsync(
+                                entity,
+                                failureMessage,
+                                token
+                             ),
                           pollyCtx
                       );
                    }

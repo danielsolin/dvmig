@@ -182,7 +182,8 @@ namespace dvmig.Core.Provisioning
                           <condition attribute='{sourceEntityId}' 
                             operator='eq' value='{entityId}' />
                           <condition attribute='{logicalNameAttr}' 
-                            operator='eq' value='{logicalName.ToLowerInvariant()}' />
+                            operator='eq' 
+                            value='{logicalName.ToLowerInvariant()}' />
                         </filter>
                       </entity>
                     </fetch>";

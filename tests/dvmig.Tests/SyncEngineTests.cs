@@ -59,9 +59,14 @@ namespace dvmig.Tests
              _setupServiceMock.Object,
              _loggerMock.Object
          );
-         var metadataCache = new MetadataCache(_targetMock.Object, _loggerMock.Object);
-         var failureLogger = new FailureLogger(_targetMock.Object, _loggerMock.Object);
-
+         var metadataCache = new MetadataCache(
+            _targetMock.Object, 
+            _loggerMock.Object
+         );
+         var failureLogger = new FailureLogger(
+            _targetMock.Object, 
+            _loggerMock.Object
+         );
          _engine = new SyncEngine(
              _sourceMock.Object,
              _targetMock.Object,
@@ -280,12 +285,13 @@ namespace dvmig.Tests
       }
 
       [Fact]
-      public async Task SyncRecordAsync_PreserveDates_WhenOptionIsEnabled()
+      public async Task PreserveDates_WhenOptionIsEnabled()
       {
          // Arrange
          var account = new Entity("account", Guid.NewGuid());
          account["name"] = "Date Test";
-         account[SystemConstants.DataverseAttributes.CreatedOn] = DateTime.UtcNow;
+         account[SystemConstants.DataverseAttributes.CreatedOn] =
+             DateTime.UtcNow;
 
          _targetMock.Setup(t => t.CreateAsync(
              It.IsAny<Entity>(),
@@ -314,7 +320,7 @@ namespace dvmig.Tests
       }
 
       [Fact]
-      public async Task SyncRecordAsync_UpdateExisting_WhenCreateFailsWithDuplicate()
+      public async Task SyncRecordAsync_UpdatesExisting_OnDuplicate()
       {
          // Arrange
          var accountId = Guid.NewGuid();
@@ -334,7 +340,8 @@ namespace dvmig.Tests
                 createCalls++;
 
                 throw new Exception(
-                    $"A record with this ID {SystemConstants.ErrorKeywords.AlreadyExists}."
+                    $"A record with this ID " +
+                    $"{SystemConstants.ErrorKeywords.AlreadyExists}."
                 );
              });
 
@@ -430,7 +437,10 @@ namespace dvmig.Tests
              .ThrowsAsync(new Exception("Create failed"));
 
          _targetMock.Setup(t => t.CreateAsync(
-             It.Is<Entity>(e => e.LogicalName == SystemConstants.MigrationFailure.EntityLogicalName),
+             It.Is<Entity>(e =>
+                 e.LogicalName ==
+                 SystemConstants.MigrationFailure.EntityLogicalName
+             ),
              It.IsAny<CancellationToken>()
          ))
              .ReturnsAsync(Guid.NewGuid());
@@ -446,7 +456,8 @@ namespace dvmig.Tests
          // Assert
          _targetMock.Verify(t => t.CreateAsync(
              It.Is<Entity>(e =>
-                 e.LogicalName == SystemConstants.MigrationFailure.EntityLogicalName
+                 e.LogicalName ==
+                 SystemConstants.MigrationFailure.EntityLogicalName
              ),
              It.IsAny<CancellationToken>()
          ), Times.Once);

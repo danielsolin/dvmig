@@ -127,18 +127,20 @@ namespace dvmig.Core.Synchronization
       {
          var comparison = StringComparison.OrdinalIgnoreCase;
 
-         bool isSensitive =
-            key.Contains(SystemConstants.MaskingKeywords.Password, comparison) ||
-            key.Contains(SystemConstants.MaskingKeywords.Secret, comparison) ||
-            key.Contains(SystemConstants.MaskingKeywords.Token, comparison) ||
-            key.Contains(SystemConstants.MaskingKeywords.Thumbprint, comparison) ||
-            key.Contains(SystemConstants.MaskingKeywords.ClientId, comparison) ||
-            key.Contains(SystemConstants.MaskingKeywords.AppId, comparison) ||
-            key.Contains(SystemConstants.MaskingKeywords.UserId, comparison) ||
-            key.Contains("user id", comparison) || // Keep manual as it has space
-            key.Contains(SystemConstants.MaskingKeywords.Username, comparison);
+         var keywords = new[]
+         {
+            SystemConstants.MaskingKeywords.Password,
+            SystemConstants.MaskingKeywords.Secret,
+            SystemConstants.MaskingKeywords.Token,
+            SystemConstants.MaskingKeywords.Thumbprint,
+            SystemConstants.MaskingKeywords.ClientId,
+            SystemConstants.MaskingKeywords.AppId,
+            SystemConstants.MaskingKeywords.UserId,
+            "user id",
+            SystemConstants.MaskingKeywords.Username
+         };
 
-         return isSensitive;
+         return keywords.Any(k => key.Contains(k, comparison));
       }
 
       /// <inheritdoc />

@@ -45,7 +45,9 @@ namespace dvmig.Core.Provisioning
              ct
          );
 
-         var assembly = new Entity(SystemConstants.PluginRegistration.AssemblyEntity);
+         var assembly = new Entity(
+             SystemConstants.PluginRegistration.AssemblyEntity
+         );
          assembly[SystemConstants.PluginRegistration.AssemblyName] =
              SystemConstants.AppConstants.PluginName;
          assembly[SystemConstants.PluginRegistration.Content] =
@@ -144,7 +146,9 @@ namespace dvmig.Core.Provisioning
          }
          else
          {
-            var type = new Entity(SystemConstants.PluginRegistration.TypeEntity);
+            var type = new Entity(
+                SystemConstants.PluginRegistration.TypeEntity
+            );
             type[SystemConstants.PluginRegistration.AssemblyId] =
                 new EntityReference(
                     SystemConstants.PluginRegistration.AssemblyEntity,
@@ -420,11 +424,17 @@ namespace dvmig.Core.Provisioning
                 ct
             );
 
-            _logger.Information(progress, "Plugin assembly removed successfully.");
+            _logger.Information(
+                progress,
+                "Plugin assembly removed successfully."
+            );
          }
          else
          {
-            _logger.Information(progress, "No plugin assembly found to remove.");
+            _logger.Information(
+                progress,
+                "No plugin assembly found to remove."
+            );
          }
       }
    }

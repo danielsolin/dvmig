@@ -6,33 +6,28 @@ using Spectre.Console;
 
 namespace dvmig.Cli.Actions
 {
-   public class MaintenanceActions
+   public class MaintenanceActions : BaseActions
    {
-      private readonly ConnectionManager _connectionManager;
       private readonly ITestDataSeeder _seeder;
-      private readonly ISetupService _setupService;
       private readonly IMetadataService _metadataService;
-      private readonly ILogger _logger;
 
       public MaintenanceActions(
-          ConnectionManager connectionManager,
-          ITestDataSeeder seeder,
-          ISetupService setupService,
-          IMetadataService metadataService,
-          ILogger logger
-      )
+         ConnectionManager connectionManager,
+         ITestDataSeeder seeder,
+         ISetupService setupService,
+         IMetadataService metadataService,
+         ISyncStateTracker stateTracker,
+         ILogger logger
+      ) : base(connectionManager, setupService, stateTracker, logger)
       {
-         _connectionManager = connectionManager;
          _seeder = seeder;
-         _setupService = setupService;
          _metadataService = metadataService;
-         _logger = logger;
       }
 
       public async Task HandleSeedingAsync()
       {
-         var provider = await _connectionManager.ConnectAsync(
-             ConnectionDirection.Source
+         var provider = await ConnectionManager.ConnectAsync(
+            ConnectionDirection.Source
          );
 
          if (provider == null)
@@ -44,43 +39,34 @@ namespace dvmig.Cli.Actions
          int count = AnsiConsole.Ask<int>(prompt, 100);
 
          await CliUI.RunStatusAsync(
-             "Seeding data...",
-             async progress =>
-                 await _seeder.SeedTestDataAsync(
-                     provider,
-                     count,
-                     progress
-                 )
+            "Seeding data...",
+            async progress =>
+               await _seeder.SeedTestDataAsync(
+                  provider,
+                  count,
+                  progress
+               )
          );
 
          CliUI.WriteSuccess("Seeding Finished!");
       }
 
-      public async Task HandleInstallAsync()
+      public async Task HandleInstallMenuAsync()
       {
-         var provider = await _connectionManager.ConnectAsync(
-             ConnectionDirection.Target
+         var provider = await ConnectionManager.ConnectAsync(
+            ConnectionDirection.Target
          );
 
          if (provider == null)
             return;
 
-         await CliUI.RunStatusAsync(
-             "Installing components...",
-             async progress =>
-             {
-                await _setupService.CreateSchemaAsync(provider, progress);
-                await _setupService.DeployPluginAsync(provider, progress);
-             }
-         );
-
-         CliUI.WriteSuccess("Installation Finished!");
+         await HandleInstallAsync(provider);
       }
 
       public async Task HandleTargetComponentsCleanupAsync()
       {
-         var provider = await _connectionManager.ConnectAsync(
-             ConnectionDirection.Target
+         var provider = await ConnectionManager.ConnectAsync(
+            ConnectionDirection.Target
          );
 
          if (provider == null)
@@ -96,12 +82,12 @@ namespace dvmig.Cli.Actions
          try
          {
             await CliUI.RunStatusAsync(
-                "Uninstalling components...",
-                async progress =>
-                    await _setupService.CleanEnvironmentAsync(
-                        provider,
-                        progress
-                    )
+               "Uninstalling components...",
+               async progress =>
+                  await SetupService.CleanEnvironmentAsync(
+                     provider,
+                     progress
+                  )
             );
 
             CliUI.WriteSuccess("Uninstallation Finished!");
@@ -109,6 +95,7 @@ namespace dvmig.Cli.Actions
          catch (Exception ex)
          {
             var baseEx = ex.GetBaseException();
+
             CliUI.WriteError(
                "Cleanup failed. " + baseEx.Message
             );
@@ -126,26 +113,26 @@ namespace dvmig.Cli.Actions
       }
 
       private async Task HandleDataCleanupInternalAsync(
-          ConnectionDirection direction
+         ConnectionDirection direction
       )
       {
-         var provider = await _connectionManager.ConnectAsync(direction);
+         var provider = await ConnectionManager.ConnectAsync(direction);
 
          if (provider == null)
             return;
 
          var envName = direction == ConnectionDirection.Source
-             ? "SOURCE"
-             : "TARGET";
+            ? "SOURCE"
+            : "TARGET";
 
          var wipeChoice = AnsiConsole.Prompt(
-             new SelectionPrompt<string>()
-                 .Title($"What data do you want to wipe on {envName}?")
-                 .AddChoices(new[]
-                 {
-                     "All Recommended Entities (Account, Contact, Activities)",
-                     "Select Specific Entities"
-                 })
+            new SelectionPrompt<string>()
+               .Title($"What data do you want to wipe on {envName}?")
+               .AddChoices(new[]
+               {
+                  "All Recommended Entities (Account, Contact, Activities)",
+                  "Select Specific Entities"
+               })
          );
 
          List<string>? selectedEntities = null;
@@ -153,8 +140,8 @@ namespace dvmig.Cli.Actions
          if (wipeChoice == "Select Specific Entities")
          {
             selectedEntities = await CliUI.SelectEntitiesAsync(
-                _metadataService,
-                provider
+               _metadataService,
+               provider
             );
 
             if (selectedEntities == null || selectedEntities.Count == 0)
@@ -167,23 +154,23 @@ namespace dvmig.Cli.Actions
          else
          {
             AnsiConsole.MarkupLine(
-                $"[bold red]CRITICAL WARNING:[/] This operation will delete " +
-                $"[bold]EVERY SINGLE[/] Account, Contact, Task, Phone Call, " +
-                $"and Email record from the {envName} environment."
+               $"[bold red]CRITICAL WARNING:[/] This operation will delete " +
+               $"[bold]EVERY SINGLE[/] Account, Contact, Task, Phone Call, " +
+               $"and Email record from the {envName} environment."
             );
          }
 
          AnsiConsole.MarkupLine(
-             "[red]This is NOT restricted to test data. Real data will " +
-             "be destroyed.[/]"
+            "[red]This is NOT restricted to test data. Real data will " +
+            "be destroyed.[/]"
          );
          AnsiConsole.MarkupLine(
-             "[red]This action is permanent and irreversible.[/]"
+            "[red]This action is permanent and irreversible.[/]"
          );
 
-         var confirmation = AnsiConsole.Ask<string>(
-             $"Type [bold red]{SystemConstants.UiMarkup.WipeDataConfirmation}[/] to confirm:"
-         );
+         var wipeText = SystemConstants.UiMarkup.WipeDataConfirmation;
+         var prompt = $"Type [bold red]{wipeText}[/] to confirm:";
+         var confirmation = AnsiConsole.Ask<string>(prompt);
 
          if (confirmation != SystemConstants.UiMarkup.WipeDataConfirmation)
          {
@@ -193,13 +180,13 @@ namespace dvmig.Cli.Actions
          }
 
          await CliUI.RunStatusAsync(
-             "Wiping data...",
-             async progress =>
-                 await _seeder.CleanTestDataAsync(
-                     provider,
-                     selectedEntities,
-                     progress
-                 )
+            "Wiping data...",
+            async progress =>
+               await _seeder.CleanTestDataAsync(
+                  provider,
+                  selectedEntities,
+                  progress
+               )
          );
 
          CliUI.WriteSuccess($"Data Wipe Finished for {envName}!");

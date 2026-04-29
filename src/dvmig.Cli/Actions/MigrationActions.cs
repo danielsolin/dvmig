@@ -7,13 +7,9 @@ using Spectre.Console;
 
 namespace dvmig.Cli.Actions
 {
-   public class MigrationActions
+   public class MigrationActions : BaseActions
    {
-      private readonly ConnectionManager _connectionManager;
       private readonly IMetadataService _metadataService;
-      private readonly ISetupService _setupService;
-      private readonly ISyncStateTracker _stateTracker;
-      private readonly ILogger _logger;
 
       public MigrationActions(
          ConnectionManager connectionManager,
@@ -21,13 +17,9 @@ namespace dvmig.Cli.Actions
          ISetupService setupService,
          ISyncStateTracker stateTracker,
          ILogger logger
-      )
+      ) : base(connectionManager, setupService, stateTracker, logger)
       {
-         _connectionManager = connectionManager;
          _metadataService = metadataService;
-         _setupService = setupService;
-         _stateTracker = stateTracker;
-         _logger = logger;
       }
 
       public async Task HandleMigrationAsync()
@@ -104,111 +96,6 @@ namespace dvmig.Cli.Actions
          CliUI.WriteSuccess("Recommended Migration Finished!");
       }
 
-      private async Task<(
-         IDataverseProvider? Source,
-         IDataverseProvider? Target,
-         ISyncEngine? Engine
-      )> SetupSyncEngineAsync()
-      {
-         var source = await _connectionManager.ConnectAsync(
-            ConnectionDirection.Source
-         );
-
-         if (source == null)
-            return (null, null, null);
-
-         var target = await _connectionManager.ConnectAsync(
-            ConnectionDirection.Target
-         );
-
-         if (target == null)
-            return (null, null, null);
-
-         bool isReady = await _setupService.IsEnvironmentReadyAsync(
-            target,
-            default
-         );
-
-         if (!isReady)
-         {
-            var prepareMsg = $"{SystemConstants.UiMarkup.Yellow}" +
-               "Target environment is not prepared for migration. " +
-               "Prepare it now?[/]";
-
-            if (AnsiConsole.Confirm(prepareMsg, true))
-               await HandleInstallAsync(target);
-            else
-            {
-               CliUI.WriteError(
-                  "Migration cannot proceed without components."
-               );
-
-               return (null, null, null);
-            }
-         }
-
-         var userMapper = new UserMapper(source, target, _logger);
-         var retryStrategy = new RetryStrategy(_logger);
-         var entityPreparer = new EntityPreparer(_logger);
-         var errorHandler = new SyncErrorHandler(
-            target,
-            _setupService,
-            _logger
-         );
-
-         var dependencyResolver = new DependencyResolver(source, _logger);
-         var statusTransitionHandler = new StatusTransitionHandler(
-            target,
-            _setupService,
-            _logger
-         );
-
-         var metadataCache = new MetadataCache(target, _logger);
-         var failureLogger = new FailureLogger(target, _logger);
-
-         var engine = new SyncEngine(
-            source,
-            target,
-            userMapper,
-            _setupService,
-            _stateTracker,
-            _logger,
-            retryStrategy,
-            entityPreparer,
-            errorHandler,
-            dependencyResolver,
-            statusTransitionHandler,
-            metadataCache,
-            failureLogger
-         );
-
-         return (source, target, engine);
-      }
-
-      private async Task HandleInstallAsync(IDataverseProvider target)
-      {
-         try
-         {
-            await CliUI.RunStatusAsync(
-               "Installing components...",
-               async progress =>
-               {
-                  await _setupService.CreateSchemaAsync(target, progress);
-                  await _setupService.DeployPluginAsync(target, progress);
-               }
-            );
-
-            CliUI.WriteSuccess("Installation Finished!");
-         }
-         catch (Exception ex)
-         {
-            var baseEx = ex.GetBaseException();
-            CliUI.WriteError(
-               $"Installation failed: {baseEx.Message}"
-            );
-         }
-      }
-
       private async Task RunMigrationAsync(
          ISyncEngine engine,
          IDataverseProvider source,
@@ -227,9 +114,9 @@ namespace dvmig.Cli.Actions
             int processed = 0;
             int failedCount = 0;
 
-            if (_stateTracker.StateExists())
+            if (StateTracker.StateExists())
             {
-               var syncedIds = await _stateTracker.GetSyncedIdsAsync();
+               var syncedIds = await StateTracker.GetSyncedIdsAsync();
 
                if (syncedIds.Count > 0)
                {
@@ -241,7 +128,7 @@ namespace dvmig.Cli.Actions
 
                   if (!AnsiConsole.Confirm(resumeMsg, true))
                   {
-                     await _stateTracker.ClearStateAsync();
+                     await StateTracker.ClearStateAsync();
                      await engine.InitializeEntitySyncAsync(logicalName);
                   }
                   else
@@ -307,11 +194,13 @@ namespace dvmig.Cli.Actions
                         lastUpdate = now;
                         task.Value = processed;
 
-                        var recsPerSec = processed / sw.Elapsed.TotalSeconds;
+                        var swElapsed = sw.Elapsed.TotalSeconds;
+                        var recsPerSec = processed / swElapsed;
 
                         var desc = $"{displayName} " +
                            $"({processed}/{totalCount}) " +
-                           $"[[[green]{maxThreads}t - {recsPerSec:F1} r/s[/]]] ";
+                           $"[[[green]{maxThreads}t - " +
+                           $"{recsPerSec:F1} r/s[/]]] ";
 
                         if (failedCount > 0)
                            desc += $" [red]({failedCount} failed)[/]";
@@ -346,13 +235,13 @@ namespace dvmig.Cli.Actions
                      });
 
                      await engine.SyncEntityAsync(
-                             logicalName,
-                             options,
-                             null,
-                             progressReporter,
-                             recordProgress,
-                             default
-                         );
+                        logicalName,
+                        options,
+                        null,
+                        progressReporter,
+                        recordProgress,
+                        default
+                     );
 
                      // Ensure it hits 100% even if there were rounding or 
                      // async reporting skips.

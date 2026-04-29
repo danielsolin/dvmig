@@ -101,12 +101,19 @@ namespace dvmig.Core.Synchronization
 
                   foreach (var partyAttr in party.Attributes)
                   {
-                     // Only keep essential fields for linking the activity party.
-                     // Sending system-managed fields (like ownerid) with unmapped
-                     // IDs causes Dataverse to silently drop the party record.
-                     if (partyAttr.Key != SystemConstants.DataverseAttributes.PartyId &&
-                         partyAttr.Key != SystemConstants.DataverseAttributes.ParticipationTypeMask &&
-                         partyAttr.Key != SystemConstants.DataverseAttributes.AddressUsed)
+                     // Only keep essential fields for linking the 
+                     // activity party. Sending system-managed fields 
+                     // (like ownerid) with unmapped IDs causes 
+                     // Dataverse to silently drop the party record.
+                     bool isPartyId = partyAttr.Key == 
+                        SystemConstants.DataverseAttributes.PartyId;
+                     bool isTypeMask = partyAttr.Key == 
+                        SystemConstants.DataverseAttributes
+                           .ParticipationTypeMask;
+                     bool isAddress = partyAttr.Key == 
+                        SystemConstants.DataverseAttributes.AddressUsed;
+
+                     if (!isPartyId && !isTypeMask && !isAddress)
                         continue;
 
                      var partyValue = partyAttr.Value;

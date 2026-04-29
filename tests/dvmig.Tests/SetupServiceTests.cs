@@ -33,7 +33,8 @@ namespace dvmig.Tests
       }
 
       [Fact]
-      public async Task IsEnvironmentReadyAsync_ReturnsFalse_WhenSchemaNotFound()
+      public async Task
+          IsEnvironmentReadyAsync_ReturnsFalse_WhenSchemaNotFound()
       {
          _targetMock.Setup(t => t.GetEntityMetadataAsync(
              It.IsAny<string>(),
@@ -48,7 +49,8 @@ namespace dvmig.Tests
       }
 
       [Fact]
-      public async Task IsEnvironmentReadyAsync_ReturnsFalse_WhenPluginNotFound()
+      public async Task
+          IsEnvironmentReadyAsync_ReturnsFalse_WhenPluginNotFound()
       {
          _targetMock.Setup(t => t.GetEntityMetadataAsync(
              SystemConstants.SourceDate.EntityLogicalName,
@@ -69,7 +71,8 @@ namespace dvmig.Tests
       }
 
       [Fact]
-      public async Task IsEnvironmentReadyAsync_ReturnsFalse_WhenPluginTypeNotFound()
+      public async Task
+          IsEnvironmentReadyAsync_ReturnsFalse_WhenPluginTypeNotFound()
       {
          _targetMock.Setup(t => t.GetEntityMetadataAsync(
              SystemConstants.SourceDate.EntityLogicalName,
@@ -105,7 +108,8 @@ namespace dvmig.Tests
       }
 
       [Fact]
-      public async Task IsEnvironmentReadyAsync_ReturnsTrue_WhenSchemaAndPluginAndStepsFound()
+      public async Task
+          IsEnvironmentReadyAsync_ReturnsTrue_WhenSchemaAndPluginAndStepsFound()
       {
          _targetMock.Setup(t => t.GetEntityMetadataAsync(
              SystemConstants.SourceDate.EntityLogicalName,
@@ -137,9 +141,9 @@ namespace dvmig.Tests
 
          var stepCollection = new EntityCollection(new[]
          {
-                new Entity("sdkmessageprocessingstep", Guid.NewGuid()),
-                new Entity("sdkmessageprocessingstep", Guid.NewGuid())
-            });
+             new Entity("sdkmessageprocessingstep", Guid.NewGuid()),
+             new Entity("sdkmessageprocessingstep", Guid.NewGuid())
+         });
          _targetMock.Setup(t => t.RetrieveMultipleAsync(
              It.Is<QueryByAttribute>(q =>
                  q.EntityName == "sdkmessageprocessingstep"),

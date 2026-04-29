@@ -163,7 +163,10 @@ namespace dvmig.Core.Provisioning
                SystemConstants.DataverseEntities.Account,
                accountId
             );
-            accountUpdate[SystemConstants.DataverseAttributes.PrimaryContactId] =
+            var primaryContactAttr = 
+               SystemConstants.DataverseAttributes.PrimaryContactId;
+
+            accountUpdate[primaryContactAttr] =
                new EntityReference(
                   SystemConstants.DataverseEntities.Contact,
                   primaryContactId
@@ -247,7 +250,9 @@ namespace dvmig.Core.Provisioning
 
       private EntityCollection CreatePartyList(EntityReference reference)
       {
-         var party = new Entity(SystemConstants.DataverseEntities.ActivityParty);
+         var party = new Entity(
+            SystemConstants.DataverseEntities.ActivityParty
+         );
          party[SystemConstants.DataverseAttributes.PartyId] = reference;
 
          return new EntityCollection(new List<Entity> { party });

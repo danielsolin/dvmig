@@ -72,17 +72,9 @@ namespace dvmig.Core.Providers
                ct
             );
          }
-         catch (FaultException ex)
+         catch (Exception ex)
          {
-            // 0x80040217 = Object does not exist
-            bool isNotFound =
-               ex.Message.Contains(SystemConstants.ErrorCodes.DoesNotExist) ||
-               ex.Message.Contains(
-                  SystemConstants.ErrorKeywords.DoesNotExist,
-                  StringComparison.OrdinalIgnoreCase
-               );
-
-            if (isNotFound)
+            if (ex.IsNotFoundException())
                return null;
 
             throw;
@@ -179,43 +171,6 @@ namespace dvmig.Core.Providers
       )
       {
          return await _client.ExecuteAsync(request, ct);
-      }
-
-      /// <inheritdoc />
-      public async Task<long> GetRecordCountAsync(
-         string entityLogicalName,
-         CancellationToken ct = default
-      )
-      {
-         var metadata = await GetEntityMetadataAsync(entityLogicalName, ct);
-
-         var primaryId = metadata?.PrimaryIdAttribute ??
-            $"{entityLogicalName}id";
-
-         var fetchXml = $@"
-            <fetch aggregate='true'>
-              <entity name='{entityLogicalName}'>
-                <attribute name='{primaryId}' alias='count' aggregate='count' />
-              </entity>
-            </fetch>";
-
-         var result = await _client.RetrieveMultipleAsync(
-            new FetchExpression(fetchXml),
-            ct
-         );
-
-         if (result.Entities.Count > 0 &&
-             result.Entities[0].Contains(
-                SystemConstants.DataverseAttributes.Count))
-         {
-            var aliasedValue = (AliasedValue)result.Entities[0][
-               SystemConstants.DataverseAttributes.Count
-            ];
-
-            return Convert.ToInt64(aliasedValue.Value);
-         }
-
-         return 0;
       }
 
       /// <summary>

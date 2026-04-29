@@ -394,7 +394,9 @@ namespace dvmig.Core.Provisioning
 
                await target.ExecuteAsync(request, ct);
             }
-            catch (FaultException ex) when (ex.Message.Contains("referenced by"))
+            catch (FaultException ex) when (
+               ex.Message.Contains("referenced by")
+            )
             {
                _logger.Warning(
                   "Deletion of {Entity} failed due to dependencies.",
@@ -433,7 +435,11 @@ namespace dvmig.Core.Provisioning
                      if (!string.IsNullOrEmpty(depName))
                         blockers.Add($"{depName} (Type {depType})");
                      else
-                        blockers.Add($"Unknown Component {depId} (Type {depType})");
+                     {
+                        blockers.Add(
+                           $"Unknown Component {depId} (Type {depType})"
+                        );
+                     }
                   }
                }
 
@@ -486,7 +492,13 @@ namespace dvmig.Core.Provisioning
             if (entityName == null)
                return null;
 
-            var result = await target.RetrieveAsync(entityName, id, new[] { "name" }, ct);
+            var result = await target.RetrieveAsync(
+               entityName,
+               id,
+               new[] { "name" },
+               ct
+            );
+
             return result?.GetAttributeValue<string>("name");
          }
          catch

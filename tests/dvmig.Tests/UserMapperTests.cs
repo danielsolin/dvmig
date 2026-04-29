@@ -76,8 +76,9 @@ namespace dvmig.Tests
          var sourceRef = new EntityReference("systemuser", sourceId);
 
          var sourceEntity = new Entity("systemuser", sourceId);
-         sourceEntity[SystemConstants.DataverseAttributes.InternalEmailAddress] =
-             "test@example.com";
+         sourceEntity[
+             SystemConstants.DataverseAttributes.InternalEmailAddress
+         ] = "test@example.com";
 
          var targetEntity = new Entity("systemuser", targetId);
          var targetCollection = new EntityCollection(new[] { targetEntity });
