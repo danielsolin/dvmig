@@ -4,7 +4,6 @@ using dvmig.Cli.Infrastructure;
 using dvmig.Core.Logging;
 using dvmig.Core.Metadata;
 using dvmig.Core.Provisioning;
-using dvmig.Core.Seeding;
 using dvmig.Core.Shared;
 using dvmig.Core.Settings;
 using dvmig.Core.Synchronization;
@@ -118,6 +117,10 @@ namespace dvmig.Cli
             new MenuItem(
                "SYNC: Custom (Select Entities)",
                migrationActions.HandleMigrationAsync
+            ),
+            new MenuItem(
+               "SYNC: Reconcile Data (Fix Discrepancies)",
+               reconciliationActions.HandlePerformReconciliationAsync
             )
          };
 
@@ -125,28 +128,21 @@ namespace dvmig.Cli
          {
             menu.Add(
                new MenuItem(
-                  "RECON: View Recorded Failures",
+                  "VIEW: Recorded Failures",
                   reconciliationActions.HandleViewFailuresAsync
                )
             );
 
             menu.Add(
                new MenuItem(
-                  "RECON: Reconcile Data (Fix Discrepancies)",
-                  reconciliationActions.HandlePerformReconciliationAsync
-               )
-            );
-
-            menu.Add(
-               new MenuItem(
-                  "COMP: Install DVMig Components on Target",
+                  "PREP: Install DVMig Components on Target",
                   maintenanceActions.HandleInstallAsync
                )
             );
 
             menu.Add(
                new MenuItem(
-                  "COMP: Uninstall DVMig Components from Target",
+                  "PREP: Uninstall DVMig Components from Target",
                   maintenanceActions.HandleTargetComponentsCleanupAsync
                )
             );

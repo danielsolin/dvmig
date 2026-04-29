@@ -300,6 +300,11 @@ namespace dvmig.Cli.Actions
 
          if (!isReady)
          {
+            // DMSFIX: The menu option for installing dvmig components are no
+            // longer available unless you are in dev mode. The installation
+            // of the components should be automatic. Just make sure the user
+            // is informed of what is happing (why things are taking longer
+            // than expected because are being installed).
             CliUI.WriteError(
                "Target environment is not prepared. " +
                "Please run 'Install dvmig Components' first."

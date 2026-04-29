@@ -5,7 +5,7 @@ using dvmig.Core.Shared;
 using Microsoft.Xrm.Sdk;
 using Serilog;
 
-namespace dvmig.Core.Seeding
+namespace dvmig.Core.Provisioning
 {
    /// <summary>
    /// Implementation of the test data seeder using the Bogus library for 
