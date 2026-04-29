@@ -2,7 +2,6 @@ using dvmig.App.Models;
 using dvmig.Core.Interfaces;
 using dvmig.Core.Providers;
 using dvmig.Core.Shared;
-using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Messages;
 using Microsoft.Xrm.Sdk.Metadata;
 using Microsoft.Xrm.Sdk.Query;
@@ -260,41 +259,7 @@ namespace dvmig.App.Services
          if (SourceProvider == null)
             return 0;
 
-         var metadata = await GetSourceEntitiesAsync(ct);
-         var entityMeta = metadata.FirstOrDefault(e =>
-            e.LogicalName == logicalName
-         );
-
-         if (entityMeta == null)
-            return 0;
-
-         var primaryId = entityMeta.PrimaryIdAttribute;
-
-         var fetchXml = $@"
-                <fetch aggregate='true'>
-                  <entity name='{logicalName}'>
-                    <attribute name='{primaryId}' alias='count' 
-                               aggregate='count' />
-                  </entity>
-                </fetch>";
-
-         var response = await SourceProvider.RetrieveMultipleAsync(
-            new FetchExpression(fetchXml),
-            ct
-         );
-
-         if (response.Entities.Count > 0 &&
-             response.Entities[0].Contains(
-                SystemConstants.DataverseAttributes.Count))
-         {
-            var aliasedValue = (AliasedValue)response.Entities[0][
-               SystemConstants.DataverseAttributes.Count
-            ];
-
-            return (int)aliasedValue.Value;
-         }
-
-         return 0;
+         return await SourceProvider.GetRecordCountAsync(logicalName, ct);
       }
 
       /// <inheritdoc />

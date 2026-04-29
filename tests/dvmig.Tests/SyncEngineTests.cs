@@ -117,7 +117,7 @@ namespace dvmig.Tests
                 return Task.FromResult(accountId);
              });
 
-         var options = new SyncOptions { SkipExisting = false };
+         var options = new SyncOptions();
 
          // Act
          var (result, _) = await _engine.SyncRecordAsync(account, options);
@@ -173,7 +173,7 @@ namespace dvmig.Tests
          ))
              .ReturnsAsync(accountId);
 
-         var options = new SyncOptions { SkipExisting = false };
+         var options = new SyncOptions();
 
          // Act
          var (result, _) = await _engine.SyncRecordAsync(contact, options);
@@ -225,7 +225,7 @@ namespace dvmig.Tests
          ))
              .ReturnsAsync(new AssociateResponse());
 
-         var options = new SyncOptions { SkipExisting = false };
+         var options = new SyncOptions();
 
          // Act
          var (result, _) = await _engine.SyncRecordAsync(
@@ -268,7 +268,7 @@ namespace dvmig.Tests
          ))
              .ReturnsAsync(account.Id);
 
-         var options = new SyncOptions { SkipExisting = false };
+         var options = new SyncOptions();
 
          // Act
          await _engine.SyncRecordAsync(account, options);
@@ -301,7 +301,6 @@ namespace dvmig.Tests
 
          var options = new SyncOptions
          {
-            SkipExisting = false,
             PreserveDates = true
          };
 
@@ -351,7 +350,7 @@ namespace dvmig.Tests
          ))
              .Returns(Task.CompletedTask);
 
-         var options = new SyncOptions { SkipExisting = false };
+         var options = new SyncOptions();
 
          // Act
          var (result, _) = await _engine.SyncRecordAsync(account, options);
@@ -399,7 +398,7 @@ namespace dvmig.Tests
                 return Task.FromResult(accountId);
              });
 
-         var options = new SyncOptions { SkipExisting = false };
+         var options = new SyncOptions();
 
          // Act
          var (result, _) = await _engine.SyncRecordAsync(account, options);
@@ -445,7 +444,7 @@ namespace dvmig.Tests
          ))
              .ReturnsAsync(Guid.NewGuid());
 
-         var options = new SyncOptions { SkipExisting = false };
+         var options = new SyncOptions();
 
          // Act
          await _engine.SyncAsync(
