@@ -48,6 +48,61 @@ namespace dvmig.Core.Synchronization
       private const int MaxRecursionDepth = 3;
 
       /// <summary>
+      /// Creates a Polly Context with optional progress reporter.
+      /// </summary>
+      private Context CreatePollyContext(IProgress<string>? progress)
+      {
+         var context = new Context();
+         if (progress != null)
+            context["progress"] = progress;
+         return context;
+      }
+
+      /// <summary>
+      /// Logs a failure to the target with retry policy.
+      /// </summary>
+      private async Task LogFailureWithRetryAsync(
+          Entity entity,
+          string failureMessage,
+          IProgress<string>? progress,
+          CancellationToken ct
+      )
+      {
+         var pollyCtx = CreatePollyContext(progress);
+
+         try
+         {
+            await _retryPolicy.ExecuteAsync(
+                async (ctx) => await _failureLogger.LogFailureToTargetAsync(
+                    entity,
+                    failureMessage,
+                    ct
+                ),
+                pollyCtx
+            );
+         }
+         catch (OperationCanceledException)
+         {
+            throw;
+         }
+         catch (Exception logEx)
+         {
+            _logger.Error(
+                logEx,
+                "Failed to persist failure log for {Entity}:{Id}.",
+                entity.LogicalName,
+                entity.Id
+            );
+
+            progress?.Report(
+                $"[red]ERROR[/] Fatal sync failure: {logEx.Message}"
+            );
+
+            throw;
+         }
+      }
+
+      /// <summary>
       /// Initializes a new instance of the <see cref="SyncEngine"/> class.
       /// </summary>
       /// <param name="source">The source Dataverse provider.</param>
@@ -169,6 +224,17 @@ namespace dvmig.Core.Synchronization
              logicalName,
              totalSynced
          );
+
+         CleanupCaches();
+      }
+
+      /// <summary>
+      /// Cleans up caches to prevent unbounded memory growth.
+      /// </summary>
+      private void CleanupCaches()
+      {
+         _triedDependencies.Clear();
+         _idMappingCache.Clear();
       }
 
       /// <inheritdoc />
@@ -229,42 +295,12 @@ namespace dvmig.Core.Synchronization
                       var errorMsg = failureMessage ??
                              "Sync failed during record processing.";
 
-                      var pollyCtx = new Polly.Context();
-                      if (progress != null)
-                         pollyCtx["progress"] = progress;
-
-                      try
-                      {
-                         await _retryPolicy.ExecuteAsync(
-                             async (ctx) => await _failureLogger
-                              .LogFailureToTargetAsync(
-                                entity,
-                                errorMsg,
-                                token
-                              ),
-                             pollyCtx
-                         );
-                      }
-                      catch (OperationCanceledException)
-                      {
-                         throw;
-                      }
-                      catch (Exception logEx)
-                      {
-                         _logger.Error(
-                             logEx,
-                             "Failed to persist failure log for {Entity}:{Id}.",
-                             entity.LogicalName,
-                             entity.Id
-                         );
-
-                         progress?.Report(
-                             $"[red]ERROR[/] Fatal sync failure: " +
-                             $"{logEx.Message}"
-                         );
-
-                         throw; // Abort parallel loop
-                      }
+                      await LogFailureWithRetryAsync(
+                          entity,
+                          errorMsg,
+                          progress,
+                          token
+                      );
                    }
 
                    recordProgress?.Report(success);
@@ -283,41 +319,12 @@ namespace dvmig.Core.Synchronization
                           ex
                       );
 
-                   var pollyCtx = new Polly.Context();
-                   if (progress != null)
-                      pollyCtx["progress"] = progress;
-
-                   try
-                   {
-                      await _retryPolicy.ExecuteAsync(
-                          async (ctx) =>
-                             await _failureLogger.LogFailureToTargetAsync(
-                                entity,
-                                failureMessage,
-                                token
-                             ),
-                          pollyCtx
-                      );
-                   }
-                   catch (OperationCanceledException)
-                   {
-                      throw;
-                   }
-                   catch (Exception logEx)
-                   {
-                      _logger.Error(
-                          logEx,
-                          "Failed to persist failure log for {Entity}:{Id}.",
-                          entity.LogicalName,
-                          entity.Id
-                      );
-
-                      progress?.Report(
-                          $"[red]ERROR[/] Fatal sync failure: {logEx.Message}"
-                      );
-
-                      throw; // Abort parallel loop
-                   }
+                   await LogFailureWithRetryAsync(
+                       entity,
+                       failureMessage,
+                       progress,
+                       token
+                   );
 
                    recordProgress?.Report(false);
                 }
@@ -452,10 +459,6 @@ namespace dvmig.Core.Synchronization
 
                if (options.PreserveDates)
                {
-                  var pollyCtx = new Polly.Context();
-                  if (progress != null)
-                     pollyCtx["progress"] = progress;
-
                   await _retryPolicy.ExecuteAsync(
                       async (ctx) => await _setupService.DeleteSourceDateAsync(
                           _target,
@@ -463,7 +466,7 @@ namespace dvmig.Core.Synchronization
                           prepared.Id,
                           ct
                       ),
-                      pollyCtx
+                      CreatePollyContext(progress)
                   );
                }
 
@@ -686,13 +689,9 @@ namespace dvmig.Core.Synchronization
             if (request == null)
                return (false, "Invalid N:N relationship record.");
 
-            var context = new Context();
-            if (progress != null)
-               context["progress"] = progress;
-
             await _retryPolicy.ExecuteAsync(
                 async (ctx) => await _target.ExecuteAsync(request, ct),
-                context
+                CreatePollyContext(progress)
             );
 
             _logger.Information(
@@ -725,13 +724,9 @@ namespace dvmig.Core.Synchronization
       {
          try
          {
-            var context = new Context();
-            if (progress != null)
-               context["progress"] = progress;
-
             await _retryPolicy.ExecuteAsync(
                 async (ctx) => await _target.CreateAsync(entity, ct),
-                context
+                CreatePollyContext(progress)
             );
 
             _logger.Information(
