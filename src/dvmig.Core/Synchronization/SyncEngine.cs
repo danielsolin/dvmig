@@ -86,6 +86,19 @@ namespace dvmig.Core.Synchronization
       }
 
       #region Public Sync API
+      public async Task InitializeEntitySyncAsync(string logicalName)
+      {
+         await _stateTracker.InitializeAsync(
+            _source.ConnectionString,
+            _target.ConnectionString,
+            logicalName
+         );
+
+         var ids = await _stateTracker.GetSyncedIdsAsync();
+         _syncedIds = new ConcurrentDictionary<Guid, byte>(
+            ids.Select(id => new KeyValuePair<Guid, byte>(id, 1))
+         );
+      }
 
       public async Task SyncEntityAsync(
          string logicalName,
@@ -159,20 +172,6 @@ namespace dvmig.Core.Synchronization
 
          _triedDependencies.Clear();
          _idMappingCache.Clear();
-      }
-
-      public async Task InitializeEntitySyncAsync(string logicalName)
-      {
-         await _stateTracker.InitializeAsync(
-            _source.ConnectionString,
-            _target.ConnectionString,
-            logicalName
-         );
-
-         var ids = await _stateTracker.GetSyncedIdsAsync();
-         _syncedIds = new ConcurrentDictionary<Guid, byte>(
-            ids.Select(id => new KeyValuePair<Guid, byte>(id, 1))
-         );
       }
 
       public async Task SyncAsync(
