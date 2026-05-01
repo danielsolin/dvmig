@@ -1,6 +1,5 @@
 using dvmig.Core.Interfaces;
 using dvmig.Core.Shared;
-using dvmig.Core.Logging;
 using Spectre.Console;
 using Microsoft.Xrm.Sdk.Messages;
 using Microsoft.Crm.Sdk.Messages;

@@ -1,6 +1,5 @@
 using dvmig.Core.Interfaces;
 using Bogus;
-using dvmig.Core.Logging;
 using dvmig.Core.Shared;
 using Microsoft.Xrm.Sdk;
 

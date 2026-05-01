@@ -1,5 +1,4 @@
 using dvmig.Core.Interfaces;
-using dvmig.Core.Logging;
 using dvmig.Core.Shared;
 using Microsoft.Crm.Sdk.Messages;
 using Microsoft.Xrm.Sdk;

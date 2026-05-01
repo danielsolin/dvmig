@@ -1,15 +1,12 @@
+#if !NETSTANDARD2_0
 using System;
-using System.IO;
 using System.Text.RegularExpressions;
 using Serilog;
-using Serilog.Core;
-using dvmig.Core.Interfaces;
-using dvmig.Core.Shared;
 using SerilogLogger = Serilog.ILogger;
 
-namespace dvmig.Core.Logging
+namespace dvmig.Core.Shared
 {
-   public class Logger : Interfaces.ILogger
+   public class Logger : dvmig.Core.Interfaces.ILogger
    {
       private readonly SerilogLogger _serilog;
       private IProgress<string>? _progress;
@@ -139,3 +136,4 @@ namespace dvmig.Core.Logging
       }
    }
 }
+#endif

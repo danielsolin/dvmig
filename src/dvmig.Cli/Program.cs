@@ -1,7 +1,6 @@
 using System.Runtime.Versioning;
 using System.Text;
 using dvmig.Cli.Actions;
-using dvmig.Core.Logging;
 using dvmig.Core.Provisioning;
 using dvmig.Core.Shared;
 using dvmig.Core.Settings;
@@ -23,7 +22,7 @@ namespace dvmig.Cli
       {
          Console.OutputEncoding = Encoding.UTF8;
 
-         var logger = new dvmig.Core.Logging.Logger();
+         var logger = new dvmig.Core.Shared.Logger();
          var retryStrategy = new RetryStrategy(logger);
 
          var settingsService = new SettingsService();
