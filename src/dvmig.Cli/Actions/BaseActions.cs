@@ -14,18 +14,24 @@ namespace dvmig.Cli.Actions
    {
       protected readonly ConnectionManager ConnectionManager;
       protected readonly ISetupService SetupService;
+      protected readonly IEnvironmentValidator Validator;
+      protected readonly ISchemaManager SchemaManager;
       protected readonly ISyncStateTracker StateTracker;
       protected readonly ILogger Logger;
 
       protected BaseActions(
          ConnectionManager connectionManager,
          ISetupService setupService,
+         IEnvironmentValidator validator,
+         ISchemaManager schemaManager,
          ISyncStateTracker stateTracker,
          ILogger logger
       )
       {
          ConnectionManager = connectionManager;
          SetupService = setupService;
+         Validator = validator;
+         SchemaManager = schemaManager;
          StateTracker = stateTracker;
          Logger = logger;
       }
@@ -54,7 +60,7 @@ namespace dvmig.Cli.Actions
          if (target == null)
             return (null, null, null);
 
-         bool isReady = await SetupService.IsEnvironmentReadyAsync(
+         bool isReady = await Validator.IsEnvironmentReadyAsync(
             target,
             default
          );
@@ -119,7 +125,7 @@ namespace dvmig.Cli.Actions
                "Installing components...",
                async progress =>
                {
-                  await SetupService.CreateSchemaAsync(target, progress);
+                  await SchemaManager.CreateSchemaAsync(target, progress);
                   await SetupService.DeployPluginAsync(target, progress);
                }
             );

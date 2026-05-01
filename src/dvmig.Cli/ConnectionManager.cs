@@ -29,7 +29,7 @@ namespace dvmig.Cli
          if (_activeConnections.TryGetValue(direction, out var existing))
          {
             var reuse = AnsiConsole.Confirm(
-               $"An active connection to [green]{label}[/] already " +
+               $"An active connection to {SystemConstants.UiMarkup.Green}{label}[/] already " +
                "exists. Reuse it?",
                true
             );
@@ -53,26 +53,26 @@ namespace dvmig.Cli
             var preview = StringMasker.MaskConnectionString(storedConn);
 
             var useStored = AnsiConsole.Confirm(
-               $"Use [green]stored[/] {label} connection string?\n" +
-               $"[grey]({preview})[/]",
+               $"Use {SystemConstants.UiMarkup.Green}stored[/] {label} connection string?\n" +
+               $"{SystemConstants.UiMarkup.Grey}({preview})[/]",
                true
             );
 
             connStr = useStored
                ? storedConn
                : AnsiConsole.Ask<string>(
-                  $"Enter [bold blue]{label}[/] Connection String:"
+                  $"Enter {SystemConstants.UiMarkup.BoldBlue}{label}[/] Connection String:"
                );
          }
          else
          {
             connStr = AnsiConsole.Ask<string>(
-               $"Enter [bold blue]{label}[/] Connection String:"
+               $"Enter {SystemConstants.UiMarkup.BoldBlue}{label}[/] Connection String:"
             );
          }
 
          var isLegacy = AnsiConsole.Confirm(
-            $"Is [bold blue]{label}[/] Legacy CRM (OnPrem)?",
+            $"Is {SystemConstants.UiMarkup.BoldBlue}{label}[/] Legacy CRM (OnPrem)?",
             false
          );
 
@@ -93,7 +93,7 @@ namespace dvmig.Cli
                catch (Exception ex)
                {
                   AnsiConsole.MarkupLine(
-                     $"[red]×[/] Failed to connect to {label}: " +
+                     $"{SystemConstants.UiMarkup.Red}×[/] Failed to connect to {label}: " +
                      $"{ex.Message}"
                   );
 
@@ -122,7 +122,7 @@ namespace dvmig.Cli
                      settings.TargetConnectionString = connStr;
 
                   _settingsService.SaveSettings(settings);
-                  AnsiConsole.MarkupLine("[grey]Settings saved.[/]");
+                  AnsiConsole.MarkupLine($"{SystemConstants.UiMarkup.Grey}Settings saved.[/]");
                }
             }
          }

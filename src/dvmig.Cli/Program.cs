@@ -31,9 +31,11 @@ namespace dvmig.Cli
          var seeder = new TestDataSeeder(logger, retryStrategy);
          var metadataService = new MetadataService();
          var reconciliationService = new ReconciliationService();
+         var validator = new EnvironmentValidator();
+         var schemaManager = new SchemaManager(logger);
          var setupService = new SetupService(
-            new EnvironmentValidator(),
-            new SchemaManager(logger),
+            validator,
+            schemaManager,
             new PluginDeployer(logger),
             logger
          );
@@ -44,6 +46,8 @@ namespace dvmig.Cli
             connectionManager,
             metadataService,
             setupService,
+            validator,
+            schemaManager,
             stateTracker,
             logger
          );
@@ -53,6 +57,8 @@ namespace dvmig.Cli
             reconciliationService,
             metadataService,
             setupService,
+            validator,
+            schemaManager,
             stateTracker,
             logger
          );
@@ -61,6 +67,8 @@ namespace dvmig.Cli
              connectionManager,
              seeder,
              setupService,
+             validator,
+             schemaManager,
              metadataService,
              stateTracker,
              logger
@@ -113,26 +121,26 @@ namespace dvmig.Cli
          var syncGroup = new List<MenuItem>
          {
             new MenuItem(
-               "Migrate Recommended [grey](Accounts, Contacts, " +
+               $"Migrate Recommended {SystemConstants.UiMarkup.Grey}(Accounts, Contacts, " +
                "Activities)[/]",
                migrationActions.HandleRecommendedSyncAsync
             ),
             new MenuItem(
-               "Find & Fix Recommended [grey](Accounts, Contacts, Activities)[/]",
+               $"Find & Fix Recommended {SystemConstants.UiMarkup.Grey}(Accounts, Contacts, Activities)[/]",
                reconciliationActions.HandleRecommendedReconciliationAsync
             ),
             new MenuItem(
-               "Migrate Selected [grey](pick entities)[/]",
+               $"Migrate Selected {SystemConstants.UiMarkup.Grey}(pick entities)[/]",
                migrationActions.HandleMigrationAsync
             ),
             new MenuItem(
-               "Find & Fix Selected [grey](pick entities)[/]",
+               $"Find & Fix Selected {SystemConstants.UiMarkup.Grey}(pick entities)[/]",
                reconciliationActions.HandlePerformReconciliationAsync
             )
          };
 
          prompt.AddChoiceGroup(
-            new MenuItem("🚀 [bold green]Synchronization[/]", null),
+            new MenuItem($"🚀 {SystemConstants.UiMarkup.BoldGreen}Synchronization[/]", null),
             syncGroup
          );
 
@@ -141,11 +149,11 @@ namespace dvmig.Cli
             var maintenanceGroup = new List<MenuItem>
             {
                new MenuItem(
-                  "Install DVMig Components [grey](Target)[/]",
+                  $"Install DVMig Components {SystemConstants.UiMarkup.Grey}(Target)[/]",
                   maintenanceActions.HandleInstallMenuAsync
                ),
                new MenuItem(
-                  "Uninstall DVMig Components [grey](Target)[/]",
+                  $"Uninstall DVMig Components {SystemConstants.UiMarkup.Grey}(Target)[/]",
                   maintenanceActions.HandleTargetComponentsCleanupAsync
                ),
                new MenuItem(
@@ -155,28 +163,28 @@ namespace dvmig.Cli
             };
 
             prompt.AddChoiceGroup(
-               new MenuItem("🛠️ [bold cyan]Maintenance[/]", null),
+               new MenuItem($"🛠️ {SystemConstants.UiMarkup.BoldCyan}Maintenance[/]", null),
                maintenanceGroup
             );
 
             var dataGroup = new List<MenuItem>
             {
                new MenuItem(
-                  "Generate Sample Data [grey](Source)[/]",
+                  $"Generate Sample Data {SystemConstants.UiMarkup.Grey}(Source)[/]",
                   maintenanceActions.HandleSeedingAsync
                ),
                new MenuItem(
-                  "Wipe Data on Source [grey](Caution!)[/]",
+                  $"Wipe Data on Source {SystemConstants.UiMarkup.Grey}(Caution!)[/]",
                   maintenanceActions.HandleSourceDataCleanupAsync
                ),
                new MenuItem(
-                  "Wipe Data on Target [grey](Caution!)[/]",
+                  $"Wipe Data on Target {SystemConstants.UiMarkup.Grey}(Caution!)[/]",
                   maintenanceActions.HandleTargetDataCleanupAsync
                )
             };
 
             prompt.AddChoiceGroup(
-               new MenuItem("🧪 [bold magenta]Data Management[/]", null),
+               new MenuItem($"🧪 {SystemConstants.UiMarkup.BoldMagenta}Data Management[/]", null),
                dataGroup
             );
          }

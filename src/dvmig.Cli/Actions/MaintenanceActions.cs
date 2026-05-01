@@ -14,10 +14,12 @@ namespace dvmig.Cli.Actions
          ConnectionManager connectionManager,
          ITestDataSeeder seeder,
          ISetupService setupService,
+         IEnvironmentValidator validator,
+         ISchemaManager schemaManager,
          IMetadataService metadataService,
          ISyncStateTracker stateTracker,
          ILogger logger
-      ) : base(connectionManager, setupService, stateTracker, logger)
+      ) : base(connectionManager, setupService, validator, schemaManager, stateTracker, logger)
       {
          _seeder = seeder;
          _metadataService = metadataService;
@@ -32,7 +34,7 @@ namespace dvmig.Cli.Actions
          if (provider == null)
             return;
 
-         var prompt = "How many [bold blue]Accounts[/] would you like " +
+         var prompt = $"How many {SystemConstants.UiMarkup.BoldBlue}Accounts[/] would you like " +
                       "to generate?";
 
          int count = AnsiConsole.Ask<int>(prompt, 100);
@@ -71,7 +73,7 @@ namespace dvmig.Cli.Actions
          if (provider == null)
             return;
 
-         var promptMsg = "[red]Are you sure you want to remove all dvmig " +
+         var promptMsg = $"{SystemConstants.UiMarkup.Red}Are you sure you want to remove all dvmig " +
                          "system components (schema and plugins) from " +
                          "this environment?[/]";
 
@@ -153,22 +155,22 @@ namespace dvmig.Cli.Actions
          else
          {
             AnsiConsole.MarkupLine(
-               $"[bold red]CRITICAL WARNING:[/] This operation will delete " +
+               $"{SystemConstants.UiMarkup.BoldRed}CRITICAL WARNING:[/] This operation will delete " +
                $"[bold]EVERY SINGLE[/] Account, Contact, Task, Phone Call, " +
                $"and Email record from the {envName} environment."
             );
          }
 
          AnsiConsole.MarkupLine(
-            "[red]This is NOT restricted to test data. Real data will " +
+            $"{SystemConstants.UiMarkup.Red}This is NOT restricted to test data. Real data will " +
             "be destroyed.[/]"
          );
          AnsiConsole.MarkupLine(
-            "[red]This action is permanent and irreversible.[/]"
+            $"{SystemConstants.UiMarkup.Red}This action is permanent and irreversible.[/]"
          );
 
          var wipeText = SystemConstants.UiMarkup.WipeDataConfirmation;
-         var prompt = $"Type [bold red]{wipeText}[/] to confirm:";
+         var prompt = $"Type {SystemConstants.UiMarkup.BoldRed}{wipeText}[/] to confirm:";
          var confirmation = AnsiConsole.Ask<string>(prompt);
 
          if (confirmation != SystemConstants.UiMarkup.WipeDataConfirmation)

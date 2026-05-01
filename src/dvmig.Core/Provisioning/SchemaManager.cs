@@ -477,7 +477,7 @@ namespace dvmig.Core.Provisioning
          {
             string? entityName = type switch
             {
-               62 => "sdkmessageprocessingstep",
+               62 => SystemConstants.PluginRegistration.StepEntity,
                80 => "appmodule",
                29 => "workflow",
                60 => "systemform",
@@ -491,11 +491,13 @@ namespace dvmig.Core.Provisioning
             var result = await target.RetrieveAsync(
                entityName,
                id,
-               new[] { "name" },
+               new[] { SystemConstants.DataverseAttributes.Name },
                ct
             );
 
-            return result?.GetAttributeValue<string>("name");
+            return result?.GetAttributeValue<string>(
+               SystemConstants.DataverseAttributes.Name
+            );
          }
          catch
          {

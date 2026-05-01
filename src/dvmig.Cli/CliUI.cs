@@ -1,4 +1,5 @@
 using dvmig.Core.Interfaces;
+using dvmig.Core.Shared;
 using Spectre.Console;
 
 namespace dvmig.Cli
@@ -25,7 +26,7 @@ namespace dvmig.Cli
                 var progress = new Progress<string>(msg =>
                    {
                       AnsiConsole.MarkupLine(
-                             $"[grey][[{DateTime.Now:HH:mm:ss}]][/] {msg}"
+                             $"{SystemConstants.UiMarkup.Grey}[[{DateTime.Now:HH:mm:ss}]][/] {msg}"
                          );
                    });
 
@@ -58,24 +59,24 @@ namespace dvmig.Cli
 
       public static void WriteSuccess(string message)
       {
-         AnsiConsole.MarkupLine($"[bold green]{message}[/]");
+         AnsiConsole.MarkupLine($"{SystemConstants.UiMarkup.BoldGreen}{message}[/]");
       }
 
       public static void WriteWarning(string message)
       {
-         AnsiConsole.MarkupLine($"[yellow]{message}[/]");
+         AnsiConsole.MarkupLine($"{SystemConstants.UiMarkup.Yellow}{message}[/]");
       }
 
       public static void WriteError(string message)
       {
-         AnsiConsole.MarkupLine($"[red]{message}[/]");
+         AnsiConsole.MarkupLine($"{SystemConstants.UiMarkup.Red}{message}[/]");
       }
 
       public static void Pause()
       {
          AnsiConsole.WriteLine();
          AnsiConsole.MarkupLine(
-             "[grey]Press any key to return to menu...[/]"
+             $"{SystemConstants.UiMarkup.Grey}Press any key to return to menu...[/]"
          );
          Console.ReadKey(true);
       }
@@ -112,12 +113,12 @@ namespace dvmig.Cli
             return null;
 
          var prompt = new MultiSelectionPrompt<string>()
-             .Title("Select [green]Entities[/] to migrate:")
+             .Title($"Select {SystemConstants.UiMarkup.Green}Entities[/] to migrate:")
              .PageSize(15)
-             .MoreChoicesText("[grey](Move up and down to reveal more)[/]")
+             .MoreChoicesText($"{SystemConstants.UiMarkup.Grey}(Move up and down to reveal more)[/]")
              .InstructionsText(
-                 "[grey](Press [blue]<space>[/] to toggle, " +
-                 "[green]<enter>[/] to accept)[/]"
+                 $"{SystemConstants.UiMarkup.Grey}(Press {SystemConstants.UiMarkup.Blue}<space>[/] to toggle, " +
+                 $"{SystemConstants.UiMarkup.Green}<enter>[/] to accept)[/]"
              );
 
          foreach (var entity in entities)

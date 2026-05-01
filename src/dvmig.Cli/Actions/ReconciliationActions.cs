@@ -16,9 +16,11 @@ namespace dvmig.Cli.Actions
          IReconciliationService reconciliationService,
          IMetadataService metadataService,
          ISetupService setupService,
+         IEnvironmentValidator validator,
+         ISchemaManager schemaManager,
          ISyncStateTracker stateTracker,
          ILogger logger
-      ) : base(connectionManager, setupService, stateTracker, logger)
+      ) : base(connectionManager, setupService, validator, schemaManager, stateTracker, logger)
       {
          _reconciliationService = reconciliationService;
          _metadataService = metadataService;
@@ -115,7 +117,7 @@ namespace dvmig.Cli.Actions
          var recommendedEntities = SystemConstants.SyncSettings
             .RecommendedEntities;
 
-         AnsiConsole.MarkupLine("[bold cyan]Recommended Reconciliation Order:[/]");
+         AnsiConsole.MarkupLine($"{SystemConstants.UiMarkup.BoldCyan}Recommended Reconciliation Order:[/]");
 
          foreach (var entity in recommendedEntities)
             AnsiConsole.MarkupLine($" - {entity}");
@@ -129,7 +131,7 @@ namespace dvmig.Cli.Actions
 
          var threads = AnsiConsole.Prompt(
             new SelectionPrompt<int>()
-               .Title("Select [green]Max Parallelism[/] (Threads):")
+               .Title($"Select {SystemConstants.UiMarkup.Green}Max Parallelism[/] (Threads):")
                .AddChoices(new[] { 20, 10, 30, 40, 50, 5, 1 })
          );
 
@@ -165,7 +167,7 @@ namespace dvmig.Cli.Actions
 
          var threads = AnsiConsole.Prompt(
             new SelectionPrompt<int>()
-               .Title("Select [green]Max Parallelism[/] (Threads):")
+               .Title($"Select {SystemConstants.UiMarkup.Green}Max Parallelism[/] (Threads):")
                .AddChoices(
                   new[]
                   {
@@ -208,7 +210,7 @@ namespace dvmig.Cli.Actions
          foreach (var logicalName in entities)
          {
             AnsiConsole.MarkupLine(
-               $"[bold yellow]Reconciling {logicalName}...[/]"
+               $"{SystemConstants.UiMarkup.BoldYellow}Reconciling {logicalName}...[/]"
             );
 
             var sourceCount = await source.GetRecordCountAsync(logicalName);
@@ -261,10 +263,10 @@ namespace dvmig.Cli.Actions
 
                         var desc = $"{displayName} " +
                            $"({processed}/{sourceCount}) " +
-                           $"[[[green]{threads}t - {recsPerSec:F1} r/s[/]]] ";
+                           $"[[{SystemConstants.UiMarkup.Green}{threads}t - {recsPerSec:F1} r/s[/]]] ";
 
                         if (failedCount > 0)
-                           desc += $" [red]({failedCount} failed)[/]";
+                           desc += $" {SystemConstants.UiMarkup.Red}({failedCount} failed)[/]";
 
                         task.Description = desc;
                      });

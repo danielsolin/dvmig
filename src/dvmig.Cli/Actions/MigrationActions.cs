@@ -14,9 +14,11 @@ namespace dvmig.Cli.Actions
          ConnectionManager connectionManager,
          IMetadataService metadataService,
          ISetupService setupService,
+         IEnvironmentValidator validator,
+         ISchemaManager schemaManager,
          ISyncStateTracker stateTracker,
          ILogger logger
-      ) : base(connectionManager, setupService, stateTracker, logger)
+      ) : base(connectionManager, setupService, validator, schemaManager, stateTracker, logger)
       {
          _metadataService = metadataService;
       }
@@ -42,7 +44,7 @@ namespace dvmig.Cli.Actions
 
          var threads = AnsiConsole.Prompt(
             new SelectionPrompt<int>()
-               .Title("Select [green]Max Parallelism[/] (Threads):")
+               .Title($"Select {SystemConstants.UiMarkup.Green}Max Parallelism[/] (Threads):")
                .AddChoices(new[] { 10, 20, 5, 1 })
          );
 
@@ -60,7 +62,7 @@ namespace dvmig.Cli.Actions
          var recommendedEntities = SystemConstants.SyncSettings
             .RecommendedEntities;
 
-         AnsiConsole.MarkupLine("[bold cyan]Recommended Sync Order:[/]");
+         AnsiConsole.MarkupLine($"{SystemConstants.UiMarkup.BoldCyan}Recommended Sync Order:[/]");
 
          foreach (var entity in recommendedEntities)
             AnsiConsole.MarkupLine($" - {entity}");
@@ -74,7 +76,7 @@ namespace dvmig.Cli.Actions
 
          var threads = AnsiConsole.Prompt(
             new SelectionPrompt<int>()
-               .Title("Select [green]Max Parallelism[/] (Threads):")
+               .Title($"Select {SystemConstants.UiMarkup.Green}Max Parallelism[/] (Threads):")
                .AddChoices(new[] { 10, 20, 5, 1 })
          );
 
@@ -98,7 +100,7 @@ namespace dvmig.Cli.Actions
          foreach (var logicalName in entities)
          {
             AnsiConsole.MarkupLine(
-               $"[bold yellow]Migrating {logicalName}...[/]"
+               $"{SystemConstants.UiMarkup.BoldYellow}Migrating {logicalName}...[/]"
             );
 
             await engine.InitializeEntitySyncAsync(logicalName);
@@ -191,11 +193,11 @@ namespace dvmig.Cli.Actions
 
                         var desc = $"{displayName} " +
                            $"({processed}/{totalCount}) " +
-                           $"[[[green]{maxThreads}t - " +
+                           $"[[{SystemConstants.UiMarkup.Green}{maxThreads}t - " +
                            $"{recsPerSec:F1} r/s[/]]] ";
 
                         if (failedCount > 0)
-                           desc += $" [red]({failedCount} failed)[/]";
+                           desc += $" {SystemConstants.UiMarkup.Red}({failedCount} failed)[/]";
 
                         task.Description = desc;
                      });

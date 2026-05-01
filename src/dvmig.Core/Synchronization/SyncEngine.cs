@@ -876,9 +876,8 @@ namespace dvmig.Core.Synchronization
             );
 
             progress?.Report(
-                $"[red]ERROR[/] Fatal sync failure: {logEx.Message}"
+                $"{SystemConstants.UiMarkup.Red}ERROR[/] Fatal sync failure: {logEx.Message}"
             );
-
             throw;
          }
       }

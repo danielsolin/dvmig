@@ -197,7 +197,14 @@ namespace dvmig.Core.Shared
          public const string Red = "[red]";
          public const string Grey = "[grey]";
          public const string Green = "[green]";
+         public const string Blue = "[blue]";
+         public const string Cyan = "[cyan]";
+         public const string BoldYellow = "[bold yellow]";
+         public const string BoldRed = "[bold red]";
          public const string BoldGreen = "[bold green]";
+         public const string BoldBlue = "[bold blue]";
+         public const string BoldCyan = "[bold cyan]";
+         public const string BoldMagenta = "[bold magenta]";
          public const string Wait = "WAIT";
          public const string WipeDataConfirmation = "WIPE DATA";
       }

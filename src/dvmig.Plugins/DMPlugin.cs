@@ -148,12 +148,14 @@ namespace dvmig.Plugins
             var createdDate =
                sourceDate[SystemConstants.SourceDate.CreatedDate];
 
-            entity["createdon"] = createdDate;
-            entity["overriddencreatedon"] = createdDate;
+            entity[SystemConstants.DataverseAttributes.CreatedOn] =
+               createdDate;
+            entity[SystemConstants.DataverseAttributes.OverriddenCreatedOn] =
+               createdDate;
          }
 
          if (sourceDate.Contains(SystemConstants.SourceDate.ModifiedDate))
-            entity["modifiedon"] =
+            entity[SystemConstants.DataverseAttributes.ModifiedOn] =
                sourceDate[SystemConstants.SourceDate.ModifiedDate];
       }
 
@@ -167,7 +169,7 @@ namespace dvmig.Plugins
       )
       {
          if (sourceDate.Contains(SystemConstants.SourceDate.ModifiedDate))
-            entity["modifiedon"] =
+            entity[SystemConstants.DataverseAttributes.ModifiedOn] =
                sourceDate[SystemConstants.SourceDate.ModifiedDate];
       }
    }

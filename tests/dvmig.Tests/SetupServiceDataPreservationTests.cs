@@ -35,7 +35,7 @@ namespace dvmig.Tests
       [Fact]
       public async Task PreserveDatesAsync_DoesNothing_WhenNotSupported()
       {
-         var entity = new Entity("account", Guid.NewGuid());
+         var entity = new Entity(SystemConstants.DataverseEntities.Account, Guid.NewGuid());
          entity[SystemConstants.DataverseAttributes.CreatedOn] =
              DateTime.UtcNow;
 
@@ -55,7 +55,7 @@ namespace dvmig.Tests
       [Fact]
       public async Task PreserveDatesAsync_DoesNothing_WhenNoDatesPresent()
       {
-         var entity = new Entity("account", Guid.NewGuid());
+         var entity = new Entity(SystemConstants.DataverseEntities.Account, Guid.NewGuid());
 
          _targetMock.Setup(t => t.GetEntityMetadataAsync(
              SystemConstants.SourceDate.EntityLogicalName,
@@ -74,7 +74,7 @@ namespace dvmig.Tests
       public async Task PreserveDatesAsync_CreatesEntity_WhenSupported()
       {
          var entityId = Guid.NewGuid();
-         var entity = new Entity("account", entityId);
+         var entity = new Entity(SystemConstants.DataverseEntities.Account, entityId);
          var createdOn = DateTime.UtcNow.AddDays(-1);
          var modifiedOn = DateTime.UtcNow;
          entity[SystemConstants.DataverseAttributes.CreatedOn] = createdOn;
@@ -92,7 +92,7 @@ namespace dvmig.Tests
              e[SystemConstants.SourceDate.EntityId].ToString() ==
                  entityId.ToString() &&
              e[SystemConstants.SourceDate.EntityLogicalNameAttr].ToString() ==
-                 "account" &&
+                 SystemConstants.DataverseEntities.Account &&
              (DateTime)e[SystemConstants.SourceDate.CreatedDate] ==
                  createdOn &&
              (DateTime)e[SystemConstants.SourceDate.ModifiedDate] ==
@@ -110,7 +110,7 @@ namespace dvmig.Tests
 
          await _service.DeleteSourceDateAsync(
              _targetMock.Object,
-             "account",
+             SystemConstants.DataverseEntities.Account,
              Guid.NewGuid()
          );
 
@@ -148,7 +148,7 @@ namespace dvmig.Tests
 
          await _service.DeleteSourceDateAsync(
              _targetMock.Object,
-             "account",
+             SystemConstants.DataverseEntities.Account,
              entityId
          );
 
@@ -177,7 +177,7 @@ namespace dvmig.Tests
 
          await _service.DeleteSourceDateAsync(
              _targetMock.Object,
-             "account",
+             SystemConstants.DataverseEntities.Account,
              entityId
          );
 

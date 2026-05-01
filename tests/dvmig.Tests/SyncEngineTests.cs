@@ -95,13 +95,13 @@ namespace dvmig.Tests
       {
          // Arrange
          var accountId = Guid.NewGuid();
-         var account = new Entity("account", accountId);
-         account["name"] = "Test Account";
+         var account = new Entity(SystemConstants.DataverseEntities.Account, accountId);
+         account[SystemConstants.DataverseAttributes.Name] = "Test Account";
          account["readonlyfield"] = "Value";
 
          int callCount = 0;
          _targetMock.Setup(t => t.CreateAsync(
-             It.Is<Entity>(e => e.LogicalName == "account"),
+             It.Is<Entity>(e => e.LogicalName == SystemConstants.DataverseEntities.Account),
              It.IsAny<CancellationToken>()
          ))
              .Returns<Entity, CancellationToken>((e, ct) =>
@@ -134,16 +134,16 @@ namespace dvmig.Tests
          var accountId = Guid.NewGuid();
          var contactId = Guid.NewGuid();
 
-         var contact = new Entity("contact", contactId);
-         contact["parentcustomerid"] =
-             new EntityReference("account", accountId);
+         var contact = new Entity(SystemConstants.DataverseEntities.Contact, contactId);
+         contact[SystemConstants.DataverseAttributes.ParentCustomerId] =
+             new EntityReference(SystemConstants.DataverseEntities.Account, accountId);
 
-         var account = new Entity("account", accountId);
-         account["name"] = "Test Account";
+         var account = new Entity(SystemConstants.DataverseEntities.Account, accountId);
+         account[SystemConstants.DataverseAttributes.Name] = "Test Account";
 
          int contactCreateCalls = 0;
          _targetMock.Setup(t => t.CreateAsync(
-             It.Is<Entity>(e => e.LogicalName == "contact"),
+             It.Is<Entity>(e => e.LogicalName == SystemConstants.DataverseEntities.Contact),
              It.IsAny<CancellationToken>()
          ))
              .Returns<Entity, CancellationToken>((e, ct) =>
@@ -160,7 +160,7 @@ namespace dvmig.Tests
              });
 
          _sourceMock.Setup(s => s.RetrieveAsync(
-             "account",
+             SystemConstants.DataverseEntities.Account,
              accountId,
              It.IsAny<string[]>(),
              It.IsAny<CancellationToken>()
@@ -168,7 +168,7 @@ namespace dvmig.Tests
              .ReturnsAsync(account);
 
          _targetMock.Setup(t => t.CreateAsync(
-             It.Is<Entity>(e => e.LogicalName == "account"),
+             It.Is<Entity>(e => e.LogicalName == SystemConstants.DataverseEntities.Account),
              It.IsAny<CancellationToken>()
          ))
              .ReturnsAsync(accountId);
@@ -183,7 +183,7 @@ namespace dvmig.Tests
          Assert.Equal(2, contactCreateCalls);
          _targetMock.Verify(
              t => t.CreateAsync(
-                 It.Is<Entity>(e => e.LogicalName == "account"),
+                 It.Is<Entity>(e => e.LogicalName == SystemConstants.DataverseEntities.Account),
                  It.IsAny<CancellationToken>()
              ),
              Times.Once
@@ -200,9 +200,9 @@ namespace dvmig.Tests
 
          var intersectEntity = new Entity(relName, Guid.NewGuid());
          intersectEntity["accountid"] =
-             new EntityReference("account", accountId);
+             new EntityReference(SystemConstants.DataverseEntities.Account, accountId);
          intersectEntity["contactid"] =
-             new EntityReference("contact", contactId);
+             new EntityReference(SystemConstants.DataverseEntities.Contact, contactId);
 
          var metadata = new Microsoft.Xrm.Sdk.Metadata.EntityMetadata
          {
@@ -250,11 +250,11 @@ namespace dvmig.Tests
          // Arrange
          var sourceUserId = Guid.NewGuid();
          var targetUserId = Guid.NewGuid();
-         var sourceUserRef = new EntityReference("systemuser", sourceUserId);
-         var targetUserRef = new EntityReference("systemuser", targetUserId);
+         var sourceUserRef = new EntityReference(SystemConstants.DataverseEntities.SystemUser, sourceUserId);
+         var targetUserRef = new EntityReference(SystemConstants.DataverseEntities.SystemUser, targetUserId);
 
-         var account = new Entity("account", Guid.NewGuid());
-         account["ownerid"] = sourceUserRef;
+         var account = new Entity(SystemConstants.DataverseEntities.Account, Guid.NewGuid());
+         account[SystemConstants.DataverseAttributes.OwnerId] = sourceUserRef;
 
          _userMapperMock.Setup(m => m.MapUserAsync(
              sourceUserRef,
@@ -277,7 +277,7 @@ namespace dvmig.Tests
          _targetMock.Verify(
              t => t.CreateAsync(
                  It.Is<Entity>(e =>
-                     ((EntityReference)e["ownerid"]).Id == targetUserId),
+                     ((EntityReference)e[SystemConstants.DataverseAttributes.OwnerId]).Id == targetUserId),
                  It.IsAny<CancellationToken>()
              ),
              Times.Once
@@ -288,8 +288,8 @@ namespace dvmig.Tests
       public async Task PreserveDates_WhenOptionIsEnabled()
       {
          // Arrange
-         var account = new Entity("account", Guid.NewGuid());
-         account["name"] = "Date Test";
+         var account = new Entity(SystemConstants.DataverseEntities.Account, Guid.NewGuid());
+         account[SystemConstants.DataverseAttributes.Name] = "Date Test";
          account[SystemConstants.DataverseAttributes.CreatedOn] =
              DateTime.UtcNow;
 
@@ -323,10 +323,10 @@ namespace dvmig.Tests
       {
          // Arrange
          var accountId = Guid.NewGuid();
-         var account = new Entity("account", accountId)
+         var account = new Entity(SystemConstants.DataverseEntities.Account, accountId)
          {
-            ["name"] = "Existing Account",
-            ["telephone1"] = "12345"
+            [SystemConstants.DataverseAttributes.Name] = "Existing Account",
+            [SystemConstants.DataverseAttributes.Telephone1] = "12345"
          };
 
          int createCalls = 0;
@@ -360,7 +360,7 @@ namespace dvmig.Tests
          Assert.Equal(1, createCalls);
          _targetMock.Verify(
              t => t.UpdateAsync(
-                 It.Is<Entity>(e => (string)e["telephone1"] == "12345"),
+                 It.Is<Entity>(e => (string)e[SystemConstants.DataverseAttributes.Telephone1] == "12345"),
                  It.IsAny<CancellationToken>()
              ),
              Times.Once
@@ -372,9 +372,9 @@ namespace dvmig.Tests
       {
          // Arrange
          var accountId = Guid.NewGuid();
-         var account = new Entity("account", accountId)
+         var account = new Entity(SystemConstants.DataverseEntities.Account, accountId)
          {
-            ["name"] = "Retry Test"
+            [SystemConstants.DataverseAttributes.Name] = "Retry Test"
          };
 
          int callCount = 0;
@@ -413,24 +413,24 @@ namespace dvmig.Tests
       {
          // Arrange
          var accountId = Guid.NewGuid();
-         var account = new Entity("account", accountId)
+         var account = new Entity(SystemConstants.DataverseEntities.Account, accountId)
          {
-            ["name"] = "Failure Account"
+            [SystemConstants.DataverseAttributes.Name] = "Failure Account"
          };
 
          var metadata = new Microsoft.Xrm.Sdk.Metadata.EntityMetadata
          {
-            LogicalName = "account"
+            LogicalName = SystemConstants.DataverseEntities.Account
          };
 
          _targetMock.Setup(t => t.GetEntityMetadataAsync(
-             "account",
+             SystemConstants.DataverseEntities.Account,
              It.IsAny<CancellationToken>()
          ))
              .ReturnsAsync(metadata);
 
          _targetMock.Setup(t => t.CreateAsync(
-             It.Is<Entity>(e => e.LogicalName == "account"),
+             It.Is<Entity>(e => e.LogicalName == SystemConstants.DataverseEntities.Account),
              It.IsAny<CancellationToken>()
          ))
              .ThrowsAsync(new Exception("Create failed"));
