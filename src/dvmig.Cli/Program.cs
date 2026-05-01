@@ -33,6 +33,7 @@ namespace dvmig.Cli
          var reconciliationService = new ReconciliationService();
          var validator = new EnvironmentValidator();
          var schemaManager = new SchemaManager(logger);
+         var sourceDateService = new SourceDateService(logger);
          var setupService = new SetupService(
             validator,
             schemaManager,
@@ -46,6 +47,7 @@ namespace dvmig.Cli
             connectionManager,
             metadataService,
             setupService,
+            sourceDateService,
             validator,
             schemaManager,
             stateTracker,
@@ -57,6 +59,7 @@ namespace dvmig.Cli
             reconciliationService,
             metadataService,
             setupService,
+            sourceDateService,
             validator,
             schemaManager,
             stateTracker,
@@ -67,6 +70,7 @@ namespace dvmig.Cli
              connectionManager,
              seeder,
              setupService,
+             sourceDateService,
              validator,
              schemaManager,
              metadataService,

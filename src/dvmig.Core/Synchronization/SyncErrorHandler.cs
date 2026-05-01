@@ -13,7 +13,7 @@ namespace dvmig.Core.Synchronization
    public class SyncErrorHandler : ISyncErrorHandler
    {
       private readonly IDataverseProvider _target;
-      private readonly ISetupService _setupService;
+      private readonly ISourceDateService _sourceDateService;
       private readonly ILogger _logger;
 
       /// <summary>
@@ -21,16 +21,16 @@ namespace dvmig.Core.Synchronization
       /// <see cref="SyncErrorHandler"/> class.
       /// </summary>
       /// <param name="target">The target Dataverse provider.</param>
-      /// <param name="setupService">The setup service.</param>
+      /// <param name="sourceDateService">The source date service.</param>
       /// <param name="logger">The logger instance.</param>
       public SyncErrorHandler(
          IDataverseProvider target,
-         ISetupService setupService,
+         ISourceDateService sourceDateService,
          ILogger logger
       )
       {
          _target = target;
-         _setupService = setupService;
+         _sourceDateService = sourceDateService;
          _logger = logger;
       }
 
@@ -105,7 +105,7 @@ namespace dvmig.Core.Synchronization
                }
 
                if (options.PreserveDates)
-                  await _setupService.PreserveDatesAsync(
+                  await _sourceDateService.CreateSourceDateRecordAsync(
                      _target,
                      entity,
                      ct

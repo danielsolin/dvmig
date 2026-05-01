@@ -15,6 +15,7 @@ namespace dvmig.Tests
       private readonly Mock<IDataverseProvider> _targetMock;
       private readonly Mock<IUserMapper> _userMapperMock;
       private readonly Mock<ISetupService> _setupServiceMock;
+      private readonly Mock<ISourceDateService> _sourceDateServiceMock;
       private readonly Mock<ISyncStateTracker> _stateTrackerMock;
       private readonly Mock<ILogger> _loggerMock;
       private readonly SyncEngine _engine;
@@ -25,6 +26,7 @@ namespace dvmig.Tests
          _targetMock = new Mock<IDataverseProvider>();
          _userMapperMock = new Mock<IUserMapper>();
          _setupServiceMock = new Mock<ISetupService>();
+         _sourceDateServiceMock = new Mock<ISourceDateService>();
          _stateTrackerMock = new Mock<ISyncStateTracker>();
          _loggerMock = new Mock<ILogger>();
 
@@ -47,7 +49,7 @@ namespace dvmig.Tests
          var entityPreparer = new EntityPreparer(_loggerMock.Object);
          var errorHandler = new SyncErrorHandler(
              _targetMock.Object,
-             _setupServiceMock.Object,
+             _sourceDateServiceMock.Object,
              _loggerMock.Object
          );
          var dependencyResolver = new DependencyResolver(
@@ -56,7 +58,7 @@ namespace dvmig.Tests
          );
          var statusTransitionHandler = new StatusTransitionHandler(
              _targetMock.Object,
-             _setupServiceMock.Object,
+             _sourceDateServiceMock.Object,
              _loggerMock.Object
          );
          var metadataCache = new MetadataCache(
@@ -80,7 +82,8 @@ namespace dvmig.Tests
              dependencyResolver,
              statusTransitionHandler,
              metadataCache,
-             failureLogger
+             failureLogger,
+             _sourceDateServiceMock.Object
          );
 
          _userMapperMock.Setup(m => m.MapUserAsync(
@@ -308,8 +311,8 @@ namespace dvmig.Tests
          await _engine.SyncRecordAsync(account, options);
 
          // Assert
-         _setupServiceMock.Verify(
-             p => p.PreserveDatesAsync(
+         _sourceDateServiceMock.Verify(
+             p => p.CreateSourceDateRecordAsync(
                  _targetMock.Object,
                  account,
                  It.IsAny<CancellationToken>()

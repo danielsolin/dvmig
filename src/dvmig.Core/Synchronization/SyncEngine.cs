@@ -34,6 +34,7 @@ namespace dvmig.Core.Synchronization
       private readonly IStatusTransitionHandler _statusTransitionHandler;
       private readonly IMetadataCache _metadataCache;
       private readonly IFailureLogger _failureLogger;
+      private readonly ISourceDateService _sourceDateService;
       private readonly AsyncRetryPolicy _retryPolicy;
 
       private readonly ConcurrentDictionary<string, int> _recursionTracker =
@@ -65,7 +66,8 @@ namespace dvmig.Core.Synchronization
          IDependencyResolver dependencyResolver,
          IStatusTransitionHandler statusTransitionHandler,
          IMetadataCache metadataCache,
-         IFailureLogger failureLogger
+         IFailureLogger failureLogger,
+         ISourceDateService sourceDateService
       )
       {
          _source = source;
@@ -81,6 +83,7 @@ namespace dvmig.Core.Synchronization
          _statusTransitionHandler = statusTransitionHandler;
          _metadataCache = metadataCache;
          _failureLogger = failureLogger;
+         _sourceDateService = sourceDateService;
 
          _retryPolicy = _retryStrategy.CreateRetryPolicy();
       }
@@ -445,7 +448,7 @@ namespace dvmig.Core.Synchronization
 
          try
          {
-            await _setupService.PreserveDatesAsync(
+            await _sourceDateService.CreateSourceDateRecordAsync(
                 _target,
                 entity,
                 ct
@@ -490,7 +493,7 @@ namespace dvmig.Core.Synchronization
             return;
 
          await _retryPolicy.ExecuteAsync(
-             async (ctx) => await _setupService.DeleteSourceDateAsync(
+             async (ctx) => await _sourceDateService.DeleteSourceDateRecordAsync(
                  _target,
                  sourceEntity.LogicalName,
                  targetEntity.Id,

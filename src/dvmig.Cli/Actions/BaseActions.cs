@@ -14,6 +14,7 @@ namespace dvmig.Cli.Actions
    {
       protected readonly ConnectionManager ConnectionManager;
       protected readonly ISetupService SetupService;
+      protected readonly ISourceDateService SourceDateService;
       protected readonly IEnvironmentValidator Validator;
       protected readonly ISchemaManager SchemaManager;
       protected readonly ISyncStateTracker StateTracker;
@@ -22,6 +23,7 @@ namespace dvmig.Cli.Actions
       protected BaseActions(
          ConnectionManager connectionManager,
          ISetupService setupService,
+         ISourceDateService sourceDateService,
          IEnvironmentValidator validator,
          ISchemaManager schemaManager,
          ISyncStateTracker stateTracker,
@@ -30,6 +32,7 @@ namespace dvmig.Cli.Actions
       {
          ConnectionManager = connectionManager;
          SetupService = setupService;
+         SourceDateService = sourceDateService;
          Validator = validator;
          SchemaManager = schemaManager;
          StateTracker = stateTracker;
@@ -80,14 +83,14 @@ namespace dvmig.Cli.Actions
          var entityPreparer = new EntityPreparer(Logger);
          var errorHandler = new SyncErrorHandler(
             target,
-            SetupService,
+            SourceDateService,
             Logger
          );
 
          var dependencyResolver = new DependencyResolver(source, Logger);
          var statusTransitionHandler = new StatusTransitionHandler(
             target,
-            SetupService,
+            SourceDateService,
             Logger
          );
 
@@ -107,7 +110,8 @@ namespace dvmig.Cli.Actions
             dependencyResolver,
             statusTransitionHandler,
             metadataCache,
-            failureLogger
+            failureLogger,
+            SourceDateService
          );
 
          return (source, target, engine);

@@ -107,22 +107,22 @@ namespace dvmig.Plugins
          var logicalNameAttr =
             SystemConstants.SourceDate.EntityLogicalNameAttr;
 
-         var fetchXml = $@"
-<fetch version='1.0' output-format='xml-platform'
-       mapping='logical' distinct='false' count='1'>
-  <entity name='{entityName}'>
-    <attribute name='{primaryId}' />
-    <attribute name='{createdDateAttr}' />
-    <attribute name='{modifiedDateAttr}' />
-    <filter type='and'>
-      <condition attribute='{sourceEntityId}'
-        operator='eq' value='{entityId}' />
-      <condition attribute='{logicalNameAttr}'
-        operator='eq'
-        value='{logicalName.ToLower()}' />
-    </filter>
-  </entity>
-</fetch>";
+         var fetchXml =
+            $@"<fetch version='1.0' output-format='xml-platform'
+                     mapping='logical' distinct='false' count='1'>
+               <entity name='{entityName}'>
+                  <attribute name='{primaryId}' />
+                  <attribute name='{createdDateAttr}' />
+                  <attribute name='{modifiedDateAttr}' />
+                  <filter type='and'>
+                     <condition attribute='{sourceEntityId}'
+                     operator='eq' value='{entityId}' />
+                     <condition attribute='{logicalNameAttr}'
+                     operator='eq'
+                     value='{logicalName.ToLower()}' />
+                  </filter>
+               </entity>
+               </fetch>";
 
          var result = service.RetrieveMultiple(
             new FetchExpression(fetchXml)

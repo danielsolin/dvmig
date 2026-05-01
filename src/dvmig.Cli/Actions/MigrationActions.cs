@@ -14,11 +14,12 @@ namespace dvmig.Cli.Actions
          ConnectionManager connectionManager,
          IMetadataService metadataService,
          ISetupService setupService,
+         ISourceDateService sourceDateService,
          IEnvironmentValidator validator,
          ISchemaManager schemaManager,
          ISyncStateTracker stateTracker,
          ILogger logger
-      ) : base(connectionManager, setupService, validator, schemaManager, stateTracker, logger)
+      ) : base(connectionManager, setupService, sourceDateService, validator, schemaManager, stateTracker, logger)
       {
          _metadataService = metadataService;
       }
