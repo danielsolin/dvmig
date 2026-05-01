@@ -8,7 +8,7 @@ using SerilogLogger = Serilog.ILogger;
 
 namespace dvmig.Core.Shared
 {
-   public class Logger : dvmig.Core.Interfaces.ILogger
+   public class Logger : Interfaces.ILogger
    {
       private readonly SerilogLogger _serilog;
       private IProgress<string>? _progress;
@@ -16,27 +16,27 @@ namespace dvmig.Core.Shared
       public Logger()
       {
          var appData = Environment.GetFolderPath(
-             Environment.SpecialFolder.ApplicationData
+            Environment.SpecialFolder.ApplicationData
          );
 
          var logPath = Path.Combine(
-             appData,
-             SystemConstants.AppConstants.AppName,
-             "logs",
-             $"{SystemConstants.AppConstants.AppName}.log"
+            appData,
+            SystemConstants.AppConstants.AppName,
+            "logs",
+            $"{SystemConstants.AppConstants.AppName}.log"
          );
 
          _serilog = new LoggerConfiguration()
-             .MinimumLevel.Debug()
-             .WriteTo.Debug()
-             .WriteTo.File(
-                 logPath,
-                 rollingInterval: RollingInterval.Day,
-                 flushToDiskInterval: TimeSpan.FromSeconds(1),
-                 outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} " +
-                     "[{Level:u3}] {Message:lj}{NewLine}{Exception}"
-             )
-             .CreateLogger();
+            .MinimumLevel.Debug()
+            .WriteTo.Debug()
+            .WriteTo.File(
+               logPath,
+               rollingInterval: RollingInterval.Day,
+               flushToDiskInterval: TimeSpan.FromSeconds(1),
+               outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} " +
+                  "[{Level:u3}] {Message:lj}{NewLine}{Exception}"
+            )
+            .CreateLogger();
       }
 
       public void AttachProgress(IProgress<string> progress)
@@ -66,7 +66,10 @@ namespace dvmig.Core.Shared
          _progress?.Report(message);
       }
 
-      public void Information(string messageTemplate, params object[] propertyValues)
+      public void Information(
+         string messageTemplate, 
+         params object[] propertyValues
+      )
       {
          _serilog.Information(messageTemplate, propertyValues);
          ReportWithFormatting(messageTemplate, propertyValues);
@@ -78,13 +81,20 @@ namespace dvmig.Core.Shared
          _progress?.Report(message);
       }
 
-      public void Warning(string messageTemplate, params object[] propertyValues)
+      public void Warning(
+         string messageTemplate, 
+         params object[] propertyValues
+      )
       {
          _serilog.Warning(messageTemplate, propertyValues);
          ReportWithFormatting(messageTemplate, propertyValues);
       }
 
-      public void Warning(Exception ex, string messageTemplate, params object[] propertyValues)
+      public void Warning(
+         Exception ex, 
+         string messageTemplate, 
+         params object[] propertyValues
+      )
       {
          _serilog.Warning(ex, messageTemplate, propertyValues);
          ReportWithFormatting(messageTemplate, propertyValues);
@@ -96,19 +106,29 @@ namespace dvmig.Core.Shared
          _progress?.Report(message);
       }
 
-      public void Error(string messageTemplate, params object[] propertyValues)
+      public void Error(
+         string messageTemplate, 
+         params object[] propertyValues
+      )
       {
          _serilog.Error(messageTemplate, propertyValues);
          ReportWithFormatting(messageTemplate, propertyValues);
       }
 
-      public void Error(Exception ex, string messageTemplate, params object[] propertyValues)
+      public void Error(
+         Exception ex, 
+         string messageTemplate, 
+         params object[] propertyValues
+      )
       {
          _serilog.Error(ex, messageTemplate, propertyValues);
          ReportWithFormatting(messageTemplate, propertyValues);
       }
 
-      private void ReportWithFormatting(string messageTemplate, object[] propertyValues)
+      private void ReportWithFormatting(
+         string messageTemplate, 
+         object[] propertyValues
+      )
       {
          if (_progress == null)
             return;
@@ -118,6 +138,7 @@ namespace dvmig.Core.Shared
             if (propertyValues == null || propertyValues.Length == 0)
             {
                _progress.Report(messageTemplate);
+
                return;
             }
 

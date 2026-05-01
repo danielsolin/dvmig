@@ -36,17 +36,17 @@ namespace dvmig.Core.Synchronization
       private readonly AsyncRetryPolicy _retryPolicy;
 
       private readonly ConcurrentDictionary<string, int> _recursionTracker =
-          new ConcurrentDictionary<string, int>();
+         new ConcurrentDictionary<string, int>();
 
       private readonly ConcurrentDictionary<string, HashSet<string>>
-          _triedDependencies =
-              new ConcurrentDictionary<string, HashSet<string>>();
+         _triedDependencies =
+            new ConcurrentDictionary<string, HashSet<string>>();
 
       private readonly ConcurrentDictionary<string, Guid> _idMappingCache =
-          new ConcurrentDictionary<string, Guid>();
+         new ConcurrentDictionary<string, Guid>();
 
       private ConcurrentDictionary<Guid, byte> _syncedIds =
-          new ConcurrentDictionary<Guid, byte>();
+         new ConcurrentDictionary<Guid, byte>();
 
       private const int MaxRecursionDepth = 3;
       #endregion
@@ -126,8 +126,8 @@ namespace dvmig.Core.Synchronization
          while (true)
          {
             var response = await _source.RetrieveMultipleAsync(
-                syncQuery,
-                ct
+               syncQuery,
+               ct
             );
             if (response.Entities.Count == 0)
                break;
@@ -159,9 +159,9 @@ namespace dvmig.Core.Synchronization
          }
 
          _logger.Information(
-             "SyncEntity {Entity} finished. Total records: {Count}",
-             logicalName,
-             totalSynced
+            "SyncEntity {Entity} finished. Total records: {Count}",
+            logicalName,
+            totalSynced
          );
 
          _triedDependencies.Clear();
@@ -169,15 +169,15 @@ namespace dvmig.Core.Synchronization
       }
 
       public async Task SyncAsync(
-          IEnumerable<Entity> entities,
-          SyncOptions options,
-          IProgress<bool>? recordProgress = null,
-          CT ct = default
+         IEnumerable<Entity> entities,
+         SyncOptions options,
+         IProgress<bool>? recordProgress = null,
+         CT ct = default
       )
       {
          var entitiesToSync = entities
-             .Where(e => !_syncedIds.ContainsKey(e.Id))
-             .ToList();
+            .Where(e => !_syncedIds.ContainsKey(e.Id))
+            .ToList();
 
          if (!entitiesToSync.Any())
             return;
@@ -191,14 +191,14 @@ namespace dvmig.Core.Synchronization
          };
 
          await Parallel.ForEachAsync(
-             entitiesToSync,
-             parallelOptions,
-             async (entity, token) => await SyncRecordAndReportAsync(
-                 entity,
-                 options,
-                 recordProgress,
-                 token
-             )
+            entitiesToSync,
+            parallelOptions,
+            async (entity, token) => await SyncRecordAndReportAsync(
+               entity,
+               options,
+               recordProgress,
+               token
+            )
          );
       }
 
@@ -207,18 +207,18 @@ namespace dvmig.Core.Synchronization
       #region Record Sync Workflow
 
       private async Task SyncRecordAndReportAsync(
-          Entity entity,
-          SyncOptions options,
-          IProgress<bool>? recordProgress,
-          CT ct
+         Entity entity,
+         SyncOptions options,
+         IProgress<bool>? recordProgress,
+         CT ct
       )
       {
          try
          {
             var (success, failureMessage) = await SyncRecordAsync(
-                entity,
-                options,
-                ct
+               entity,
+               options,
+               ct
             );
 
             if (!success)
@@ -227,9 +227,9 @@ namespace dvmig.Core.Synchronization
                   "Sync failed during record processing.";
 
                await LogFailureWithRetryAsync(
-                   entity,
-                   errorMsg,
-                   ct
+                  entity,
+                  errorMsg,
+                  ct
                );
             }
 
@@ -242,21 +242,21 @@ namespace dvmig.Core.Synchronization
          catch (Exception ex)
          {
             _logger.Error(
-                ex,
-                "Error syncing {Entity}:{Id}",
-                entity.LogicalName,
-                entity.Id
+               ex,
+               "Error syncing {Entity}:{Id}",
+               entity.LogicalName,
+               entity.Id
             );
 
             var failureMessage = _errorHandler.FormatFailureMessage(
-                "SyncAsync",
-                ex
+               "SyncAsync",
+               ex
             );
 
             await LogFailureWithRetryAsync(
-                entity,
-                failureMessage,
-                ct
+               entity,
+               failureMessage,
+               ct
             );
 
             recordProgress?.Report(false);
@@ -264,18 +264,18 @@ namespace dvmig.Core.Synchronization
       }
 
       public async Task<(bool Success, string? FailureMessage)>
-          SyncRecordAsync(
-              Entity entity,
-              SyncOptions options,
-              CT ct = default
-          )
+         SyncRecordAsync(
+            Entity entity,
+            SyncOptions options,
+            CT ct = default
+         )
       {
          if (_syncedIds.ContainsKey(entity.Id))
          {
             _logger.Debug(
-                "Skipping {Entity}:{Id} - Already synced in current state.",
-                entity.LogicalName,
-                entity.Id
+               "Skipping {Entity}:{Id} - Already synced in current state.",
+               entity.LogicalName,
+               entity.Id
             );
 
             return (true, string.Empty);
@@ -288,9 +288,9 @@ namespace dvmig.Core.Synchronization
          try
          {
             return await SyncRecordCoreAsync(
-                entity,
-                options,
-                ct
+               entity,
+               options,
+               ct
             );
          }
          catch (OperationCanceledException)
@@ -301,13 +301,13 @@ namespace dvmig.Core.Synchronization
          {
             _logger.Error(ex, "Failed to sync {Key}", recordKey);
             _logger.Information(
-                $"FAILED {entity.LogicalName}:{entity.Id} - " +
-                $"{ex.Message}"
+               $"FAILED {entity.LogicalName}:{entity.Id} - " +
+               $"{ex.Message}"
             );
 
             return (false, _errorHandler.FormatFailureMessage(
-                "SyncRecordAsync",
-                ex
+               "SyncRecordAsync",
+               ex
             ));
          }
          finally
@@ -317,15 +317,15 @@ namespace dvmig.Core.Synchronization
       }
 
       private async Task<(bool Success, string? FailureMessage)>
-          SyncRecordCoreAsync(
-              Entity entity,
-              SyncOptions options,
-              CT ct
-          )
+         SyncRecordCoreAsync(
+            Entity entity,
+            SyncOptions options,
+            CT ct
+         )
       {
          var metadata = await _metadataCache.GetMetadataAsync(
-             entity.LogicalName,
-             ct
+            entity.LogicalName,
+            ct
          );
 
          if (metadata == null)
@@ -333,40 +333,40 @@ namespace dvmig.Core.Synchronization
 
          if (metadata.IsIntersect == true)
             return await SyncIntersectEntityAsync(
-                entity,
-                options,
-                ct
+               entity,
+               options,
+               ct
             );
 
          var prepared = await _entityPreparer.PrepareEntityForTargetAsync(
-             entity,
-             metadata,
-             options,
-             _userMapper,
-             _idMappingCache,
-             ct
+            entity,
+            metadata,
+            options,
+            _userMapper,
+            _idMappingCache,
+            ct
          );
 
          await PreserveDatesIfRequestedAsync(entity, options, ct);
 
          var (success, failureMessage) = await CreateWithFixStrategyAsync(
-             prepared,
-             options,
-             ct
+            prepared,
+            options,
+            ct
          );
 
          if (!success)
             return (
-                false,
-                failureMessage ??
-                   $"Failed to sync {entity.LogicalName}:{entity.Id}."
+               false,
+               failureMessage ??
+                  $"Failed to sync {entity.LogicalName}:{entity.Id}."
             );
 
          await CompleteSuccessfulSyncAsync(
-             sourceEntity: entity,
-             targetEntity: prepared,
-             options,
-             ct
+            sourceEntity: entity,
+            targetEntity: prepared,
+            options,
+            ct
          );
 
          return (true, string.Empty);
@@ -375,17 +375,17 @@ namespace dvmig.Core.Synchronization
       private bool TryEnterRecordScope(string recordKey)
       {
          var depth = _recursionTracker.AddOrUpdate(
-             recordKey,
-             1,
-             (_, v) => v + 1
+            recordKey,
+            1,
+            (_, v) => v + 1
          );
 
          if (depth <= MaxRecursionDepth)
             return true;
 
          _logger.Error(
-             "Max recursion depth reached for {Key}. Skipping.",
-             recordKey
+            "Max recursion depth reached for {Key}. Skipping.",
+            recordKey
          );
 
          LeaveRecordScope(recordKey);
@@ -399,26 +399,26 @@ namespace dvmig.Core.Synchronization
       }
 
       private (bool Success, string FailureMessage) MetadataMissing(
-          Entity entity
+         Entity entity
       )
       {
          _logger.Error(
-             "Metadata could not be retrieved for {Entity}. " +
-             "Skipping record {Id}.",
-             entity.LogicalName,
-             entity.Id
+            "Metadata could not be retrieved for {Entity}. " +
+            "Skipping record {Id}.",
+            entity.LogicalName,
+            entity.Id
          );
 
          return (
-             false,
-             "Metadata could not be retrieved for " + entity.LogicalName
+            false,
+            "Metadata could not be retrieved for " + entity.LogicalName
          );
       }
 
       private async Task PreserveDatesIfRequestedAsync(
-          Entity entity,
-          SyncOptions options,
-          CT ct
+         Entity entity,
+         SyncOptions options,
+         CT ct
       )
       {
          if (!options.PreserveDates)
@@ -427,19 +427,19 @@ namespace dvmig.Core.Synchronization
          try
          {
             await _sourceDateService.CreateSourceDateRecordAsync(
-                _target,
-                entity,
-                ct
+               _target,
+               entity,
+               ct
             );
          }
          catch (Exception ex)
          {
             _logger.Warning(
-                ex,
-                "Date preservation failed for {Entity}:{Id}. " +
-                "Continuing sync.",
-                entity.LogicalName,
-                entity.Id
+               ex,
+               "Date preservation failed for {Entity}:{Id}. " +
+               "Continuing sync.",
+               entity.LogicalName,
+               entity.Id
             );
 
             _logger.Information("Date preservation failed. Continuing...");
@@ -447,10 +447,10 @@ namespace dvmig.Core.Synchronization
       }
 
       private async Task CompleteSuccessfulSyncAsync(
-          Entity sourceEntity,
-          Entity targetEntity,
-          SyncOptions options,
-          CT ct
+         Entity sourceEntity,
+         Entity targetEntity,
+         SyncOptions options,
+         CT ct
       )
       {
          var recordKey = GetRecordKey(sourceEntity);
@@ -458,25 +458,25 @@ namespace dvmig.Core.Synchronization
          _syncedIds.TryAdd(sourceEntity.Id, 1);
          _idMappingCache[recordKey] = targetEntity.Id;
          _logger.Information(
-             $"Synced {sourceEntity.LogicalName}:{sourceEntity.Id}"
+            $"Synced {sourceEntity.LogicalName}:{sourceEntity.Id}"
          );
 
          await _stateTracker.MarkAsSyncedAsync(
-             sourceEntity.LogicalName,
-             sourceEntity.Id
+            sourceEntity.LogicalName,
+            sourceEntity.Id
          );
 
          if (!options.PreserveDates)
             return;
 
          await _retryPolicy.ExecuteAsync(
-             async (ctx) => await _sourceDateService.DeleteSourceDateRecordAsync(
-                 _target,
-                 sourceEntity.LogicalName,
-                 targetEntity.Id,
-                 ct
-             ),
-             CreatePollyContext()
+            async (ctx) => await _sourceDateService.DeleteSourceDateRecordAsync(
+               _target,
+               sourceEntity.LogicalName,
+               targetEntity.Id,
+               ct
+            ),
+            CreatePollyContext()
          );
       }
 
@@ -492,14 +492,14 @@ namespace dvmig.Core.Synchronization
       private AssociateRequest? CreateAssociateRequest(Entity entity)
       {
          var references = entity.Attributes
-             .Values.OfType<EntityReference>().ToList();
+            .Values.OfType<EntityReference>().ToList();
 
          if (references.Count < 2)
          {
             _logger.Warning(
-                "Intersect entity {Key} does not have " +
-                "two EntityReferences.",
-                entity.LogicalName
+               "Intersect entity {Key} does not have " +
+               "two EntityReferences.",
+               entity.LogicalName
             );
 
             return null;
@@ -510,9 +510,9 @@ namespace dvmig.Core.Synchronization
             Target = references[0],
             Relationship = new Relationship(entity.LogicalName),
             RelatedEntities = new EntityReferenceCollection
-                {
-                    references[1]
-                }
+            {
+               references[1]
+            }
          };
 
          return request;
@@ -523,86 +523,86 @@ namespace dvmig.Core.Synchronization
       #region Error Recovery And Dependency Resolution
 
       private async Task<(bool success, string failureMessage)>
-          HandleSyncExceptionWithRetryAsync(
-              Exception ex,
-              Entity entity,
-              SyncOptions options,
-              CT ct,
-              bool treatAlreadyExistsAsSuccess = false
+         HandleSyncExceptionWithRetryAsync(
+            Exception ex,
+            Entity entity,
+            SyncOptions options,
+            CT ct,
+            bool treatAlreadyExistsAsSuccess = false
          )
       {
          if (treatAlreadyExistsAsSuccess &&
-             ex.Message.Contains(SystemConstants.ErrorKeywords.AlreadyExists))
+            ex.Message.Contains(SystemConstants.ErrorKeywords.AlreadyExists))
             return (true, string.Empty);
 
          var (success, failureMessage) =
-             await _errorHandler.HandleSyncExceptionAsync(
-                 ex,
-                 entity,
-                 options,
-                 ct,
-                 updateFunc: _target.UpdateAsync,
-                 statusTransitionFunc: HandleStatusTransitionAsync,
-                 resolveMissingDependencyFunc: ResolveMissingDependencyAsync,
-                 resolveSqlDependencyFunc: ResolveSqlDependencyAsync,
-                 stripAttributeFunc: StripAttributeAndRetryAsync,
-                 findExistingFunc: FindExistingOnTargetAsync
-             );
+            await _errorHandler.HandleSyncExceptionAsync(
+               ex,
+               entity,
+               options,
+               ct,
+               updateFunc: _target.UpdateAsync,
+               statusTransitionFunc: HandleStatusTransitionAsync,
+               resolveMissingDependencyFunc: ResolveMissingDependencyAsync,
+               resolveSqlDependencyFunc: ResolveSqlDependencyAsync,
+               stripAttributeFunc: StripAttributeAndRetryAsync,
+               findExistingFunc: FindExistingOnTargetAsync
+            );
 
          return success
-             ? (true, string.Empty)
-             : (false, failureMessage ?? "Unknown error");
+            ? (true, string.Empty)
+            : (false, failureMessage ?? "Unknown error");
       }
 
       private async Task<bool> HandleStatusTransitionAsync(
-          Entity entity,
-          SyncOptions options,
-          CT ct
+         Entity entity,
+         SyncOptions options,
+         CT ct
       )
       {
          return await _statusTransitionHandler.HandleStatusTransitionAsync(
-             entity,
-             options,
-             ct
+            entity,
+            options,
+            ct
          );
       }
 
       private async Task<bool> ResolveMissingDependencyAsync(
-          Exception ex,
-          Entity entity,
-          SyncOptions options,
-          CT ct
+         Exception ex,
+         Entity entity,
+         SyncOptions options,
+         CT ct
       )
       {
          return await _dependencyResolver.ResolveMissingDependencyAsync(
-             ex,
-             entity,
-             options,
-             ct,
-             syncRecordFunc: SyncRecordAsync,
-             retryEntityFunc: RetryEntityAsync,
-             findExistingFunc: FindExistingOnTargetAsync,
-             idMappingCache: _idMappingCache,
-             triedDependencies: _triedDependencies
+            ex,
+            entity,
+            options,
+            ct,
+            syncRecordFunc: SyncRecordAsync,
+            retryEntityFunc: RetryEntityAsync,
+            findExistingFunc: FindExistingOnTargetAsync,
+            idMappingCache: _idMappingCache,
+            triedDependencies: _triedDependencies
          );
       }
 
       private async Task<bool> ResolveSqlDependencyAsync(
-          string errorMessage,
-          Entity entity,
-          SyncOptions options,
-          CT ct
+         string errorMessage,
+         Entity entity,
+         SyncOptions options,
+         CT ct
       )
       {
          return await _dependencyResolver.ResolveSqlDependencyAsync(
-             errorMessage,
-             entity,
-             options,
-             ct,
-             syncRecordFunc: SyncRecordAsync,
-             retryEntityFunc: RetryEntityAsync,
-             findExistingFunc: FindExistingOnTargetAsync,
-             idMappingCache: _idMappingCache
+            errorMessage,
+            entity,
+            options,
+            ct,
+            syncRecordFunc: SyncRecordAsync,
+            retryEntityFunc: RetryEntityAsync,
+            findExistingFunc: FindExistingOnTargetAsync,
+            idMappingCache: _idMappingCache
          );
       }
 
@@ -611,11 +611,11 @@ namespace dvmig.Core.Synchronization
       #region Create And Associate Operations
 
       private async Task<(bool success, string failureMessage)>
-          SyncIntersectEntityAsync(
-              Entity entity,
-              SyncOptions options,
-              CT ct
-          )
+         SyncIntersectEntityAsync(
+            Entity entity,
+            SyncOptions options,
+            CT ct
+         )
       {
          try
          {
@@ -624,13 +624,13 @@ namespace dvmig.Core.Synchronization
                return (false, "Invalid N:N relationship record.");
 
             await _retryPolicy.ExecuteAsync(
-                async (ctx) => await _target.ExecuteAsync(request, ct),
-                CreatePollyContext()
+               async (ctx) => await _target.ExecuteAsync(request, ct),
+               CreatePollyContext()
             );
 
             _logger.Information(
-                "Associated N:N relationship {Key}",
-                entity.LogicalName
+               "Associated N:N relationship {Key}",
+               entity.LogicalName
             );
 
             return (true, string.Empty);
@@ -638,33 +638,33 @@ namespace dvmig.Core.Synchronization
          catch (Exception ex)
          {
             return await HandleSyncExceptionWithRetryAsync(
-                ex,
-                entity,
-                options,
-                ct,
-                treatAlreadyExistsAsSuccess: true
+               ex,
+               entity,
+               options,
+               ct,
+               treatAlreadyExistsAsSuccess: true
             );
          }
       }
 
       private async Task<(bool success, string failureMessage)>
-          CreateWithFixStrategyAsync(
-              Entity entity,
-              SyncOptions options,
-              CT ct
-          )
+         CreateWithFixStrategyAsync(
+            Entity entity,
+            SyncOptions options,
+            CT ct
+         )
       {
          try
          {
             await _retryPolicy.ExecuteAsync(
-                async (ctx) => await _target.CreateAsync(entity, ct),
-                CreatePollyContext()
+               async (ctx) => await _target.CreateAsync(entity, ct),
+               CreatePollyContext()
             );
 
             _logger.Information(
-                "Created {Key}:{Id}",
-                entity.LogicalName,
-                entity.Id
+               "Created {Key}:{Id}",
+               entity.LogicalName,
+               entity.Id
             );
 
             return (true, string.Empty);
@@ -672,10 +672,10 @@ namespace dvmig.Core.Synchronization
          catch (Exception ex)
          {
             return await HandleSyncExceptionWithRetryAsync(
-                ex,
-                entity,
-                options,
-                ct
+               ex,
+               entity,
+               options,
+               ct
             );
          }
       }
@@ -702,10 +702,10 @@ namespace dvmig.Core.Synchronization
       )
       {
          return await _entityPreparer.FindExistingOnTargetAsync(
-             entity,
-             _target,
-             _metadataCache.GetMetadataAsync,
-             ct
+            entity,
+            _target,
+            _metadataCache.GetMetadataAsync,
+            ct
          );
       }
 
@@ -716,36 +716,36 @@ namespace dvmig.Core.Synchronization
       )
       {
          var metadata = await _metadataCache.GetMetadataAsync(
-             entity.LogicalName,
-             ct
+            entity.LogicalName,
+            ct
          );
          if (metadata == null)
             return false;
 
          var prepared = await _entityPreparer.PrepareEntityForTargetAsync(
-             entity,
-             metadata,
-             options,
-             _userMapper,
-             _idMappingCache,
-             ct
+            entity,
+            metadata,
+            options,
+            _userMapper,
+            _idMappingCache,
+            ct
          );
 
          if (metadata?.IsIntersect == true)
          {
             var (success, _) = await SyncIntersectEntityAsync(
-                prepared,
-                options,
-                ct
+               prepared,
+               options,
+               ct
             );
 
             return success;
          }
 
          var (created, _) = await CreateWithFixStrategyAsync(
-             prepared,
-             options,
-             ct
+            prepared,
+            options,
+            ct
          );
 
          return created;
@@ -759,8 +759,8 @@ namespace dvmig.Core.Synchronization
       )
       {
          var match = Regex.Match(
-             ex.Message,
-             @"'(\w+)'"
+            ex.Message,
+            @"'(\w+)'"
          );
 
          if (match.Success)
@@ -769,22 +769,22 @@ namespace dvmig.Core.Synchronization
             if (entity.Attributes.Contains(attrName))
             {
                _logger.Warning(
-                   "Stripping attribute '{Attr}' for {Key}:{Id}",
-                   attrName,
-                   entity.LogicalName,
-                   entity.Id
+                  "Stripping attribute '{Attr}' for {Key}:{Id}",
+                  attrName,
+                  entity.LogicalName,
+                  entity.Id
                );
 
                _logger.Information(
-                   $"Stripping attribute '{attrName}' and retrying..."
+                  $"Stripping attribute '{attrName}' and retrying..."
                );
 
                entity.Attributes.Remove(attrName);
 
                var (success, _) = await CreateWithFixStrategyAsync(
-                   entity,
-                   options,
-                   ct
+                  entity,
+                  options,
+                  ct
                );
 
                return success;
@@ -815,12 +815,12 @@ namespace dvmig.Core.Synchronization
          try
          {
             await _retryPolicy.ExecuteAsync(
-                async (ctx) => await _failureLogger.LogFailureToTargetAsync(
-                    entity,
-                    failureMessage,
-                    ct
-                ),
-                pollyCtx
+               async (ctx) => await _failureLogger.LogFailureToTargetAsync(
+                  entity,
+                  failureMessage,
+                  ct
+               ),
+               pollyCtx
             );
          }
          catch (OperationCanceledException)
@@ -830,14 +830,15 @@ namespace dvmig.Core.Synchronization
          catch (Exception logEx)
          {
             _logger.Error(
-                logEx,
-                "Failed to persist failure log for {Entity}:{Id}.",
-                entity.LogicalName,
-                entity.Id
+               logEx,
+               "Failed to persist failure log for {Entity}:{Id}.",
+               entity.LogicalName,
+               entity.Id
             );
 
             _logger.Information(
-                $"{SystemConstants.UiMarkup.Red}ERROR[/] Fatal sync failure: {logEx.Message}"
+               $"{SystemConstants.UiMarkup.Red}ERROR[/] " +
+               $"Fatal sync failure: {logEx.Message}"
             );
             throw;
          }
