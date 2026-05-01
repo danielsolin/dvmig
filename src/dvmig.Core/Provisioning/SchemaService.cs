@@ -5,7 +5,6 @@ using Microsoft.Crm.Sdk.Messages;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Messages;
 using Microsoft.Xrm.Sdk.Metadata;
-using Serilog;
 using System.ServiceModel;
 
 namespace dvmig.Core.Provisioning
@@ -30,26 +29,24 @@ namespace dvmig.Core.Provisioning
       /// <inheritdoc />
       public async Task CreateSchemaAsync(
          IDataverseProvider target,
-         IProgress<string>? progress = null,
          CancellationToken ct = default
       )
       {
          // 1. dm_sourcedate
-         await EnsureSourceDateEntityAsync(target, progress, ct);
+         await EnsureSourceDateEntityAsync(target, ct);
 
          // 2. dm_migrationfailure
-         await EnsureFailureLogEntityAsync(target, progress, ct);
+         await EnsureFailureLogEntityAsync(target, ct);
 
-         _logger.Information(progress, "Publishing changes...");
+         _logger.Information("Publishing changes...");
 
          await target.ExecuteAsync(new PublishAllXmlRequest(), ct);
 
-         _logger.Information(progress, "Schema creation completed.");
+         _logger.Information("Schema creation completed.");
       }
 
       private async Task EnsureSourceDateEntityAsync(
          IDataverseProvider target,
-         IProgress<string>? progress,
          CancellationToken ct
       )
       {
@@ -61,9 +58,7 @@ namespace dvmig.Core.Provisioning
 
          if (existingMeta == null)
          {
-            _logger.Information(
-               progress,
-               "Creating '{Entity}' entity...",
+            _logger.Information("Creating '{Entity}' entity...",
                entityName
             );
 
@@ -117,7 +112,6 @@ namespace dvmig.Core.Provisioning
             existingMeta!,
             SystemConstants.SourceDate.EntityId,
             "Source Entity ID",
-            progress,
             ct
          );
 
@@ -127,7 +121,6 @@ namespace dvmig.Core.Provisioning
             existingMeta!,
             SystemConstants.SourceDate.EntityLogicalNameAttr,
             "Source Entity Logical Name",
-            progress,
             ct
          );
 
@@ -137,7 +130,6 @@ namespace dvmig.Core.Provisioning
             existingMeta!,
             SystemConstants.SourceDate.CreatedDate,
             "Source Created Date",
-            progress,
             ct,
             false // DateTime
          );
@@ -148,7 +140,6 @@ namespace dvmig.Core.Provisioning
             existingMeta!,
             SystemConstants.SourceDate.ModifiedDate,
             "Source Modified Date",
-            progress,
             ct,
             false // DateTime
          );
@@ -156,7 +147,6 @@ namespace dvmig.Core.Provisioning
 
       private async Task EnsureFailureLogEntityAsync(
          IDataverseProvider target,
-         IProgress<string>? progress,
          CancellationToken ct
       )
       {
@@ -168,9 +158,7 @@ namespace dvmig.Core.Provisioning
 
          if (existingMeta == null)
          {
-            _logger.Information(
-               progress,
-               "Creating '{Entity}' entity...",
+            _logger.Information("Creating '{Entity}' entity...",
                entityName
             );
 
@@ -215,7 +203,6 @@ namespace dvmig.Core.Provisioning
             existingMeta!,
             SystemConstants.MigrationFailure.SourceId,
             "Source Record ID",
-            progress,
             ct
          );
 
@@ -225,7 +212,6 @@ namespace dvmig.Core.Provisioning
             existingMeta!,
             SystemConstants.MigrationFailure.EntityLogicalNameAttr,
             "Entity Logical Name",
-            progress,
             ct
          );
 
@@ -235,7 +221,6 @@ namespace dvmig.Core.Provisioning
             existingMeta!,
             SystemConstants.MigrationFailure.ErrorMessage,
             "Error Message",
-            progress,
             ct,
             true, // IsString
             true  // IsMemo/LongText
@@ -247,7 +232,6 @@ namespace dvmig.Core.Provisioning
             existingMeta!,
             SystemConstants.MigrationFailure.Timestamp,
             "Failure Timestamp",
-            progress,
             ct,
             false // DateTime
          );
@@ -259,7 +243,6 @@ namespace dvmig.Core.Provisioning
          EntityMetadata entityMeta,
          string schemaName,
          string displayName,
-         IProgress<string>? progress,
          CancellationToken ct,
          bool isString = true,
          bool isMemo = false
@@ -271,9 +254,7 @@ namespace dvmig.Core.Provisioning
             return;
          }
 
-         _logger.Information(
-            progress,
-            "Creating attribute {Attr} on {Entity}...",
+         _logger.Information("Creating attribute {Attr} on {Entity}...",
             schemaName,
             entityLogicalName
          );
@@ -328,7 +309,6 @@ namespace dvmig.Core.Provisioning
       /// <inheritdoc />
       public async Task DropSchemaAsync(
          IDataverseProvider target,
-         IProgress<string>? progress = null,
          CancellationToken ct = default
       )
       {
@@ -337,37 +317,32 @@ namespace dvmig.Core.Provisioning
          await DropEntityIfPresentAsync(
             target,
             SystemConstants.MigrationFailure.EntityLogicalName,
-            progress,
             ct
          );
 
-         _logger.Information(progress, "Publishing changes...");
+         _logger.Information("Publishing changes...");
          await target.ExecuteAsync(new PublishAllXmlRequest(), ct);
 
          // 2. dm_sourcedate
          await DropEntityIfPresentAsync(
             target,
             SystemConstants.SourceDate.EntityLogicalName,
-            progress,
             ct
          );
 
-         _logger.Information(progress, "Publishing changes...");
+         _logger.Information("Publishing changes...");
          await target.ExecuteAsync(new PublishAllXmlRequest(), ct);
 
-         _logger.Information(progress, "Schema removal completed.");
+         _logger.Information("Schema removal completed.");
       }
 
       private async Task DropEntityIfPresentAsync(
          IDataverseProvider target,
          string logicalName,
-         IProgress<string>? progress,
          CancellationToken ct
       )
       {
-         _logger.Information(
-            progress,
-            "Checking for '{Entity}' entity...",
+         _logger.Information("Checking for '{Entity}' entity...",
             logicalName
          );
 
@@ -378,9 +353,7 @@ namespace dvmig.Core.Provisioning
 
          if (existingMeta != null)
          {
-            _logger.Information(
-               progress,
-               "Deleting '{Entity}' entity...",
+            _logger.Information("Deleting '{Entity}' entity...",
                logicalName
             );
 
@@ -397,9 +370,7 @@ namespace dvmig.Core.Provisioning
                ex.Message.Contains("referenced by")
             )
             {
-               _logger.Warning(
-                  progress,
-                  "Deletion of {Entity} failed due to dependencies.",
+               _logger.Warning("Deletion of {Entity} failed due to dependencies.",
                   logicalName
                );
 
@@ -451,16 +422,14 @@ namespace dvmig.Core.Provisioning
                   "these references (e.g., from Model-driven Apps, " +
                   "Sitemaps, or Solutions) before trying again.";
 
-               _logger.Error(progress, errorMsg);
+               _logger.Error(errorMsg);
 
                throw new InvalidOperationException(errorMsg, ex);
             }
          }
          else
          {
-            _logger.Information(
-               progress,
-               "'{Entity}' entity not found.",
+            _logger.Information("'{Entity}' entity not found.",
                logicalName
             );
          }

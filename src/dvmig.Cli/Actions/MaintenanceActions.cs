@@ -1,7 +1,6 @@
 using dvmig.Core.Interfaces;
 using dvmig.Core.Shared;
 using dvmig.Core.Logging;
-using Serilog;
 using Spectre.Console;
 using Microsoft.Xrm.Sdk.Messages;
 using Microsoft.Crm.Sdk.Messages;
@@ -43,14 +42,10 @@ namespace dvmig.Cli.Actions
 
          int count = AnsiConsole.Ask<int>(prompt, 100);
 
-         await CliUI.RunStatusAsync(
-            "Seeding data...",
-            async progress =>
+         await CliUI.RunStatusAsync("Seeding data...", Logger, async () =>
                await _seeder.SeedTestDataAsync(
                   provider,
-                  count,
-                  progress
-               )
+                  count)
          );
 
          CliUI.WriteSuccess("Seeding Finished!");
@@ -86,22 +81,20 @@ namespace dvmig.Cli.Actions
 
          try
          {
-            await CliUI.RunStatusAsync(
-               "Uninstalling components...",
-               async progress =>
+            await CliUI.RunStatusAsync("Uninstalling components...", Logger, async () =>
                {
-                  Logger.Information(progress, "Cleaning target environment...");
+                  Logger.Information("Cleaning target environment...");
 
                   // 1. Remove Plugin
-                  await PluginService.RemovePluginAsync(provider, progress);
+                  await PluginService.RemovePluginAsync(provider);
 
                   // Ensure plugin changes are published before schema removal
                   await provider.ExecuteAsync(new PublishAllXmlRequest());
 
                   // 2. Drop Schema
-                  await SchemaService.DropSchemaAsync(provider, progress);
+                  await SchemaService.DropSchemaAsync(provider);
 
-                  Logger.Information(progress, "Environment cleanup completed.");
+                  Logger.Information("Environment cleanup completed.");
                }
             );
 
@@ -194,14 +187,10 @@ namespace dvmig.Cli.Actions
             return;
          }
 
-         await CliUI.RunStatusAsync(
-            "Wiping data...",
-            async progress =>
+         await CliUI.RunStatusAsync("Wiping data...", Logger, async () =>
                await _seeder.CleanTestDataAsync(
                   provider,
-                  selectedEntities,
-                  progress
-               )
+                  selectedEntities)
          );
 
          CliUI.WriteSuccess($"Data Wipe Finished for {envName}!");

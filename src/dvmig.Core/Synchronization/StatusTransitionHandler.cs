@@ -2,7 +2,6 @@ using dvmig.Core.Interfaces;
 using dvmig.Core.Shared;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Crm.Sdk.Messages;
-using Serilog;
 
 namespace dvmig.Core.Synchronization
 {
@@ -38,9 +37,8 @@ namespace dvmig.Core.Synchronization
       public async Task<bool> HandleStatusTransitionAsync(
          Entity entity,
          SyncOptions options,
-         IProgress<string>? progress,
          CancellationToken ct = default,
-         Func<Entity, SyncOptions, IProgress<string>?, CancellationToken,
+         Func<Entity, SyncOptions, CancellationToken,
             Task<(bool Success, string? FailureMessage)>>?
             createOrUpdateFunc = null
       )
@@ -77,7 +75,7 @@ namespace dvmig.Core.Synchronization
 
          // Use the provided function or default to basic create
          var (success, _) = createOrUpdateFunc != null
-            ? await createOrUpdateFunc(entity, options, progress, ct)
+            ? await createOrUpdateFunc(entity, options, ct)
             : await BasicCreateAsync(entity, ct);
 
          if (success && (stateValue != null || statusValue != null))

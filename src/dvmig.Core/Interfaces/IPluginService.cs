@@ -21,7 +21,6 @@ namespace dvmig.Core.Interfaces
       Task DeployPluginAsync(
           IDataverseProvider target,
           string? pluginAssemblyPath = null,
-          IProgress<string>? progress = null,
           CancellationToken ct = default
       );
 
@@ -37,7 +36,6 @@ namespace dvmig.Core.Interfaces
       /// </returns>
       Task RemovePluginAsync(
           IDataverseProvider target,
-          IProgress<string>? progress = null,
           CancellationToken ct = default
       );
    }

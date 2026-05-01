@@ -1,7 +1,6 @@
 using dvmig.Core.Interfaces;
 using dvmig.Core.Provisioning;
 using Moq;
-using Serilog;
 
 namespace dvmig.Tests
 {

@@ -2,7 +2,6 @@ using dvmig.Core.Interfaces;
 using dvmig.Core.Shared;
 using Polly;
 using Polly.Retry;
-using Serilog;
 
 namespace dvmig.Core.Synchronization
 {
@@ -90,16 +89,8 @@ namespace dvmig.Core.Synchronization
                   var msg = $"Throttling or transient error. Retry {count} " +
                      $"in {time.TotalMilliseconds}ms";
 
-                  _logger.Warning(ex, msg);
-
-                  if (ctx.TryGetValue("progress", out var progressObj) &&
-                      progressObj is IProgress<string> progress)
-                  {
-                     progress.Report(
-                        $"{SystemConstants.UiMarkup.Yellow}" +
-                        $"{SystemConstants.UiMarkup.Wait}[/] {msg}"
-                     );
-                  }
+                  _logger.Warning(ex, $"{SystemConstants.UiMarkup.Yellow}" +
+                     $"{SystemConstants.UiMarkup.Wait}[/] {msg}");
                }
             );
       }

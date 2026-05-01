@@ -1,8 +1,7 @@
+using dvmig.Core.Interfaces;
 using System.Collections.Concurrent;
 using System.Text.RegularExpressions;
-using dvmig.Core.Interfaces;
 using Microsoft.Xrm.Sdk;
-using Serilog;
 
 namespace dvmig.Core.Synchronization
 {
@@ -34,12 +33,11 @@ namespace dvmig.Core.Synchronization
           Exception ex,
           Entity entity,
           SyncOptions options,
-          IProgress<string>? progress,
           CancellationToken ct = default,
-          Func<Entity, SyncOptions, IProgress<string>?, CancellationToken,
+          Func<Entity, SyncOptions, CancellationToken,
               Task<(bool Success, string? FailureMessage)>>?
               syncRecordFunc = null,
-          Func<Entity, SyncOptions, IProgress<string>?, CancellationToken,
+          Func<Entity, SyncOptions, CancellationToken,
               Task<bool>>? retryEntityFunc = null,
           Func<Entity, CancellationToken, Task<Guid?>>?
               findExistingFunc = null,
@@ -92,7 +90,7 @@ namespace dvmig.Core.Synchronization
                 missingId
             );
 
-            progress?.Report(
+            _logger.Information(
                 $"Resolving missing dependency: {missingType}:{missingId}"
             );
 
@@ -126,7 +124,6 @@ namespace dvmig.Core.Synchronization
                       ? await retryEntityFunc(
                           entity,
                           options,
-                          progress,
                           ct
                       )
                       : false;
@@ -137,7 +134,6 @@ namespace dvmig.Core.Synchronization
                    ? await syncRecordFunc(
                        missingRecord,
                        options,
-                       progress,
                        ct
                    )
                    : (false, "No sync function provided");
@@ -147,7 +143,6 @@ namespace dvmig.Core.Synchronization
                   return await retryEntityFunc(
                       entity,
                       options,
-                      progress,
                       ct
                   );
                }
@@ -178,7 +173,7 @@ namespace dvmig.Core.Synchronization
                    entity.Id
                );
 
-               progress?.Report(
+               _logger.Information(
                    $"Dependency resolution failed. Stripping " +
                    $"'{attrToStrip}' and retrying..."
                );
@@ -191,7 +186,6 @@ namespace dvmig.Core.Synchronization
                   return await retryEntityFunc(
                       entity,
                       options,
-                      progress,
                       ct
                   );
 
@@ -207,12 +201,11 @@ namespace dvmig.Core.Synchronization
           string message,
           Entity entity,
           SyncOptions options,
-          IProgress<string>? progress,
           CancellationToken ct = default,
-          Func<Entity, SyncOptions, IProgress<string>?, CancellationToken,
+          Func<Entity, SyncOptions, CancellationToken,
               Task<(bool Success, string? FailureMessage)>>?
               syncRecordFunc = null,
-          Func<Entity, SyncOptions, IProgress<string>?, CancellationToken,
+          Func<Entity, SyncOptions, CancellationToken,
               Task<bool>>? retryEntityFunc = null,
           Func<Entity, CancellationToken, Task<Guid?>>?
               findExistingFunc = null,
@@ -241,7 +234,7 @@ namespace dvmig.Core.Synchronization
                 er.Id
             );
 
-            progress?.Report(
+            _logger.Information(
                 $"Resolving SQL dependency: {er.LogicalName}:{er.Id}"
             );
 
@@ -276,7 +269,6 @@ namespace dvmig.Core.Synchronization
                       ? await retryEntityFunc(
                           entity,
                           options,
-                          progress,
                           ct
                       )
                       : false;
@@ -287,7 +279,6 @@ namespace dvmig.Core.Synchronization
                    ? await syncRecordFunc(
                        missingRecord,
                        options,
-                       progress,
                        ct
                    )
                    : (false, "No sync function provided");
@@ -297,7 +288,6 @@ namespace dvmig.Core.Synchronization
                   return await retryEntityFunc(
                       entity,
                       options,
-                      progress,
                       ct
                   );
                }

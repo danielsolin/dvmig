@@ -2,7 +2,6 @@ using dvmig.Core.Interfaces;
 using dvmig.Core.Providers;
 using dvmig.Core.Shared;
 using Microsoft.Xrm.Sdk;
-using Serilog;
 
 namespace dvmig.Core.Synchronization
 {
@@ -40,19 +39,18 @@ namespace dvmig.Core.Synchronization
             Exception ex,
             Entity entity,
             SyncOptions options,
-            IProgress<string>? progress,
             CancellationToken ct = default,
             Func<Entity, CancellationToken, Task>? updateFunc = null,
-            Func<Entity, SyncOptions, IProgress<string>?,
+            Func<Entity, SyncOptions,
                CancellationToken, Task<bool>>?
                statusTransitionFunc = null,
-            Func<Exception, Entity, SyncOptions, IProgress<string>?,
+            Func<Exception, Entity, SyncOptions,
                CancellationToken, Task<bool>>?
                resolveMissingDependencyFunc = null,
-            Func<string, Entity, SyncOptions, IProgress<string>?,
+            Func<string, Entity, SyncOptions,
                CancellationToken, Task<bool>>?
                resolveSqlDependencyFunc = null,
-            Func<Exception, Entity, SyncOptions, IProgress<string>?,
+            Func<Exception, Entity, SyncOptions,
                CancellationToken, Task<bool>>?
                stripAttributeFunc = null,
             Func<Entity, CancellationToken, Task<Guid?>>?
@@ -130,7 +128,6 @@ namespace dvmig.Core.Synchronization
                   var success = await statusTransitionFunc(
                      entity,
                      options,
-                     progress,
                      ct
                   );
 
@@ -160,7 +157,6 @@ namespace dvmig.Core.Synchronization
                      updateEx.Message,
                      entity,
                      options,
-                     progress,
                      ct
                   );
 
@@ -199,7 +195,6 @@ namespace dvmig.Core.Synchronization
             var success = await statusTransitionFunc(
                entity,
                options,
-               progress,
                ct
             );
 
@@ -222,7 +217,6 @@ namespace dvmig.Core.Synchronization
                ex,
                entity,
                options,
-               progress,
                ct
             );
 
@@ -246,7 +240,6 @@ namespace dvmig.Core.Synchronization
                ex.Message,
                entity,
                options,
-               progress,
                ct
             );
 
@@ -273,7 +266,6 @@ namespace dvmig.Core.Synchronization
                ex,
                entity,
                options,
-               progress,
                ct
             );
 
@@ -296,7 +288,7 @@ namespace dvmig.Core.Synchronization
             entity.Id
          );
 
-         progress?.Report(
+         _logger.Information(
             $"FAILED {entity.LogicalName}:{entity.Id} - {ex.Message}"
          );
 

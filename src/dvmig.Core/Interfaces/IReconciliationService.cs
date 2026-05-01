@@ -52,7 +52,6 @@ namespace dvmig.Core.Interfaces
           IDataverseProvider target,
           ISyncEngine engine,
           SyncOptions options,
-          IProgress<string>? progress = null,
           IProgress<bool>? recordProgress = null,
           CancellationToken ct = default
       );

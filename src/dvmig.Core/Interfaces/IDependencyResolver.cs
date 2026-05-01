@@ -45,12 +45,11 @@ namespace dvmig.Core.Interfaces
           Exception ex,
           Entity entity,
           SyncOptions options,
-          IProgress<string>? progress,
           CancellationToken ct = default,
-          Func<Entity, SyncOptions, IProgress<string>?, CancellationToken,
+          Func<Entity, SyncOptions, CancellationToken,
               Task<(bool Success, string? FailureMessage)>>?
               syncRecordFunc = null,
-          Func<Entity, SyncOptions, IProgress<string>?, CancellationToken,
+          Func<Entity, SyncOptions, CancellationToken,
               Task<bool>>?
               retryEntityFunc = null,
           Func<Entity, CancellationToken, Task<Guid?>>?
@@ -89,12 +88,11 @@ namespace dvmig.Core.Interfaces
           string message,
           Entity entity,
           SyncOptions options,
-          IProgress<string>? progress,
           CancellationToken ct = default,
-          Func<Entity, SyncOptions, IProgress<string>?, CancellationToken,
+          Func<Entity, SyncOptions, CancellationToken,
               Task<(bool Success, string? FailureMessage)>>?
               syncRecordFunc = null,
-          Func<Entity, SyncOptions, IProgress<string>?, CancellationToken,
+          Func<Entity, SyncOptions, CancellationToken,
               Task<bool>>?
               retryEntityFunc = null,
           Func<Entity, CancellationToken, Task<Guid?>>?

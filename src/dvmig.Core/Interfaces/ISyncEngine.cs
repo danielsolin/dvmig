@@ -31,7 +31,6 @@ namespace dvmig.Core.Interfaces
       Task SyncAsync(
           IEnumerable<Entity> entities,
           SyncOptions options,
-          IProgress<string>? progress = null,
           IProgress<bool>? recordProgress = null,
           CancellationToken ct = default
       );
@@ -51,7 +50,6 @@ namespace dvmig.Core.Interfaces
       Task<(bool Success, string? FailureMessage)> SyncRecordAsync(
           Entity entity,
           SyncOptions options,
-          IProgress<string>? progress = null,
           CancellationToken ct = default
       );
 
@@ -89,7 +87,6 @@ namespace dvmig.Core.Interfaces
           string logicalName,
           SyncOptions options,
           Microsoft.Xrm.Sdk.Query.QueryExpression? query = null,
-          IProgress<string>? progress = null,
           IProgress<bool>? recordProgress = null,
           CancellationToken ct = default
       );

@@ -1,7 +1,6 @@
 using dvmig.Core.Interfaces;
 using dvmig.Core.Shared;
 using dvmig.Core.Synchronization;
-using Serilog;
 using Spectre.Console;
 
 namespace dvmig.Cli.Actions
@@ -209,7 +208,7 @@ namespace dvmig.Cli.Actions
                         MaxDegreeOfParallelism = maxThreads
                      };
 
-                     var progressReporter = new Progress<string>(msg =>
+                     Logger.AttachProgress(new Progress<string>(msg =>
                      {
                         // Ensure we show wait/retry/throttle messages even
                         // during the progress bar display.
@@ -227,16 +226,22 @@ namespace dvmig.Cli.Actions
 
                         if (isCritical)
                            AnsiConsole.MarkupLine(msg);
-                     });
+                     }));
 
-                     await engine.SyncEntityAsync(
-                        logicalName,
-                        options,
-                        null,
-                        progressReporter,
-                        recordProgress,
-                        default
-                     );
+                     try
+                     {
+                        await engine.SyncEntityAsync(
+                           logicalName,
+                           options,
+                           null,
+                           recordProgress,
+                           default
+                        );
+                     }
+                     finally
+                     {
+                        Logger.DetachProgress();
+                     }
 
                      // Ensure it hits 100% even if there were rounding or 
                      // async reporting skips.

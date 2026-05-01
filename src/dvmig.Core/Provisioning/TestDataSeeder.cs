@@ -1,9 +1,8 @@
-using Bogus;
 using dvmig.Core.Interfaces;
+using Bogus;
 using dvmig.Core.Logging;
 using dvmig.Core.Shared;
 using Microsoft.Xrm.Sdk;
-using Serilog;
 
 namespace dvmig.Core.Provisioning
 {
@@ -34,7 +33,6 @@ namespace dvmig.Core.Provisioning
       public async Task SeedTestDataAsync(
           IDataverseProvider provider,
           int count,
-          IProgress<string>? progress = null,
           CancellationToken ct = default
       )
       {
@@ -42,7 +40,7 @@ namespace dvmig.Core.Provisioning
              "Starting interconnected test data seeding: {Count} accounts",
              count
          );
-         progress?.Report(
+         _logger.Information(
              $"Generating {count} accounts with related contacts..."
          );
 
@@ -230,7 +228,7 @@ namespace dvmig.Core.Provisioning
                    $"Contacts: {totalContactsCreated}, " +
                    $"Activities: {totalActivitiesCreated}";
 
-               _logger.Information(progress, msg);
+               _logger.Information(msg);
             }
          }
 
@@ -241,7 +239,7 @@ namespace dvmig.Core.Provisioning
              totalContactsCreated,
              totalActivitiesCreated
          );
-         progress?.Report(
+         _logger.Information(
              $"Seeding completed. Created {count} accounts, " +
              $"{totalContactsCreated} contacts, and " +
              $"{totalActivitiesCreated} activities."
@@ -262,14 +260,13 @@ namespace dvmig.Core.Provisioning
       public async Task CleanTestDataAsync(
           IDataverseProvider provider,
           List<string>? entitiesToWipe = null,
-          IProgress<string>? progress = null,
           CancellationToken ct = default
       )
       {
          _logger.Warning(
              "Starting data cleanup..."
          );
-         progress?.Report("Starting data cleanup...");
+         _logger.Information("Starting data cleanup...");
 
          var entitiesToDelete = entitiesToWipe ?? new List<string>
          {
@@ -286,20 +283,19 @@ namespace dvmig.Core.Provisioning
          // them in the order given.
          foreach (var entity in entitiesToDelete)
          {
-            await DeleteAllOfEntityAsync(provider, entity, progress, ct);
+            await DeleteAllOfEntityAsync(provider, entity, ct);
          }
 
-         _logger.Information(progress, "Cleanup completed successfully.");
+         _logger.Information("Cleanup completed successfully.");
       }
 
       private async Task DeleteAllOfEntityAsync(
           IDataverseProvider provider,
           string logicalName,
-          IProgress<string>? progress,
           CancellationToken ct
       )
       {
-         progress?.Report($"Fetching {logicalName} records for deletion...");
+         _logger.Information($"Fetching {logicalName} records for deletion...");
 
          var query = new Microsoft.Xrm.Sdk.Query.QueryExpression(logicalName)
          {
@@ -319,7 +315,7 @@ namespace dvmig.Core.Provisioning
             if (results.Entities.Count == 0)
                break;
 
-            progress?.Report(
+            _logger.Information(
                 $"Deleting {results.Entities.Count} {logicalName} " +
                 $"records (Page {query.PageInfo.PageNumber})..."
             );
@@ -331,8 +327,7 @@ namespace dvmig.Core.Provisioning
             };
 
             var context = new Polly.Context();
-            if (progress != null)
-               context["progress"] = progress;
+            
 
             await Parallel.ForEachAsync(
                 results.Entities,
@@ -353,7 +348,7 @@ namespace dvmig.Core.Provisioning
                 }
             );
 
-            progress?.Report(
+            _logger.Information(
                 $"Deletion progress ({logicalName}): " +
                 $"{totalDeleted} total deleted."
             );
@@ -366,7 +361,7 @@ namespace dvmig.Core.Provisioning
          }
 
          if (totalDeleted == 0)
-            progress?.Report($"No {logicalName} records found.");
+            _logger.Information($"No {logicalName} records found.");
 
          _logger.Information(
              "Deleted {Count} records of type {Entity}",

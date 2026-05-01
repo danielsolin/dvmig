@@ -1,7 +1,6 @@
 using dvmig.Core.Interfaces;
 using dvmig.Core.Shared;
 using dvmig.Core.Synchronization;
-using Serilog;
 using Spectre.Console;
 
 namespace dvmig.Cli.Actions
@@ -98,7 +97,8 @@ namespace dvmig.Cli.Actions
          {
             await CliUI.RunStatusAsync(
                "Clearing failure log...",
-               async _ => await _reconciliationService.ClearFailuresAsync(
+               Logger,
+               async () => await _reconciliationService.ClearFailuresAsync(
                   target,
                   default
                )
@@ -272,49 +272,57 @@ namespace dvmig.Cli.Actions
                         task.Description = desc;
                      });
 
-                     await _reconciliationService.PerformReconciliationAsync(
-                        logicalName,
-                        source,
-                        target,
-                        engine,
-                        options,
-                        new Progress<string>(
-                           msg =>
-                           {
-                              var waitMark = SystemConstants.UiMarkup.Wait;
-                              var throttleKey = SystemConstants
-                                 .ErrorKeywords.TooManyRequests;
+                     Logger.AttachProgress(new Progress<string>(
+                        msg =>
+                        {
+                           var waitMark = SystemConstants.UiMarkup.Wait;
+                           var throttleKey = SystemConstants
+                              .ErrorKeywords.TooManyRequests;
 
-                              var ordinal = StringComparison.Ordinal;
-                              var ignoreCase =
-                                 StringComparison.OrdinalIgnoreCase;
+                           var ordinal = StringComparison.Ordinal;
+                           var ignoreCase =
+                              StringComparison.OrdinalIgnoreCase;
 
-                              bool isWait = msg.Contains(waitMark, ordinal);
-                              bool isThrottled = msg.Contains(
-                                 throttleKey,
-                                 ignoreCase
+                           bool isWait = msg.Contains(waitMark, ordinal);
+                           bool isThrottled = msg.Contains(
+                              throttleKey,
+                              ignoreCase
+                           );
+                           bool isYellow = msg.StartsWith(
+                              SystemConstants.UiMarkup.Yellow
+                           );
+                           bool isRed = msg.StartsWith(
+                              SystemConstants.UiMarkup.Red
+                           );
+
+                           bool isCritical = isWait || isThrottled ||
+                                             isYellow || isRed;
+
+                           if (isCritical)
+                              AnsiConsole.MarkupLine(msg);
+                           else
+                              AnsiConsole.MarkupLine(
+                                 $"{SystemConstants.UiMarkup.Grey}{msg}[/]"
                               );
-                              bool isYellow = msg.StartsWith(
-                                 SystemConstants.UiMarkup.Yellow
-                              );
-                              bool isRed = msg.StartsWith(
-                                 SystemConstants.UiMarkup.Red
-                              );
+                        }
+                     ));
 
-                              bool isCritical = isWait || isThrottled ||
-                                                isYellow || isRed;
-
-                              if (isCritical)
-                                 AnsiConsole.MarkupLine(msg);
-                              else
-                                 AnsiConsole.MarkupLine(
-                                    $"{SystemConstants.UiMarkup.Grey}{msg}[/]"
-                                 );
-                           }
-                        ),
-                        recordProgress,
-                        default
-                     );
+                     try
+                     {
+                        await _reconciliationService.PerformReconciliationAsync(
+                           logicalName,
+                           source,
+                           target,
+                           engine,
+                           options,
+                           recordProgress,
+                           default
+                        );
+                     }
+                     finally
+                     {
+                        Logger.DetachProgress();
+                     }
 
                      // Ensure it hits 100% if finished but logic doesn't align
                      task.Value = sourceCount;

@@ -5,7 +5,6 @@ using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Messages;
 using Microsoft.Xrm.Sdk.Metadata;
 using Moq;
-using Serilog;
 
 namespace dvmig.Tests
 {

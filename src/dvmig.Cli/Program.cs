@@ -23,14 +23,14 @@ namespace dvmig.Cli
       {
          Console.OutputEncoding = Encoding.UTF8;
 
-         var logger = LoggerInitializer.Initialize("dvmig.Cli");
+         var logger = new dvmig.Core.Logging.Logger();
          var retryStrategy = new RetryStrategy(logger);
 
          var settingsService = new SettingsService();
          var stateTracker = new LocalFileStateTracker();
          var seeder = new TestDataSeeder(logger, retryStrategy);
          var metadataService = new MetadataService();
-         var reconciliationService = new ReconciliationService();
+         var reconciliationService = new ReconciliationService(logger);
          var validator = new EnvironmentValidator();
          var schemaService = new SchemaService(logger);
          var sourceDateService = new SourceDateService(logger);

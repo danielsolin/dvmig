@@ -4,7 +4,6 @@ using dvmig.Core.Shared;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Metadata;
 using Moq;
-using Serilog;
 
 namespace dvmig.Tests
 {
@@ -34,17 +33,17 @@ namespace dvmig.Tests
          _targetMock.SetupSequence(t => t.GetEntityMetadataAsync(
              SystemConstants.SourceDate.EntityLogicalName,
              It.IsAny<CancellationToken>())
-         ).ReturnsAsync((EntityMetadata?)null)
+         ).ReturnsAsync((EntityMetadata?)default)
           .ReturnsAsync(entityMetadata);
 
          // Mock dm_migrationfailure
          _targetMock.SetupSequence(t => t.GetEntityMetadataAsync(
              SystemConstants.MigrationFailure.EntityLogicalName,
              It.IsAny<CancellationToken>())
-         ).ReturnsAsync((EntityMetadata?)null)
+         ).ReturnsAsync((EntityMetadata?)default)
           .ReturnsAsync(entityMetadata);
 
-         await _schemaService.CreateSchemaAsync(_targetMock.Object, null);
+         await _schemaService.CreateSchemaAsync(_targetMock.Object, default);
 
          _targetMock.Verify(t => t.ExecuteAsync(
              It.Is<OrganizationRequest>(r => r.RequestName == "CreateEntity"),
@@ -66,7 +65,7 @@ namespace dvmig.Tests
              It.IsAny<CancellationToken>())
          ).ReturnsAsync(entityMetadata);
 
-         await _schemaService.CreateSchemaAsync(_targetMock.Object, null);
+         await _schemaService.CreateSchemaAsync(_targetMock.Object, default);
 
          _targetMock.Verify(t => t.ExecuteAsync(
              It.Is<OrganizationRequest>(r => r.RequestName == "CreateEntity"),

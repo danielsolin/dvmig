@@ -1,7 +1,6 @@
 using dvmig.Core.Interfaces;
 using dvmig.Core.Shared;
 using dvmig.Core.Synchronization;
-using Serilog;
 using Spectre.Console;
 
 namespace dvmig.Cli.Actions
@@ -124,12 +123,10 @@ namespace dvmig.Cli.Actions
       {
          try
          {
-            await CliUI.RunStatusAsync(
-               "Installing components...",
-               async progress =>
+            await CliUI.RunStatusAsync("Installing components...", Logger, async () =>
                {
-                  await SchemaService.CreateSchemaAsync(target, progress);
-                  await PluginService.DeployPluginAsync(target, null, progress);
+                  await SchemaService.CreateSchemaAsync(target);
+                  await PluginService.DeployPluginAsync(target, null);
                }
             );
 

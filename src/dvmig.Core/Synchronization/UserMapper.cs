@@ -1,9 +1,8 @@
-using System.Collections.Concurrent;
 using dvmig.Core.Interfaces;
+using System.Collections.Concurrent;
 using dvmig.Core.Shared;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Query;
-using Serilog;
 
 namespace dvmig.Core.Synchronization
 {

@@ -2,7 +2,6 @@ using dvmig.Core.Interfaces;
 using dvmig.Core.Shared;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Query;
-using Serilog;
 
 namespace dvmig.Core.Synchronization
 {

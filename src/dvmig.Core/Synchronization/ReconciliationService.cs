@@ -9,6 +9,12 @@ namespace dvmig.Core.Synchronization
    /// </summary>
    public class ReconciliationService : IReconciliationService
    {
+      private readonly ILogger _logger;
+
+      public ReconciliationService(ILogger logger)
+      {
+         _logger = logger;
+      }
       /// <inheritdoc />
       public async Task<bool> IsInitializedAsync(
           IDataverseProvider target,
@@ -122,36 +128,35 @@ namespace dvmig.Core.Synchronization
           IDataverseProvider target,
           ISyncEngine engine,
           SyncOptions options,
-          IProgress<string>? progress = null,
           IProgress<bool>? recordProgress = null,
           CancellationToken ct = default
       )
       {
-         progress?.Report($"Reconciling {logicalName}...");
+         _logger.Information($"Reconciling {logicalName}...");
 
          var sourceCount = await source.GetRecordCountAsync(logicalName, ct);
          var targetCount = await target.GetRecordCountAsync(logicalName, ct);
 
-         progress?.Report(
+         _logger.Information(
              $"Counts: Source={sourceCount}, Target={targetCount}"
          );
 
          if (sourceCount <= targetCount)
          {
-            progress?.Report("Counts match or target has more records. " +
+            _logger.Information("Counts match or target has more records. " +
                              "No action needed.");
 
             return;
          }
 
          var diff = sourceCount - targetCount;
-         progress?.Report($"Discrepancy found: {diff} records missing.");
+         _logger.Information($"Discrepancy found: {diff} records missing.");
 
          // 1. Try to re-sync logged failures
          var failures = await GetFailuresAsync(target, logicalName, ct);
          if (failures.Count > 0)
          {
-            progress?.Report($"Found {failures.Count} logged failures. " +
+            _logger.Information($"Found {failures.Count} logged failures. " +
                              "Attempting re-sync...");
 
             int fixedCount = 0;
@@ -171,7 +176,7 @@ namespace dvmig.Core.Synchronization
 
                if (sourceRecord == null)
                {
-                  progress?.Report(
+                  _logger.Information(
                       $"Source record {sourceId} not found. " +
                       "Skipping failure re-sync."
                   );
@@ -183,7 +188,6 @@ namespace dvmig.Core.Synchronization
                var (success, _) = await engine.SyncRecordAsync(
                    sourceRecord,
                    options,
-                   progress,
                    ct
                );
 
@@ -196,7 +200,7 @@ namespace dvmig.Core.Synchronization
                recordProgress?.Report(success);
             }
 
-            progress?.Report($"Fixed {fixedCount}/{failures.Count} " +
+            _logger.Information($"Fixed {fixedCount}/{failures.Count} " +
                              "logged failures.");
          }
 
@@ -204,7 +208,7 @@ namespace dvmig.Core.Synchronization
          targetCount = await target.GetRecordCountAsync(logicalName, ct);
          if (sourceCount > targetCount)
          {
-            progress?.Report(
+            _logger.Information(
                 $"Still missing {sourceCount - targetCount} records. " +
                 "Performing a full sync pass using state log..."
             );
@@ -213,18 +217,17 @@ namespace dvmig.Core.Synchronization
                 logicalName,
                 options,
                 null,
-                progress,
                 recordProgress,
                 ct
             );
 
             targetCount = await target.GetRecordCountAsync(logicalName, ct);
-            progress?.Report(
+            _logger.Information(
                 $"Final counts: Source={sourceCount}, Target={targetCount}"
             );
          }
          else
-            progress?.Report("All records successfully reconciled.");
+            _logger.Information("All records successfully reconciled.");
       }
    }
 }

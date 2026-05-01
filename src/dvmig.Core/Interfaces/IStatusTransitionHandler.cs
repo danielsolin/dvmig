@@ -29,9 +29,8 @@ namespace dvmig.Core.Interfaces
       Task<bool> HandleStatusTransitionAsync(
           Entity entity,
           SyncOptions options,
-          IProgress<string>? progress,
           CancellationToken ct = default,
-          Func<Entity, SyncOptions, IProgress<string>?, CancellationToken,
+          Func<Entity, SyncOptions, CancellationToken,
               Task<(bool Success, string? FailureMessage)>>?
               createOrUpdateFunc = null);
    }

@@ -42,18 +42,17 @@ namespace dvmig.Core.Interfaces
           Exception ex,
           Entity entity,
           SyncOptions options,
-          IProgress<string>? progress,
           CancellationToken ct = default,
           Func<Entity, CancellationToken, Task>? updateFunc = null,
-          Func<Entity, SyncOptions, IProgress<string>?, CancellationToken,
+          Func<Entity, SyncOptions, CancellationToken,
               Task<bool>>? statusTransitionFunc = null,
-          Func<Exception, Entity, SyncOptions, IProgress<string>?,
+          Func<Exception, Entity, SyncOptions,
               CancellationToken, Task<bool>>?
               resolveMissingDependencyFunc = null,
-          Func<string, Entity, SyncOptions, IProgress<string>?,
+          Func<string, Entity, SyncOptions,
               CancellationToken, Task<bool>>?
               resolveSqlDependencyFunc = null,
-          Func<Exception, Entity, SyncOptions, IProgress<string>?,
+          Func<Exception, Entity, SyncOptions,
               CancellationToken, Task<bool>>? stripAttributeFunc = null,
           Func<Entity, CancellationToken, Task<Guid?>>?
               findExistingFunc = null);

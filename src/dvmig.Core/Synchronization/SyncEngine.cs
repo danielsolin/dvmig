@@ -1,13 +1,12 @@
+using dvmig.Core.Interfaces;
 using System.Collections.Concurrent;
 using System.Text.RegularExpressions;
-using dvmig.Core.Interfaces;
 using dvmig.Core.Shared;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Messages;
 using Microsoft.Xrm.Sdk.Query;
 using Polly;
 using Polly.Retry;
-using Serilog;
 
 using CT = System.Threading.CancellationToken;
 
@@ -104,7 +103,6 @@ namespace dvmig.Core.Synchronization
          string logicalName,
          SyncOptions options,
          QueryExpression? query = null,
-         IProgress<string>? progress = null,
          IProgress<bool>? recordProgress = null,
          CT ct = default
       )
@@ -134,23 +132,19 @@ namespace dvmig.Core.Synchronization
             if (response.Entities.Count == 0)
                break;
 
-            if (progress != null)
-            {
-               var count = response.Entities.Count;
-               var recordCountSoFar = totalSynced + count;
+            var count = response.Entities.Count;
+            var recordCountSoFar = totalSynced + count;
 
-               progress.Report(
-                  $"Syncing {logicalName} page " +
-                  $"{syncQuery.PageInfo.PageNumber} " +
-                  $"({recordCountSoFar} records " +
-                  $"found so far)..."
-               );
-            }
+            _logger.Information(
+               $"Syncing {logicalName} page " +
+               $"{syncQuery.PageInfo.PageNumber} " +
+               $"({recordCountSoFar} records " +
+               $"found so far)..."
+            );
 
             await SyncAsync(
                response.Entities,
                options,
-               progress,
                recordProgress,
                ct
             );
@@ -177,7 +171,6 @@ namespace dvmig.Core.Synchronization
       public async Task SyncAsync(
           IEnumerable<Entity> entities,
           SyncOptions options,
-          IProgress<string>? progress = null,
           IProgress<bool>? recordProgress = null,
           CT ct = default
       )
@@ -203,7 +196,6 @@ namespace dvmig.Core.Synchronization
              async (entity, token) => await SyncRecordAndReportAsync(
                  entity,
                  options,
-                 progress,
                  recordProgress,
                  token
              )
@@ -217,7 +209,6 @@ namespace dvmig.Core.Synchronization
       private async Task SyncRecordAndReportAsync(
           Entity entity,
           SyncOptions options,
-          IProgress<string>? progress,
           IProgress<bool>? recordProgress,
           CT ct
       )
@@ -227,7 +218,6 @@ namespace dvmig.Core.Synchronization
             var (success, failureMessage) = await SyncRecordAsync(
                 entity,
                 options,
-                progress,
                 ct
             );
 
@@ -239,7 +229,6 @@ namespace dvmig.Core.Synchronization
                await LogFailureWithRetryAsync(
                    entity,
                    errorMsg,
-                   progress,
                    ct
                );
             }
@@ -267,7 +256,6 @@ namespace dvmig.Core.Synchronization
             await LogFailureWithRetryAsync(
                 entity,
                 failureMessage,
-                progress,
                 ct
             );
 
@@ -279,7 +267,6 @@ namespace dvmig.Core.Synchronization
           SyncRecordAsync(
               Entity entity,
               SyncOptions options,
-              IProgress<string>? progress = null,
               CT ct = default
           )
       {
@@ -303,7 +290,6 @@ namespace dvmig.Core.Synchronization
             return await SyncRecordCoreAsync(
                 entity,
                 options,
-                progress,
                 ct
             );
          }
@@ -314,7 +300,7 @@ namespace dvmig.Core.Synchronization
          catch (Exception ex)
          {
             _logger.Error(ex, "Failed to sync {Key}", recordKey);
-            progress?.Report(
+            _logger.Information(
                 $"FAILED {entity.LogicalName}:{entity.Id} - " +
                 $"{ex.Message}"
             );
@@ -334,7 +320,6 @@ namespace dvmig.Core.Synchronization
           SyncRecordCoreAsync(
               Entity entity,
               SyncOptions options,
-              IProgress<string>? progress,
               CT ct
           )
       {
@@ -350,7 +335,6 @@ namespace dvmig.Core.Synchronization
             return await SyncIntersectEntityAsync(
                 entity,
                 options,
-                progress,
                 ct
             );
 
@@ -363,12 +347,11 @@ namespace dvmig.Core.Synchronization
              ct
          );
 
-         await PreserveDatesIfRequestedAsync(entity, options, progress, ct);
+         await PreserveDatesIfRequestedAsync(entity, options, ct);
 
          var (success, failureMessage) = await CreateWithFixStrategyAsync(
              prepared,
              options,
-             progress,
              ct
          );
 
@@ -383,7 +366,6 @@ namespace dvmig.Core.Synchronization
              sourceEntity: entity,
              targetEntity: prepared,
              options,
-             progress,
              ct
          );
 
@@ -436,7 +418,6 @@ namespace dvmig.Core.Synchronization
       private async Task PreserveDatesIfRequestedAsync(
           Entity entity,
           SyncOptions options,
-          IProgress<string>? progress,
           CT ct
       )
       {
@@ -461,7 +442,7 @@ namespace dvmig.Core.Synchronization
                 entity.Id
             );
 
-            progress?.Report("Date preservation failed. Continuing...");
+            _logger.Information("Date preservation failed. Continuing...");
          }
       }
 
@@ -469,7 +450,6 @@ namespace dvmig.Core.Synchronization
           Entity sourceEntity,
           Entity targetEntity,
           SyncOptions options,
-          IProgress<string>? progress,
           CT ct
       )
       {
@@ -477,7 +457,7 @@ namespace dvmig.Core.Synchronization
 
          _syncedIds.TryAdd(sourceEntity.Id, 1);
          _idMappingCache[recordKey] = targetEntity.Id;
-         progress?.Report(
+         _logger.Information(
              $"Synced {sourceEntity.LogicalName}:{sourceEntity.Id}"
          );
 
@@ -496,7 +476,7 @@ namespace dvmig.Core.Synchronization
                  targetEntity.Id,
                  ct
              ),
-             CreatePollyContext(progress)
+             CreatePollyContext()
          );
       }
 
@@ -547,7 +527,6 @@ namespace dvmig.Core.Synchronization
               Exception ex,
               Entity entity,
               SyncOptions options,
-              IProgress<string>? progress,
               CT ct,
               bool treatAlreadyExistsAsSuccess = false
          )
@@ -561,7 +540,6 @@ namespace dvmig.Core.Synchronization
                  ex,
                  entity,
                  options,
-                 progress,
                  ct,
                  updateFunc: _target.UpdateAsync,
                  statusTransitionFunc: HandleStatusTransitionAsync,
@@ -579,14 +557,12 @@ namespace dvmig.Core.Synchronization
       private async Task<bool> HandleStatusTransitionAsync(
           Entity entity,
           SyncOptions options,
-          IProgress<string>? progress,
           CT ct
       )
       {
          return await _statusTransitionHandler.HandleStatusTransitionAsync(
              entity,
              options,
-             progress,
              ct
          );
       }
@@ -595,7 +571,6 @@ namespace dvmig.Core.Synchronization
           Exception ex,
           Entity entity,
           SyncOptions options,
-          IProgress<string>? progress,
           CT ct
       )
       {
@@ -603,7 +578,6 @@ namespace dvmig.Core.Synchronization
              ex,
              entity,
              options,
-             progress,
              ct,
              syncRecordFunc: SyncRecordAsync,
              retryEntityFunc: RetryEntityAsync,
@@ -617,7 +591,6 @@ namespace dvmig.Core.Synchronization
           string errorMessage,
           Entity entity,
           SyncOptions options,
-          IProgress<string>? progress,
           CT ct
       )
       {
@@ -625,7 +598,6 @@ namespace dvmig.Core.Synchronization
              errorMessage,
              entity,
              options,
-             progress,
              ct,
              syncRecordFunc: SyncRecordAsync,
              retryEntityFunc: RetryEntityAsync,
@@ -642,7 +614,6 @@ namespace dvmig.Core.Synchronization
           SyncIntersectEntityAsync(
               Entity entity,
               SyncOptions options,
-              IProgress<string>? progress,
               CT ct
           )
       {
@@ -654,7 +625,7 @@ namespace dvmig.Core.Synchronization
 
             await _retryPolicy.ExecuteAsync(
                 async (ctx) => await _target.ExecuteAsync(request, ct),
-                CreatePollyContext(progress)
+                CreatePollyContext()
             );
 
             _logger.Information(
@@ -670,7 +641,6 @@ namespace dvmig.Core.Synchronization
                 ex,
                 entity,
                 options,
-                progress,
                 ct,
                 treatAlreadyExistsAsSuccess: true
             );
@@ -681,7 +651,6 @@ namespace dvmig.Core.Synchronization
           CreateWithFixStrategyAsync(
               Entity entity,
               SyncOptions options,
-              IProgress<string>? progress,
               CT ct
           )
       {
@@ -689,7 +658,7 @@ namespace dvmig.Core.Synchronization
          {
             await _retryPolicy.ExecuteAsync(
                 async (ctx) => await _target.CreateAsync(entity, ct),
-                CreatePollyContext(progress)
+                CreatePollyContext()
             );
 
             _logger.Information(
@@ -706,7 +675,6 @@ namespace dvmig.Core.Synchronization
                 ex,
                 entity,
                 options,
-                progress,
                 ct
             );
          }
@@ -744,7 +712,6 @@ namespace dvmig.Core.Synchronization
       private async Task<bool> RetryEntityAsync(
          Entity entity,
          SyncOptions options,
-         IProgress<string>? progress,
          CT ct
       )
       {
@@ -769,7 +736,6 @@ namespace dvmig.Core.Synchronization
             var (success, _) = await SyncIntersectEntityAsync(
                 prepared,
                 options,
-                progress,
                 ct
             );
 
@@ -779,7 +745,6 @@ namespace dvmig.Core.Synchronization
          var (created, _) = await CreateWithFixStrategyAsync(
              prepared,
              options,
-             progress,
              ct
          );
 
@@ -790,7 +755,6 @@ namespace dvmig.Core.Synchronization
          Exception ex,
          Entity entity,
          SyncOptions options,
-         IProgress<string>? progress,
          CT ct
       )
       {
@@ -811,7 +775,7 @@ namespace dvmig.Core.Synchronization
                    entity.Id
                );
 
-               progress?.Report(
+               _logger.Information(
                    $"Stripping attribute '{attrName}' and retrying..."
                );
 
@@ -820,7 +784,6 @@ namespace dvmig.Core.Synchronization
                var (success, _) = await CreateWithFixStrategyAsync(
                    entity,
                    options,
-                   progress,
                    ct
                );
 
@@ -834,22 +797,20 @@ namespace dvmig.Core.Synchronization
       #endregion
    
       #region Retry And Failure Logging
-      private Context CreatePollyContext(IProgress<string>? progress)
+      private Context CreatePollyContext()
       {
          var context = new Context();
-         if (progress != null)
-            context["progress"] = progress;
+         
          return context;
       }
 
       private async Task LogFailureWithRetryAsync(
          Entity entity,
          string failureMessage,
-         IProgress<string>? progress,
          CT ct
       )
       {
-         var pollyCtx = CreatePollyContext(progress);
+         var pollyCtx = CreatePollyContext();
 
          try
          {
@@ -875,7 +836,7 @@ namespace dvmig.Core.Synchronization
                 entity.Id
             );
 
-            progress?.Report(
+            _logger.Information(
                 $"{SystemConstants.UiMarkup.Red}ERROR[/] Fatal sync failure: {logEx.Message}"
             );
             throw;

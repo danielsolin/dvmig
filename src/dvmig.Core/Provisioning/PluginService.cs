@@ -3,7 +3,6 @@ using dvmig.Core.Logging;
 using dvmig.Core.Shared;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Query;
-using Serilog;
 
 namespace dvmig.Core.Provisioning
 {
@@ -28,7 +27,6 @@ namespace dvmig.Core.Provisioning
       public async Task DeployPluginAsync(
           IDataverseProvider target,
           string? pluginAssemblyPath = null,
-          IProgress<string>? progress = null,
           CancellationToken ct = default
       )
       {
@@ -60,7 +58,7 @@ namespace dvmig.Core.Provisioning
             throw new FileNotFoundException(msg, assemblyPath);
          }
 
-         _logger.Information(progress, "Deploying plugin assembly...");
+         _logger.Information("Deploying plugin assembly...");
 
          var assemblyBytes = await File.ReadAllBytesAsync(
              assemblyPath,
@@ -107,16 +105,16 @@ namespace dvmig.Core.Provisioning
 
             await target.UpdateAsync(assembly, ct);
 
-            _logger.Information(progress, "Updated existing plugin assembly.");
+            _logger.Information("Updated existing plugin assembly.");
          }
          else
          {
             assemblyId = await target.CreateAsync(assembly, ct);
 
-            _logger.Information(progress, "Created new plugin assembly.");
+            _logger.Information("Created new plugin assembly.");
          }
 
-         await RegisterPluginStepAsync(target, assemblyId, progress, ct);
+         await RegisterPluginStepAsync(target, assemblyId, ct);
       }
 
       /// <summary>
@@ -130,11 +128,10 @@ namespace dvmig.Core.Provisioning
       private async Task RegisterPluginStepAsync(
           IDataverseProvider target,
           Guid assemblyId,
-          IProgress<string>? progress,
           CancellationToken ct
       )
       {
-         _logger.Information(progress, "Registering plugin type and step...");
+         _logger.Information("Registering plugin type and step...");
 
          var pluginTypeName =
              $"{SystemConstants.AppConstants.PluginName}.DMPlugin";
@@ -164,7 +161,7 @@ namespace dvmig.Core.Provisioning
          {
             typeId = types.Entities.First().Id;
 
-            _logger.Information(progress, "Plugin type already registered.");
+            _logger.Information("Plugin type already registered.");
          }
          else
          {
@@ -183,14 +180,13 @@ namespace dvmig.Core.Provisioning
 
             typeId = await target.CreateAsync(type, ct);
 
-            _logger.Information(progress, "Registered plugin type.");
+            _logger.Information("Registered plugin type.");
          }
 
          await RegisterStepForMessageAsync(
              target,
              typeId,
              "Create",
-             progress,
              ct
          );
 
@@ -198,7 +194,6 @@ namespace dvmig.Core.Provisioning
              target,
              typeId,
              "Update",
-             progress,
              ct
          );
       }
@@ -217,7 +212,6 @@ namespace dvmig.Core.Provisioning
           IDataverseProvider target,
           Guid typeId,
           string messageName,
-          IProgress<string>? progress,
           CancellationToken ct
       )
       {
@@ -303,9 +297,7 @@ namespace dvmig.Core.Provisioning
             step.Id = existingSteps.Entities.First().Id;
             await target.UpdateAsync(step, ct);
 
-            _logger.Information(
-                progress,
-                "Updated existing plugin step for {0}.",
+            _logger.Information("Updated existing plugin step for {0}.",
                 messageName
             );
          }
@@ -313,9 +305,7 @@ namespace dvmig.Core.Provisioning
          {
             await target.CreateAsync(step, ct);
 
-            _logger.Information(
-                progress,
-                "Created new plugin step for {0}.",
+            _logger.Information("Created new plugin step for {0}.",
                 messageName
             );
          }
@@ -324,13 +314,10 @@ namespace dvmig.Core.Provisioning
       /// <inheritdoc />
       public async Task RemovePluginAsync(
           IDataverseProvider target,
-          IProgress<string>? progress = null,
           CancellationToken ct = default
       )
       {
-         _logger.Information(
-             progress,
-             "Searching for plugin assembly to remove..."
+         _logger.Information("Searching for plugin assembly to remove..."
          );
 
          var query = new QueryByAttribute(
@@ -351,7 +338,7 @@ namespace dvmig.Core.Provisioning
          if (result.Entities.Any())
          {
             var assemblyId = result.Entities.First().Id;
-            progress?.Report(
+            _logger.Information(
                 "Found plugin assembly. " +
                 "Identifying dependent components..."
             );
@@ -408,7 +395,7 @@ namespace dvmig.Core.Provisioning
                       step.Id
                   );
 
-                  progress?.Report(
+                  _logger.Information(
                       $"Deleting plugin step: {stepName}..."
                   );
 
@@ -425,7 +412,7 @@ namespace dvmig.Core.Provisioning
                    type.Id
                );
 
-               progress?.Report($"Deleting plugin type: {typeName}...");
+               _logger.Information($"Deleting plugin type: {typeName}...");
                await target.DeleteAsync(
                    SystemConstants.PluginRegistration.TypeEntity,
                    type.Id,
@@ -438,7 +425,7 @@ namespace dvmig.Core.Provisioning
                 assemblyId
             );
 
-            progress?.Report("Deleting plugin assembly...");
+            _logger.Information("Deleting plugin assembly...");
 
             await target.DeleteAsync(
                 SystemConstants.PluginRegistration.AssemblyEntity,
@@ -446,16 +433,12 @@ namespace dvmig.Core.Provisioning
                 ct
             );
 
-            _logger.Information(
-                progress,
-                "Plugin assembly removed successfully."
+            _logger.Information("Plugin assembly removed successfully."
             );
          }
          else
          {
-            _logger.Information(
-                progress,
-                "No plugin assembly found to remove."
+            _logger.Information("No plugin assembly found to remove."
             );
          }
       }

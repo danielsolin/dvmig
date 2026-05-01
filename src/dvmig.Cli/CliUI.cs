@@ -17,7 +17,8 @@ namespace dvmig.Cli
       /// <param name="action">The asynchronous action to execute.</param>
       public static async Task RunStatusAsync(
           string statusMessage,
-          Func<IProgress<string>, Task> action
+          ILogger logger,
+          Func<Task> action
       )
       {
          await AnsiConsole.Status()
@@ -30,7 +31,15 @@ namespace dvmig.Cli
                          );
                    });
 
-                await action(progress);
+                logger.AttachProgress(progress);
+                try
+                {
+                   await action();
+                }
+                finally
+                {
+                   logger.DetachProgress();
+                }
              });
       }
 

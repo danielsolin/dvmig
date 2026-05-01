@@ -16,7 +16,6 @@ namespace dvmig.Core.Interfaces
       /// <returns>A task representing the asynchronous operation.</returns>
       Task CreateSchemaAsync(
           IDataverseProvider target,
-          IProgress<string>? progress = null,
           CancellationToken ct = default
       );
 
@@ -32,7 +31,6 @@ namespace dvmig.Core.Interfaces
       /// </returns>
       Task DropSchemaAsync(
           IDataverseProvider target,
-          IProgress<string>? progress = null,
           CancellationToken ct = default
       );
    }

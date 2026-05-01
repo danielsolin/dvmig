@@ -22,7 +22,6 @@ namespace dvmig.Core.Interfaces
       Task SeedTestDataAsync(
           IDataverseProvider provider,
           int count,
-          IProgress<string>? progress = null,
           CancellationToken ct = default
       );
 
@@ -39,7 +38,6 @@ namespace dvmig.Core.Interfaces
       Task CleanTestDataAsync(
           IDataverseProvider provider,
           List<string>? entitiesToWipe = null,
-          IProgress<string>? progress = null,
           CancellationToken ct = default
       );
    }
