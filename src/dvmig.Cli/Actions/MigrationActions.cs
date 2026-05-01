@@ -13,13 +13,13 @@ namespace dvmig.Cli.Actions
       public MigrationActions(
          ConnectionManager connectionManager,
          IMetadataService metadataService,
-         ISetupService setupService,
+         IPluginService pluginService,
          ISourceDateService sourceDateService,
          IEnvironmentValidator validator,
-         ISchemaManager schemaManager,
+         ISchemaService schemaService,
          ISyncStateTracker stateTracker,
          ILogger logger
-      ) : base(connectionManager, setupService, sourceDateService, validator, schemaManager, stateTracker, logger)
+      ) : base(connectionManager, pluginService, sourceDateService, validator, schemaService, stateTracker, logger)
       {
          _metadataService = metadataService;
       }

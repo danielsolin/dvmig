@@ -14,7 +14,6 @@ namespace dvmig.Tests
       private readonly Mock<IDataverseProvider> _sourceMock;
       private readonly Mock<IDataverseProvider> _targetMock;
       private readonly Mock<IUserMapper> _userMapperMock;
-      private readonly Mock<ISetupService> _setupServiceMock;
       private readonly Mock<ISourceDateService> _sourceDateServiceMock;
       private readonly Mock<ISyncStateTracker> _stateTrackerMock;
       private readonly Mock<ILogger> _loggerMock;
@@ -25,7 +24,6 @@ namespace dvmig.Tests
          _sourceMock = new Mock<IDataverseProvider>();
          _targetMock = new Mock<IDataverseProvider>();
          _userMapperMock = new Mock<IUserMapper>();
-         _setupServiceMock = new Mock<ISetupService>();
          _sourceDateServiceMock = new Mock<ISourceDateService>();
          _stateTrackerMock = new Mock<ISyncStateTracker>();
          _loggerMock = new Mock<ILogger>();
@@ -73,7 +71,6 @@ namespace dvmig.Tests
              _sourceMock.Object,
              _targetMock.Object,
              _userMapperMock.Object,
-             _setupServiceMock.Object,
              _stateTrackerMock.Object,
              _loggerMock.Object,
              retryStrategy,

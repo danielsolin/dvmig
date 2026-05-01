@@ -13,16 +13,16 @@ namespace dvmig.Core.Provisioning
    /// <summary>
    /// Manages the creation of required schema components for migration.
    /// </summary>
-   public class SchemaManager : ISchemaManager
+   public class SchemaService : ISchemaService
    {
       private const int LanguageCode = 1033;
       private readonly ILogger _logger;
 
       /// <summary>
-      /// Initializes a new instance of the <see cref="SchemaManager"/> class.
+      /// Initializes a new instance of the <see cref="SchemaService"/> class.
       /// </summary>
       /// <param name="logger">The logger instance.</param>
-      public SchemaManager(ILogger logger)
+      public SchemaService(ILogger logger)
       {
          _logger = logger;
       }

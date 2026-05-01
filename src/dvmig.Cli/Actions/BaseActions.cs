@@ -13,28 +13,28 @@ namespace dvmig.Cli.Actions
    public abstract class BaseActions
    {
       protected readonly ConnectionManager ConnectionManager;
-      protected readonly ISetupService SetupService;
+      protected readonly IPluginService PluginService;
       protected readonly ISourceDateService SourceDateService;
       protected readonly IEnvironmentValidator Validator;
-      protected readonly ISchemaManager SchemaManager;
+      protected readonly ISchemaService SchemaService;
       protected readonly ISyncStateTracker StateTracker;
       protected readonly ILogger Logger;
 
       protected BaseActions(
          ConnectionManager connectionManager,
-         ISetupService setupService,
+         IPluginService pluginService,
          ISourceDateService sourceDateService,
          IEnvironmentValidator validator,
-         ISchemaManager schemaManager,
+         ISchemaService schemaService,
          ISyncStateTracker stateTracker,
          ILogger logger
       )
       {
          ConnectionManager = connectionManager;
-         SetupService = setupService;
+         PluginService = pluginService;
          SourceDateService = sourceDateService;
          Validator = validator;
-         SchemaManager = schemaManager;
+         SchemaService = schemaService;
          StateTracker = stateTracker;
          Logger = logger;
       }
@@ -101,7 +101,6 @@ namespace dvmig.Cli.Actions
             source,
             target,
             userMapper,
-            SetupService,
             StateTracker,
             Logger,
             retryStrategy,
@@ -129,8 +128,8 @@ namespace dvmig.Cli.Actions
                "Installing components...",
                async progress =>
                {
-                  await SchemaManager.CreateSchemaAsync(target, progress);
-                  await SetupService.DeployPluginAsync(target, progress);
+                  await SchemaService.CreateSchemaAsync(target, progress);
+                  await PluginService.DeployPluginAsync(target, null, progress);
                }
             );
 

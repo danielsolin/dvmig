@@ -24,7 +24,6 @@ namespace dvmig.Core.Synchronization
       private readonly IDataverseProvider _source;
       private readonly IDataverseProvider _target;
       private readonly IUserMapper _userMapper;
-      private readonly ISetupService _setupService;
       private readonly ISyncStateTracker _stateTracker;
       private readonly ILogger _logger;
       private readonly IRetryStrategy _retryStrategy;
@@ -57,7 +56,6 @@ namespace dvmig.Core.Synchronization
          IDataverseProvider source,
          IDataverseProvider target,
          IUserMapper userMapper,
-         ISetupService setupService,
          ISyncStateTracker stateTracker,
          ILogger logger,
          IRetryStrategy retryStrategy,
@@ -73,7 +71,6 @@ namespace dvmig.Core.Synchronization
          _source = source;
          _target = target;
          _userMapper = userMapper;
-         _setupService = setupService;
          _stateTracker = stateTracker;
          _logger = logger;
          _retryStrategy = retryStrategy;

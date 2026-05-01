@@ -10,16 +10,16 @@ namespace dvmig.Core.Provisioning
    /// <summary>
    /// Handles the deployment and registration of Dataverse plugins.
    /// </summary>
-   public class PluginDeployer : IPluginDeployer
+   public class PluginService : IPluginService
    {
       private readonly ILogger _logger;
 
       /// <summary>
-      /// Initializes a new instance of the <see cref="PluginDeployer"/>
+      /// Initializes a new instance of the <see cref="PluginService"/>
       /// class.
       /// </summary>
       /// <param name="logger">The logger instance.</param>
-      public PluginDeployer(ILogger logger)
+      public PluginService(ILogger logger)
       {
          _logger = logger;
       }
@@ -27,21 +27,43 @@ namespace dvmig.Core.Provisioning
       /// <inheritdoc />
       public async Task DeployPluginAsync(
           IDataverseProvider target,
-          string pluginAssemblyPath,
+          string? pluginAssemblyPath = null,
           IProgress<string>? progress = null,
           CancellationToken ct = default
       )
       {
-         if (!File.Exists(pluginAssemblyPath))
-            throw new FileNotFoundException(
-                "Plugin assembly DLL not found.",
-                pluginAssemblyPath
+         var assemblyPath = pluginAssemblyPath;
+
+         if (string.IsNullOrEmpty(assemblyPath))
+         {
+            assemblyPath = Path.Combine(
+               AppDomain.CurrentDomain.BaseDirectory,
+               SystemConstants.AppConstants.PluginAssemblyName
             );
+
+            // Fallback for development if not in same folder
+            if (!File.Exists(assemblyPath))
+               assemblyPath = Path.Combine(
+                  AppDomain.CurrentDomain.BaseDirectory,
+                  "..", "..", "..", "..",
+                  SystemConstants.AppConstants.PluginName,
+                  "bin", "Debug", "netstandard2.0",
+                  SystemConstants.AppConstants.PluginAssemblyName
+               );
+         }
+
+         if (!File.Exists(assemblyPath))
+         {
+            var msg = $"Plugin assembly not found at {assemblyPath}. " +
+                      "Cannot proceed with installation.";
+            _logger.Error(msg);
+            throw new FileNotFoundException(msg, assemblyPath);
+         }
 
          _logger.Information(progress, "Deploying plugin assembly...");
 
          var assemblyBytes = await File.ReadAllBytesAsync(
-             pluginAssemblyPath,
+             assemblyPath,
              ct
          );
 

@@ -4,7 +4,7 @@ namespace dvmig.Core.Interfaces
    /// Defines the contract for deploying and registering plugins in the
    /// target environment.
    /// </summary>
-   public interface IPluginDeployer
+   public interface IPluginService
    {
       /// <summary>
       /// Deploys the date preservation plugin assembly to the target 
@@ -12,14 +12,15 @@ namespace dvmig.Core.Interfaces
       /// </summary>
       /// <param name="target">The target Dataverse provider.</param>
       /// <param name="pluginAssemblyPath">
-      /// The local path to the plugin DLL.
+      /// The local path to the plugin DLL. If null, the service will 
+      /// attempt to resolve it automatically.
       /// </param>
       /// <param name="progress">An optional progress reporter.</param>
       /// <param name="ct">A cancellation token.</param>
       /// <returns>A task representing the asynchronous deployment.</returns>
       Task DeployPluginAsync(
           IDataverseProvider target,
-          string pluginAssemblyPath,
+          string? pluginAssemblyPath = null,
           IProgress<string>? progress = null,
           CancellationToken ct = default
       );

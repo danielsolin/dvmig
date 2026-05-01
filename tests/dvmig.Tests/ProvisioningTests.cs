@@ -5,35 +5,26 @@ using Serilog;
 
 namespace dvmig.Tests
 {
-   public class SetupServiceTests
+   public class ProvisioningTests
    {
       private readonly Mock<ILogger> _loggerMock;
       private readonly Mock<IDataverseProvider> _targetMock;
-      private readonly SetupService _service;
+      private readonly PluginService _pluginService;
 
-      public SetupServiceTests()
+      public ProvisioningTests()
       {
          _loggerMock = new Mock<ILogger>();
          _targetMock = new Mock<IDataverseProvider>();
-
-         var validator = new EnvironmentValidator();
-         var schemaManager = new SchemaManager(_loggerMock.Object);
-         var pluginDeployer = new PluginDeployer(_loggerMock.Object);
-
-         _service = new SetupService(
-             validator,
-             schemaManager,
-             pluginDeployer,
-             _loggerMock.Object
-         );
+         _pluginService = new PluginService(_loggerMock.Object);
       }
 
       [Fact]
       public async Task DeployPluginAsync_ThrowsFileNotFound_WhenDllNotFound()
       {
          await Assert.ThrowsAsync<FileNotFoundException>(() =>
-             _service.DeployPluginAsync(
-                 _targetMock.Object
+             _pluginService.DeployPluginAsync(
+                 _targetMock.Object,
+                 "non_existent_path.dll"
              )
          );
       }

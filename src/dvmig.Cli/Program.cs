@@ -32,24 +32,19 @@ namespace dvmig.Cli
          var metadataService = new MetadataService();
          var reconciliationService = new ReconciliationService();
          var validator = new EnvironmentValidator();
-         var schemaManager = new SchemaManager(logger);
+         var schemaService = new SchemaService(logger);
          var sourceDateService = new SourceDateService(logger);
-         var setupService = new SetupService(
-            validator,
-            schemaManager,
-            new PluginDeployer(logger),
-            logger
-         );
+         var pluginService = new PluginService(logger);
 
          var connectionManager = new ConnectionManager(settingsService);
 
          var migrationActions = new MigrationActions(
             connectionManager,
             metadataService,
-            setupService,
+            pluginService,
             sourceDateService,
             validator,
-            schemaManager,
+            schemaService,
             stateTracker,
             logger
          );
@@ -58,10 +53,10 @@ namespace dvmig.Cli
             connectionManager,
             reconciliationService,
             metadataService,
-            setupService,
+            pluginService,
             sourceDateService,
             validator,
-            schemaManager,
+            schemaService,
             stateTracker,
             logger
          );
@@ -69,10 +64,10 @@ namespace dvmig.Cli
          var maintenanceActions = new MaintenanceActions(
              connectionManager,
              seeder,
-             setupService,
+             pluginService,
              sourceDateService,
              validator,
-             schemaManager,
+             schemaService,
              metadataService,
              stateTracker,
              logger

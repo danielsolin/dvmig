@@ -1,7 +1,10 @@
 using dvmig.Core.Interfaces;
 using dvmig.Core.Shared;
+using dvmig.Core.Logging;
 using Serilog;
 using Spectre.Console;
+using Microsoft.Xrm.Sdk.Messages;
+using Microsoft.Crm.Sdk.Messages;
 
 namespace dvmig.Cli.Actions
 {
@@ -13,14 +16,14 @@ namespace dvmig.Cli.Actions
       public MaintenanceActions(
          ConnectionManager connectionManager,
          ITestDataSeeder seeder,
-         ISetupService setupService,
+         IPluginService pluginService,
          ISourceDateService sourceDateService,
          IEnvironmentValidator validator,
-         ISchemaManager schemaManager,
+         ISchemaService schemaService,
          IMetadataService metadataService,
          ISyncStateTracker stateTracker,
          ILogger logger
-      ) : base(connectionManager, setupService, sourceDateService, validator, schemaManager, stateTracker, logger)
+      ) : base(connectionManager, pluginService, sourceDateService, validator, schemaService, stateTracker, logger)
       {
          _seeder = seeder;
          _metadataService = metadataService;
@@ -86,10 +89,20 @@ namespace dvmig.Cli.Actions
             await CliUI.RunStatusAsync(
                "Uninstalling components...",
                async progress =>
-                  await SetupService.CleanEnvironmentAsync(
-                     provider,
-                     progress
-                  )
+               {
+                  Logger.Information(progress, "Cleaning target environment...");
+
+                  // 1. Remove Plugin
+                  await PluginService.RemovePluginAsync(provider, progress);
+
+                  // Ensure plugin changes are published before schema removal
+                  await provider.ExecuteAsync(new PublishAllXmlRequest());
+
+                  // 2. Drop Schema
+                  await SchemaService.DropSchemaAsync(provider, progress);
+
+                  Logger.Information(progress, "Environment cleanup completed.");
+               }
             );
 
             CliUI.WriteSuccess("Uninstallation Finished!");

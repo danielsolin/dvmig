@@ -8,17 +8,17 @@ using Serilog;
 
 namespace dvmig.Tests
 {
-   public class SchemaManagerTests
+   public class SchemaServiceTests
    {
       private readonly Mock<ILogger> _loggerMock;
       private readonly Mock<IDataverseProvider> _targetMock;
-      private readonly SchemaManager _schemaManager;
+      private readonly SchemaService _schemaService;
 
-      public SchemaManagerTests()
+      public SchemaServiceTests()
       {
          _loggerMock = new Mock<ILogger>();
          _targetMock = new Mock<IDataverseProvider>();
-         _schemaManager = new SchemaManager(_loggerMock.Object);
+         _schemaService = new SchemaService(_loggerMock.Object);
       }
 
       [Fact]
@@ -44,7 +44,7 @@ namespace dvmig.Tests
          ).ReturnsAsync((EntityMetadata?)null)
           .ReturnsAsync(entityMetadata);
 
-         await _schemaManager.CreateSchemaAsync(_targetMock.Object, null);
+         await _schemaService.CreateSchemaAsync(_targetMock.Object, null);
 
          _targetMock.Verify(t => t.ExecuteAsync(
              It.Is<OrganizationRequest>(r => r.RequestName == "CreateEntity"),
@@ -66,7 +66,7 @@ namespace dvmig.Tests
              It.IsAny<CancellationToken>())
          ).ReturnsAsync(entityMetadata);
 
-         await _schemaManager.CreateSchemaAsync(_targetMock.Object, null);
+         await _schemaService.CreateSchemaAsync(_targetMock.Object, null);
 
          _targetMock.Verify(t => t.ExecuteAsync(
              It.Is<OrganizationRequest>(r => r.RequestName == "CreateEntity"),
