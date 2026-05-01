@@ -20,7 +20,7 @@ namespace dvmig.Core.Synchronization
       private readonly ILogger _logger;
 
       private readonly ConcurrentDictionary<Guid, EntityReference>
-          _mappingCache = new ConcurrentDictionary<Guid, EntityReference>();
+         _mappingCache = new ConcurrentDictionary<Guid, EntityReference>();
 
       /// <summary>
       /// Initializes a new instance of the <see cref="UserMapper"/> class.
@@ -29,9 +29,9 @@ namespace dvmig.Core.Synchronization
       /// <param name="target">The target Dataverse provider.</param>
       /// <param name="logger">The logger instance.</param>
       public UserMapper(
-          IDataverseProvider source,
-          IDataverseProvider target,
-          ILogger logger
+         IDataverseProvider source,
+         IDataverseProvider target,
+         ILogger logger
       )
       {
          _source = source;
@@ -40,24 +40,15 @@ namespace dvmig.Core.Synchronization
       }
 
       /// <summary>
-      /// Manually adds a user mapping to the cache, bypassing the 
-      /// automatic lookup. Useful for handling known edge cases or 
-      /// system accounts.
+      /// Manually adds a user mapping, bypassing automatic lookup.
       /// </summary>
-      /// <param name="sourceUserId">
-      /// The GUID of the user in the source environment.
-      /// </param>
-      /// <param name="targetUserId">
-      /// The GUID of the corresponding user in the target environment.
-      /// </param>
-      public void AddManualMapping(
-          Guid sourceUserId,
-          Guid targetUserId
-      )
+      /// <param name="sourceUserId">The ID of the source user.</param>
+      /// <param name="targetUserId">The ID of the target user.</param>
+      public void AddManualMapping(Guid sourceUserId, Guid targetUserId)
       {
          _mappingCache[sourceUserId] = new EntityReference(
-             SystemConstants.DataverseEntities.SystemUser,
-             targetUserId
+            SystemConstants.DataverseEntities.SystemUser,
+            targetUserId
          );
       }
 
@@ -79,8 +70,8 @@ namespace dvmig.Core.Synchronization
       /// environment, or null if mapping fails.
       /// </returns>
       public async Task<EntityReference?> MapUserAsync(
-          EntityReference? sourceUser,
-          CancellationToken ct = default
+         EntityReference? sourceUser,
+         CancellationToken ct = default
       )
       {
          if (sourceUser == null)
@@ -92,15 +83,15 @@ namespace dvmig.Core.Synchronization
          _logger.Debug("Attempting to map source user {Id}", sourceUser.Id);
 
          var sourceUserData = await _source.RetrieveAsync(
-             SystemConstants.DataverseEntities.SystemUser,
-             sourceUser.Id,
-             new[]
-             {
-                SystemConstants.DataverseAttributes.InternalEmailAddress,
-                SystemConstants.DataverseAttributes.DomainName,
-                SystemConstants.DataverseAttributes.FullName
-             },
-             ct
+            SystemConstants.DataverseEntities.SystemUser,
+            sourceUser.Id,
+            new[]
+            {
+               SystemConstants.DataverseAttributes.InternalEmailAddress,
+               SystemConstants.DataverseAttributes.DomainName,
+               SystemConstants.DataverseAttributes.FullName
+            },
+            ct
          );
 
          if (sourceUserData == null)
@@ -111,15 +102,16 @@ namespace dvmig.Core.Synchronization
          }
 
          var email = sourceUserData
-             .GetAttributeValue<string>(
-                 SystemConstants.DataverseAttributes.InternalEmailAddress
-             );
+            .GetAttributeValue<string>(
+               SystemConstants.DataverseAttributes.InternalEmailAddress
+            );
+
          if (!string.IsNullOrEmpty(email))
          {
             var mapped = await FindTargetUserAsync(
-                SystemConstants.DataverseAttributes.InternalEmailAddress,
-                email,
-                ct
+               SystemConstants.DataverseAttributes.InternalEmailAddress,
+               email,
+               ct
             );
 
             if (mapped != null)
@@ -131,15 +123,16 @@ namespace dvmig.Core.Synchronization
          }
 
          var domainName = sourceUserData
-             .GetAttributeValue<string>(
-                 SystemConstants.DataverseAttributes.DomainName
-             );
+            .GetAttributeValue<string>(
+               SystemConstants.DataverseAttributes.DomainName
+            );
+
          if (!string.IsNullOrEmpty(domainName))
          {
             var mapped = await FindTargetUserAsync(
-                SystemConstants.DataverseAttributes.DomainName,
-                domainName,
-                ct
+               SystemConstants.DataverseAttributes.DomainName,
+               domainName,
+               ct
             );
 
             if (mapped != null)
@@ -151,11 +144,11 @@ namespace dvmig.Core.Synchronization
          }
 
          _logger.Warning(
-             "Could not map source user {FullName} ({Id})",
-             sourceUserData.GetAttributeValue<string>(
-                 SystemConstants.DataverseAttributes.FullName
-             ),
-             sourceUser.Id
+            "Could not map source user {FullName} ({Id})",
+            sourceUserData.GetAttributeValue<string>(
+               SystemConstants.DataverseAttributes.FullName
+            ),
+            sourceUser.Id
          );
 
          return null;
@@ -175,19 +168,20 @@ namespace dvmig.Core.Synchronization
       /// no match is found.
       /// </returns>
       private async Task<EntityReference?> FindTargetUserAsync(
-          string attribute,
-          string value,
-          CancellationToken ct
+         string attribute,
+         string value,
+         CancellationToken ct
       )
       {
          var query = new QueryByAttribute(
-             SystemConstants.DataverseEntities.SystemUser
+            SystemConstants.DataverseEntities.SystemUser
          )
          {
             ColumnSet = new ColumnSet(
-                SystemConstants.DataverseAttributes.SystemUserId
+               SystemConstants.DataverseAttributes.SystemUserId
             )
          };
+
          query.AddAttributeValue(attribute, value);
 
          var results = await _target.RetrieveMultipleAsync(query, ct);
