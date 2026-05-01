@@ -1,6 +1,4 @@
-using System.ServiceModel;
 using dvmig.Core.Interfaces;
-using dvmig.Core.Shared;
 using Microsoft.PowerPlatform.Dataverse.Client;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Messages;

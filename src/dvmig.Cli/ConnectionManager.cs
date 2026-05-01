@@ -1,17 +1,12 @@
 using dvmig.Core.Interfaces;
 using dvmig.Core.Providers;
 using dvmig.Core.Settings;
+using dvmig.Core.Shared;
 using Microsoft.Crm.Sdk.Messages;
 using Spectre.Console;
 
-namespace dvmig.Cli.Infrastructure
+namespace dvmig.Cli
 {
-   public enum ConnectionDirection
-   {
-      Source,
-      Target
-   }
-
    public class ConnectionManager
    {
       private readonly ISettingsService _settingsService;

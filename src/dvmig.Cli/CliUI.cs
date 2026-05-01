@@ -1,5 +1,4 @@
 using dvmig.Core.Interfaces;
-using dvmig.Core.Synchronization;
 using Spectre.Console;
 
 namespace dvmig.Cli
@@ -122,7 +121,7 @@ namespace dvmig.Cli
              );
 
          foreach (var entity in entities)
-            prompt.AddChoice(entity.LogicalName);
+            prompt.AddChoice(entity.DisplayName.UserLocalizedLabel.Label);
 
          return AnsiConsole.Prompt(prompt);
       }

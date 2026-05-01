@@ -1,6 +1,3 @@
-using dvmig.Core.Interfaces;
-using dvmig.Core.Shared;
-using Microsoft.Xrm.Sdk.Messages;
 using Microsoft.Xrm.Sdk.Metadata;
 
 namespace dvmig.Core.Interfaces

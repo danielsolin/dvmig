@@ -15,3 +15,5 @@ _ReSharper*/
 *.sln.docstates
 TestResults/
 *.swp
+GEMINI.md
+CLAUDE.md

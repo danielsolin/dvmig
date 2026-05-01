@@ -28,8 +28,7 @@ namespace dvmig.Core.Synchronization
 
          return response.EntityMetadata
              .Where(e =>
-                 (e.IsCustomEntity == true ||
-                  EntityMetadataHelper.IsStandardEntity(e.LogicalName)) &&
+                 (e.IsCustomEntity == true) &&
                  e.IsIntersect == false &&
                  e.IsValidForAdvancedFind == true &&
                  !string.IsNullOrEmpty(

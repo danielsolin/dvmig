@@ -1,7 +1,6 @@
 using System.Runtime.Versioning;
 using System.Text;
 using dvmig.Cli.Actions;
-using dvmig.Cli.Infrastructure;
 using dvmig.Core.Logging;
 using dvmig.Core.Provisioning;
 using dvmig.Core.Shared;
@@ -119,11 +118,15 @@ namespace dvmig.Cli
                migrationActions.HandleRecommendedSyncAsync
             ),
             new MenuItem(
-               "Migrate Selected [grey](Choose specific entities)[/]",
+               "Find & Fix Recommended [grey](Accounts, Contacts, Activities)[/]",
+               reconciliationActions.HandleRecommendedReconciliationAsync
+            ),
+            new MenuItem(
+               "Migrate Selected [grey](pick entities)[/]",
                migrationActions.HandleMigrationAsync
             ),
             new MenuItem(
-               "Find & Fix Errors [grey](from Previous Migrations)[/]",
+               "Find & Fix Selected [grey](pick entities)[/]",
                reconciliationActions.HandlePerformReconciliationAsync
             )
          };

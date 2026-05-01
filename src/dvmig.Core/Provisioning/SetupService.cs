@@ -40,6 +40,9 @@ namespace dvmig.Core.Provisioning
          _logger = logger;
       }
 
+      //DMSFIX: Do we really need this method in the service? It's only used in
+      // the CLI for a one-off check, and it might be simpler to just call the
+      // validator directly there instead of adding this passthrough method.
       /// <inheritdoc />
       public async Task<bool> IsEnvironmentReadyAsync(
          IDataverseProvider target,
@@ -49,6 +52,9 @@ namespace dvmig.Core.Provisioning
          return await _validator.IsEnvironmentReadyAsync(target, ct);
       }
 
+      //DMSFIX: Do we really need this method in the service? It's only used in
+      // the CLI for a one-off check, and it might be simpler to just call the
+      // validator directly there instead of adding this passthrough method.
       /// <inheritdoc />
       public async Task CreateSchemaAsync(
          IDataverseProvider target,

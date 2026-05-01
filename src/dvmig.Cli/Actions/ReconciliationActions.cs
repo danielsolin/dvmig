@@ -1,4 +1,3 @@
-using dvmig.Cli.Infrastructure;
 using dvmig.Core.Interfaces;
 using dvmig.Core.Shared;
 using dvmig.Core.Synchronization;
@@ -106,6 +105,45 @@ namespace dvmig.Cli.Actions
          }
       }
 
+      public async Task HandleRecommendedReconciliationAsync()
+      {
+         var (source, target, engine) = await SetupSyncEngineAsync();
+
+         if (source == null || target == null || engine == null)
+            return;
+
+         var recommendedEntities = SystemConstants.SyncSettings
+            .RecommendedEntities;
+
+         AnsiConsole.MarkupLine("[bold cyan]Recommended Reconciliation Order:[/]");
+
+         foreach (var entity in recommendedEntities)
+            AnsiConsole.MarkupLine($" - {entity}");
+
+         if (!AnsiConsole.Confirm("Proceed with this reconciliation plan?", true))
+         {
+            CliUI.WriteWarning("Recommended reconciliation cancelled.");
+
+            return;
+         }
+
+         var threads = AnsiConsole.Prompt(
+            new SelectionPrompt<int>()
+               .Title("Select [green]Max Parallelism[/] (Threads):")
+               .AddChoices(new[] { 20, 10, 30, 40, 50, 5, 1 })
+         );
+
+         await RunReconciliationAsync(
+            source,
+            target,
+            engine,
+            recommendedEntities.ToList(),
+            threads
+         );
+
+         CliUI.WriteSuccess("Recommended Reconciliation Finished!");
+      }
+
       public async Task HandlePerformReconciliationAsync()
       {
          var (source, target, engine) = await SetupSyncEngineAsync();
@@ -142,13 +180,32 @@ namespace dvmig.Cli.Actions
                )
          );
 
+         await RunReconciliationAsync(
+            source,
+            target,
+            engine,
+            selectedEntities,
+            threads
+         );
+
+         CliUI.WriteSuccess("Reconciliation process finished!");
+      }
+
+      private async Task RunReconciliationAsync(
+         IDataverseProvider source,
+         IDataverseProvider target,
+         ISyncEngine engine,
+         List<string> entities,
+         int threads
+      )
+      {
          var options = new SyncOptions
          {
             StripMissingDependencies = true,
             MaxDegreeOfParallelism = threads
          };
 
-         foreach (var logicalName in selectedEntities)
+         foreach (var logicalName in entities)
          {
             AnsiConsole.MarkupLine(
                $"[bold yellow]Reconciling {logicalName}...[/]"
@@ -226,12 +283,12 @@ namespace dvmig.Cli.Actions
                                  .ErrorKeywords.TooManyRequests;
 
                               var ordinal = StringComparison.Ordinal;
-                              var ignoreCase = 
+                              var ignoreCase =
                                  StringComparison.OrdinalIgnoreCase;
 
                               bool isWait = msg.Contains(waitMark, ordinal);
                               bool isThrottled = msg.Contains(
-                                 throttleKey, 
+                                 throttleKey,
                                  ignoreCase
                               );
                               bool isYellow = msg.StartsWith(
@@ -241,7 +298,7 @@ namespace dvmig.Cli.Actions
                                  SystemConstants.UiMarkup.Red
                               );
 
-                              bool isCritical = isWait || isThrottled || 
+                              bool isCritical = isWait || isThrottled ||
                                                 isYellow || isRed;
 
                               if (isCritical)
@@ -267,12 +324,10 @@ namespace dvmig.Cli.Actions
                   $"Reconciliation aborted due to a critical error: " +
                   $"{baseEx.Message}"
                );
-               
+
                break;
             }
          }
-
-         CliUI.WriteSuccess("Reconciliation process finished!");
       }
    }
 }

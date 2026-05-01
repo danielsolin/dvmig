@@ -1,4 +1,3 @@
-using dvmig.Cli.Infrastructure;
 using dvmig.Core.Interfaces;
 using dvmig.Core.Shared;
 using dvmig.Core.Synchronization;
@@ -58,15 +57,8 @@ namespace dvmig.Cli.Actions
          if (source == null || target == null || engine == null)
             return;
 
-         var recommendedEntities = new List<string>
-         {
-            "account",
-            "contact",
-            "task",
-            "phonecall",
-            "email",
-            "appointment"
-         };
+         var recommendedEntities = SystemConstants.SyncSettings
+            .RecommendedEntities;
 
          AnsiConsole.MarkupLine("[bold cyan]Recommended Sync Order:[/]");
 
@@ -89,7 +81,7 @@ namespace dvmig.Cli.Actions
          await RunMigrationAsync(
             engine,
             source,
-            recommendedEntities,
+            recommendedEntities.ToList(),
             threads
          );
 

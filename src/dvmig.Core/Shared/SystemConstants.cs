@@ -1,5 +1,14 @@
+using System.Collections.Generic;
+
 namespace dvmig.Core.Shared
 {
+
+   public enum ConnectionDirection
+   {
+      Source,
+      Target
+   }
+
    /// <summary>
    /// Centralized repository for custom Dataverse entity and attribute names 
    /// used by the dvmig tool.
@@ -160,6 +169,23 @@ namespace dvmig.Core.Shared
          public const string DevFull = "--developer-mode";
          public const string AuthAd = "AuthType=AD";
          public const string AuthIfd = "AuthType=IFD";
+      }
+
+      /// <summary>
+      /// Settings related to data synchronization.
+      /// </summary>
+      public static class SyncSettings
+      {
+         public static readonly IReadOnlyList<string> RecommendedEntities =
+            new[]
+            {
+               "account",
+               "contact",
+               "task",
+               "phonecall",
+               "email",
+               "appointment"
+            };
       }
 
       /// <summary>
