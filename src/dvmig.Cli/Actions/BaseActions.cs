@@ -1,7 +1,6 @@
 using dvmig.Core.Interfaces;
 using dvmig.Core.Shared;
 using dvmig.Core.Synchronization;
-using dvmig.Core.Provisioning;
 using Spectre.Console;
 
 namespace dvmig.Cli.Actions

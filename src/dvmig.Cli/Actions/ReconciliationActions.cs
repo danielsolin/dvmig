@@ -1,3 +1,7 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using dvmig.Core.Interfaces;
 using dvmig.Core.Shared;
 using dvmig.Core.Synchronization;
@@ -21,12 +25,12 @@ namespace dvmig.Cli.Actions
          ISyncStateService stateService,
          ILogger logger
       ) : base(
-         connectionManager, 
-         pluginService, 
-         sourceDateService, 
-         validator, 
-         schemaService, 
-         stateService, 
+         connectionManager,
+         pluginService,
+         sourceDateService,
+         validator,
+         schemaService,
+         stateService,
          logger
       )
       {
@@ -51,8 +55,7 @@ namespace dvmig.Cli.Actions
          if (!isInitialized)
          {
             CliUI.WriteWarning(
-               "Migration failure logging is not initialized on " +
-               "this target."
+               "Migration failure logging is not initialized on this target."
             );
 
             AnsiConsole.MarkupLine(
@@ -127,14 +130,15 @@ namespace dvmig.Cli.Actions
             .RecommendedEntities;
 
          AnsiConsole.MarkupLine(
-            $"{SystemConstants.UiMarkup.BoldCyan}Recommended Reconciliation Order:[/]"
+            $"{SystemConstants.UiMarkup.BoldCyan}Recommended " +
+            "Reconciliation Order:[/]"
          );
 
          foreach (var entity in recommendedEntities)
             AnsiConsole.MarkupLine($" - {entity}");
 
          if (!AnsiConsole.Confirm(
-            "Proceed with this reconciliation plan?", 
+            "Proceed with this reconciliation plan?",
             true
          ))
          {
@@ -277,7 +281,7 @@ namespace dvmig.Cli.Actions
                            $"{recsPerSec:F1} r/s[/]]] ";
 
                         if (failedCount > 0)
-                           desc += 
+                           desc +=
                               $" {SystemConstants.UiMarkup.Red}({failedCount} failed)[/]";
 
                         task.Description = desc;

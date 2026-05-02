@@ -28,65 +28,74 @@ namespace dvmig.Tests
          _loggerMock = new Mock<ILogger>();
 
          _stateServiceMock.Setup(s => s.GetSyncedIdsAsync())
-             .ReturnsAsync(new HashSet<Guid>());
+            .ReturnsAsync(new HashSet<Guid>());
 
          var defaultMetadata = new EntityMetadata();
+
          typeof(EntityMetadata).GetProperty("Attributes")?.SetValue(
-             defaultMetadata,
-             new AttributeMetadata[0]
+            defaultMetadata,
+            new AttributeMetadata[0]
          );
 
-         _targetMock.Setup(t => t.GetEntityMetadataAsync(
-             It.IsAny<string>(),
-             It.IsAny<CancellationToken>()
-         ))
-             .ReturnsAsync(defaultMetadata);
+         _targetMock.Setup(
+            t => t.GetEntityMetadataAsync(
+               It.IsAny<string>(),
+               It.IsAny<CancellationToken>()
+            )
+         ).ReturnsAsync(defaultMetadata);
 
          var retryService = new RetryService(_loggerMock.Object);
          var entityService = new EntityService(_loggerMock.Object);
+
          var errorService = new ErrorService(
-             _targetMock.Object,
-             _sourceDateServiceMock.Object,
-             _loggerMock.Object
+            _targetMock.Object,
+            _sourceDateServiceMock.Object,
+            _loggerMock.Object
          );
+
          var dependencyResolver = new DependencyResolver(
-             _sourceMock.Object,
-             _loggerMock.Object
+            _sourceMock.Object,
+            _loggerMock.Object
          );
+
          var statusService = new StatusService(
-             _targetMock.Object,
-             _sourceDateServiceMock.Object,
-             _loggerMock.Object
+            _targetMock.Object,
+            _sourceDateServiceMock.Object,
+            _loggerMock.Object
          );
+
          var metadataService = new MetadataService(
             _loggerMock.Object,
             _targetMock.Object
          );
+
          var failureService = new FailureService(
-            _targetMock.Object, 
+            _targetMock.Object,
             _loggerMock.Object
          );
+
          _engine = new SyncEngine(
-             _sourceMock.Object,
-             _targetMock.Object,
-             _userResolverMock.Object,
-             _stateServiceMock.Object,
-             _loggerMock.Object,
-             retryService,
-             entityService,
-             errorService,
-             dependencyResolver,
-             statusService,
-             metadataService,
-             failureService,
-             _sourceDateServiceMock.Object
+            _sourceMock.Object,
+            _targetMock.Object,
+            _userResolverMock.Object,
+            _stateServiceMock.Object,
+            _loggerMock.Object,
+            retryService,
+            entityService,
+            errorService,
+            dependencyResolver,
+            statusService,
+            metadataService,
+            failureService,
+            _sourceDateServiceMock.Object
          );
 
-         _userResolverMock.Setup(m => m.MapUserAsync(
-             It.IsAny<EntityReference>(),
-             It.IsAny<CancellationToken>()
-         ))
-             .ReturnsAsync((EntityReference r, CancellationToken ct) => r);
+         _userResolverMock.Setup(
+            m => m.MapUserAsync(
+               It.IsAny<EntityReference>(),
+               It.IsAny<CancellationToken>()
+            )
+         ).ReturnsAsync((EntityReference r, CancellationToken ct) => r);
       }
 
       [Fact]
@@ -94,27 +103,39 @@ namespace dvmig.Tests
       {
          // Arrange
          var accountId = Guid.NewGuid();
-         var account = new Entity(SystemConstants.DataverseEntities.Account, accountId);
+
+         var account = new Entity(
+            SystemConstants.DataverseEntities.Account,
+            accountId
+         );
+
          account[SystemConstants.DataverseAttributes.Name] = "Test Account";
          account["readonlyfield"] = "Value";
 
          int callCount = 0;
-         _targetMock.Setup(t => t.CreateAsync(
-             It.Is<Entity>(e => e.LogicalName == SystemConstants.DataverseEntities.Account),
-             It.IsAny<CancellationToken>()
-         ))
-             .Returns<Entity, CancellationToken>((e, ct) =>
-             {
-                callCount++;
-                if (e.Attributes.Contains("readonlyfield"))
-                {
-                   throw new Exception(
-                          "The property 'readonlyfield' cannot be modified."
-                      );
-                }
 
-                return Task.FromResult(accountId);
-             });
+         _targetMock.Setup(
+            t => t.CreateAsync(
+               It.Is<Entity>(
+                  e => e.LogicalName == SystemConstants.DataverseEntities.Account
+               ),
+               It.IsAny<CancellationToken>()
+            )
+         ).Returns<Entity, CancellationToken>(
+            (e, ct) =>
+            {
+               callCount++;
+
+               if (e.Attributes.Contains("readonlyfield"))
+               {
+                  throw new Exception(
+                     "The property 'readonlyfield' cannot be modified."
+                  );
+               }
+
+               return Task.FromResult(accountId);
+            }
+         );
 
          var options = new SyncOptions();
 
@@ -133,44 +154,66 @@ namespace dvmig.Tests
          var accountId = Guid.NewGuid();
          var contactId = Guid.NewGuid();
 
-         var contact = new Entity(SystemConstants.DataverseEntities.Contact, contactId);
-         contact[SystemConstants.DataverseAttributes.ParentCustomerId] =
-             new EntityReference(SystemConstants.DataverseEntities.Account, accountId);
+         var contact = new Entity(
+            SystemConstants.DataverseEntities.Contact,
+            contactId
+         );
 
-         var account = new Entity(SystemConstants.DataverseEntities.Account, accountId);
+         contact[SystemConstants.DataverseAttributes.ParentCustomerId] =
+            new EntityReference(
+               SystemConstants.DataverseEntities.Account,
+               accountId
+            );
+
+         var account = new Entity(
+            SystemConstants.DataverseEntities.Account,
+            accountId
+         );
+
          account[SystemConstants.DataverseAttributes.Name] = "Test Account";
 
          int contactCreateCalls = 0;
-         _targetMock.Setup(t => t.CreateAsync(
-             It.Is<Entity>(e => e.LogicalName == SystemConstants.DataverseEntities.Contact),
-             It.IsAny<CancellationToken>()
-         ))
-             .Returns<Entity, CancellationToken>((e, ct) =>
-             {
-                contactCreateCalls++;
-                if (contactCreateCalls == 1)
-                {
-                   throw new Exception(
-                          "account with Id=" + accountId + " does not exist"
-                      );
-                }
 
-                return Task.FromResult(contactId);
-             });
+         _targetMock.Setup(
+            t => t.CreateAsync(
+               It.Is<Entity>(
+                  e => e.LogicalName == SystemConstants.DataverseEntities.Contact
+               ),
+               It.IsAny<CancellationToken>()
+            )
+         ).Returns<Entity, CancellationToken>(
+            (e, ct) =>
+            {
+               contactCreateCalls++;
 
-         _sourceMock.Setup(s => s.RetrieveAsync(
-             SystemConstants.DataverseEntities.Account,
-             accountId,
-             It.IsAny<string[]>(),
-             It.IsAny<CancellationToken>()
-         ))
-             .ReturnsAsync(account);
+               if (contactCreateCalls == 1)
+               {
+                  throw new Exception(
+                     "account with Id=" + accountId + " does not exist"
+                  );
+               }
 
-         _targetMock.Setup(t => t.CreateAsync(
-             It.Is<Entity>(e => e.LogicalName == SystemConstants.DataverseEntities.Account),
-             It.IsAny<CancellationToken>()
-         ))
-             .ReturnsAsync(accountId);
+               return Task.FromResult(contactId);
+            }
+         );
+
+         _sourceMock.Setup(
+            s => s.RetrieveAsync(
+               SystemConstants.DataverseEntities.Account,
+               accountId,
+               It.IsAny<string[]>(),
+               It.IsAny<CancellationToken>()
+            )
+         ).ReturnsAsync(account);
+
+         _targetMock.Setup(
+            t => t.CreateAsync(
+               It.Is<Entity>(
+                  e => e.LogicalName == SystemConstants.DataverseEntities.Account
+               ),
+               It.IsAny<CancellationToken>()
+            )
+         ).ReturnsAsync(accountId);
 
          var options = new SyncOptions();
 
@@ -180,12 +223,15 @@ namespace dvmig.Tests
          // Assert
          Assert.True(result);
          Assert.Equal(2, contactCreateCalls);
+
          _targetMock.Verify(
-             t => t.CreateAsync(
-                 It.Is<Entity>(e => e.LogicalName == SystemConstants.DataverseEntities.Account),
-                 It.IsAny<CancellationToken>()
-             ),
-             Times.Once
+            t => t.CreateAsync(
+               It.Is<Entity>(
+                  e => e.LogicalName == SystemConstants.DataverseEntities.Account
+               ),
+               It.IsAny<CancellationToken>()
+            ),
+            Times.Once
          );
       }
 
@@ -198,10 +244,16 @@ namespace dvmig.Tests
          var contactId = Guid.NewGuid();
 
          var intersectEntity = new Entity(relName, Guid.NewGuid());
-         intersectEntity["accountid"] =
-             new EntityReference(SystemConstants.DataverseEntities.Account, accountId);
-         intersectEntity["contactid"] =
-             new EntityReference(SystemConstants.DataverseEntities.Contact, contactId);
+
+         intersectEntity["accountid"] = new EntityReference(
+            SystemConstants.DataverseEntities.Account,
+            accountId
+         );
+
+         intersectEntity["contactid"] = new EntityReference(
+            SystemConstants.DataverseEntities.Contact,
+            contactId
+         );
 
          var metadata = new Microsoft.Xrm.Sdk.Metadata.EntityMetadata
          {
@@ -209,37 +261,40 @@ namespace dvmig.Tests
          };
 
          typeof(Microsoft.Xrm.Sdk.Metadata.EntityMetadata)
-             .GetProperty(nameof(metadata.IsIntersect))
-             ?.SetValue(metadata, true);
+            .GetProperty(nameof(metadata.IsIntersect))
+            ?.SetValue(metadata, true);
 
-         _targetMock.Setup(t => t.GetEntityMetadataAsync(
-             relName,
-             It.IsAny<CancellationToken>()
-         ))
-             .ReturnsAsync(metadata);
+         _targetMock.Setup(
+            t => t.GetEntityMetadataAsync(
+               relName,
+               It.IsAny<CancellationToken>()
+            )
+         ).ReturnsAsync(metadata);
 
-         _targetMock.Setup(t => t.ExecuteAsync(
-             It.IsAny<AssociateRequest>(),
-             It.IsAny<CancellationToken>()
-         ))
-             .ReturnsAsync(new AssociateResponse());
+         _targetMock.Setup(
+            t => t.ExecuteAsync(
+               It.IsAny<AssociateRequest>(),
+               It.IsAny<CancellationToken>()
+            )
+         ).ReturnsAsync(new AssociateResponse());
 
          var options = new SyncOptions();
 
          // Act
          var (result, _) = await _engine.SyncRecordAsync(
-             intersectEntity,
-             options
+            intersectEntity,
+            options
          );
 
          // Assert
          Assert.True(result);
+
          _targetMock.Verify(
-             t => t.ExecuteAsync(
-                 It.IsAny<AssociateRequest>(),
-                 It.IsAny<CancellationToken>()
-             ),
-             Times.Once
+            t => t.ExecuteAsync(
+               It.IsAny<AssociateRequest>(),
+               It.IsAny<CancellationToken>()
+            ),
+            Times.Once
          );
       }
 
@@ -249,23 +304,37 @@ namespace dvmig.Tests
          // Arrange
          var sourceUserId = Guid.NewGuid();
          var targetUserId = Guid.NewGuid();
-         var sourceUserRef = new EntityReference(SystemConstants.DataverseEntities.SystemUser, sourceUserId);
-         var targetUserRef = new EntityReference(SystemConstants.DataverseEntities.SystemUser, targetUserId);
 
-         var account = new Entity(SystemConstants.DataverseEntities.Account, Guid.NewGuid());
+         var sourceUserRef = new EntityReference(
+            SystemConstants.DataverseEntities.SystemUser,
+            sourceUserId
+         );
+
+         var targetUserRef = new EntityReference(
+            SystemConstants.DataverseEntities.SystemUser,
+            targetUserId
+         );
+
+         var account = new Entity(
+            SystemConstants.DataverseEntities.Account,
+            Guid.NewGuid()
+         );
+
          account[SystemConstants.DataverseAttributes.OwnerId] = sourceUserRef;
 
-         _userResolverMock.Setup(m => m.MapUserAsync(
-             sourceUserRef,
-             It.IsAny<CancellationToken>()
-         ))
-             .ReturnsAsync(targetUserRef);
+         _userResolverMock.Setup(
+            m => m.MapUserAsync(
+               sourceUserRef,
+               It.IsAny<CancellationToken>()
+            )
+         ).ReturnsAsync(targetUserRef);
 
-         _targetMock.Setup(t => t.CreateAsync(
-             It.IsAny<Entity>(),
-             It.IsAny<CancellationToken>()
-         ))
-             .ReturnsAsync(account.Id);
+         _targetMock.Setup(
+            t => t.CreateAsync(
+               It.IsAny<Entity>(),
+               It.IsAny<CancellationToken>()
+            )
+         ).ReturnsAsync(account.Id);
 
          var options = new SyncOptions();
 
@@ -274,12 +343,16 @@ namespace dvmig.Tests
 
          // Assert
          _targetMock.Verify(
-             t => t.CreateAsync(
-                 It.Is<Entity>(e =>
-                     ((EntityReference)e[SystemConstants.DataverseAttributes.OwnerId]).Id == targetUserId),
-                 It.IsAny<CancellationToken>()
-             ),
-             Times.Once
+            t => t.CreateAsync(
+               It.Is<Entity>(
+                  e =>
+                     ((EntityReference)
+                        e[SystemConstants.DataverseAttributes.OwnerId]).Id ==
+                        targetUserId
+               ),
+               It.IsAny<CancellationToken>()
+            ),
+            Times.Once
          );
       }
 
@@ -287,16 +360,22 @@ namespace dvmig.Tests
       public async Task PreserveDates_WhenOptionIsEnabled()
       {
          // Arrange
-         var account = new Entity(SystemConstants.DataverseEntities.Account, Guid.NewGuid());
-         account[SystemConstants.DataverseAttributes.Name] = "Date Test";
-         account[SystemConstants.DataverseAttributes.CreatedOn] =
-             DateTime.UtcNow;
+         var account = new Entity(
+            SystemConstants.DataverseEntities.Account,
+            Guid.NewGuid()
+         );
 
-         _targetMock.Setup(t => t.CreateAsync(
-             It.IsAny<Entity>(),
-             It.IsAny<CancellationToken>()
-         ))
-             .ReturnsAsync(account.Id);
+         account[SystemConstants.DataverseAttributes.Name] = "Date Test";
+
+         account[SystemConstants.DataverseAttributes.CreatedOn] =
+            DateTime.UtcNow;
+
+         _targetMock.Setup(
+            t => t.CreateAsync(
+               It.IsAny<Entity>(),
+               It.IsAny<CancellationToken>()
+            )
+         ).ReturnsAsync(account.Id);
 
          var options = new SyncOptions
          {
@@ -308,12 +387,12 @@ namespace dvmig.Tests
 
          // Assert
          _sourceDateServiceMock.Verify(
-             p => p.CreateSourceDateRecordAsync(
-                 _targetMock.Object,
-                 account,
-                 It.IsAny<CancellationToken>()
-             ),
-             Times.Once
+            p => p.CreateSourceDateRecordAsync(
+               _targetMock.Object,
+               account,
+               It.IsAny<CancellationToken>()
+            ),
+            Times.Once
          );
       }
 
@@ -322,32 +401,41 @@ namespace dvmig.Tests
       {
          // Arrange
          var accountId = Guid.NewGuid();
-         var account = new Entity(SystemConstants.DataverseEntities.Account, accountId)
+
+         var account = new Entity(
+            SystemConstants.DataverseEntities.Account,
+            accountId
+         )
          {
             [SystemConstants.DataverseAttributes.Name] = "Existing Account",
             [SystemConstants.DataverseAttributes.Telephone1] = "12345"
          };
 
          int createCalls = 0;
-         _targetMock.Setup(t => t.CreateAsync(
-             It.IsAny<Entity>(),
-             It.IsAny<CancellationToken>()
-         ))
-             .Returns<Entity, CancellationToken>((e, ct) =>
-             {
-                createCalls++;
 
-                throw new Exception(
-                    $"A record with this ID " +
-                    $"{SystemConstants.ErrorKeywords.AlreadyExists}."
-                );
-             });
+         _targetMock.Setup(
+            t => t.CreateAsync(
+               It.IsAny<Entity>(),
+               It.IsAny<CancellationToken>()
+            )
+         ).Returns<Entity, CancellationToken>(
+            (e, ct) =>
+            {
+               createCalls++;
 
-         _targetMock.Setup(t => t.UpdateAsync(
-             It.Is<Entity>(e => e.Id == accountId),
-             It.IsAny<CancellationToken>()
-         ))
-             .Returns(Task.CompletedTask);
+               throw new Exception(
+                  $"A record with this ID " +
+                  $"{SystemConstants.ErrorKeywords.AlreadyExists}."
+               );
+            }
+         );
+
+         _targetMock.Setup(
+            t => t.UpdateAsync(
+               It.Is<Entity>(e => e.Id == accountId),
+               It.IsAny<CancellationToken>()
+            )
+         ).Returns(Task.CompletedTask);
 
          var options = new SyncOptions();
 
@@ -357,12 +445,17 @@ namespace dvmig.Tests
          // Assert
          Assert.True(result);
          Assert.Equal(1, createCalls);
+
          _targetMock.Verify(
-             t => t.UpdateAsync(
-                 It.Is<Entity>(e => (string)e[SystemConstants.DataverseAttributes.Telephone1] == "12345"),
-                 It.IsAny<CancellationToken>()
-             ),
-             Times.Once
+            t => t.UpdateAsync(
+               It.Is<Entity>(
+                  e =>
+                     (string)e[SystemConstants.DataverseAttributes.Telephone1] ==
+                        "12345"
+               ),
+               It.IsAny<CancellationToken>()
+            ),
+            Times.Once
          );
       }
 
@@ -371,31 +464,39 @@ namespace dvmig.Tests
       {
          // Arrange
          var accountId = Guid.NewGuid();
-         var account = new Entity(SystemConstants.DataverseEntities.Account, accountId)
+
+         var account = new Entity(
+            SystemConstants.DataverseEntities.Account,
+            accountId
+         )
          {
             [SystemConstants.DataverseAttributes.Name] = "Retry Test"
          };
 
          int callCount = 0;
-         _targetMock.Setup(t => t.CreateAsync(
-             It.IsAny<Entity>(),
-             It.IsAny<CancellationToken>()
-         ))
-             .Returns<Entity, CancellationToken>((e, ct) =>
-             {
-                callCount++;
 
-                // Simulate Service Protection Limit error
-                if (callCount == 1)
-                {
-                   throw new Exception(
-                          "Rate limit exceeded. Error Code: 0x" +
-                          SystemConstants.ErrorCodes.ServiceProtectionLimit
-                      );
-                }
+         _targetMock.Setup(
+            t => t.CreateAsync(
+               It.IsAny<Entity>(),
+               It.IsAny<CancellationToken>()
+            )
+         ).Returns<Entity, CancellationToken>(
+            (e, ct) =>
+            {
+               callCount++;
 
-                return Task.FromResult(accountId);
-             });
+               // Simulate Service Protection Limit error
+               if (callCount == 1)
+               {
+                  throw new Exception(
+                     "Rate limit exceeded. Error Code: 0x" +
+                     SystemConstants.ErrorCodes.ServiceProtectionLimit
+                  );
+               }
+
+               return Task.FromResult(accountId);
+            }
+         );
 
          var options = new SyncOptions();
 
@@ -412,7 +513,11 @@ namespace dvmig.Tests
       {
          // Arrange
          var accountId = Guid.NewGuid();
-         var account = new Entity(SystemConstants.DataverseEntities.Account, accountId)
+
+         var account = new Entity(
+            SystemConstants.DataverseEntities.Account,
+            accountId
+         )
          {
             [SystemConstants.DataverseAttributes.Name] = "Failure Account"
          };
@@ -422,43 +527,53 @@ namespace dvmig.Tests
             LogicalName = SystemConstants.DataverseEntities.Account
          };
 
-         _targetMock.Setup(t => t.GetEntityMetadataAsync(
-             SystemConstants.DataverseEntities.Account,
-             It.IsAny<CancellationToken>()
-         ))
-             .ReturnsAsync(metadata);
+         _targetMock.Setup(
+            t => t.GetEntityMetadataAsync(
+               SystemConstants.DataverseEntities.Account,
+               It.IsAny<CancellationToken>()
+            )
+         ).ReturnsAsync(metadata);
 
-         _targetMock.Setup(t => t.CreateAsync(
-             It.Is<Entity>(e => e.LogicalName == SystemConstants.DataverseEntities.Account),
-             It.IsAny<CancellationToken>()
-         ))
-             .ThrowsAsync(new Exception("Create failed"));
+         _targetMock.Setup(
+            t => t.CreateAsync(
+               It.Is<Entity>(
+                  e => e.LogicalName == SystemConstants.DataverseEntities.Account
+               ),
+               It.IsAny<CancellationToken>()
+            )
+         ).ThrowsAsync(new Exception("Create failed"));
 
-         _targetMock.Setup(t => t.CreateAsync(
-             It.Is<Entity>(e =>
-                 e.LogicalName ==
-                 SystemConstants.MigrationFailure.EntityLogicalName
-             ),
-             It.IsAny<CancellationToken>()
-         ))
-             .ReturnsAsync(Guid.NewGuid());
+         _targetMock.Setup(
+            t => t.CreateAsync(
+               It.Is<Entity>(
+                  e =>
+                     e.LogicalName ==
+                        SystemConstants.MigrationFailure.EntityLogicalName
+               ),
+               It.IsAny<CancellationToken>()
+            )
+         ).ReturnsAsync(Guid.NewGuid());
 
          var options = new SyncOptions();
 
          // Act
          await _engine.SyncAsync(
-             new[] { account },
-             options
+            new[] { account },
+            options
          );
 
          // Assert
-         _targetMock.Verify(t => t.CreateAsync(
-             It.Is<Entity>(e =>
-                 e.LogicalName ==
-                 SystemConstants.MigrationFailure.EntityLogicalName
-             ),
-             It.IsAny<CancellationToken>()
-         ), Times.Once);
+         _targetMock.Verify(
+            t => t.CreateAsync(
+               It.Is<Entity>(
+                  e =>
+                     e.LogicalName ==
+                        SystemConstants.MigrationFailure.EntityLogicalName
+               ),
+               It.IsAny<CancellationToken>()
+            ),
+            Times.Once
+         );
       }
    }
 }

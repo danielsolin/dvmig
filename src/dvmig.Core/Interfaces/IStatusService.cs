@@ -1,4 +1,5 @@
 using Microsoft.Xrm.Sdk;
+using dvmig.Core.Synchronization;
 
 namespace dvmig.Core.Interfaces
 {
@@ -22,10 +23,10 @@ namespace dvmig.Core.Interfaces
       /// <returns>True if the transition was successful.</returns>
       Task<bool> HandleStatusTransitionAsync(
          Entity entity,
-         dvmig.Core.Synchronization.SyncOptions options,
+         SyncOptions options,
          CancellationToken ct = default,
-         Func<Entity, dvmig.Core.Synchronization.SyncOptions, 
-            CancellationToken, Task<(bool Success, string? FailureMessage)>>? 
+         Func<Entity, SyncOptions, CancellationToken,
+            Task<(bool Success, string? FailureMessage)>>?
             createOrUpdateFunc = null
       );
    }

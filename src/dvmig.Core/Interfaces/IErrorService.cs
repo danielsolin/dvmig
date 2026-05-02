@@ -1,4 +1,5 @@
 using Microsoft.Xrm.Sdk;
+using dvmig.Core.Synchronization;
 
 namespace dvmig.Core.Interfaces
 {
@@ -37,18 +38,17 @@ namespace dvmig.Core.Interfaces
       Task<(bool Success, string? FailureMessage)> HandleSyncExceptionAsync(
          Exception ex,
          Entity entity,
-         dvmig.Core.Synchronization.SyncOptions options,
+         SyncOptions options,
          CancellationToken ct = default,
          Func<Entity, CancellationToken, Task>? updateFunc = null,
-         Func<Entity, dvmig.Core.Synchronization.SyncOptions, 
-            CancellationToken, Task<bool>>? statusTransitionFunc = null,
-         Func<Exception, Entity, dvmig.Core.Synchronization.SyncOptions, 
-            CancellationToken, Task<bool>>? 
-            resolveMissingDependencyFunc = null,
-         Func<string, Entity, dvmig.Core.Synchronization.SyncOptions, 
-            CancellationToken, Task<bool>>? resolveSqlDependencyFunc = null,
-         Func<Exception, Entity, dvmig.Core.Synchronization.SyncOptions, 
-            CancellationToken, Task<bool>>? stripAttributeFunc = null,
+         Func<Entity, SyncOptions, CancellationToken, Task<bool>>?
+            statusTransitionFunc = null,
+         Func<Exception, Entity, SyncOptions, CancellationToken,
+            Task<bool>>? resolveMissingDependencyFunc = null,
+         Func<string, Entity, SyncOptions, CancellationToken,
+            Task<bool>>? resolveSqlDependencyFunc = null,
+         Func<Exception, Entity, SyncOptions, CancellationToken,
+            Task<bool>>? stripAttributeFunc = null,
          Func<Entity, CancellationToken, Task<Guid?>>? findExistingFunc = null
       );
 

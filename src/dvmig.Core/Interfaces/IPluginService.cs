@@ -19,9 +19,9 @@ namespace dvmig.Core.Interfaces
       /// <param name="ct">A cancellation token.</param>
       /// <returns>A task representing the asynchronous deployment.</returns>
       Task DeployPluginAsync(
-          IDataverseProvider target,
-          string? pluginAssemblyPath = null,
-          CancellationToken ct = default
+         IDataverseProvider target,
+         string? pluginAssemblyPath = null,
+         CancellationToken ct = default
       );
 
       /// <summary>
@@ -35,8 +35,8 @@ namespace dvmig.Core.Interfaces
       /// A task representing the asynchronous removal operation.
       /// </returns>
       Task RemovePluginAsync(
-          IDataverseProvider target,
-          CancellationToken ct = default
+         IDataverseProvider target,
+         CancellationToken ct = default
       );
    }
 }

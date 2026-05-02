@@ -15,8 +15,8 @@ namespace dvmig.Core.Interfaces
       /// <param name="ct">A cancellation token.</param>
       /// <returns>A task representing the asynchronous operation.</returns>
       Task CreateSchemaAsync(
-          IDataverseProvider target,
-          CancellationToken ct = default
+         IDataverseProvider target,
+         CancellationToken ct = default
       );
 
       /// <summary>
@@ -30,8 +30,8 @@ namespace dvmig.Core.Interfaces
       /// A task representing the asynchronous removal operation.
       /// </returns>
       Task DropSchemaAsync(
-          IDataverseProvider target,
-          CancellationToken ct = default
+         IDataverseProvider target,
+         CancellationToken ct = default
       );
    }
 }

@@ -17,9 +17,6 @@ namespace dvmig.Core.Interfaces
       /// <param name="options">
       /// The synchronization configuration options.
       /// </param>
-      /// <param name="progress">
-      /// An optional progress reporter for log messages.
-      /// </param>
       /// <param name="recordProgress">
       /// An optional progress reporter for individual record 
       /// success/failure.
@@ -29,10 +26,10 @@ namespace dvmig.Core.Interfaces
       /// A task representing the asynchronous sync operation.
       /// </returns>
       Task SyncAsync(
-          IEnumerable<Entity> entities,
-          SyncOptions options,
-          IProgress<bool>? recordProgress = null,
-          CancellationToken ct = default
+         IEnumerable<Entity> entities,
+         SyncOptions options,
+         IProgress<bool>? recordProgress = null,
+         CancellationToken ct = default
       );
 
       /// <summary>
@@ -42,15 +39,14 @@ namespace dvmig.Core.Interfaces
       /// <param name="options">
       /// The synchronization configuration options.
       /// </param>
-      /// <param name="progress">An optional progress reporter.</param>
       /// <param name="ct">A cancellation token.</param>
       /// <returns>
       /// True if the synchronization was successful; otherwise, false.
       /// </returns>
       Task<(bool Success, string? FailureMessage)> SyncRecordAsync(
-          Entity entity,
-          SyncOptions options,
-          CancellationToken ct = default
+         Entity entity,
+         SyncOptions options,
+         CancellationToken ct = default
       );
 
       /// <summary>
@@ -63,8 +59,8 @@ namespace dvmig.Core.Interfaces
       /// A configured ColumnSet containing valid attributes.
       /// </returns>
       Task<Microsoft.Xrm.Sdk.Query.ColumnSet> GetValidColumnsAsync(
-          string logicalName,
-          CancellationToken ct = default
+         string logicalName,
+         CancellationToken ct = default
       );
 
       /// <summary>
@@ -77,18 +73,17 @@ namespace dvmig.Core.Interfaces
       /// An optional query to filter the records to be synchronized. 
       /// If null, all records are fetched.
       /// </param>
-      /// <param name="progress">Progress reporter for log messages.</param>
       /// <param name="recordProgress">
       /// Progress reporter for success/failure.
       /// </param>
       /// <param name="ct">A cancellation token.</param>
       /// <returns>A task representing the operation.</returns>
       Task SyncEntityAsync(
-          string logicalName,
-          SyncOptions options,
-          Microsoft.Xrm.Sdk.Query.QueryExpression? query = null,
-          IProgress<bool>? recordProgress = null,
-          CancellationToken ct = default
+         string logicalName,
+         SyncOptions options,
+         Microsoft.Xrm.Sdk.Query.QueryExpression? query = null,
+         IProgress<bool>? recordProgress = null,
+         CancellationToken ct = default
       );
 
       /// <summary>

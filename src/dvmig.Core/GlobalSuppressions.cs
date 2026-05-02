@@ -5,4 +5,14 @@
 
 using System.Diagnostics.CodeAnalysis;
 
-[assembly: SuppressMessage("Style", "IDE0305:Simplify collection initialization", Justification = "<Pending>", Scope = "member", Target = "~M:dvmig.Core.Synchronization.ReconciliationService.GetFailuresAsync(dvmig.Core.Interfaces.IDataverseProvider,System.Threading.CancellationToken)~System.Threading.Tasks.Task{System.Collections.Generic.List{dvmig.Core.Synchronization.MigrationFailureRecord}}")]
+[assembly: SuppressMessage(
+   "Style",
+   "IDE0305:Simplify collection initialization",
+   Justification = "<Pending>",
+   Scope = "member",
+   Target = "~M:dvmig.Core.Synchronization.ReconciliationService." +
+            "GetFailuresAsync(dvmig.Core.Interfaces.IDataverseProvider," +
+            "System.Threading.CancellationToken)~System.Threading.Tasks.Task" +
+            "{System.Collections.Generic.List{dvmig.Core.Synchronization." +
+            "MigrationFailureRecord}}"
+)]

@@ -3,8 +3,9 @@ using Microsoft.Xrm.Sdk;
 namespace dvmig.Core.Interfaces
 {
    /// <summary>
-   /// Defines the contract for a service that manages temporary 'dm_sourcedate' 
-   /// records used for preserving creation and modification dates.
+   /// Defines the contract for a service that manages temporary 
+   /// 'dm_sourcedate' records used for preserving creation and 
+   /// modification dates.
    /// </summary>
    public interface ISourceDateService
    {
@@ -25,9 +26,9 @@ namespace dvmig.Core.Interfaces
       /// A task that represents the asynchronous operation.
       /// </returns>
       Task CreateSourceDateRecordAsync(
-          IDataverseProvider target,
-          Entity sourceEntity,
-          CancellationToken ct = default
+         IDataverseProvider target,
+         Entity sourceEntity,
+         CancellationToken ct = default
       );
 
       /// <summary>
@@ -47,10 +48,10 @@ namespace dvmig.Core.Interfaces
       /// </param>
       /// <returns>A task that represents the asynchronous deletion.</returns>
       Task DeleteSourceDateRecordAsync(
-          IDataverseProvider target,
-          string logicalName,
-          Guid entityId,
-          CancellationToken ct = default
+         IDataverseProvider target,
+         string logicalName,
+         Guid entityId,
+         CancellationToken ct = default
       );
    }
 }

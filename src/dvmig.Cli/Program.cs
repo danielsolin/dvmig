@@ -119,26 +119,32 @@ namespace dvmig.Cli
          var syncGroup = new List<MenuItem>
          {
             new MenuItem(
-               $"Migrate Recommended {SystemConstants.UiMarkup.Grey}(Accounts, Contacts, " +
-               "Activities)[/]",
+               $"Migrate Recommended {SystemConstants.UiMarkup.Grey}" +
+               "(Accounts, Contacts, Activities)[/]",
                migrationActions.HandleRecommendedSyncAsync
             ),
             new MenuItem(
-               $"Find & Fix Recommended {SystemConstants.UiMarkup.Grey}(Accounts, Contacts, Activities)[/]",
+               $"Find & Fix Recommended {SystemConstants.UiMarkup.Grey}" +
+               "(Accounts, Contacts, Activities)[/]",
                reconciliationActions.HandleRecommendedReconciliationAsync
             ),
             new MenuItem(
-               $"Migrate Selected {SystemConstants.UiMarkup.Grey}(pick entities)[/]",
+               $"Migrate Selected {SystemConstants.UiMarkup.Grey}" +
+               "(pick entities)[/]",
                migrationActions.HandleMigrationAsync
             ),
             new MenuItem(
-               $"Find & Fix Selected {SystemConstants.UiMarkup.Grey}(pick entities)[/]",
+               $"Find & Fix Selected {SystemConstants.UiMarkup.Grey}" +
+               "(pick entities)[/]",
                reconciliationActions.HandlePerformReconciliationAsync
             )
          };
 
          prompt.AddChoiceGroup(
-            new MenuItem($"🚀 {SystemConstants.UiMarkup.BoldGreen}Synchronization[/]", null),
+            new MenuItem(
+               $"🚀 {SystemConstants.UiMarkup.BoldGreen}Synchronization[/]",
+               null
+            ),
             syncGroup
          );
 
@@ -147,11 +153,13 @@ namespace dvmig.Cli
             var maintenanceGroup = new List<MenuItem>
             {
                new MenuItem(
-                  $"Install DVMig Components {SystemConstants.UiMarkup.Grey}(Target)[/]",
+                  $"Install DVMig Components {SystemConstants.UiMarkup.Grey}" +
+                  "(Target)[/]",
                   maintenanceActions.HandleInstallMenuAsync
                ),
                new MenuItem(
-                  $"Uninstall DVMig Components {SystemConstants.UiMarkup.Grey}(Target)[/]",
+                  $"Uninstall DVMig Components {SystemConstants.UiMarkup.Grey}" +
+                  "(Target)[/]",
                   maintenanceActions.HandleTargetComponentsCleanupAsync
                ),
                new MenuItem(
@@ -161,28 +169,37 @@ namespace dvmig.Cli
             };
 
             prompt.AddChoiceGroup(
-               new MenuItem($"🛠️ {SystemConstants.UiMarkup.BoldCyan}Maintenance[/]", null),
+               new MenuItem(
+                  $"🛠️ {SystemConstants.UiMarkup.BoldCyan}Maintenance[/]",
+                  null
+               ),
                maintenanceGroup
             );
 
             var dataGroup = new List<MenuItem>
             {
                new MenuItem(
-                  $"Generate Sample Data {SystemConstants.UiMarkup.Grey}(Source)[/]",
+                  $"Generate Sample Data {SystemConstants.UiMarkup.Grey}" +
+                  "(Source)[/]",
                   maintenanceActions.HandleSeedingAsync
                ),
                new MenuItem(
-                  $"Wipe Data on Source {SystemConstants.UiMarkup.Grey}(Caution!)[/]",
+                  $"Wipe Data on Source {SystemConstants.UiMarkup.Grey}" +
+                  "(Caution!)[/]",
                   maintenanceActions.HandleSourceDataCleanupAsync
                ),
                new MenuItem(
-                  $"Wipe Data on Target {SystemConstants.UiMarkup.Grey}(Caution!)[/]",
+                  $"Wipe Data on Target {SystemConstants.UiMarkup.Grey}" +
+                  "(Caution!)[/]",
                   maintenanceActions.HandleTargetDataCleanupAsync
                )
             };
 
             prompt.AddChoiceGroup(
-               new MenuItem($"🧪 {SystemConstants.UiMarkup.BoldMagenta}Data Management[/]", null),
+               new MenuItem(
+                  $"🧪 {SystemConstants.UiMarkup.BoldMagenta}Data Management[/]",
+                  null
+               ),
                dataGroup
             );
          }

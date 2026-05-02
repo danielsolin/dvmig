@@ -3,8 +3,8 @@ using Microsoft.Xrm.Sdk;
 namespace dvmig.Core.Interfaces
 {
    /// <summary>
-   /// Defines the contract for a service that resolves user references from a 
-   /// source environment to the corresponding users in a target environment.
+   /// Defines the contract for a service that resolves user references from 
+   /// a source environment to the corresponding users in a target environment.
    /// </summary>
    public interface IUserResolver
    {

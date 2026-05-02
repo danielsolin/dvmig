@@ -42,21 +42,22 @@ namespace dvmig.Core.Interfaces
       /// successfully retried; otherwise, false.
       /// </returns>
       Task<bool> ResolveMissingDependencyAsync(
-          Exception ex,
-          Entity entity,
-          SyncOptions options,
-          CancellationToken ct = default,
-          Func<Entity, SyncOptions, CancellationToken,
-              Task<(bool Success, string? FailureMessage)>>?
-              syncRecordFunc = null,
-          Func<Entity, SyncOptions, CancellationToken,
-              Task<bool>>?
-              retryEntityFunc = null,
-          Func<Entity, CancellationToken, Task<Guid?>>?
-              findExistingFunc = null,
-          ConcurrentDictionary<string, Guid>? idMappingCache = null,
-          ConcurrentDictionary<string, HashSet<string>>?
-              triedDependencies = null);
+         Exception ex,
+         Entity entity,
+         SyncOptions options,
+         CancellationToken ct = default,
+         Func<Entity, SyncOptions, CancellationToken,
+            Task<(bool Success, string? FailureMessage)>>?
+            syncRecordFunc = null,
+         Func<Entity, SyncOptions, CancellationToken,
+            Task<bool>>?
+            retryEntityFunc = null,
+         Func<Entity, CancellationToken, Task<Guid?>>?
+            findExistingFunc = null,
+         ConcurrentDictionary<string, Guid>? idMappingCache = null,
+         ConcurrentDictionary<string, HashSet<string>>?
+            triedDependencies = null
+      );
 
       /// <summary>
       /// Attempts to resolve missing SQL-level dependencies (foreign key
@@ -85,18 +86,19 @@ namespace dvmig.Core.Interfaces
       /// successfully retried; otherwise, false.
       /// </returns>
       Task<bool> ResolveSqlDependencyAsync(
-          string message,
-          Entity entity,
-          SyncOptions options,
-          CancellationToken ct = default,
-          Func<Entity, SyncOptions, CancellationToken,
-              Task<(bool Success, string? FailureMessage)>>?
-              syncRecordFunc = null,
-          Func<Entity, SyncOptions, CancellationToken,
-              Task<bool>>?
-              retryEntityFunc = null,
-          Func<Entity, CancellationToken, Task<Guid?>>?
-              findExistingFunc = null,
-          ConcurrentDictionary<string, Guid>? idMappingCache = null);
+         string message,
+         Entity entity,
+         SyncOptions options,
+         CancellationToken ct = default,
+         Func<Entity, SyncOptions, CancellationToken,
+            Task<(bool Success, string? FailureMessage)>>?
+            syncRecordFunc = null,
+         Func<Entity, SyncOptions, CancellationToken,
+            Task<bool>>?
+            retryEntityFunc = null,
+         Func<Entity, CancellationToken, Task<Guid?>>?
+            findExistingFunc = null,
+         ConcurrentDictionary<string, Guid>? idMappingCache = null
+      );
    }
 }

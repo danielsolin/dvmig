@@ -1,10 +1,5 @@
-#pragma warning disable IDE0005 // Using directive is unnecessary.
-using System.Collections.Generic;
-#pragma warning restore IDE0005 // Using directive is unnecessary.
-
 namespace dvmig.Core.Shared
 {
-
    public enum ConnectionDirection
    {
       Source,
@@ -26,8 +21,8 @@ namespace dvmig.Core.Shared
          public const string PrimaryId = "dm_sourcedateid";
          public const string Name = "dm_name";
          public const string EntityId = "dm_sourceentityid";
-         public const string EntityLogicalNameAttr = "dm_" +
-             "sourceentitylogicalname";
+         public const string EntityLogicalNameAttr =
+            "dm_sourceentitylogicalname";
          public const string CreatedDate = "dm_sourcecreateddate";
          public const string ModifiedDate = "dm_sourcemodifieddate";
       }
@@ -122,13 +117,11 @@ namespace dvmig.Core.Shared
          public const string DuplicateKey = "duplicate key";
          public const string InvalidStatusCode = "is not a valid status code";
          public const string DoesNotExist = "does not exist";
-         public const string ForeignKeyConflict = "conflicted with the " +
-             "foreign key constraint";
-         public const string ConstraintConflict = "conflicted with a " +
-             "constraint";
+         public const string ForeignKeyConflict =
+            "conflicted with the foreign key constraint";
+         public const string ConstraintConflict = "conflicted with a constraint";
          public const string CannotBeModified = "cannot be modified";
-         public const string CannotBeSetOnCreation = "cannot be set on " +
-             "creation";
+         public const string CannotBeSetOnCreation = "cannot be set on creation";
          public const string OutsideValidRange = "outside the valid range";
          public const string TooManyRequests = "too many requests";
          public const string CombinedExecutionTime = "combined execution time";
@@ -188,16 +181,17 @@ namespace dvmig.Core.Shared
                50
             };
 
-         public static readonly IReadOnlyList<string> RecommendedEntities =
-            new[]
-            {
-               "account",
-               "contact",
-               "task",
-               "phonecall",
-               "email",
-               "appointment"
-            };
+         public static readonly System.Collections.Generic.IReadOnlyList<string>
+            RecommendedEntities =
+               new[]
+               {
+                  "account",
+                  "contact",
+                  "task",
+                  "phonecall",
+                  "email",
+                  "appointment"
+               };
       }
 
       /// <summary>

@@ -41,9 +41,9 @@ namespace dvmig.Core.Providers
       /// <param name="ct">A cancellation token.</param>
       /// <returns>The primary ID attribute name, or null.</returns>
       public static async Task<string?> GetPrimaryIdAttributeAsync(
-          this IDataverseProvider provider,
-          string logicalName,
-          CancellationToken ct = default
+         this IDataverseProvider provider,
+         string logicalName,
+         CancellationToken ct = default
       )
       {
          var request = new RetrieveEntityRequest
@@ -52,8 +52,8 @@ namespace dvmig.Core.Providers
             EntityFilters = EntityFilters.Entity
          };
 
-         var metaResponse = (RetrieveEntityResponse)await
-             provider.ExecuteAsync(request, ct);
+         var metaResponse = (RetrieveEntityResponse)await provider
+            .ExecuteAsync(request, ct);
 
          return metaResponse.EntityMetadata.PrimaryIdAttribute;
       }

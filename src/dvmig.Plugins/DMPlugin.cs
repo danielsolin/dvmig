@@ -74,6 +74,7 @@ namespace dvmig.Plugins
       )
       {
          var messageName = context.MessageName.ToLower();
+
          var sourceDate = GetSourceDate(
             service,
             entity.Id,
@@ -104,6 +105,7 @@ namespace dvmig.Plugins
          var createdDateAttr = SystemConstants.SourceDate.CreatedDate;
          var modifiedDateAttr = SystemConstants.SourceDate.ModifiedDate;
          var sourceEntityId = SystemConstants.SourceDate.EntityId;
+
          var logicalNameAttr =
             SystemConstants.SourceDate.EntityLogicalNameAttr;
 
@@ -150,6 +152,7 @@ namespace dvmig.Plugins
 
             entity[SystemConstants.DataverseAttributes.CreatedOn] =
                createdDate;
+
             entity[SystemConstants.DataverseAttributes.OverriddenCreatedOn] =
                createdDate;
          }

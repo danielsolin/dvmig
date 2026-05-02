@@ -94,7 +94,8 @@ namespace dvmig.Core.Providers
                   EntityFilters = EntityFilters.Attributes
                },
                ct
-            ) as RetrieveEntityResponse;
+            )
+               as RetrieveEntityResponse;
 
             return response?.EntityMetadata;
          }

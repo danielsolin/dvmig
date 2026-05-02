@@ -24,30 +24,36 @@ namespace dvmig.Tests
       public async Task CreateSchemaAsync_CreatesEntity_WhenNotExists()
       {
          var entityMetadata = new EntityMetadata();
+
          typeof(EntityMetadata).GetProperty("Attributes")?.SetValue(
-             entityMetadata,
-             new AttributeMetadata[0]
+            entityMetadata,
+            new AttributeMetadata[0]
          );
 
          // Mock dm_sourcedate
-         _targetMock.SetupSequence(t => t.GetEntityMetadataAsync(
-             SystemConstants.SourceDate.EntityLogicalName,
-             It.IsAny<CancellationToken>())
-         ).ReturnsAsync((EntityMetadata?)default)
-          .ReturnsAsync(entityMetadata);
+         _targetMock.SetupSequence(
+            t => t.GetEntityMetadataAsync(
+               SystemConstants.SourceDate.EntityLogicalName,
+               It.IsAny<CancellationToken>()
+            )
+         ).ReturnsAsync((EntityMetadata?)default).ReturnsAsync(entityMetadata);
 
          // Mock dm_migrationfailure
-         _targetMock.SetupSequence(t => t.GetEntityMetadataAsync(
-             SystemConstants.MigrationFailure.EntityLogicalName,
-             It.IsAny<CancellationToken>())
-         ).ReturnsAsync((EntityMetadata?)default)
-          .ReturnsAsync(entityMetadata);
+         _targetMock.SetupSequence(
+            t => t.GetEntityMetadataAsync(
+               SystemConstants.MigrationFailure.EntityLogicalName,
+               It.IsAny<CancellationToken>()
+            )
+         ).ReturnsAsync((EntityMetadata?)default).ReturnsAsync(entityMetadata);
 
          await _schemaService.CreateSchemaAsync(_targetMock.Object, default);
 
-         _targetMock.Verify(t => t.ExecuteAsync(
-             It.Is<OrganizationRequest>(r => r.RequestName == "CreateEntity"),
-             It.IsAny<CancellationToken>()), Times.Exactly(2)
+         _targetMock.Verify(
+            t => t.ExecuteAsync(
+               It.Is<OrganizationRequest>(r => r.RequestName == "CreateEntity"),
+               It.IsAny<CancellationToken>()
+            ),
+            Times.Exactly(2)
          );
       }
 
@@ -55,21 +61,27 @@ namespace dvmig.Tests
       public async Task CreateSchemaAsync_DoesNotCreateEntity_WhenExists()
       {
          var entityMetadata = new EntityMetadata();
+
          typeof(EntityMetadata).GetProperty("Attributes")?.SetValue(
-             entityMetadata,
-             new AttributeMetadata[0]
+            entityMetadata,
+            new AttributeMetadata[0]
          );
 
-         _targetMock.Setup(t => t.GetEntityMetadataAsync(
-             It.IsAny<string>(),
-             It.IsAny<CancellationToken>())
+         _targetMock.Setup(
+            t => t.GetEntityMetadataAsync(
+               It.IsAny<string>(),
+               It.IsAny<CancellationToken>()
+            )
          ).ReturnsAsync(entityMetadata);
 
          await _schemaService.CreateSchemaAsync(_targetMock.Object, default);
 
-         _targetMock.Verify(t => t.ExecuteAsync(
-             It.Is<OrganizationRequest>(r => r.RequestName == "CreateEntity"),
-             It.IsAny<CancellationToken>()), Times.Never
+         _targetMock.Verify(
+            t => t.ExecuteAsync(
+               It.Is<OrganizationRequest>(r => r.RequestName == "CreateEntity"),
+               It.IsAny<CancellationToken>()
+            ),
+            Times.Never
          );
       }
    }

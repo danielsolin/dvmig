@@ -1,8 +1,8 @@
 namespace dvmig.Core.Interfaces
 {
    /// <summary>
-   /// Defines the contract for a service that validates environment readiness
-   /// and component versions.
+   /// Defines the contract for a service that validates environment 
+   /// readiness and component versions.
    /// </summary>
    public interface IValidationService
    {

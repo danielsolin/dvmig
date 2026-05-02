@@ -44,15 +44,19 @@ namespace dvmig.Cli.Actions
          if (provider == null)
             return;
 
-         var prompt = $"How many {SystemConstants.UiMarkup.BoldBlue}Accounts[/] would you like " +
-                      "to generate?";
+         var prompt = 
+            $"How many {SystemConstants.UiMarkup.BoldBlue}Accounts[/] " +
+            "would you like to generate?";
 
          int count = AnsiConsole.Ask<int>(prompt, 100);
 
-         await CliUI.RunStatusAsync("Seeding data...", Logger, async () =>
-               await _seedingService.SeedSampleDataAsync(
-                  provider,
-                  count)
+         await CliUI.RunStatusAsync(
+            "Seeding data...", 
+            Logger, 
+            async () => await _seedingService.SeedSampleDataAsync(
+               provider,
+               count
+            )
          );
 
          CliUI.WriteSuccess("Seeding Finished!");
@@ -79,7 +83,8 @@ namespace dvmig.Cli.Actions
          if (provider == null)
             return;
 
-         var promptMsg = $"{SystemConstants.UiMarkup.Red}Are you sure you want " +
+         var promptMsg = 
+            $"{SystemConstants.UiMarkup.Red}Are you sure you want " +
             "to remove all dvmig system components (schema and plugins) " +
             "from this environment?[/]";
 
@@ -186,8 +191,10 @@ namespace dvmig.Cli.Actions
          );
 
          var wipeText = SystemConstants.UiMarkup.WipeDataConfirmation;
-         var prompt = $"Type {SystemConstants.UiMarkup.BoldRed}{wipeText}[/] " +
+         var prompt = 
+            $"Type {SystemConstants.UiMarkup.BoldRed}{wipeText}[/] " +
             "to confirm:";
+
          var confirmation = AnsiConsole.Ask<string>(prompt);
 
          if (confirmation != SystemConstants.UiMarkup.WipeDataConfirmation)
@@ -197,10 +204,13 @@ namespace dvmig.Cli.Actions
             return;
          }
 
-         await CliUI.RunStatusAsync("Wiping data...", Logger, async () =>
-               await _seedingService.CleanTestDataAsync(
-                  provider,
-                  selectedEntities)
+         await CliUI.RunStatusAsync(
+            "Wiping data...", 
+            Logger, 
+            async () => await _seedingService.CleanTestDataAsync(
+               provider,
+               selectedEntities
+            )
          );
 
          CliUI.WriteSuccess($"Data Wipe Finished for {envName}!");

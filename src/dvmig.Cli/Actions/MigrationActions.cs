@@ -1,3 +1,7 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using dvmig.Core.Interfaces;
 using dvmig.Core.Shared;
 using dvmig.Core.Synchronization;
@@ -19,12 +23,12 @@ namespace dvmig.Cli.Actions
          ISyncStateService stateService,
          ILogger logger
       ) : base(
-         connectionManager, 
-         pluginService, 
-         sourceDateService, 
-         validator, 
-         schemaService, 
-         stateService, 
+         connectionManager,
+         pluginService,
+         sourceDateService,
+         validator,
+         schemaService,
+         stateService,
          logger
       )
       {
@@ -52,11 +56,15 @@ namespace dvmig.Cli.Actions
 
          var threads = AnsiConsole.Prompt(
             new SelectionPrompt<int>()
-               .Title($"Select {SystemConstants.UiMarkup.Green}Max Parallelism[/] (Threads):")
+               .Title(
+                  $"Select {SystemConstants.UiMarkup.Green}Max Parallelism[/] " +
+                  "(Threads):"
+               )
                .AddChoices(SystemConstants.SyncSettings.ParallelismOptions)
          );
 
          await RunMigrationAsync(engine, source, selectedEntities, threads);
+
          CliUI.WriteSuccess("Migration Finished!");
       }
 
@@ -86,7 +94,10 @@ namespace dvmig.Cli.Actions
 
          var threads = AnsiConsole.Prompt(
             new SelectionPrompt<int>()
-               .Title($"Select {SystemConstants.UiMarkup.Green}Max Parallelism[/] (Threads):")
+               .Title(
+                  $"Select {SystemConstants.UiMarkup.Green}Max Parallelism[/] " +
+                  "(Threads):"
+               )
                .AddChoices(SystemConstants.SyncSettings.ParallelismOptions)
          );
 
@@ -110,7 +121,8 @@ namespace dvmig.Cli.Actions
          foreach (var logicalName in entities)
          {
             AnsiConsole.MarkupLine(
-               $"{SystemConstants.UiMarkup.BoldYellow}Migrating {logicalName}...[/]"
+               $"{SystemConstants.UiMarkup.BoldYellow}Migrating " +
+               $"{logicalName}...[/]"
             );
 
             await engine.InitializeEntitySyncAsync(logicalName);
@@ -207,7 +219,7 @@ namespace dvmig.Cli.Actions
                            $"{recsPerSec:F1} r/s[/]]] ";
 
                         if (failedCount > 0)
-                           desc += 
+                           desc +=
                               $" {SystemConstants.UiMarkup.Red}({failedCount} failed)[/]";
 
                         task.Description = desc;

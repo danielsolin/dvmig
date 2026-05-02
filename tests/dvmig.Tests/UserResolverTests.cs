@@ -19,10 +19,11 @@ namespace dvmig.Tests
          _sourceMock = new Mock<IDataverseProvider>();
          _targetMock = new Mock<IDataverseProvider>();
          _loggerMock = new Mock<ILogger>();
+
          _resolver = new UserResolver(
-             _sourceMock.Object,
-             _targetMock.Object,
-             _loggerMock.Object
+            _sourceMock.Object,
+            _targetMock.Object,
+            _loggerMock.Object
          );
       }
 
@@ -30,6 +31,7 @@ namespace dvmig.Tests
       public async Task MapUserAsync_ReturnsNull_WhenSourceUserIsNull()
       {
          var result = await _resolver.MapUserAsync(null);
+
          Assert.Null(result);
       }
 
@@ -41,25 +43,39 @@ namespace dvmig.Tests
 
          _resolver.AddManualMapping(sourceId, targetId);
 
-         var sourceRef = new EntityReference(SystemConstants.DataverseEntities.SystemUser, sourceId);
+         var sourceRef = new EntityReference(
+            SystemConstants.DataverseEntities.SystemUser,
+            sourceId
+         );
+
          var result = await _resolver.MapUserAsync(sourceRef);
 
          Assert.NotNull(result);
          Assert.Equal(targetId, result.Id);
-         Assert.Equal(SystemConstants.DataverseEntities.SystemUser, result.LogicalName);
+
+         Assert.Equal(
+            SystemConstants.DataverseEntities.SystemUser,
+            result.LogicalName
+         );
       }
 
       [Fact]
       public async Task MapUserAsync_ReturnsNull_WhenSourceUserNotFound()
       {
          var sourceId = Guid.NewGuid();
-         var sourceRef = new EntityReference(SystemConstants.DataverseEntities.SystemUser, sourceId);
 
-         _sourceMock.Setup(s => s.RetrieveAsync(
-             SystemConstants.DataverseEntities.SystemUser,
-             sourceId,
-             It.IsAny<string[]>(),
-             It.IsAny<CancellationToken>())
+         var sourceRef = new EntityReference(
+            SystemConstants.DataverseEntities.SystemUser,
+            sourceId
+         );
+
+         _sourceMock.Setup(
+            s => s.RetrieveAsync(
+               SystemConstants.DataverseEntities.SystemUser,
+               sourceId,
+               It.IsAny<string[]>(),
+               It.IsAny<CancellationToken>()
+            )
          ).ReturnsAsync((Entity?)null);
 
          var result = await _resolver.MapUserAsync(sourceRef);
@@ -72,30 +88,48 @@ namespace dvmig.Tests
       {
          var sourceId = Guid.NewGuid();
          var targetId = Guid.NewGuid();
-         var sourceRef = new EntityReference(SystemConstants.DataverseEntities.SystemUser, sourceId);
 
-         var sourceEntity = new Entity(SystemConstants.DataverseEntities.SystemUser, sourceId);
+         var sourceRef = new EntityReference(
+            SystemConstants.DataverseEntities.SystemUser,
+            sourceId
+         );
+
+         var sourceEntity = new Entity(
+            SystemConstants.DataverseEntities.SystemUser,
+            sourceId
+         );
+
          sourceEntity[
-             SystemConstants.DataverseAttributes.InternalEmailAddress
+            SystemConstants.DataverseAttributes.InternalEmailAddress
          ] = "test@example.com";
 
-         var targetEntity = new Entity(SystemConstants.DataverseEntities.SystemUser, targetId);
+         var targetEntity = new Entity(
+            SystemConstants.DataverseEntities.SystemUser,
+            targetId
+         );
+
          var targetCollection = new EntityCollection(new[] { targetEntity });
 
-         _sourceMock.Setup(s => s.RetrieveAsync(
-             SystemConstants.DataverseEntities.SystemUser,
-             sourceId,
-             It.IsAny<string[]>(),
-             It.IsAny<CancellationToken>())
+         _sourceMock.Setup(
+            s => s.RetrieveAsync(
+               SystemConstants.DataverseEntities.SystemUser,
+               sourceId,
+               It.IsAny<string[]>(),
+               It.IsAny<CancellationToken>()
+            )
          ).ReturnsAsync(sourceEntity);
 
-         _targetMock.Setup(t => t.RetrieveMultipleAsync(
-             It.Is<QueryByAttribute>(q =>
-                 q.Attributes.Contains(
-                     SystemConstants.DataverseAttributes.InternalEmailAddress
-                 ) &&
-                 q.Values.Contains("test@example.com")),
-             It.IsAny<CancellationToken>())
+         _targetMock.Setup(
+            t => t.RetrieveMultipleAsync(
+               It.Is<QueryByAttribute>(
+                  q =>
+                     q.Attributes.Contains(
+                        SystemConstants.DataverseAttributes.InternalEmailAddress
+                     ) &&
+                     q.Values.Contains("test@example.com")
+               ),
+               It.IsAny<CancellationToken>()
+            )
          ).ReturnsAsync(targetCollection);
 
          var result = await _resolver.MapUserAsync(sourceRef);
@@ -109,39 +143,61 @@ namespace dvmig.Tests
       {
          var sourceId = Guid.NewGuid();
          var targetId = Guid.NewGuid();
-         var sourceRef = new EntityReference(SystemConstants.DataverseEntities.SystemUser, sourceId);
 
-         var sourceEntity = new Entity(SystemConstants.DataverseEntities.SystemUser, sourceId);
+         var sourceRef = new EntityReference(
+            SystemConstants.DataverseEntities.SystemUser,
+            sourceId
+         );
+
+         var sourceEntity = new Entity(
+            SystemConstants.DataverseEntities.SystemUser,
+            sourceId
+         );
+
          sourceEntity[SystemConstants.DataverseAttributes.DomainName] =
-             "domain\\user";
+            "domain\\user";
 
          var targetCollection = new EntityCollection(
-             new[] { new Entity(SystemConstants.DataverseEntities.SystemUser, targetId) }
+            new[]
+            {
+               new Entity(SystemConstants.DataverseEntities.SystemUser, targetId)
+            }
          );
+
          var emptyCollection = new EntityCollection();
 
-         _sourceMock.Setup(s => s.RetrieveAsync(
-             SystemConstants.DataverseEntities.SystemUser,
-             sourceId,
-             It.IsAny<string[]>(),
-             It.IsAny<CancellationToken>())
+         _sourceMock.Setup(
+            s => s.RetrieveAsync(
+               SystemConstants.DataverseEntities.SystemUser,
+               sourceId,
+               It.IsAny<string[]>(),
+               It.IsAny<CancellationToken>()
+            )
          ).ReturnsAsync(sourceEntity);
 
-         _targetMock.Setup(t => t.RetrieveMultipleAsync(
-             It.Is<QueryByAttribute>(q =>
-                 q.Attributes.Contains(
-                     SystemConstants.DataverseAttributes.InternalEmailAddress
-                 )),
-             It.IsAny<CancellationToken>())
+         _targetMock.Setup(
+            t => t.RetrieveMultipleAsync(
+               It.Is<QueryByAttribute>(
+                  q =>
+                     q.Attributes.Contains(
+                        SystemConstants.DataverseAttributes.InternalEmailAddress
+                     )
+               ),
+               It.IsAny<CancellationToken>()
+            )
          ).ReturnsAsync(emptyCollection);
 
-         _targetMock.Setup(t => t.RetrieveMultipleAsync(
-             It.Is<QueryByAttribute>(q =>
-                 q.Attributes.Contains(
-                     SystemConstants.DataverseAttributes.DomainName
-                 ) &&
-                 q.Values.Contains("domain\\user")),
-             It.IsAny<CancellationToken>())
+         _targetMock.Setup(
+            t => t.RetrieveMultipleAsync(
+               It.Is<QueryByAttribute>(
+                  q =>
+                     q.Attributes.Contains(
+                        SystemConstants.DataverseAttributes.DomainName
+                     ) &&
+                     q.Values.Contains("domain\\user")
+               ),
+               It.IsAny<CancellationToken>()
+            )
          ).ReturnsAsync(targetCollection);
 
          var result = await _resolver.MapUserAsync(sourceRef);

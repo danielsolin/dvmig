@@ -1,6 +1,7 @@
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Metadata;
 using System.Collections.Concurrent;
+using dvmig.Core.Synchronization;
 
 namespace dvmig.Core.Interfaces
 {
@@ -25,7 +26,7 @@ namespace dvmig.Core.Interfaces
       Task<Entity> PrepareEntityForTargetAsync(
          Entity sourceEntity,
          EntityMetadata metadata,
-         dvmig.Core.Synchronization.SyncOptions options,
+         SyncOptions options,
          IUserResolver userResolver,
          ConcurrentDictionary<string, Guid> idMappingCache,
          CancellationToken ct = default
@@ -47,7 +48,7 @@ namespace dvmig.Core.Interfaces
       Task<Guid?> FindExistingOnTargetAsync(
          Entity entity,
          IDataverseProvider target,
-         Func<string, CancellationToken, Task<EntityMetadata?>> 
+         Func<string, CancellationToken, Task<EntityMetadata?>>
             getMetadataFunc,
          CancellationToken ct = default
       );
