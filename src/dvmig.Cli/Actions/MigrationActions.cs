@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using dvmig.Core.Interfaces;
 using dvmig.Core.Shared;
 using dvmig.Core.Synchronization;
@@ -39,7 +35,7 @@ namespace dvmig.Cli.Actions
       {
          var (source, target, engine) = await SetupSyncEngineAsync();
 
-         if (source == null || target == null || engine == null)
+         if(source == null || target == null || engine == null)
             return;
 
          var selectedEntities = await CliUI.SelectEntitiesAsync(
@@ -47,7 +43,7 @@ namespace dvmig.Cli.Actions
             source
          );
 
-         if (selectedEntities == null || selectedEntities.Count == 0)
+         if(selectedEntities == null || selectedEntities.Count == 0)
          {
             CliUI.WriteWarning("No entities selected.");
 
@@ -57,8 +53,8 @@ namespace dvmig.Cli.Actions
          var threads = AnsiConsole.Prompt(
             new SelectionPrompt<int>()
                .Title(
-                  $"Select {SystemConstants.UiMarkup.Green}Max Parallelism[/] " +
-                  "(Threads):"
+                  $"Select {SystemConstants.UiMarkup.Green}Max Parallelism[/]"
+                  + " (Threads):"
                )
                .AddChoices(SystemConstants.SyncSettings.ParallelismOptions)
          );
@@ -72,7 +68,7 @@ namespace dvmig.Cli.Actions
       {
          var (source, target, engine) = await SetupSyncEngineAsync();
 
-         if (source == null || target == null || engine == null)
+         if(source == null || target == null || engine == null)
             return;
 
          var recommendedEntities = SystemConstants.SyncSettings
@@ -82,10 +78,10 @@ namespace dvmig.Cli.Actions
             $"{SystemConstants.UiMarkup.BoldCyan}Recommended Sync Order:[/]"
          );
 
-         foreach (var entity in recommendedEntities)
+         foreach(var entity in recommendedEntities)
             AnsiConsole.MarkupLine($" - {entity}");
 
-         if (!AnsiConsole.Confirm("Proceed with this sync plan?", true))
+         if(!AnsiConsole.Confirm("Proceed with this sync plan?", true))
          {
             CliUI.WriteWarning("Recommended sync cancelled.");
 
@@ -95,8 +91,8 @@ namespace dvmig.Cli.Actions
          var threads = AnsiConsole.Prompt(
             new SelectionPrompt<int>()
                .Title(
-                  $"Select {SystemConstants.UiMarkup.Green}Max Parallelism[/] " +
-                  "(Threads):"
+                  $"Select {SystemConstants.UiMarkup.Green}Max Parallelism[/] "
+                  + " (Threads):"
                )
                .AddChoices(SystemConstants.SyncSettings.ParallelismOptions)
          );
@@ -118,7 +114,7 @@ namespace dvmig.Cli.Actions
          int maxThreads
       )
       {
-         foreach (var logicalName in entities)
+         foreach(var logicalName in entities)
          {
             AnsiConsole.MarkupLine(
                $"{SystemConstants.UiMarkup.BoldYellow}Migrating " +
@@ -130,11 +126,11 @@ namespace dvmig.Cli.Actions
             int processed = 0;
             int failedCount = 0;
 
-            if (StateService.StateExists())
+            if(StateService.StateExists())
             {
                var syncedIds = await StateService.GetSyncedIdsAsync();
 
-               if (syncedIds.Count > 0)
+               if(syncedIds.Count > 0)
                {
                   var resumeMsg = $"Previous migration state found " +
                      $"for {logicalName} " +
@@ -142,7 +138,7 @@ namespace dvmig.Cli.Actions
                      "records already synced). " +
                      "Resume (y) or start over (n) ?";
 
-                  if (!AnsiConsole.Confirm(resumeMsg, true))
+                  if(!AnsiConsole.Confirm(resumeMsg, true))
                   {
                      await StateService.ClearStateAsync();
                      await engine.InitializeEntitySyncAsync(logicalName);
@@ -158,7 +154,7 @@ namespace dvmig.Cli.Actions
                default
             );
 
-            if (totalCount == 0)
+            if(totalCount == 0)
             {
                AnsiConsole.MarkupLine(
                   $"{SystemConstants.UiMarkup.Grey}" +
@@ -199,11 +195,11 @@ namespace dvmig.Cli.Actions
                      {
                         processed++;
 
-                        if (!success)
+                        if(!success)
                            failedCount++;
 
                         var now = DateTime.Now;
-                        if (now - lastUpdate < TimeSpan.FromSeconds(1) &&
+                        if(now - lastUpdate < TimeSpan.FromSeconds(1) &&
                             processed < totalCount)
                            return;
 
@@ -215,12 +211,13 @@ namespace dvmig.Cli.Actions
 
                         var desc = $"{displayName} " +
                            $"({processed}/{totalCount}) " +
-                           $"[[{SystemConstants.UiMarkup.Green}{maxThreads}t - " +
-                           $"{recsPerSec:F1} r/s[/]]] ";
+                           $"[[{SystemConstants.UiMarkup.Green}{maxThreads}t"
+                           + $" - {recsPerSec:F1} r/s[/]]] ";
 
-                        if (failedCount > 0)
+                        if(failedCount > 0)
                            desc +=
-                              $" {SystemConstants.UiMarkup.Red}({failedCount} failed)[/]";
+                              $" {SystemConstants.UiMarkup.Red}" +
+                                 "({failedCount} failed)[/]";
 
                         task.Description = desc;
                      });
@@ -245,7 +242,7 @@ namespace dvmig.Cli.Actions
                            msg.StartsWith(SystemConstants.UiMarkup.Yellow) ||
                            msg.StartsWith(SystemConstants.UiMarkup.Red);
 
-                        if (isCritical)
+                        if(isCritical)
                            AnsiConsole.MarkupLine(msg);
                      }));
 
@@ -267,7 +264,7 @@ namespace dvmig.Cli.Actions
                      task.Value = totalCount;
                   });
             }
-            catch (Exception ex)
+            catch(Exception ex)
             {
                var baseEx = ex.GetBaseException();
                CliUI.WriteError(

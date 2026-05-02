@@ -16,16 +16,5 @@ namespace dvmig.Core.Interfaces
          IDataverseProvider target,
          CancellationToken ct = default
       );
-
-      /// <summary>
-      /// Validates that the source environment is accessible.
-      /// </summary>
-      /// <param name="source">The source Dataverse provider.</param>
-      /// <param name="ct">A cancellation token.</param>
-      /// <returns>True if the environment is valid.</returns>
-      Task<bool> ValidateSourceEnvironmentAsync(
-         IDataverseProvider source,
-         CancellationToken ct = default
-      );
    }
 }

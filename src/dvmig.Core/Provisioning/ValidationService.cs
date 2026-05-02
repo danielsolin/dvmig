@@ -1,5 +1,6 @@
 using dvmig.Core.Interfaces;
 using dvmig.Core.Shared;
+using Microsoft.Xrm.Sdk.Query;
 
 namespace dvmig.Core.Provisioning
 {
@@ -17,33 +18,81 @@ namespace dvmig.Core.Provisioning
       {
          try
          {
-            var meta = await target.GetEntityMetadataAsync(
+            // 1. Check Failure Log Entity
+            var failureMeta = await target.GetEntityMetadataAsync(
                SystemConstants.MigrationFailure.EntityLogicalName,
                ct
             );
 
-            return meta != null;
-         }
-         catch
-         {
-            return false;
-         }
-      }
+            if (failureMeta == null)
+               return false;
 
-      /// <inheritdoc />
-      public async Task<bool> ValidateSourceEnvironmentAsync(
-         IDataverseProvider source,
-         CancellationToken ct = default
-      )
-      {
-         try
-         {
-            await source.GetRecordCountAsync(
-               SystemConstants.DataverseEntities.SystemUser,
+            // 2. Check Source Date Entity
+            var sourceDateMeta = await target.GetEntityMetadataAsync(
+               SystemConstants.SourceDate.EntityLogicalName,
                ct
             );
 
-            return true;
+            if (sourceDateMeta == null)
+               return false;
+
+            // 3. Check Plugin Assembly
+            var assemblyQuery = new QueryByAttribute(
+               SystemConstants.PluginRegistration.AssemblyEntity
+            );
+            assemblyQuery.AddAttributeValue(
+               SystemConstants.PluginRegistration.AssemblyName,
+               SystemConstants.AppConstants.PluginName
+            );
+
+            var assemblies = await target.RetrieveMultipleAsync(
+               assemblyQuery,
+               ct
+            );
+
+            if (!assemblies.Entities.Any())
+               return false;
+
+            // 4. Check Plugin Type
+            var typeQuery = new QueryByAttribute(
+               SystemConstants.PluginRegistration.TypeEntity
+            );
+            typeQuery.AddAttributeValue(
+               SystemConstants.PluginRegistration.TypeName,
+               $"{SystemConstants.AppConstants.PluginName}.DMPlugin"
+            );
+
+            var types = await target.RetrieveMultipleAsync(typeQuery, ct);
+
+            if (!types.Entities.Any())
+               return false;
+
+            var typeId = types.Entities.First().Id;
+
+            // 5. Check Plugin Steps (Create & Update)
+            var stepQuery = new QueryByAttribute(
+               SystemConstants.PluginRegistration.StepEntity
+            );
+            stepQuery.AddAttributeValue(
+               SystemConstants.PluginRegistration.EventHandler,
+               typeId
+            );
+
+            var steps = await target.RetrieveMultipleAsync(stepQuery, ct);
+
+            bool hasCreate = steps.Entities.Any(e =>
+               e.GetAttributeValue<string>(
+                  SystemConstants.PluginRegistration.MessageName
+               )?.Contains("Create") == true
+            );
+
+            bool hasUpdate = steps.Entities.Any(e =>
+               e.GetAttributeValue<string>(
+                  SystemConstants.PluginRegistration.MessageName
+               )?.Contains("Update") == true
+            );
+
+            return hasCreate && hasUpdate;
          }
          catch
          {
