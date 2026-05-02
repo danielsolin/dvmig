@@ -7,12 +7,10 @@ using Microsoft.Xrm.Sdk.Query;
 namespace dvmig.Core.Synchronization
 {
    /// <summary>
-   /// Maps user references from a source Dataverse environment to a target 
-   /// environment. This resolves differences in systemuser GUIDs between 
-   /// environments by matching users based on their internal email address 
-   /// or domain name.
+   /// Resolves user references from a source Dataverse environment to a target 
+   /// environment.
    /// </summary>
-   public class UserMapper : IUserMapper
+   public class UserResolver : IUserResolver
    {
       private readonly IDataverseProvider _source;
       private readonly IDataverseProvider _target;
@@ -22,12 +20,12 @@ namespace dvmig.Core.Synchronization
          _mappingCache = new ConcurrentDictionary<Guid, EntityReference>();
 
       /// <summary>
-      /// Initializes a new instance of the <see cref="UserMapper"/> class.
+      /// Initializes a new instance of the <see cref="UserResolver"/> class.
       /// </summary>
       /// <param name="source">The source Dataverse provider.</param>
       /// <param name="target">The target Dataverse provider.</param>
       /// <param name="logger">The logger instance.</param>
-      public UserMapper(
+      public UserResolver(
          IDataverseProvider source,
          IDataverseProvider target,
          ILogger logger
@@ -38,11 +36,7 @@ namespace dvmig.Core.Synchronization
          _logger = logger;
       }
 
-      /// <summary>
-      /// Manually adds a user mapping, bypassing automatic lookup.
-      /// </summary>
-      /// <param name="sourceUserId">The ID of the source user.</param>
-      /// <param name="targetUserId">The ID of the target user.</param>
+      /// <inheritdoc />
       public void AddManualMapping(Guid sourceUserId, Guid targetUserId)
       {
          _mappingCache[sourceUserId] = new EntityReference(
@@ -51,23 +45,7 @@ namespace dvmig.Core.Synchronization
          );
       }
 
-      /// <summary>
-      /// Asynchronously maps a source user reference to the 
-      /// corresponding target user reference. Queries the source 
-      /// environment for the user's email or domain name, and then 
-      /// searches the target environment for a matching user. 
-      /// Results are cached to improve performance.
-      /// </summary>
-      /// <param name="sourceUser">
-      /// The entity reference of the user from the source environment.
-      /// </param>
-      /// <param name="ct">
-      /// A cancellation token that can be used to cancel the operation.
-      /// </param>
-      /// <returns>
-      /// An entity reference for the mapped user in the target 
-      /// environment, or null if mapping fails.
-      /// </returns>
+      /// <inheritdoc />
       public async Task<EntityReference?> MapUserAsync(
          EntityReference? sourceUser,
          CancellationToken ct = default
@@ -153,19 +131,6 @@ namespace dvmig.Core.Synchronization
          return null;
       }
 
-      /// <summary>
-      /// Searches the target environment for a user record matching a 
-      /// specific attribute and value.
-      /// </summary>
-      /// <param name="attribute">
-      /// The logical name of the attribute to search by.
-      /// </param>
-      /// <param name="value">The value to match.</param>
-      /// <param name="ct">A cancellation token.</param>
-      /// <returns>
-      /// An entity reference to the matching target user, or null if 
-      /// no match is found.
-      /// </returns>
       private async Task<EntityReference?> FindTargetUserAsync(
          string attribute,
          string value,

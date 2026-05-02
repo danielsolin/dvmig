@@ -1,13 +1,13 @@
 namespace dvmig.Core.Interfaces
 {
    /// <summary>
-   /// Defines the contract for a component that tracks the synchronization 
+   /// Defines the contract for a service that tracks the synchronization 
    /// state of records to allow resuming interrupted jobs.
    /// </summary>
-   public interface ISyncStateTracker
+   public interface ISyncStateService
    {
       /// <summary>
-      /// Initializes the tracker for a specific migration job and 
+      /// Initializes the service for a specific migration job and 
       /// entity type.
       /// </summary>
       /// <param name="sourceKey">
@@ -20,9 +20,9 @@ namespace dvmig.Core.Interfaces
       /// The logical name of the entity being synced.
       /// </param>
       Task InitializeAsync(
-          string sourceKey,
-          string targetKey,
-          string logicalName
+         string sourceKey,
+         string targetKey,
+         string logicalName
       );
 
       /// <summary>

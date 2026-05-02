@@ -8,35 +8,35 @@ using Microsoft.Xrm.Sdk.Query;
 namespace dvmig.Core.Synchronization
 {
    /// <summary>
-   /// Implementation of <see cref="IEntityPreparer"/> that prepares entities
+   /// Implementation of <see cref="IEntityService"/> that prepares entities
    /// for synchronization to the target environment.
    /// </summary>
-   public class EntityPreparer : IEntityPreparer
+   public class EntityService : IEntityService
    {
       private readonly ILogger _logger;
 
       /// <summary>
-      /// Initializes a new instance of the 
-      /// <see cref="EntityPreparer"/> class.
+      /// Initializes a new instance of the <see cref="EntityService"/> class.
       /// </summary>
       /// <param name="logger">The logger instance.</param>
-      public EntityPreparer(ILogger logger)
+      public EntityService(ILogger logger)
       {
          _logger = logger;
       }
 
       /// <inheritdoc />
       public async Task<Entity> PrepareEntityForTargetAsync(
-          Entity sourceEntity,
-          EntityMetadata metadata,
-          SyncOptions options,
-          IUserMapper userMapper,
-          ConcurrentDictionary<string, Guid> idMappingCache,
-          CancellationToken ct = default)
+         Entity sourceEntity,
+         EntityMetadata metadata,
+         SyncOptions options,
+         IUserResolver userResolver,
+         ConcurrentDictionary<string, Guid> idMappingCache,
+         CancellationToken ct = default
+      )
       {
          var targetEntity = new Entity(
-             sourceEntity.LogicalName,
-             sourceEntity.Id
+            sourceEntity.LogicalName,
+            sourceEntity.Id
          );
 
          foreach (var attribute in sourceEntity.Attributes)
@@ -45,7 +45,7 @@ namespace dvmig.Core.Synchronization
                continue;
 
             var attrMetadata = metadata.Attributes?
-                .FirstOrDefault(a => a.LogicalName == attribute.Key);
+               .FirstOrDefault(a => a.LogicalName == attribute.Key);
 
             if (attrMetadata != null &&
                 attrMetadata.IsValidForCreate == false &&
@@ -54,22 +54,21 @@ namespace dvmig.Core.Synchronization
 
             var value = attribute.Value;
 
-            // Handle EntityReference mapping
             if (value is EntityReference er)
             {
                if (IsUserAttribute(attribute.Key))
                {
-                  value = await userMapper.MapUserAsync(er, ct);
+                  value = await userResolver.MapUserAsync(er, ct);
                   if (value == null)
                   {
                      _logger.Warning(
-                         "Skipping unmapped user field {Attr} for " +
-                         "{Entity}:{Id}; source user {UserId} was " +
-                         "not found or could not be resolved.",
-                         attribute.Key,
-                         sourceEntity.LogicalName,
-                         sourceEntity.Id,
-                         er.Id
+                        "Skipping unmapped user field {Attr} for " +
+                        "{Entity}:{Id}; source user {UserId} was " +
+                        "not found or could not be resolved.",
+                        attribute.Key,
+                        sourceEntity.LogicalName,
+                        sourceEntity.Id,
+                        er.Id
                      );
 
                      continue;
@@ -80,7 +79,6 @@ namespace dvmig.Core.Synchronization
                    out var mappedId))
                   value = new EntityReference(er.LogicalName, mappedId);
             }
-            // Handle EntityCollection mapping (for Activity Parties)
             else if (value is EntityCollection collection &&
                      collection.Entities.Count > 0 &&
                      collection.Entities[0].LogicalName ==
@@ -94,16 +92,12 @@ namespace dvmig.Core.Synchronization
                foreach (var party in collection.Entities)
                {
                   var targetParty = new Entity(
-                      SystemConstants.DataverseEntities.ActivityParty
+                     SystemConstants.DataverseEntities.ActivityParty
                   );
                   bool skipParty = false;
 
                   foreach (var partyAttr in party.Attributes)
                   {
-                     // Only keep essential fields for linking the 
-                     // activity party. Sending system-managed fields 
-                     // (like ownerid) with unmapped IDs causes 
-                     // Dataverse to silently drop the party record.
                      bool isPartyId = partyAttr.Key == 
                         SystemConstants.DataverseAttributes.PartyId;
                      bool isTypeMask = partyAttr.Key == 
@@ -124,16 +118,16 @@ namespace dvmig.Core.Synchronization
                         if (pr.LogicalName ==
                                SystemConstants.DataverseEntities.SystemUser)
                         {
-                           partyValue = await userMapper.MapUserAsync(pr, ct);
+                           partyValue = await userResolver.MapUserAsync(pr, ct);
                            if (partyValue == null)
                            {
                               _logger.Warning(
-                                  "Skipping unmapped user partyid for " +
-                                  "{Entity}:{Id}; source user {UserId} was " +
-                                  "not found or could not be resolved.",
-                                  sourceEntity.LogicalName,
-                                  sourceEntity.Id,
-                                  pr.Id
+                                 "Skipping unmapped user partyid for " +
+                                 "{Entity}:{Id}; source user {UserId} was " +
+                                 "not found or could not be resolved.",
+                                 sourceEntity.LogicalName,
+                                 sourceEntity.Id,
+                                 pr.Id
                               );
 
                               skipParty = true;
@@ -145,8 +139,8 @@ namespace dvmig.Core.Synchronization
                             out var mappedId))
                         {
                            partyValue = new EntityReference(
-                               pr.LogicalName,
-                               mappedId
+                              pr.LogicalName,
+                              mappedId
                            );
                         }
                      }
@@ -169,11 +163,12 @@ namespace dvmig.Core.Synchronization
 
       /// <inheritdoc />
       public async Task<Guid?> FindExistingOnTargetAsync(
-          Entity entity,
-          IDataverseProvider target,
-          Func<string, CancellationToken, Task<EntityMetadata?>>
-              getMetadataFunc,
-          CancellationToken ct = default)
+         Entity entity,
+         IDataverseProvider target,
+         Func<string, CancellationToken, Task<EntityMetadata?>> 
+            getMetadataFunc,
+         CancellationToken ct = default
+      )
       {
          var metadata = await getMetadataFunc(entity.LogicalName, ct);
          if (metadata == null)
@@ -200,16 +195,16 @@ namespace dvmig.Core.Synchronization
       {
          var forbidden = new[]
          {
-                SystemConstants.DataverseAttributes.VersionNumber,
-                SystemConstants.DataverseAttributes.CreatedBy,
-                SystemConstants.DataverseAttributes.ModifiedBy,
-                SystemConstants.DataverseAttributes.CreatedOnBehalfBy,
-                SystemConstants.DataverseAttributes.ModifiedOnBehalfBy,
-                SystemConstants.DataverseAttributes.OverriddenCreatedOn,
-                SystemConstants.DataverseAttributes.ImportSequenceNumber,
-                SystemConstants.DataverseAttributes.Address1Id,
-                SystemConstants.DataverseAttributes.Address2Id
-            };
+            SystemConstants.DataverseAttributes.VersionNumber,
+            SystemConstants.DataverseAttributes.CreatedBy,
+            SystemConstants.DataverseAttributes.ModifiedBy,
+            SystemConstants.DataverseAttributes.CreatedOnBehalfBy,
+            SystemConstants.DataverseAttributes.ModifiedOnBehalfBy,
+            SystemConstants.DataverseAttributes.OverriddenCreatedOn,
+            SystemConstants.DataverseAttributes.ImportSequenceNumber,
+            SystemConstants.DataverseAttributes.Address1Id,
+            SystemConstants.DataverseAttributes.Address2Id
+         };
 
          return forbidden.Contains(attributeName.ToLower());
       }
@@ -219,10 +214,10 @@ namespace dvmig.Core.Synchronization
       {
          var userFields = new[]
          {
-                SystemConstants.DataverseAttributes.OwnerId,
-                SystemConstants.DataverseAttributes.CreatedBy,
-                SystemConstants.DataverseAttributes.ModifiedBy
-            };
+            SystemConstants.DataverseAttributes.OwnerId,
+            SystemConstants.DataverseAttributes.CreatedBy,
+            SystemConstants.DataverseAttributes.ModifiedBy
+         };
 
          return userFields.Contains(attributeName.ToLower());
       }

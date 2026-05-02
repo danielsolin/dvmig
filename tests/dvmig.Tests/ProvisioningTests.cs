@@ -8,13 +8,20 @@ namespace dvmig.Tests
    {
       private readonly Mock<ILogger> _loggerMock;
       private readonly Mock<IDataverseProvider> _targetMock;
+      private readonly Mock<IRetryService> _retryServiceMock;
       private readonly PluginService _pluginService;
+      private readonly SeedingService _seedingService;
 
       public ProvisioningTests()
       {
          _loggerMock = new Mock<ILogger>();
          _targetMock = new Mock<IDataverseProvider>();
+         _retryServiceMock = new Mock<IRetryService>();
          _pluginService = new PluginService(_loggerMock.Object);
+         _seedingService = new SeedingService(
+            _loggerMock.Object, 
+            _retryServiceMock.Object
+         );
       }
 
       [Fact]

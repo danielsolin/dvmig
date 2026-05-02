@@ -22,16 +22,16 @@ namespace dvmig.Core.Synchronization
       #region Fields And State
       private readonly IDataverseProvider _source;
       private readonly IDataverseProvider _target;
-      private readonly IUserMapper _userMapper;
-      private readonly ISyncStateTracker _stateTracker;
+      private readonly IUserResolver _userResolver;
+      private readonly ISyncStateService _stateService;
       private readonly ILogger _logger;
-      private readonly IRetryStrategy _retryStrategy;
-      private readonly IEntityPreparer _entityPreparer;
-      private readonly ISyncErrorHandler _errorHandler;
+      private readonly IRetryService _retryService;
+      private readonly IEntityService _entityService;
+      private readonly IErrorService _errorService;
       private readonly IDependencyResolver _dependencyResolver;
-      private readonly IStatusTransitionHandler _statusTransitionHandler;
-      private readonly IMetadataCache _metadataCache;
-      private readonly IFailureLogger _failureLogger;
+      private readonly IStatusService _statusService;
+      private readonly IMetadataService _metadataService;
+      private readonly IFailureService _failureService;
       private readonly ISourceDateService _sourceDateService;
       private readonly AsyncRetryPolicy _retryPolicy;
 
@@ -54,46 +54,46 @@ namespace dvmig.Core.Synchronization
       public SyncEngine(
          IDataverseProvider source,
          IDataverseProvider target,
-         IUserMapper userMapper,
-         ISyncStateTracker stateTracker,
+         IUserResolver userResolver,
+         ISyncStateService stateService,
          ILogger logger,
-         IRetryStrategy retryStrategy,
-         IEntityPreparer entityPreparer,
-         ISyncErrorHandler errorHandler,
+         IRetryService retryService,
+         IEntityService entityService,
+         IErrorService errorService,
          IDependencyResolver dependencyResolver,
-         IStatusTransitionHandler statusTransitionHandler,
-         IMetadataCache metadataCache,
-         IFailureLogger failureLogger,
+         IStatusService statusService,
+         IMetadataService metadataService,
+         IFailureService failureService,
          ISourceDateService sourceDateService
       )
       {
          _source = source;
          _target = target;
-         _userMapper = userMapper;
-         _stateTracker = stateTracker;
+         _userResolver = userResolver;
+         _stateService = stateService;
          _logger = logger;
-         _retryStrategy = retryStrategy;
-         _entityPreparer = entityPreparer;
-         _errorHandler = errorHandler;
+         _retryService = retryService;
+         _entityService = entityService;
+         _errorService = errorService;
          _dependencyResolver = dependencyResolver;
-         _statusTransitionHandler = statusTransitionHandler;
-         _metadataCache = metadataCache;
-         _failureLogger = failureLogger;
+         _statusService = statusService;
+         _metadataService = metadataService;
+         _failureService = failureService;
          _sourceDateService = sourceDateService;
 
-         _retryPolicy = _retryStrategy.CreateRetryPolicy();
+         _retryPolicy = _retryService.CreateRetryPolicy();
       }
 
       #region Public Sync API
       public async Task InitializeEntitySyncAsync(string logicalName)
       {
-         await _stateTracker.InitializeAsync(
+         await _stateService.InitializeAsync(
             _source.ConnectionString,
             _target.ConnectionString,
             logicalName
          );
 
-         var ids = await _stateTracker.GetSyncedIdsAsync();
+         var ids = await _stateService.GetSyncedIdsAsync();
          _syncedIds = new ConcurrentDictionary<Guid, byte>(
             ids.Select(id => new KeyValuePair<Guid, byte>(id, 1))
          );
@@ -248,7 +248,7 @@ namespace dvmig.Core.Synchronization
                entity.Id
             );
 
-            var failureMessage = _errorHandler.FormatFailureMessage(
+            var failureMessage = _errorService.FormatFailureMessage(
                "SyncAsync",
                ex
             );
@@ -305,7 +305,7 @@ namespace dvmig.Core.Synchronization
                $"{ex.Message}"
             );
 
-            return (false, _errorHandler.FormatFailureMessage(
+            return (false, _errorService.FormatFailureMessage(
                "SyncRecordAsync",
                ex
             ));
@@ -323,7 +323,7 @@ namespace dvmig.Core.Synchronization
             CT ct
          )
       {
-         var metadata = await _metadataCache.GetMetadataAsync(
+         var metadata = await _metadataService.GetMetadataAsync(
             entity.LogicalName,
             ct
          );
@@ -338,11 +338,11 @@ namespace dvmig.Core.Synchronization
                ct
             );
 
-         var prepared = await _entityPreparer.PrepareEntityForTargetAsync(
+         var prepared = await _entityService.PrepareEntityForTargetAsync(
             entity,
             metadata,
             options,
-            _userMapper,
+            _userResolver,
             _idMappingCache,
             ct
          );
@@ -461,7 +461,7 @@ namespace dvmig.Core.Synchronization
             $"Synced {sourceEntity.LogicalName}:{sourceEntity.Id}"
          );
 
-         await _stateTracker.MarkAsSyncedAsync(
+         await _stateService.MarkAsSyncedAsync(
             sourceEntity.LogicalName,
             sourceEntity.Id
          );
@@ -536,7 +536,7 @@ namespace dvmig.Core.Synchronization
             return (true, string.Empty);
 
          var (success, failureMessage) =
-            await _errorHandler.HandleSyncExceptionAsync(
+            await _errorService.HandleSyncExceptionAsync(
                ex,
                entity,
                options,
@@ -560,7 +560,7 @@ namespace dvmig.Core.Synchronization
          CT ct
       )
       {
-         return await _statusTransitionHandler.HandleStatusTransitionAsync(
+         return await _statusService.HandleStatusTransitionAsync(
             entity,
             options,
             ct
@@ -689,7 +689,7 @@ namespace dvmig.Core.Synchronization
          CT ct = default
       )
       {
-         return await _metadataCache.GetValidColumnsAsync(logicalName, ct);
+         return await _metadataService.GetValidColumnsAsync(logicalName, ct);
       }
 
       #endregion
@@ -701,10 +701,10 @@ namespace dvmig.Core.Synchronization
          CT ct
       )
       {
-         return await _entityPreparer.FindExistingOnTargetAsync(
+         return await _entityService.FindExistingOnTargetAsync(
             entity,
             _target,
-            _metadataCache.GetMetadataAsync,
+            _metadataService.GetMetadataAsync,
             ct
          );
       }
@@ -715,18 +715,18 @@ namespace dvmig.Core.Synchronization
          CT ct
       )
       {
-         var metadata = await _metadataCache.GetMetadataAsync(
+         var metadata = await _metadataService.GetMetadataAsync(
             entity.LogicalName,
             ct
          );
          if (metadata == null)
             return false;
 
-         var prepared = await _entityPreparer.PrepareEntityForTargetAsync(
+         var prepared = await _entityService.PrepareEntityForTargetAsync(
             entity,
             metadata,
             options,
-            _userMapper,
+            _userResolver,
             _idMappingCache,
             ct
          );
@@ -815,7 +815,7 @@ namespace dvmig.Core.Synchronization
          try
          {
             await _retryPolicy.ExecuteAsync(
-               async (ctx) => await _failureLogger.LogFailureToTargetAsync(
+               async (ctx) => await _failureService.LogFailureToTargetAsync(
                   entity,
                   failureMessage,
                   ct

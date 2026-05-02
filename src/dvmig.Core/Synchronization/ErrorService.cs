@@ -6,23 +6,22 @@ using Microsoft.Xrm.Sdk;
 namespace dvmig.Core.Synchronization
 {
    /// <summary>
-   /// Implementation of <see cref="ISyncErrorHandler"/> that orchestrates
+   /// Implementation of <see cref="IErrorService"/> that orchestrates
    /// error handling strategies during entity synchronization.
    /// </summary>
-   public class SyncErrorHandler : ISyncErrorHandler
+   public class ErrorService : IErrorService
    {
       private readonly IDataverseProvider _target;
       private readonly ISourceDateService _sourceDateService;
       private readonly ILogger _logger;
 
       /// <summary>
-      /// Initializes a new instance of the 
-      /// <see cref="SyncErrorHandler"/> class.
+      /// Initializes a new instance of the <see cref="ErrorService"/> class.
       /// </summary>
       /// <param name="target">The target Dataverse provider.</param>
       /// <param name="sourceDateService">The source date service.</param>
       /// <param name="logger">The logger instance.</param>
-      public SyncErrorHandler(
+      public ErrorService(
          IDataverseProvider target,
          ISourceDateService sourceDateService,
          ILogger logger
@@ -109,7 +108,6 @@ namespace dvmig.Core.Synchronization
                      ct
                   );
 
-               // Try standard update first
                if (updateFunc != null)
                   await updateFunc(entity, ct);
                else

@@ -23,14 +23,14 @@ namespace dvmig.Cli
          Console.OutputEncoding = Encoding.UTF8;
 
          var logger = new dvmig.Core.Shared.Logger();
-         var retryStrategy = new RetryStrategy(logger);
+         var retryService = new RetryService(logger);
 
          var settingsService = new SettingsService();
-         var stateTracker = new LocalFileStateTracker();
-         var seeder = new TestDataSeeder(logger, retryStrategy);
-         var metadataService = new MetadataService();
+         var stateService = new LocalFileStateService();
+         var seedingService = new SeedingService(logger, retryService);
+         var metadataService = new MetadataService(logger);
          var reconciliationService = new ReconciliationService(logger);
-         var validator = new EnvironmentValidator();
+         var validationService = new ValidationService();
          var schemaService = new SchemaService(logger);
          var sourceDateService = new SourceDateService(logger);
          var pluginService = new PluginService(logger);
@@ -42,9 +42,9 @@ namespace dvmig.Cli
             metadataService,
             pluginService,
             sourceDateService,
-            validator,
+            validationService,
             schemaService,
-            stateTracker,
+            stateService,
             logger
          );
 
@@ -54,22 +54,22 @@ namespace dvmig.Cli
             metadataService,
             pluginService,
             sourceDateService,
-            validator,
+            validationService,
             schemaService,
-            stateTracker,
+            stateService,
             logger
          );
 
          var maintenanceActions = new MaintenanceActions(
-             connectionManager,
-             seeder,
-             pluginService,
-             sourceDateService,
-             validator,
-             schemaService,
-             metadataService,
-             stateTracker,
-             logger
+            connectionManager,
+            seedingService,
+            pluginService,
+            sourceDateService,
+            validationService,
+            schemaService,
+            metadataService,
+            stateService,
+            logger
          );
          bool developerMode =
             args.Contains(SystemConstants.CliSettings.DevShort) ||

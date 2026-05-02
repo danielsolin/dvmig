@@ -12,9 +12,9 @@ namespace dvmig.Tests
    {
       private readonly Mock<IDataverseProvider> _sourceMock;
       private readonly Mock<IDataverseProvider> _targetMock;
-      private readonly Mock<IUserMapper> _userMapperMock;
+      private readonly Mock<IUserResolver> _userResolverMock;
       private readonly Mock<ISourceDateService> _sourceDateServiceMock;
-      private readonly Mock<ISyncStateTracker> _stateTrackerMock;
+      private readonly Mock<ISyncStateService> _stateServiceMock;
       private readonly Mock<ILogger> _loggerMock;
       private readonly SyncEngine _engine;
 
@@ -22,12 +22,12 @@ namespace dvmig.Tests
       {
          _sourceMock = new Mock<IDataverseProvider>();
          _targetMock = new Mock<IDataverseProvider>();
-         _userMapperMock = new Mock<IUserMapper>();
+         _userResolverMock = new Mock<IUserResolver>();
          _sourceDateServiceMock = new Mock<ISourceDateService>();
-         _stateTrackerMock = new Mock<ISyncStateTracker>();
+         _stateServiceMock = new Mock<ISyncStateService>();
          _loggerMock = new Mock<ILogger>();
 
-         _stateTrackerMock.Setup(s => s.GetSyncedIdsAsync())
+         _stateServiceMock.Setup(s => s.GetSyncedIdsAsync())
              .ReturnsAsync(new HashSet<Guid>());
 
          var defaultMetadata = new EntityMetadata();
@@ -42,9 +42,9 @@ namespace dvmig.Tests
          ))
              .ReturnsAsync(defaultMetadata);
 
-         var retryStrategy = new RetryStrategy(_loggerMock.Object);
-         var entityPreparer = new EntityPreparer(_loggerMock.Object);
-         var errorHandler = new SyncErrorHandler(
+         var retryService = new RetryService(_loggerMock.Object);
+         var entityService = new EntityService(_loggerMock.Object);
+         var errorService = new ErrorService(
              _targetMock.Object,
              _sourceDateServiceMock.Object,
              _loggerMock.Object
@@ -53,36 +53,36 @@ namespace dvmig.Tests
              _sourceMock.Object,
              _loggerMock.Object
          );
-         var statusTransitionHandler = new StatusTransitionHandler(
+         var statusService = new StatusService(
              _targetMock.Object,
              _sourceDateServiceMock.Object,
              _loggerMock.Object
          );
-         var metadataCache = new MetadataCache(
-            _targetMock.Object, 
-            _loggerMock.Object
+         var metadataService = new MetadataService(
+            _loggerMock.Object,
+            _targetMock.Object
          );
-         var failureLogger = new FailureLogger(
+         var failureService = new FailureService(
             _targetMock.Object, 
             _loggerMock.Object
          );
          _engine = new SyncEngine(
              _sourceMock.Object,
              _targetMock.Object,
-             _userMapperMock.Object,
-             _stateTrackerMock.Object,
+             _userResolverMock.Object,
+             _stateServiceMock.Object,
              _loggerMock.Object,
-             retryStrategy,
-             entityPreparer,
-             errorHandler,
+             retryService,
+             entityService,
+             errorService,
              dependencyResolver,
-             statusTransitionHandler,
-             metadataCache,
-             failureLogger,
+             statusService,
+             metadataService,
+             failureService,
              _sourceDateServiceMock.Object
          );
 
-         _userMapperMock.Setup(m => m.MapUserAsync(
+         _userResolverMock.Setup(m => m.MapUserAsync(
              It.IsAny<EntityReference>(),
              It.IsAny<CancellationToken>()
          ))
@@ -255,7 +255,7 @@ namespace dvmig.Tests
          var account = new Entity(SystemConstants.DataverseEntities.Account, Guid.NewGuid());
          account[SystemConstants.DataverseAttributes.OwnerId] = sourceUserRef;
 
-         _userMapperMock.Setup(m => m.MapUserAsync(
+         _userResolverMock.Setup(m => m.MapUserAsync(
              sourceUserRef,
              It.IsAny<CancellationToken>()
          ))

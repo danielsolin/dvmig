@@ -8,22 +8,30 @@ namespace dvmig.Cli.Actions
 {
    public class MaintenanceActions : BaseActions
    {
-      private readonly ITestDataSeeder _seeder;
+      private readonly ISeedingService _seedingService;
       private readonly IMetadataService _metadataService;
 
       public MaintenanceActions(
          ConnectionManager connectionManager,
-         ITestDataSeeder seeder,
+         ISeedingService seedingService,
          IPluginService pluginService,
          ISourceDateService sourceDateService,
-         IEnvironmentValidator validator,
+         IValidationService validator,
          ISchemaService schemaService,
          IMetadataService metadataService,
-         ISyncStateTracker stateTracker,
+         ISyncStateService stateService,
          ILogger logger
-      ) : base(connectionManager, pluginService, sourceDateService, validator, schemaService, stateTracker, logger)
+      ) : base(
+         connectionManager, 
+         pluginService, 
+         sourceDateService, 
+         validator, 
+         schemaService, 
+         stateService, 
+         logger
+      )
       {
-         _seeder = seeder;
+         _seedingService = seedingService;
          _metadataService = metadataService;
       }
 
@@ -42,7 +50,7 @@ namespace dvmig.Cli.Actions
          int count = AnsiConsole.Ask<int>(prompt, 100);
 
          await CliUI.RunStatusAsync("Seeding data...", Logger, async () =>
-               await _seeder.SeedTestDataAsync(
+               await _seedingService.SeedSampleDataAsync(
                   provider,
                   count)
          );
@@ -71,26 +79,26 @@ namespace dvmig.Cli.Actions
          if (provider == null)
             return;
 
-         var promptMsg = $"{SystemConstants.UiMarkup.Red}Are you sure you want to remove all dvmig " +
-                         "system components (schema and plugins) from " +
-                         "this environment?[/]";
+         var promptMsg = $"{SystemConstants.UiMarkup.Red}Are you sure you want " +
+            "to remove all dvmig system components (schema and plugins) " +
+            "from this environment?[/]";
 
          if (!AnsiConsole.Confirm(promptMsg, false))
             return;
 
          try
          {
-            await CliUI.RunStatusAsync("Uninstalling components...", Logger, async () =>
+            await CliUI.RunStatusAsync(
+               "Uninstalling components...", 
+               Logger, 
+               async () =>
                {
                   Logger.Information("Cleaning target environment...");
 
-                  // 1. Remove Plugin
                   await PluginService.RemovePluginAsync(provider);
 
-                  // Ensure plugin changes are published before schema removal
                   await provider.ExecuteAsync(new PublishAllXmlRequest());
 
-                  // 2. Drop Schema
                   await SchemaService.DropSchemaAsync(provider);
 
                   Logger.Information("Environment cleanup completed.");
@@ -161,22 +169,25 @@ namespace dvmig.Cli.Actions
          else
          {
             AnsiConsole.MarkupLine(
-               $"{SystemConstants.UiMarkup.BoldRed}CRITICAL WARNING:[/] This operation will delete " +
-               $"[bold]EVERY SINGLE[/] Account, Contact, Task, Phone Call, " +
-               $"and Email record from the {envName} environment."
+               $"{SystemConstants.UiMarkup.BoldRed}CRITICAL WARNING:[/] This " +
+               "operation will delete [bold]EVERY SINGLE[/] Account, " +
+               "Contact, Task, Phone Call, and Email record from the " +
+               $"{envName} environment."
             );
          }
 
          AnsiConsole.MarkupLine(
-            $"{SystemConstants.UiMarkup.Red}This is NOT restricted to test data. Real data will " +
-            "be destroyed.[/]"
+            $"{SystemConstants.UiMarkup.Red}This is NOT restricted to test " +
+            "data. Real data will be destroyed.[/]"
          );
          AnsiConsole.MarkupLine(
-            $"{SystemConstants.UiMarkup.Red}This action is permanent and irreversible.[/]"
+            $"{SystemConstants.UiMarkup.Red}This action is permanent and " +
+            "irreversible.[/]"
          );
 
          var wipeText = SystemConstants.UiMarkup.WipeDataConfirmation;
-         var prompt = $"Type {SystemConstants.UiMarkup.BoldRed}{wipeText}[/] to confirm:";
+         var prompt = $"Type {SystemConstants.UiMarkup.BoldRed}{wipeText}[/] " +
+            "to confirm:";
          var confirmation = AnsiConsole.Ask<string>(prompt);
 
          if (confirmation != SystemConstants.UiMarkup.WipeDataConfirmation)
@@ -187,7 +198,7 @@ namespace dvmig.Cli.Actions
          }
 
          await CliUI.RunStatusAsync("Wiping data...", Logger, async () =>
-               await _seeder.CleanTestDataAsync(
+               await _seedingService.CleanTestDataAsync(
                   provider,
                   selectedEntities)
          );

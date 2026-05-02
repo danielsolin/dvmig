@@ -3,15 +3,13 @@ using Microsoft.Xrm.Sdk;
 namespace dvmig.Core.Interfaces
 {
    /// <summary>
-   /// Defines the contract for a service that maps user references from a 
+   /// Defines the contract for a service that resolves user references from a 
    /// source environment to the corresponding users in a target environment.
-   /// This resolves differences in systemuser GUIDs between environments 
-   /// by matching users based on their internal email address or domain name.
    /// </summary>
-   public interface IUserMapper
+   public interface IUserResolver
    {
       /// <summary>
-      /// Asynchronously maps a source user reference to its equivalent 
+      /// Asynchronously resolves a source user reference to its equivalent 
       /// in the target environment.
       /// </summary>
       /// <param name="sourceUser">
@@ -19,12 +17,12 @@ namespace dvmig.Core.Interfaces
       /// </param>
       /// <param name="ct">A cancellation token.</param>
       /// <returns>
-      /// An entity reference to the mapped user in the target environment, 
-      /// or null if mapping fails.
+      /// An entity reference to the resolved user in the target environment, 
+      /// or null if resolution fails.
       /// </returns>
       Task<EntityReference?> MapUserAsync(
-          EntityReference? sourceUser,
-          CancellationToken ct = default
+         EntityReference? sourceUser,
+         CancellationToken ct = default
       );
 
       /// <summary>

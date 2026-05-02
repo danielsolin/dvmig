@@ -14,11 +14,19 @@ namespace dvmig.Cli.Actions
          IMetadataService metadataService,
          IPluginService pluginService,
          ISourceDateService sourceDateService,
-         IEnvironmentValidator validator,
+         IValidationService validator,
          ISchemaService schemaService,
-         ISyncStateTracker stateTracker,
+         ISyncStateService stateService,
          ILogger logger
-      ) : base(connectionManager, pluginService, sourceDateService, validator, schemaService, stateTracker, logger)
+      ) : base(
+         connectionManager, 
+         pluginService, 
+         sourceDateService, 
+         validator, 
+         schemaService, 
+         stateService, 
+         logger
+      )
       {
          _metadataService = metadataService;
       }
@@ -62,7 +70,9 @@ namespace dvmig.Cli.Actions
          var recommendedEntities = SystemConstants.SyncSettings
             .RecommendedEntities;
 
-         AnsiConsole.MarkupLine($"{SystemConstants.UiMarkup.BoldCyan}Recommended Sync Order:[/]");
+         AnsiConsole.MarkupLine(
+            $"{SystemConstants.UiMarkup.BoldCyan}Recommended Sync Order:[/]"
+         );
 
          foreach (var entity in recommendedEntities)
             AnsiConsole.MarkupLine($" - {entity}");
@@ -108,9 +118,9 @@ namespace dvmig.Cli.Actions
             int processed = 0;
             int failedCount = 0;
 
-            if (StateTracker.StateExists())
+            if (StateService.StateExists())
             {
-               var syncedIds = await StateTracker.GetSyncedIdsAsync();
+               var syncedIds = await StateService.GetSyncedIdsAsync();
 
                if (syncedIds.Count > 0)
                {
@@ -122,7 +132,7 @@ namespace dvmig.Cli.Actions
 
                   if (!AnsiConsole.Confirm(resumeMsg, true))
                   {
-                     await StateTracker.ClearStateAsync();
+                     await StateService.ClearStateAsync();
                      await engine.InitializeEntitySyncAsync(logicalName);
                   }
                   else
@@ -197,7 +207,8 @@ namespace dvmig.Cli.Actions
                            $"{recsPerSec:F1} r/s[/]]] ";
 
                         if (failedCount > 0)
-                           desc += $" {SystemConstants.UiMarkup.Red}({failedCount} failed)[/]";
+                           desc += 
+                              $" {SystemConstants.UiMarkup.Red}({failedCount} failed)[/]";
 
                         task.Description = desc;
                      });
@@ -210,8 +221,6 @@ namespace dvmig.Cli.Actions
 
                      Logger.AttachProgress(new Progress<string>(msg =>
                      {
-                        // Ensure we show wait/retry/throttle messages even
-                        // during the progress bar display.
                         bool isCritical =
                            msg.Contains(
                               SystemConstants.UiMarkup.Wait,
@@ -243,8 +252,6 @@ namespace dvmig.Cli.Actions
                         Logger.DetachProgress();
                      }
 
-                     // Ensure it hits 100% even if there were rounding or 
-                     // async reporting skips.
                      task.Value = totalCount;
                   });
             }

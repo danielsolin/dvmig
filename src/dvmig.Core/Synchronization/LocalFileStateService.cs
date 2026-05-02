@@ -7,17 +7,17 @@ using dvmig.Core.Shared;
 namespace dvmig.Core.Synchronization
 {
    /// <summary>
-   /// Implements sync state tracking using local files in the 
+   /// Implements sync state management using local files in the 
    /// AppData directory.
    /// </summary>
-   public class LocalFileStateTracker : ISyncStateTracker
+   public class LocalFileStateService : ISyncStateService
    {
       private string? _filePath;
       private string? _mainLogicalName;
       private readonly SemaphoreSlim _fileLock = new SemaphoreSlim(1, 1);
 
       private readonly ConcurrentDictionary<Guid, byte> _syncedIds =
-          new ConcurrentDictionary<Guid, byte>();
+         new ConcurrentDictionary<Guid, byte>();
 
       /// <inheritdoc />
       public async Task InitializeAsync(
@@ -50,7 +50,6 @@ namespace dvmig.Core.Synchronization
             $"{logicalName}.txt"
          );
 
-         // Fallback to the old raw-hash path if state already exists there.
          var rawKey = $"{sourceKey}|{targetKey}";
          var rawHash = GetHash(rawKey);
          var rawFolder = Path.Combine(
@@ -178,7 +177,7 @@ namespace dvmig.Core.Synchronization
       {
          if (string.IsNullOrEmpty(_filePath) ||
              string.IsNullOrEmpty(_mainLogicalName))
-            throw new InvalidOperationException("Tracker not initialized.");
+            throw new InvalidOperationException("Service not initialized.");
 
          if (!string.Equals(
                  logicalName,
@@ -187,7 +186,6 @@ namespace dvmig.Core.Synchronization
              ))
             return;
 
-         // Only write if we haven't already synced this ID in this session.
          if (_syncedIds.TryAdd(id, 1))
          {
             await _fileLock.WaitAsync();
@@ -233,7 +231,7 @@ namespace dvmig.Core.Synchronization
          foreach (var b in hashBytes)
             sb.Append(b.ToString("x2"));
 
-         return sb.ToString().Substring(0, 16); // Short hash is enough
+         return sb.ToString().Substring(0, 16);
       }
    }
 }

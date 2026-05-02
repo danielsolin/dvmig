@@ -7,19 +7,19 @@ using Moq;
 
 namespace dvmig.Tests
 {
-   public class UserMapperTests
+   public class UserResolverTests
    {
       private readonly Mock<IDataverseProvider> _sourceMock;
       private readonly Mock<IDataverseProvider> _targetMock;
       private readonly Mock<ILogger> _loggerMock;
-      private readonly UserMapper _mapper;
+      private readonly UserResolver _resolver;
 
-      public UserMapperTests()
+      public UserResolverTests()
       {
          _sourceMock = new Mock<IDataverseProvider>();
          _targetMock = new Mock<IDataverseProvider>();
          _loggerMock = new Mock<ILogger>();
-         _mapper = new UserMapper(
+         _resolver = new UserResolver(
              _sourceMock.Object,
              _targetMock.Object,
              _loggerMock.Object
@@ -29,7 +29,7 @@ namespace dvmig.Tests
       [Fact]
       public async Task MapUserAsync_ReturnsNull_WhenSourceUserIsNull()
       {
-         var result = await _mapper.MapUserAsync(null);
+         var result = await _resolver.MapUserAsync(null);
          Assert.Null(result);
       }
 
@@ -39,10 +39,10 @@ namespace dvmig.Tests
          var sourceId = Guid.NewGuid();
          var targetId = Guid.NewGuid();
 
-         _mapper.AddManualMapping(sourceId, targetId);
+         _resolver.AddManualMapping(sourceId, targetId);
 
          var sourceRef = new EntityReference(SystemConstants.DataverseEntities.SystemUser, sourceId);
-         var result = await _mapper.MapUserAsync(sourceRef);
+         var result = await _resolver.MapUserAsync(sourceRef);
 
          Assert.NotNull(result);
          Assert.Equal(targetId, result.Id);
@@ -62,7 +62,7 @@ namespace dvmig.Tests
              It.IsAny<CancellationToken>())
          ).ReturnsAsync((Entity?)null);
 
-         var result = await _mapper.MapUserAsync(sourceRef);
+         var result = await _resolver.MapUserAsync(sourceRef);
 
          Assert.Null(result);
       }
@@ -98,7 +98,7 @@ namespace dvmig.Tests
              It.IsAny<CancellationToken>())
          ).ReturnsAsync(targetCollection);
 
-         var result = await _mapper.MapUserAsync(sourceRef);
+         var result = await _resolver.MapUserAsync(sourceRef);
 
          Assert.NotNull(result);
          Assert.Equal(targetId, result.Id);
@@ -144,7 +144,7 @@ namespace dvmig.Tests
              It.IsAny<CancellationToken>())
          ).ReturnsAsync(targetCollection);
 
-         var result = await _mapper.MapUserAsync(sourceRef);
+         var result = await _resolver.MapUserAsync(sourceRef);
 
          Assert.NotNull(result);
          Assert.Equal(targetId, result.Id);

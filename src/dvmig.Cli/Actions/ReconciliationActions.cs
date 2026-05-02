@@ -16,11 +16,19 @@ namespace dvmig.Cli.Actions
          IMetadataService metadataService,
          IPluginService pluginService,
          ISourceDateService sourceDateService,
-         IEnvironmentValidator validator,
+         IValidationService validator,
          ISchemaService schemaService,
-         ISyncStateTracker stateTracker,
+         ISyncStateService stateService,
          ILogger logger
-      ) : base(connectionManager, pluginService, sourceDateService, validator, schemaService, stateTracker, logger)
+      ) : base(
+         connectionManager, 
+         pluginService, 
+         sourceDateService, 
+         validator, 
+         schemaService, 
+         stateService, 
+         logger
+      )
       {
          _reconciliationService = reconciliationService;
          _metadataService = metadataService;
@@ -118,12 +126,17 @@ namespace dvmig.Cli.Actions
          var recommendedEntities = SystemConstants.SyncSettings
             .RecommendedEntities;
 
-         AnsiConsole.MarkupLine($"{SystemConstants.UiMarkup.BoldCyan}Recommended Reconciliation Order:[/]");
+         AnsiConsole.MarkupLine(
+            $"{SystemConstants.UiMarkup.BoldCyan}Recommended Reconciliation Order:[/]"
+         );
 
          foreach (var entity in recommendedEntities)
             AnsiConsole.MarkupLine($" - {entity}");
 
-         if (!AnsiConsole.Confirm("Proceed with this reconciliation plan?", true))
+         if (!AnsiConsole.Confirm(
+            "Proceed with this reconciliation plan?", 
+            true
+         ))
          {
             CliUI.WriteWarning("Recommended reconciliation cancelled.");
 
@@ -132,7 +145,10 @@ namespace dvmig.Cli.Actions
 
          var threads = AnsiConsole.Prompt(
             new SelectionPrompt<int>()
-               .Title($"Select {SystemConstants.UiMarkup.Green}Max Parallelism[/] (Threads):")
+               .Title(
+                  $"Select {SystemConstants.UiMarkup.Green}Max Parallelism[/] " +
+                  "(Threads):"
+               )
                .AddChoices(new[] { 20, 10, 30, 40, 50, 5, 1 })
          );
 
@@ -168,19 +184,11 @@ namespace dvmig.Cli.Actions
 
          var threads = AnsiConsole.Prompt(
             new SelectionPrompt<int>()
-               .Title($"Select {SystemConstants.UiMarkup.Green}Max Parallelism[/] (Threads):")
-               .AddChoices(
-                  new[]
-                  {
-                     20,
-                     10,
-                     30,
-                     40,
-                     50,
-                     5,
-                     1
-                  }
+               .Title(
+                  $"Select {SystemConstants.UiMarkup.Green}Max Parallelism[/] " +
+                  "(Threads):"
                )
+               .AddChoices(new[] { 20, 10, 30, 40, 50, 5, 1 })
          );
 
          await RunReconciliationAsync(
@@ -211,7 +219,8 @@ namespace dvmig.Cli.Actions
          foreach (var logicalName in entities)
          {
             AnsiConsole.MarkupLine(
-               $"{SystemConstants.UiMarkup.BoldYellow}Reconciling {logicalName}...[/]"
+               $"{SystemConstants.UiMarkup.BoldYellow}Reconciling " +
+               $"{logicalName}...[/]"
             );
 
             var sourceCount = await source.GetRecordCountAsync(logicalName);
@@ -264,10 +273,12 @@ namespace dvmig.Cli.Actions
 
                         var desc = $"{displayName} " +
                            $"({processed}/{sourceCount}) " +
-                           $"[[{SystemConstants.UiMarkup.Green}{threads}t - {recsPerSec:F1} r/s[/]]] ";
+                           $"[[{SystemConstants.UiMarkup.Green}{threads}t - " +
+                           $"{recsPerSec:F1} r/s[/]]] ";
 
                         if (failedCount > 0)
-                           desc += $" {SystemConstants.UiMarkup.Red}({failedCount} failed)[/]";
+                           desc += 
+                              $" {SystemConstants.UiMarkup.Red}({failedCount} failed)[/]";
 
                         task.Description = desc;
                      });
@@ -324,7 +335,6 @@ namespace dvmig.Cli.Actions
                         Logger.DetachProgress();
                      }
 
-                     // Ensure it hits 100% if finished but logic doesn't align
                      task.Value = sourceCount;
                   });
             }

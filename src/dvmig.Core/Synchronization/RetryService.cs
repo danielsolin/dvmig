@@ -6,18 +6,18 @@ using Polly.Retry;
 namespace dvmig.Core.Synchronization
 {
    /// <summary>
-   /// Implementation of <see cref="IRetryStrategy"/> that provides retry
+   /// Implementation of <see cref="IRetryService"/> that provides retry
    /// logic with exponential backoff for transient errors.
    /// </summary>
-   public class RetryStrategy : IRetryStrategy
+   public class RetryService : IRetryService
    {
       private readonly ILogger _logger;
 
       /// <summary>
-      /// Initializes a new instance of the <see cref="RetryStrategy"/> class.
+      /// Initializes a new instance of the <see cref="RetryService"/> class.
       /// </summary>
       /// <param name="logger">The logger instance.</param>
-      public RetryStrategy(ILogger logger)
+      public RetryService(ILogger logger)
       {
          _logger = logger;
       }
@@ -69,13 +69,7 @@ namespace dvmig.Core.Synchronization
          return TimeSpan.FromSeconds(Math.Pow(2, retryCount));
       }
 
-      /// <summary>
-      /// Creates a retry policy for handling transient errors.
-      /// </summary>
-      /// <param name="maxRetries">
-      /// The maximum number of retry attempts.
-      /// </param>
-      /// <returns>A configured retry policy.</returns>
+      /// <inheritdoc />
       public AsyncRetryPolicy CreateRetryPolicy(int maxRetries = 5)
       {
          return Policy

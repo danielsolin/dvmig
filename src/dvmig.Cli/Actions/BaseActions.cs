@@ -1,6 +1,7 @@
 using dvmig.Core.Interfaces;
 using dvmig.Core.Shared;
 using dvmig.Core.Synchronization;
+using dvmig.Core.Provisioning;
 using Spectre.Console;
 
 namespace dvmig.Cli.Actions
@@ -14,18 +15,18 @@ namespace dvmig.Cli.Actions
       protected readonly ConnectionManager ConnectionManager;
       protected readonly IPluginService PluginService;
       protected readonly ISourceDateService SourceDateService;
-      protected readonly IEnvironmentValidator Validator;
+      protected readonly IValidationService Validator;
       protected readonly ISchemaService SchemaService;
-      protected readonly ISyncStateTracker StateTracker;
+      protected readonly ISyncStateService StateService;
       protected readonly ILogger Logger;
 
       protected BaseActions(
          ConnectionManager connectionManager,
          IPluginService pluginService,
          ISourceDateService sourceDateService,
-         IEnvironmentValidator validator,
+         IValidationService validator,
          ISchemaService schemaService,
-         ISyncStateTracker stateTracker,
+         ISyncStateService stateService,
          ILogger logger
       )
       {
@@ -34,7 +35,7 @@ namespace dvmig.Cli.Actions
          SourceDateService = sourceDateService;
          Validator = validator;
          SchemaService = schemaService;
-         StateTracker = stateTracker;
+         StateService = stateService;
          Logger = logger;
       }
 
@@ -62,7 +63,7 @@ namespace dvmig.Cli.Actions
          if (target == null)
             return (null, null, null);
 
-         bool isReady = await Validator.IsEnvironmentReadyAsync(
+         bool isReady = await Validator.ValidateTargetEnvironmentAsync(
             target,
             default
          );
@@ -77,38 +78,38 @@ namespace dvmig.Cli.Actions
             await HandleInstallAsync(target);
          }
 
-         var userMapper = new UserMapper(source, target, Logger);
-         var retryStrategy = new RetryStrategy(Logger);
-         var entityPreparer = new EntityPreparer(Logger);
-         var errorHandler = new SyncErrorHandler(
+         var userResolver = new UserResolver(source, target, Logger);
+         var retryService = new RetryService(Logger);
+         var entityService = new EntityService(Logger);
+         var errorService = new ErrorService(
             target,
             SourceDateService,
             Logger
          );
 
          var dependencyResolver = new DependencyResolver(source, Logger);
-         var statusTransitionHandler = new StatusTransitionHandler(
+         var statusService = new StatusService(
             target,
             SourceDateService,
             Logger
          );
 
-         var metadataCache = new MetadataCache(target, Logger);
-         var failureLogger = new FailureLogger(target, Logger);
+         var metadataService = new MetadataService(Logger, target);
+         var failureService = new FailureService(target, Logger);
 
          var engine = new SyncEngine(
             source,
             target,
-            userMapper,
-            StateTracker,
+            userResolver,
+            StateService,
             Logger,
-            retryStrategy,
-            entityPreparer,
-            errorHandler,
+            retryService,
+            entityService,
+            errorService,
             dependencyResolver,
-            statusTransitionHandler,
-            metadataCache,
-            failureLogger,
+            statusService,
+            metadataService,
+            failureService,
             SourceDateService
          );
 
@@ -123,7 +124,10 @@ namespace dvmig.Cli.Actions
       {
          try
          {
-            await CliUI.RunStatusAsync("Installing components...", Logger, async () =>
+            await CliUI.RunStatusAsync(
+               "Installing components...", 
+               Logger, 
+               async () =>
                {
                   await SchemaService.CreateSchemaAsync(target);
                   await PluginService.DeployPluginAsync(target, null);

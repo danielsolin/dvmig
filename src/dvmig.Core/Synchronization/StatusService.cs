@@ -6,23 +6,22 @@ using Microsoft.Crm.Sdk.Messages;
 namespace dvmig.Core.Synchronization
 {
    /// <summary>
-   /// Implementation of <see cref="IStatusTransitionHandler"/> that handles
+   /// Implementation of <see cref="IStatusService"/> that handles
    /// state and status transitions during entity synchronization.
    /// </summary>
-   public class StatusTransitionHandler : IStatusTransitionHandler
+   public class StatusService : IStatusService
    {
       private readonly IDataverseProvider _target;
       private readonly ISourceDateService _sourceDateService;
       private readonly ILogger _logger;
 
       /// <summary>
-      /// Initializes a new instance of the 
-      /// <see cref="StatusTransitionHandler"/> class.
+      /// Initializes a new instance of the <see cref="StatusService"/> class.
       /// </summary>
       /// <param name="target">The target Dataverse provider.</param>
       /// <param name="sourceDateService">The source date service.</param>
       /// <param name="logger">The logger instance.</param>
-      public StatusTransitionHandler(
+      public StatusService(
          IDataverseProvider target,
          ISourceDateService sourceDateService,
          ILogger logger
@@ -67,13 +66,11 @@ namespace dvmig.Core.Synchronization
             statusValue ?? "NULL"
          );
 
-         // Remove status/state to allow basic creation/update
          entity.Attributes.Remove(
             SystemConstants.DataverseAttributes.StateCode);
          entity.Attributes.Remove(
             SystemConstants.DataverseAttributes.StatusCode);
 
-         // Use the provided function or default to basic create
          var (success, _) = createOrUpdateFunc != null
             ? await createOrUpdateFunc(entity, options, ct)
             : await BasicCreateAsync(entity, ct);
@@ -82,7 +79,6 @@ namespace dvmig.Core.Synchronization
          {
             try
             {
-               // Ensure we have OptionSetValue objects
                var stateOsv = ToOptionSetValue(stateValue);
                var statusOsv = ToOptionSetValue(statusValue);
 
@@ -111,7 +107,6 @@ namespace dvmig.Core.Synchronization
                      recordKey
                   );
 
-                  // Throw to trigger the fallback logic in catch block
                   throw new InvalidOperationException("State is null");
                }
             }
@@ -123,7 +118,6 @@ namespace dvmig.Core.Synchronization
                   stateEx.Message
                );
 
-               // Fallback: Modern Update with only state/status
                try
                {
                   var transitionUpdate = new Entity(
@@ -162,14 +156,6 @@ namespace dvmig.Core.Synchronization
          return success;
       }
 
-      /// <summary>
-      /// Converts a raw value to an <see cref="OptionSetValue"/>.
-      /// </summary>
-      /// <param name="value">The value to convert.</param>
-      /// <returns>
-      /// An <see cref="OptionSetValue"/> if the conversion is possible;
-      /// otherwise, null.
-      /// </returns>
       private OptionSetValue? ToOptionSetValue(object? value)
       {
          if (value == null)
@@ -184,14 +170,6 @@ namespace dvmig.Core.Synchronization
          return null;
       }
 
-      /// <summary>
-      /// Performs a basic create operation for the entity.
-      /// </summary>
-      /// <param name="entity">The entity to create.</param>
-      /// <param name="ct">A cancellation token.</param>
-      /// <returns>
-      /// A tuple indicating success and any failure message.
-      /// </returns>
       private async Task<(bool Success, string? FailureMessage)>
          BasicCreateAsync(
             Entity entity,
