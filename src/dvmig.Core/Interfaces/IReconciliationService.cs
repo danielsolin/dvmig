@@ -43,8 +43,8 @@ namespace dvmig.Core.Interfaces
       );
 
       /// <summary>
-      /// Performs a reconciliation for a specific entity, comparing 
-      /// counts and attempting to fix discrepancies.
+      /// Performs a reconciliation for a specific entity, comparing
+      /// all record IDs and attempting to sync missing ones.
       /// </summary>
       Task PerformReconciliationAsync(
          string logicalName,
@@ -52,7 +52,7 @@ namespace dvmig.Core.Interfaces
          IDataverseProvider target,
          ISyncEngine engine,
          SyncOptions options,
-         IProgress<bool>? recordProgress = null,
+         IProgress<(int Processed, int Total, bool Success)>? progress = null,
          CancellationToken ct = default
       );
    }

@@ -128,106 +128,114 @@ namespace dvmig.Core.Synchronization
           IDataverseProvider target,
           ISyncEngine engine,
           SyncOptions options,
-          IProgress<bool>? recordProgress = null,
+          IProgress<(int Processed, int Total, bool Success)>? progress = null,
           CancellationToken ct = default
       )
       {
-         _logger.Information($"Reconciling {logicalName}...");
+         _logger.Information($"Starting reconciliation for {logicalName}...");
 
-         var sourceCount = await source.GetRecordCountAsync(logicalName, ct);
-         var targetCount = await target.GetRecordCountAsync(logicalName, ct);
+         // Ensure the engine is initialized for this entity
+         await engine.InitializeEntitySyncAsync(logicalName);
 
-         _logger.Information(
-             $"Counts: Source={sourceCount}, Target={targetCount}"
-         );
+         var sourceIds = await GetAllIdsAsync(source, logicalName, ct);
+         var targetIds = await GetAllIdsAsync(target, logicalName, ct);
 
-         if (sourceCount <= targetCount)
+         var missingIds = sourceIds.Except(targetIds).ToList();
+         var total = missingIds.Count;
+
+         if (total == 0)
          {
-            _logger.Information("Counts match or target has more records. " +
-                             "No action needed.");
+            _logger.Information(
+               $"Reconciliation complete for {logicalName}. " +
+               "All records exist in target."
+            );
 
             return;
          }
 
-         var diff = sourceCount - targetCount;
-         _logger.Information($"Discrepancy found: {diff} records missing.");
+         _logger.Information(
+            $"Found {total} missing records for {logicalName}. " +
+            "Syncing missing records sequentially..."
+         );
 
-         // 1. Try to re-sync logged failures
-         var failures = await GetFailuresAsync(target, logicalName, ct);
-         if (failures.Count > 0)
+         // Use a specialized options type to tell the engine to bypass 
+         // the local state check during reconciliation.
+         var reconciliationOptions = new ReconciliationSyncOptions
          {
-            _logger.Information($"Found {failures.Count} logged failures. " +
-                             "Attempting re-sync...");
+            StripMissingDependencies = options.StripMissingDependencies,
+            MaxDegreeOfParallelism = 1, // Single-threaded
+            PreserveDates = options.PreserveDates
+         };
 
-            int fixedCount = 0;
-            foreach (var failure in failures)
+         int processed = 0;
+         foreach (var id in missingIds)
+         {
+            ct.ThrowIfCancellationRequested();
+
+            var record = await source.RetrieveAsync(
+               logicalName,
+               id,
+               null,
+               ct
+            );
+
+            if (record != null)
             {
-               ct.ThrowIfCancellationRequested();
-
-               if (!Guid.TryParse(failure.SourceId, out var sourceId))
-                  continue;
-
-               var sourceRecord = await source.RetrieveAsync(
-                   logicalName,
-                   sourceId,
-                   null,
-                   ct
-               );
-
-               if (sourceRecord == null)
-               {
-                  _logger.Information(
-                      $"Source record {sourceId} not found. " +
-                      "Skipping failure re-sync."
-                  );
-
-                  recordProgress?.Report(false);
-                  continue;
-               }
-
                var (success, _) = await engine.SyncRecordAsync(
-                   sourceRecord,
-                   options,
-                   ct
+                  record,
+                  reconciliationOptions,
+                  ct
                );
 
-               if (success)
-               {
-                  await DeleteFailureAsync(target, failure.Id, ct);
-                  fixedCount++;
-               }
-
-               recordProgress?.Report(success);
+               processed++;
+               progress?.Report((processed, total, success));
             }
+            else
+            {
+               _logger.Warning(
+                  $"Missing record {logicalName}:{id} could not be " +
+                  "retrieved from source."
+               );
 
-            _logger.Information($"Fixed {fixedCount}/{failures.Count} " +
-                             "logged failures.");
+               processed++;
+               progress?.Report((processed, total, false));
+            }
          }
 
-         // 2. Check counts again
-         targetCount = await target.GetRecordCountAsync(logicalName, ct);
-         if (sourceCount > targetCount)
+         _logger.Information($"Reconciliation finished for {logicalName}.");
+      }
+
+      private async Task<HashSet<Guid>> GetAllIdsAsync(
+         IDataverseProvider provider,
+         string logicalName,
+         CancellationToken ct
+      )
+      {
+         var ids = new HashSet<Guid>();
+         var query = new QueryExpression(logicalName)
          {
-            _logger.Information(
-                $"Still missing {sourceCount - targetCount} records. " +
-                "Performing a full sync pass using state log..."
-            );
+            ColumnSet = new ColumnSet(false),
+            PageInfo = new PagingInfo
+            {
+               Count = 5000,
+               PageNumber = 1
+            }
+         };
 
-            await engine.SyncEntityAsync(
-                logicalName,
-                options,
-                null,
-                recordProgress,
-                ct
-            );
+         while (true)
+         {
+            var results = await provider.RetrieveMultipleAsync(query, ct);
+            foreach (var entity in results.Entities)
+               ids.Add(entity.Id);
 
-            targetCount = await target.GetRecordCountAsync(logicalName, ct);
-            _logger.Information(
-                $"Final counts: Source={sourceCount}, Target={targetCount}"
-            );
+            if (!results.MoreRecords)
+               break;
+
+            query.PageInfo.PageNumber++;
+            query.PageInfo.PagingCookie = results.PagingCookie;
          }
-         else
-            _logger.Information("All records successfully reconciled.");
+
+         return ids;
       }
    }
 }

@@ -270,7 +270,9 @@ namespace dvmig.Core.Synchronization
             CT ct = default
          )
       {
-         if (_syncedIds.ContainsKey(entity.Id))
+         bool skipStateCheck = options is ReconciliationSyncOptions;
+
+         if (!skipStateCheck && _syncedIds.ContainsKey(entity.Id))
          {
             _logger.Debug(
                "Skipping {Entity}:{Id} - Already synced in current state.",

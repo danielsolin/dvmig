@@ -24,4 +24,10 @@ namespace dvmig.Core.Synchronization
       /// </summary>
       public int MaxDegreeOfParallelism { get; set; } = 10;
    }
+
+   /// <summary>
+   /// Specialized options for reconciliation to ensure missing records
+   /// are synced even if the local state log says they are already synced.
+   /// </summary>
+   public class ReconciliationSyncOptions : SyncOptions { }
 }

@@ -147,21 +147,11 @@ namespace dvmig.Cli.Actions
             return;
          }
 
-         var threads = AnsiConsole.Prompt(
-            new SelectionPrompt<int>()
-               .Title(
-                  $"Select {SystemConstants.UiMarkup.Green}Max Parallelism[/] " +
-                  "(Threads):"
-               )
-               .AddChoices(SystemConstants.SyncSettings.ParallelismOptions)
-         );
-
          await RunReconciliationAsync(
             source,
             target,
             engine,
-            recommendedEntities.ToList(),
-            threads
+            recommendedEntities.ToList()
          );
 
          CliUI.WriteSuccess("Recommended Reconciliation Finished!");
@@ -186,21 +176,11 @@ namespace dvmig.Cli.Actions
             return;
          }
 
-         var threads = AnsiConsole.Prompt(
-            new SelectionPrompt<int>()
-               .Title(
-                  $"Select {SystemConstants.UiMarkup.Green}Max Parallelism[/] " +
-                  "(Threads):"
-               )
-               .AddChoices(SystemConstants.SyncSettings.ParallelismOptions)
-         );
-
          await RunReconciliationAsync(
             source,
             target,
             engine,
-            selectedEntities,
-            threads
+            selectedEntities
          );
 
          CliUI.WriteSuccess("Reconciliation process finished!");
@@ -210,14 +190,13 @@ namespace dvmig.Cli.Actions
          IDataverseProvider source,
          IDataverseProvider target,
          ISyncEngine engine,
-         List<string> entities,
-         int threads
+         List<string> entities
       )
       {
          var options = new SyncOptions
          {
             StripMissingDependencies = true,
-            MaxDegreeOfParallelism = threads
+            MaxDegreeOfParallelism = 1 // Force single-threaded
          };
 
          foreach (var logicalName in entities)
@@ -227,119 +206,37 @@ namespace dvmig.Cli.Actions
                $"{logicalName}...[/]"
             );
 
-            var sourceCount = await source.GetRecordCountAsync(logicalName);
-            int processed = 0;
             int failedCount = 0;
 
             try
             {
-               await AnsiConsole.Progress()
-                  .Columns(
-                     new ProgressColumn[]
-                     {
-                        new TaskDescriptionColumn(),
-                        new ProgressBarColumn(),
-                        new PercentageColumn(),
-                        new RemainingTimeColumn(),
-                        new SpinnerColumn(),
-                     }
-                  )
-                  .StartAsync(async ctx =>
+               await AnsiConsole.Status()
+                  .StartAsync("Initializing reconciliation...", async ctx =>
                   {
-                     var displayName = char.ToUpper(logicalName[0]) +
-                        logicalName.Substring(1);
-
-                     var taskName = $"{displayName} " +
-                        $"({processed}/{sourceCount}) " +
-                        $"[[{threads} threads]]";
-
-                     var task = ctx.AddTask(taskName, true, sourceCount);
-                     task.Value = processed;
-
-                     var sw = System.Diagnostics.Stopwatch.StartNew();
-                     var lastUpdate = DateTime.MinValue;
-                     var recordProgress = new Progress<bool>(success =>
+                     var recordProgress = new Progress<(int Processed, int Total, bool Success)>(p =>
                      {
-                        processed++;
-
-                        if (!success)
+                        if (!p.Success)
                            failedCount++;
 
-                        var now = DateTime.Now;
-                        if (now - lastUpdate < TimeSpan.FromSeconds(1) &&
-                            processed < sourceCount)
-                           return;
-
-                        lastUpdate = now;
-                        task.Value = processed;
-
-                        var recsPerSec = processed / sw.Elapsed.TotalSeconds;
-
-                        var desc = $"{displayName} " +
-                           $"({processed}/{sourceCount}) " +
-                           $"[[{SystemConstants.UiMarkup.Green}{threads}t - " +
-                           $"{recsPerSec:F1} r/s[/]]] ";
+                        var desc = $"[yellow]Reconciling {logicalName}...[/] " +
+                           $"{p.Processed}/{p.Total} records processed";
 
                         if (failedCount > 0)
                            desc +=
                               $" {SystemConstants.UiMarkup.Red}({failedCount} failed)[/]";
 
-                        task.Description = desc;
+                        ctx.Status(desc);
                      });
 
-                     Logger.AttachProgress(new Progress<string>(
-                        msg =>
-                        {
-                           var waitMark = SystemConstants.UiMarkup.Wait;
-                           var throttleKey = SystemConstants
-                              .ErrorKeywords.TooManyRequests;
-
-                           var ordinal = StringComparison.Ordinal;
-                           var ignoreCase =
-                              StringComparison.OrdinalIgnoreCase;
-
-                           bool isWait = msg.Contains(waitMark, ordinal);
-                           bool isThrottled = msg.Contains(
-                              throttleKey,
-                              ignoreCase
-                           );
-                           bool isYellow = msg.StartsWith(
-                              SystemConstants.UiMarkup.Yellow
-                           );
-                           bool isRed = msg.StartsWith(
-                              SystemConstants.UiMarkup.Red
-                           );
-
-                           bool isCritical = isWait || isThrottled ||
-                                             isYellow || isRed;
-
-                           if (isCritical)
-                              AnsiConsole.MarkupLine(msg);
-                           else
-                              AnsiConsole.MarkupLine(
-                                 $"{SystemConstants.UiMarkup.Grey}{msg}[/]"
-                              );
-                        }
-                     ));
-
-                     try
-                     {
-                        await _reconciliationService.PerformReconciliationAsync(
-                           logicalName,
-                           source,
-                           target,
-                           engine,
-                           options,
-                           recordProgress,
-                           default
-                        );
-                     }
-                     finally
-                     {
-                        Logger.DetachProgress();
-                     }
-
-                     task.Value = sourceCount;
+                     await _reconciliationService.PerformReconciliationAsync(
+                        logicalName,
+                        source,
+                        target,
+                        engine,
+                        options,
+                        recordProgress,
+                        default
+                     );
                   });
             }
             catch (Exception ex)
