@@ -23,7 +23,6 @@ namespace dvmig.Core.Synchronization
       private readonly IDataverseProvider _source;
       private readonly IDataverseProvider _target;
       private readonly IUserResolver _userResolver;
-      private readonly ISyncStateService _stateService;
       private readonly ILogger _logger;
       private readonly IRetryService _retryService;
       private readonly IEntityService _entityService;
@@ -55,7 +54,6 @@ namespace dvmig.Core.Synchronization
          IDataverseProvider source,
          IDataverseProvider target,
          IUserResolver userResolver,
-         ISyncStateService stateService,
          ILogger logger,
          IRetryService retryService,
          IEntityService entityService,
@@ -70,7 +68,6 @@ namespace dvmig.Core.Synchronization
          _source = source;
          _target = target;
          _userResolver = userResolver;
-         _stateService = stateService;
          _logger = logger;
          _retryService = retryService;
          _entityService = entityService;
@@ -85,15 +82,17 @@ namespace dvmig.Core.Synchronization
       }
 
       #region Public Sync API
-      public async Task InitializeEntitySyncAsync(string logicalName)
+      public async Task InitializeEntitySyncAsync(
+         string logicalName,
+         CT ct = default
+      )
       {
-         await _stateService.InitializeAsync(
-            _source.ConnectionString,
-            _target.ConnectionString,
-            logicalName
+         var ids = await _entityService.GetAllIdsAsync(
+            _target,
+            logicalName,
+            ct
          );
 
-         var ids = await _stateService.GetSyncedIdsAsync();
          _syncedIds = new ConcurrentDictionary<Guid, byte>(
             ids.Select(id => new KeyValuePair<Guid, byte>(id, 1))
          );
@@ -461,11 +460,6 @@ namespace dvmig.Core.Synchronization
          _idMappingCache[recordKey] = targetEntity.Id;
          _logger.Information(
             $"Synced {sourceEntity.LogicalName}:{sourceEntity.Id}"
-         );
-
-         await _stateService.MarkAsSyncedAsync(
-            sourceEntity.LogicalName,
-            sourceEntity.Id
          );
 
          if (!options.PreserveDates)

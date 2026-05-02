@@ -16,7 +16,6 @@ namespace dvmig.Cli.Actions
          ISourceDateService sourceDateService,
          IValidationService validator,
          ISchemaService schemaService,
-         ISyncStateService stateService,
          ILogger logger
       ) : base(
          connectionManager,
@@ -24,14 +23,13 @@ namespace dvmig.Cli.Actions
          sourceDateService,
          validator,
          schemaService,
-         stateService,
          logger
       )
       {
          _metadataService = metadataService;
       }
 
-      public async Task HandleMigrationAsync()
+      public async Task HandleMigrationAsync(CancellationToken ct)
       {
          var (source, target, engine) = await SetupSyncEngineAsync();
 
@@ -59,12 +57,12 @@ namespace dvmig.Cli.Actions
                .AddChoices(SystemConstants.SyncSettings.ParallelismOptions)
          );
 
-         await RunMigrationAsync(engine, source, selectedEntities, threads);
+         await RunMigrationAsync(engine, source, target, selectedEntities, threads, ct);
 
          CliUI.WriteSuccess("Migration Finished!");
       }
 
-      public async Task HandleRecommendedSyncAsync()
+      public async Task HandleRecommendedSyncAsync(CancellationToken ct)
       {
          var (source, target, engine) = await SetupSyncEngineAsync();
 
@@ -100,8 +98,10 @@ namespace dvmig.Cli.Actions
          await RunMigrationAsync(
             engine,
             source,
+            target,
             recommendedEntities.ToList(),
-            threads
+            threads,
+            ct
          );
 
          CliUI.WriteSuccess("Recommended Migration Finished!");
@@ -110,8 +110,10 @@ namespace dvmig.Cli.Actions
       private async Task RunMigrationAsync(
          ISyncEngine engine,
          IDataverseProvider source,
+         IDataverseProvider target,
          List<string> entities,
-         int maxThreads
+         int maxThreads,
+         CancellationToken ct
       )
       {
          foreach(var logicalName in entities)
@@ -121,37 +123,15 @@ namespace dvmig.Cli.Actions
                $"{logicalName}...[/]"
             );
 
-            await engine.InitializeEntitySyncAsync(logicalName);
+            await engine.InitializeEntitySyncAsync(logicalName, ct);
 
             int processed = 0;
             int failedCount = 0;
 
-            if(StateService.StateExists())
-            {
-               var syncedIds = await StateService.GetSyncedIdsAsync();
-
-               if(syncedIds.Count > 0)
-               {
-                  var resumeMsg = $"Previous migration state found " +
-                     $"for {logicalName} " +
-                     $"({syncedIds.Count} " +
-                     "records already synced). " +
-                     "Resume (y) or start over (n) ?";
-
-                  if(!AnsiConsole.Confirm(resumeMsg, true))
-                  {
-                     await StateService.ClearStateAsync();
-                     await engine.InitializeEntitySyncAsync(logicalName);
-                  }
-                  else
-                     processed = syncedIds.Count;
-               }
-            }
-
             long totalCount = await _metadataService.GetRecordCountAsync(
                source,
                logicalName,
-               default
+               ct
             );
 
             if(totalCount == 0)
@@ -163,6 +143,16 @@ namespace dvmig.Cli.Actions
 
                continue;
             }
+
+            // In the new ID-based approach, we start 'processed' at the count 
+            // of records already existing on the target environment.
+            var targetCount = await _metadataService.GetRecordCountAsync(
+               target,
+               logicalName,
+               ct
+            );
+
+            processed = (int)Math.Min(totalCount, targetCount);
 
             try
             {
@@ -253,7 +243,7 @@ namespace dvmig.Cli.Actions
                            options,
                            null,
                            recordProgress,
-                           default
+                           ct
                         );
                      }
                      finally
@@ -263,6 +253,10 @@ namespace dvmig.Cli.Actions
 
                      task.Value = totalCount;
                   });
+            }
+            catch(OperationCanceledException)
+            {
+               throw;
             }
             catch(Exception ex)
             {

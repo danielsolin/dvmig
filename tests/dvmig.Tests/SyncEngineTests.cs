@@ -4,6 +4,7 @@ using dvmig.Core.Synchronization;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Messages;
 using Microsoft.Xrm.Sdk.Metadata;
+using Microsoft.Xrm.Sdk.Query;
 using Moq;
 
 namespace dvmig.Tests
@@ -14,7 +15,6 @@ namespace dvmig.Tests
       private readonly Mock<IDataverseProvider> _targetMock;
       private readonly Mock<IUserResolver> _userResolverMock;
       private readonly Mock<ISourceDateService> _sourceDateServiceMock;
-      private readonly Mock<ISyncStateService> _stateServiceMock;
       private readonly Mock<ILogger> _loggerMock;
       private readonly SyncEngine _engine;
 
@@ -24,11 +24,14 @@ namespace dvmig.Tests
          _targetMock = new Mock<IDataverseProvider>();
          _userResolverMock = new Mock<IUserResolver>();
          _sourceDateServiceMock = new Mock<ISourceDateService>();
-         _stateServiceMock = new Mock<ISyncStateService>();
          _loggerMock = new Mock<ILogger>();
 
-         _stateServiceMock.Setup(s => s.GetSyncedIdsAsync())
-            .ReturnsAsync(new HashSet<Guid>());
+         _targetMock.Setup(
+            t => t.RetrieveMultipleAsync(
+               It.IsAny<QueryExpression>(),
+               It.IsAny<CancellationToken>()
+            )
+         ).ReturnsAsync(new EntityCollection());
 
          var defaultMetadata = new EntityMetadata();
 
@@ -78,7 +81,6 @@ namespace dvmig.Tests
             _sourceMock.Object,
             _targetMock.Object,
             _userResolverMock.Object,
-            _stateServiceMock.Object,
             _loggerMock.Object,
             retryService,
             entityService,

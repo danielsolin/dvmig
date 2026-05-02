@@ -16,7 +16,6 @@ namespace dvmig.Cli.Actions
       protected readonly ISourceDateService SourceDateService;
       protected readonly IValidationService Validator;
       protected readonly ISchemaService SchemaService;
-      protected readonly ISyncStateService StateService;
       protected readonly ILogger Logger;
 
       protected BaseActions(
@@ -25,7 +24,6 @@ namespace dvmig.Cli.Actions
          ISourceDateService sourceDateService,
          IValidationService validator,
          ISchemaService schemaService,
-         ISyncStateService stateService,
          ILogger logger
       )
       {
@@ -34,7 +32,6 @@ namespace dvmig.Cli.Actions
          SourceDateService = sourceDateService;
          Validator = validator;
          SchemaService = schemaService;
-         StateService = stateService;
          Logger = logger;
       }
 
@@ -100,7 +97,6 @@ namespace dvmig.Cli.Actions
             source,
             target,
             userResolver,
-            StateService,
             Logger,
             retryService,
             entityService,
@@ -134,6 +130,10 @@ namespace dvmig.Cli.Actions
             );
 
             CliUI.WriteSuccess("Installation Finished!");
+         }
+         catch (OperationCanceledException)
+         {
+            throw;
          }
          catch (Exception ex)
          {

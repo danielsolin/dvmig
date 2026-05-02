@@ -221,5 +221,39 @@ namespace dvmig.Core.Synchronization
 
          return userFields.Contains(attributeName.ToLower());
       }
+
+      /// <inheritdoc />
+      public async Task<HashSet<Guid>> GetAllIdsAsync(
+         IDataverseProvider provider,
+         string logicalName,
+         CancellationToken ct = default
+      )
+      {
+         var ids = new HashSet<Guid>();
+         var query = new QueryExpression(logicalName)
+         {
+            ColumnSet = new ColumnSet(false),
+            PageInfo = new PagingInfo
+            {
+               Count = 5000,
+               PageNumber = 1
+            }
+         };
+
+         while (true)
+         {
+            var results = await provider.RetrieveMultipleAsync(query, ct);
+            foreach (var entity in results.Entities)
+               ids.Add(entity.Id);
+
+            if (!results.MoreRecords)
+               break;
+
+            query.PageInfo.PageNumber++;
+            query.PageInfo.PagingCookie = results.PagingCookie;
+         }
+
+         return ids;
+      }
    }
 }

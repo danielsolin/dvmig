@@ -66,5 +66,18 @@ namespace dvmig.Core.Interfaces
       /// <param name="attributeName">The logical name of the attribute.</param>
       /// <returns>True if it is a user attribute; otherwise, false.</returns>
       bool IsUserAttribute(string attributeName);
+
+      /// <summary>
+      /// Retrieves all record IDs for a specific entity from a provider.
+      /// </summary>
+      /// <param name="provider">The Dataverse provider to query.</param>
+      /// <param name="logicalName">The logical name of the entity.</param>
+      /// <param name="ct">A cancellation token.</param>
+      /// <returns>A hash set containing all record IDs.</returns>
+      Task<HashSet<Guid>> GetAllIdsAsync(
+         IDataverseProvider provider,
+         string logicalName,
+         CancellationToken ct = default
+      );
    }
 }

@@ -22,7 +22,6 @@ namespace dvmig.Cli.Actions
          ISourceDateService sourceDateService,
          IValidationService validator,
          ISchemaService schemaService,
-         ISyncStateService stateService,
          ILogger logger
       ) : base(
          connectionManager,
@@ -30,7 +29,6 @@ namespace dvmig.Cli.Actions
          sourceDateService,
          validator,
          schemaService,
-         stateService,
          logger
       )
       {
@@ -38,7 +36,7 @@ namespace dvmig.Cli.Actions
          _metadataService = metadataService;
       }
 
-      public async Task HandleViewFailuresAsync()
+      public async Task HandleViewFailuresAsync(CancellationToken ct)
       {
          var target = await ConnectionManager.ConnectAsync(
             ConnectionDirection.Target
@@ -49,7 +47,7 @@ namespace dvmig.Cli.Actions
 
          bool isInitialized = await _reconciliationService.IsInitializedAsync(
             target,
-            default
+            ct
          );
 
          if (!isInitialized)
@@ -72,7 +70,7 @@ namespace dvmig.Cli.Actions
             async () => await _reconciliationService.GetFailuresAsync(
                target,
                null,
-               default
+               ct
             )
          );
 
@@ -111,7 +109,7 @@ namespace dvmig.Cli.Actions
                Logger,
                async () => await _reconciliationService.ClearFailuresAsync(
                   target,
-                  default
+                  ct
                )
             );
 
@@ -119,7 +117,7 @@ namespace dvmig.Cli.Actions
          }
       }
 
-      public async Task HandleRecommendedReconciliationAsync()
+      public async Task HandleRecommendedReconciliationAsync(CancellationToken ct)
       {
          var (source, target, engine) = await SetupSyncEngineAsync();
 
@@ -151,13 +149,14 @@ namespace dvmig.Cli.Actions
             source,
             target,
             engine,
-            recommendedEntities.ToList()
+            recommendedEntities.ToList(),
+            ct
          );
 
          CliUI.WriteSuccess("Recommended Reconciliation Finished!");
       }
 
-      public async Task HandlePerformReconciliationAsync()
+      public async Task HandlePerformReconciliationAsync(CancellationToken ct)
       {
          var (source, target, engine) = await SetupSyncEngineAsync();
 
@@ -180,7 +179,8 @@ namespace dvmig.Cli.Actions
             source,
             target,
             engine,
-            selectedEntities
+            selectedEntities,
+            ct
          );
 
          CliUI.WriteSuccess("Reconciliation process finished!");
@@ -190,7 +190,8 @@ namespace dvmig.Cli.Actions
          IDataverseProvider source,
          IDataverseProvider target,
          ISyncEngine engine,
-         List<string> entities
+         List<string> entities,
+         CancellationToken ct
       )
       {
          var options = new SyncOptions
@@ -235,9 +236,13 @@ namespace dvmig.Cli.Actions
                         engine,
                         options,
                         recordProgress,
-                        default
+                        ct
                      );
                   });
+            }
+            catch (OperationCanceledException)
+            {
+               throw;
             }
             catch (Exception ex)
             {

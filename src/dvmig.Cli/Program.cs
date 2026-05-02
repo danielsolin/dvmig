@@ -16,20 +16,41 @@ namespace dvmig.Cli
    [SupportedOSPlatform("windows")]
    class Program
    {
-      private record MenuItem(string Label, Func<Task>? Action);
+      private record MenuItem(string Label, Func<CancellationToken, Task>? Action);
+
+      private static CancellationTokenSource? _currentActionCts;
+      private static DateTime _lastCtrlC = DateTime.MinValue;
 
       static async Task Main(string[] args)
       {
          Console.OutputEncoding = Encoding.UTF8;
 
+         // Set up global Ctrl+C handling
+         Console.CancelKeyPress += (s, e) =>
+         {
+            e.Cancel = true;
+
+            var now = DateTime.Now;
+            if (now - _lastCtrlC < TimeSpan.FromSeconds(1))
+            {
+               // Force immediate exit on double-tap
+               Environment.Exit(0);
+            }
+
+            _lastCtrlC = now;
+
+            // Signal the current action to stop
+            _currentActionCts?.Cancel();
+         };
+
          var logger = new dvmig.Core.Shared.Logger();
          var retryService = new RetryService(logger);
 
          var settingsService = new SettingsService();
-         var stateService = new LocalFileStateService();
          var seedingService = new SeedingService(logger, retryService);
+         var entityService = new EntityService(logger);
          var metadataService = new MetadataService(logger);
-         var reconciliationService = new ReconciliationService(logger);
+         var reconciliationService = new ReconciliationService(entityService, logger);
          var validationService = new ValidationService();
          var schemaService = new SchemaService(logger);
          var sourceDateService = new SourceDateService(logger);
@@ -44,7 +65,6 @@ namespace dvmig.Cli
             sourceDateService,
             validationService,
             schemaService,
-            stateService,
             logger
          );
 
@@ -56,7 +76,6 @@ namespace dvmig.Cli
             sourceDateService,
             validationService,
             schemaService,
-            stateService,
             logger
          );
 
@@ -68,7 +87,6 @@ namespace dvmig.Cli
             validationService,
             schemaService,
             metadataService,
-            stateService,
             logger
          );
          bool developerMode =
@@ -90,10 +108,47 @@ namespace dvmig.Cli
                () => exit = true
             );
 
-            var choice = AnsiConsole.Prompt(prompt);
+            MenuItem choice;
+            try
+            {
+               choice = AnsiConsole.Prompt(prompt);
+            }
+            catch (Exception)
+            {
+               // Catch potential Spectre.Console exceptions during interrupt
+               if (!AnsiConsole.Confirm("Back (Y) or Quit (N)?", true))
+                  exit = true;
+
+               continue;
+            }
 
             if (choice.Action != null)
-               await choice.Action();
+            {
+               _currentActionCts = new CancellationTokenSource();
+
+               try
+               {
+                  await choice.Action(_currentActionCts.Token);
+               }
+               catch (OperationCanceledException)
+               {
+                  AnsiConsole.MarkupLine(
+                     $"\n{SystemConstants.UiMarkup.Yellow}Operation interrupted.[/]"
+                  );
+
+                  if (!AnsiConsole.Confirm("Back (Y) or Quit (N)?", true))
+                     exit = true;
+               }
+               catch (Exception ex)
+               {
+                  CliUI.WriteError($"An unexpected error occurred: {ex.Message}");
+               }
+               finally
+               {
+                  _currentActionCts.Dispose();
+                  _currentActionCts = null;
+               }
+            }
 
             if (!exit)
             {
@@ -208,7 +263,7 @@ namespace dvmig.Cli
          {
             new MenuItem(
                "Exit",
-               () =>
+               (ct) =>
                {
                   onExit();
 

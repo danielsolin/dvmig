@@ -91,7 +91,11 @@ namespace dvmig.Core.Interfaces
       /// the state tracker is ready for the current job.
       /// </summary>
       /// <param name="logicalName">The logical name of the entity.</param>
+      /// <param name="ct">A cancellation token.</param>
       /// <returns>A task representing the asynchronous operation.</returns>
-      Task InitializeEntitySyncAsync(string logicalName);
+      Task InitializeEntitySyncAsync(
+         string logicalName,
+         CancellationToken ct = default
+      );
    }
 }

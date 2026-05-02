@@ -9,10 +9,12 @@ namespace dvmig.Core.Synchronization
    /// </summary>
    public class ReconciliationService : IReconciliationService
    {
+      private readonly IEntityService _entityService;
       private readonly ILogger _logger;
 
-      public ReconciliationService(ILogger logger)
+      public ReconciliationService(IEntityService entityService, ILogger logger)
       {
+         _entityService = entityService;
          _logger = logger;
       }
       /// <inheritdoc />
@@ -137,8 +139,17 @@ namespace dvmig.Core.Synchronization
          // Ensure the engine is initialized for this entity
          await engine.InitializeEntitySyncAsync(logicalName);
 
-         var sourceIds = await GetAllIdsAsync(source, logicalName, ct);
-         var targetIds = await GetAllIdsAsync(target, logicalName, ct);
+         var sourceIds = await _entityService.GetAllIdsAsync(
+            source,
+            logicalName,
+            ct
+         );
+
+         var targetIds = await _entityService.GetAllIdsAsync(
+            target,
+            logicalName,
+            ct
+         );
 
          var missingIds = sourceIds.Except(targetIds).ToList();
          var total = missingIds.Count;
@@ -203,39 +214,6 @@ namespace dvmig.Core.Synchronization
          }
 
          _logger.Information($"Reconciliation finished for {logicalName}.");
-      }
-
-      private async Task<HashSet<Guid>> GetAllIdsAsync(
-         IDataverseProvider provider,
-         string logicalName,
-         CancellationToken ct
-      )
-      {
-         var ids = new HashSet<Guid>();
-         var query = new QueryExpression(logicalName)
-         {
-            ColumnSet = new ColumnSet(false),
-            PageInfo = new PagingInfo
-            {
-               Count = 5000,
-               PageNumber = 1
-            }
-         };
-
-         while (true)
-         {
-            var results = await provider.RetrieveMultipleAsync(query, ct);
-            foreach (var entity in results.Entities)
-               ids.Add(entity.Id);
-
-            if (!results.MoreRecords)
-               break;
-
-            query.PageInfo.PageNumber++;
-            query.PageInfo.PagingCookie = results.PagingCookie;
-         }
-
-         return ids;
       }
    }
 }

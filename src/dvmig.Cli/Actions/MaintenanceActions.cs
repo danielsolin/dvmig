@@ -19,7 +19,6 @@ namespace dvmig.Cli.Actions
          IValidationService validator,
          ISchemaService schemaService,
          IMetadataService metadataService,
-         ISyncStateService stateService,
          ILogger logger
       ) : base(
          connectionManager, 
@@ -27,7 +26,6 @@ namespace dvmig.Cli.Actions
          sourceDateService, 
          validator, 
          schemaService, 
-         stateService, 
          logger
       )
       {
@@ -35,7 +33,7 @@ namespace dvmig.Cli.Actions
          _metadataService = metadataService;
       }
 
-      public async Task HandleSeedingAsync()
+      public async Task HandleSeedingAsync(CancellationToken ct)
       {
          var provider = await ConnectionManager.ConnectAsync(
             ConnectionDirection.Source
@@ -55,14 +53,15 @@ namespace dvmig.Cli.Actions
             Logger, 
             async () => await _seedingService.SeedSampleDataAsync(
                provider,
-               count
+               count,
+               ct
             )
          );
 
          CliUI.WriteSuccess("Seeding Finished!");
       }
 
-      public async Task HandleInstallMenuAsync()
+      public async Task HandleInstallMenuAsync(CancellationToken ct)
       {
          var provider = await ConnectionManager.ConnectAsync(
             ConnectionDirection.Target
@@ -74,7 +73,7 @@ namespace dvmig.Cli.Actions
          await HandleInstallAsync(provider);
       }
 
-      public async Task HandleTargetComponentsCleanupAsync()
+      public async Task HandleTargetComponentsCleanupAsync(CancellationToken ct)
       {
          var provider = await ConnectionManager.ConnectAsync(
             ConnectionDirection.Target
@@ -100,17 +99,21 @@ namespace dvmig.Cli.Actions
                {
                   Logger.Information("Cleaning target environment...");
 
-                  await PluginService.RemovePluginAsync(provider);
+                  await PluginService.RemovePluginAsync(provider, ct);
 
-                  await provider.ExecuteAsync(new PublishAllXmlRequest());
+                  await provider.ExecuteAsync(new PublishAllXmlRequest(), ct);
 
-                  await SchemaService.DropSchemaAsync(provider);
+                  await SchemaService.DropSchemaAsync(provider, ct);
 
                   Logger.Information("Environment cleanup completed.");
                }
             );
 
             CliUI.WriteSuccess("Uninstallation Finished!");
+         }
+         catch (OperationCanceledException)
+         {
+            throw;
          }
          catch (Exception ex)
          {
@@ -122,18 +125,19 @@ namespace dvmig.Cli.Actions
          }
       }
 
-      public async Task HandleSourceDataCleanupAsync()
+      public async Task HandleSourceDataCleanupAsync(CancellationToken ct)
       {
-         await HandleDataCleanupInternalAsync(ConnectionDirection.Source);
+         await HandleDataCleanupInternalAsync(ConnectionDirection.Source, ct);
       }
 
-      public async Task HandleTargetDataCleanupAsync()
+      public async Task HandleTargetDataCleanupAsync(CancellationToken ct)
       {
-         await HandleDataCleanupInternalAsync(ConnectionDirection.Target);
+         await HandleDataCleanupInternalAsync(ConnectionDirection.Target, ct);
       }
 
       private async Task HandleDataCleanupInternalAsync(
-         ConnectionDirection direction
+         ConnectionDirection direction,
+         CancellationToken ct
       )
       {
          var provider = await ConnectionManager.ConnectAsync(direction);
@@ -221,7 +225,8 @@ namespace dvmig.Cli.Actions
                var cleanupTask = _seedingService.CleanTestDataAsync(
                   provider,
                   selectedEntities,
-                  progress
+                  progress,
+                  ct
                );
 
                while (!cleanupTask.IsCompleted)
@@ -254,7 +259,7 @@ namespace dvmig.Cli.Actions
                      );
                   }
 
-                  await Task.Delay(500);
+                  await Task.Delay(500, ct);
                }
 
                await cleanupTask;
