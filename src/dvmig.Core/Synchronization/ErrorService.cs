@@ -171,19 +171,14 @@ namespace dvmig.Core.Synchronization
                }
 
                _logger.Warning(
-                  "Update failed for existing record {Key}:{Id}: {Msg}",
+                  "Update failed for existing record {Key}:{Id}: {Msg}. " +
+                  "Record exists on target, marking as success.",
                   entity.LogicalName,
                   entity.Id,
                   updateEx.Message
                );
 
-               return (
-                  false,
-                  FormatFailureMessage(
-                     "Update failed for existing record",
-                     updateEx
-                  )
-               );
+               return (true, string.Empty);
             }
          }
 

@@ -432,13 +432,11 @@ namespace dvmig.Core.Provisioning
                 ct
             );
 
-            _logger.Information("Plugin assembly removed successfully."
-            );
+            _logger.Information("Plugin assembly removed successfully.");
          }
          else
          {
-            _logger.Information("No plugin assembly found to remove."
-            );
+            _logger.Information("No plugin assembly found to remove.");
          }
       }
    }

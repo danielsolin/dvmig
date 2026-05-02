@@ -39,7 +39,12 @@ namespace dvmig.Core.Provisioning
             // 3. Check Plugin Assembly
             var assemblyQuery = new QueryByAttribute(
                SystemConstants.PluginRegistration.AssemblyEntity
-            );
+            )
+            {
+               ColumnSet = new ColumnSet(
+                  SystemConstants.PluginRegistration.AssemblyId
+               )
+            };
             assemblyQuery.AddAttributeValue(
                SystemConstants.PluginRegistration.AssemblyName,
                SystemConstants.AppConstants.PluginName
@@ -56,7 +61,12 @@ namespace dvmig.Core.Provisioning
             // 4. Check Plugin Type
             var typeQuery = new QueryByAttribute(
                SystemConstants.PluginRegistration.TypeEntity
-            );
+            )
+            {
+               ColumnSet = new ColumnSet(
+                  SystemConstants.PluginRegistration.TypeId
+               )
+            };
             typeQuery.AddAttributeValue(
                SystemConstants.PluginRegistration.TypeName,
                $"{SystemConstants.AppConstants.PluginName}.DMPlugin"
@@ -72,7 +82,12 @@ namespace dvmig.Core.Provisioning
             // 5. Check Plugin Steps (Create & Update)
             var stepQuery = new QueryByAttribute(
                SystemConstants.PluginRegistration.StepEntity
-            );
+            )
+            {
+               ColumnSet = new ColumnSet(
+                  SystemConstants.PluginRegistration.MessageName
+               )
+            };
             stepQuery.AddAttributeValue(
                SystemConstants.PluginRegistration.EventHandler,
                typeId

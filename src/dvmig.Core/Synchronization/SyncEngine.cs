@@ -838,9 +838,8 @@ namespace dvmig.Core.Synchronization
 
             _logger.Information(
                $"{SystemConstants.UiMarkup.Red}ERROR[/] " +
-               $"Fatal sync failure: {logEx.Message}"
+               $"Could not log migration failure: {logEx.Message}"
             );
-            throw;
          }
       }
       #endregion

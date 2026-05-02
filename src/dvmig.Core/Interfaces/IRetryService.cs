@@ -19,10 +19,10 @@ namespace dvmig.Core.Interfaces
       /// <summary>
       /// Calculates the delay before the next retry attempt.
       /// </summary>
-      /// <param name="retryCount">The current retry attempt number.</param>
+      /// <param name="retryCount">The current retry count.</param>
       /// <param name="ex">The exception that triggered the retry.</param>
-      /// <returns>A TimeSpan representing the delay.</returns>
-      TimeSpan GetRetryDelay(int retryCount, Exception ex);
+      /// <returns>The calculated delay.</returns>
+      TimeSpan GetRetryDelay(int retryCount, Exception? ex);
 
       /// <summary>
       /// Creates an asynchronous retry policy configured with the 

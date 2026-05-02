@@ -217,7 +217,7 @@ namespace dvmig.Cli.Actions
                         if(failedCount > 0)
                            desc +=
                               $" {SystemConstants.UiMarkup.Red}" +
-                                 "({failedCount} failed)[/]";
+                                 $"({failedCount} failed)[/]";
 
                         task.Description = desc;
                      });
