@@ -53,7 +53,7 @@ namespace dvmig.Cli.Actions
          var threads = AnsiConsole.Prompt(
             new SelectionPrompt<int>()
                .Title($"Select {SystemConstants.UiMarkup.Green}Max Parallelism[/] (Threads):")
-               .AddChoices(new[] { 10, 20, 5, 1 })
+               .AddChoices(SystemConstants.SyncSettings.ParallelismOptions)
          );
 
          await RunMigrationAsync(engine, source, selectedEntities, threads);
@@ -87,7 +87,7 @@ namespace dvmig.Cli.Actions
          var threads = AnsiConsole.Prompt(
             new SelectionPrompt<int>()
                .Title($"Select {SystemConstants.UiMarkup.Green}Max Parallelism[/] (Threads):")
-               .AddChoices(new[] { 10, 20, 5, 1 })
+               .AddChoices(SystemConstants.SyncSettings.ParallelismOptions)
          );
 
          await RunMigrationAsync(

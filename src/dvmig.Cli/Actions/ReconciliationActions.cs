@@ -149,7 +149,7 @@ namespace dvmig.Cli.Actions
                   $"Select {SystemConstants.UiMarkup.Green}Max Parallelism[/] " +
                   "(Threads):"
                )
-               .AddChoices(new[] { 20, 10, 30, 40, 50, 5, 1 })
+               .AddChoices(SystemConstants.SyncSettings.ParallelismOptions)
          );
 
          await RunReconciliationAsync(
@@ -188,7 +188,7 @@ namespace dvmig.Cli.Actions
                   $"Select {SystemConstants.UiMarkup.Green}Max Parallelism[/] " +
                   "(Threads):"
                )
-               .AddChoices(new[] { 20, 10, 30, 40, 50, 5, 1 })
+               .AddChoices(SystemConstants.SyncSettings.ParallelismOptions)
          );
 
          await RunReconciliationAsync(

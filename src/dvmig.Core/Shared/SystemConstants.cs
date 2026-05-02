@@ -178,6 +178,16 @@ namespace dvmig.Core.Shared
       /// </summary>
       public static class SyncSettings
       {
+         public static readonly int[] ParallelismOptions =
+            new[]
+            {
+               10,
+               20,
+               30,
+               40,
+               50
+            };
+
          public static readonly IReadOnlyList<string> RecommendedEntities =
             new[]
             {
