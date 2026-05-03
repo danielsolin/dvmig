@@ -30,8 +30,8 @@ namespace dvmig.Cli.Actions
       }
 
       public async Task HandleMigrationAsync(
-         bool forceResync,
-         CancellationToken ct
+         CancellationToken ct,
+         bool forceResync = false
       )
       {
          var (source, target, engine, _) = await SetupSyncEngineAsync();
@@ -51,32 +51,19 @@ namespace dvmig.Cli.Actions
             return;
          }
 
-         var threads = AnsiConsole.Prompt(
-            new SelectionPrompt<int>()
-               .Title(
-                  $"Select {UiMarkup.Green}Max Parallelism[/]"
-                  + " (Threads):"
-               )
-               .AddChoices(SyncSettings.ParallelismOptions)
-         );
-
-         await RunMigrationAsync(
+         await HandleSyncFlowAsync(
             engine,
             source,
             target,
             selectedEntities,
-            threads,
             forceResync,
             ct
          );
-
-         var actionName = forceResync ? "Re-sync" : "Migration";
-         CliUI.WriteSuccess($"{actionName} Finished!");
       }
 
       public async Task HandleRecommendedSyncAsync(
-         bool forceResync,
-         CancellationToken ct
+         CancellationToken ct,
+         bool forceResync = false
       )
       {
          var (source, target, engine, _) = await SetupSyncEngineAsync();
@@ -84,8 +71,7 @@ namespace dvmig.Cli.Actions
          if (source == null || target == null || engine == null)
             return;
 
-         var recommendedEntities = SyncSettings
-            .RecommendedEntities;
+         var recommendedEntities = SyncSettings.RecommendedEntities.ToList();
 
          var title = forceResync ? "Re-sync" : "Sync";
          AnsiConsole.MarkupLine(
@@ -102,10 +88,29 @@ namespace dvmig.Cli.Actions
             return;
          }
 
+         await HandleSyncFlowAsync(
+            engine,
+            source,
+            target,
+            recommendedEntities,
+            forceResync,
+            ct
+         );
+      }
+
+      private async Task HandleSyncFlowAsync(
+         ISyncEngine engine,
+         IDataverseProvider source,
+         IDataverseProvider target,
+         List<string> entities,
+         bool forceResync,
+         CancellationToken ct
+      )
+      {
          var threads = AnsiConsole.Prompt(
             new SelectionPrompt<int>()
                .Title(
-                  $"Select {UiMarkup.Green}Max Parallelism[/] "
+                  $"Select {UiMarkup.Green}Max Parallelism[/]"
                   + " (Threads):"
                )
                .AddChoices(SyncSettings.ParallelismOptions)
@@ -115,14 +120,14 @@ namespace dvmig.Cli.Actions
             engine,
             source,
             target,
-            recommendedEntities.ToList(),
+            entities,
             threads,
             forceResync,
             ct
          );
 
          var actionName = forceResync ? "Re-sync" : "Migration";
-         CliUI.WriteSuccess($"Recommended {actionName} Finished!");
+         CliUI.WriteSuccess($"{actionName} Finished!");
       }
 
       private async Task RunMigrationAsync(

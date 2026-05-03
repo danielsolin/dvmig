@@ -335,11 +335,13 @@ namespace dvmig.Cli.Actions
 
                         if (deleted > 0 && elapsed.TotalSeconds > 5)
                         {
-                           var recordsPerSecond = deleted / elapsed.TotalSeconds;
-                           if (recordsPerSecond > 0)
+                           var recordsPerSec =
+                              deleted / elapsed.TotalSeconds;
+
+                           if (recordsPerSec > 0)
                            {
                               var remainingSeconds =
-                                 remainingRecords / recordsPerSecond;
+                                 remainingRecords / recordsPerSec;
                               var remainingTime =
                                  TimeSpan.FromSeconds(remainingSeconds);
 

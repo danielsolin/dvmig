@@ -120,22 +120,22 @@ namespace dvmig.Cli
             new MenuItem(
                $"Sync Recommended {SystemConstants.UiMarkup.Grey}" +
                "(Accounts, Contacts, Activities)[/]",
-               ct => syncActions.HandleRecommendedSyncAsync(false, ct)
+               ct => syncActions.HandleRecommendedSyncAsync(ct, false)
             ),
             new MenuItem(
                $"Re-sync Recommended {SystemConstants.UiMarkup.Grey}" +
                "(Force update all records)[/]",
-               ct => syncActions.HandleRecommendedSyncAsync(true, ct)
+               ct => syncActions.HandleRecommendedSyncAsync(ct, true)
             ),
             new MenuItem(
                $"Sync Selected {SystemConstants.UiMarkup.Grey}" +
                "(pick entities)[/]",
-               ct => syncActions.HandleMigrationAsync(false, ct)
+               ct => syncActions.HandleMigrationAsync(ct, false)
             ),
             new MenuItem(
                $"Re-sync Selected {SystemConstants.UiMarkup.Grey}" +
                "(Force update pick entities)[/]",
-               ct => syncActions.HandleMigrationAsync(true, ct)
+               ct => syncActions.HandleMigrationAsync(ct, true)
             )
          };
 
