@@ -20,6 +20,16 @@ namespace dvmig.Core.Synchronization
       private readonly ISyncStateService _syncStateService;
       private readonly ISyncRecordService _syncRecordService;
 
+      /// <summary>
+      /// Initializes a new instance of the <see cref="SyncEngine"/> class.
+      /// </summary>
+      /// <param name="source">The source Dataverse provider.</param>
+      /// <param name="target">The target Dataverse provider.</param>
+      /// <param name="logger">The logger instance.</param>
+      /// <param name="entityService">The entity service.</param>
+      /// <param name="metadataService">The metadata service.</param>
+      /// <param name="syncStateService">The sync state service.</param>
+      /// <param name="syncRecordService">The record sync service.</param>
       public SyncEngine(
          IDataverseProvider source,
          IDataverseProvider target,
@@ -39,6 +49,7 @@ namespace dvmig.Core.Synchronization
          _syncRecordService = syncRecordService;
       }
 
+      /// <inheritdoc />
       public async Task InitializeEntitySyncAsync(
          string logicalName,
          CT ct = default
@@ -53,6 +64,7 @@ namespace dvmig.Core.Synchronization
          _syncStateService.InitializeSyncedIds(ids);
       }
 
+      /// <inheritdoc />
       public async Task SyncAsync(
          string logicalName,
          SyncOptions options,
@@ -67,11 +79,11 @@ namespace dvmig.Core.Synchronization
             logicalName,
             ct
          );
+
          var syncQuery = query ?? new QueryExpression(logicalName)
          {
             ColumnSet = columns
          };
-
          syncQuery.PageInfo = new PagingInfo
          {
             Count = 500,

@@ -8,6 +8,14 @@ namespace dvmig.Core.Interfaces
    /// </summary>
    public interface ISyncRecordService
    {
+      /// <summary>
+      /// Synchronizes a single entity record and reports success or failure 
+      /// via the progress reporter.
+      /// </summary>
+      /// <param name="entity">The entity to synchronize.</param>
+      /// <param name="options">Synchronization options.</param>
+      /// <param name="recordProgress">Optional progress reporter.</param>
+      /// <param name="ct">A cancellation token.</param>
       Task SyncRecordAndReportAsync(
          Entity entity,
          SyncOptions options,
@@ -15,6 +23,13 @@ namespace dvmig.Core.Interfaces
          CancellationToken ct = default
       );
 
+      /// <summary>
+      /// Synchronizes a single entity record to the target environment.
+      /// </summary>
+      /// <param name="entity">The entity to synchronize.</param>
+      /// <param name="options">Synchronization options.</param>
+      /// <param name="ct">A cancellation token.</param>
+      /// <returns>A tuple indicating success and any failure message.</returns>
       Task<(bool Success, string? FailureMessage)> SyncRecordAsync(
          Entity entity,
          SyncOptions options,

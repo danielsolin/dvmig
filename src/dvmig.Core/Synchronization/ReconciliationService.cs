@@ -5,13 +5,20 @@ using Microsoft.Xrm.Sdk.Query;
 namespace dvmig.Core.Synchronization
 {
    /// <summary>
-   /// Implementation of the reconciliation service.
+   /// Implementation of <see cref="IReconciliationService"/> that manages
+   /// migration failure records and performs entity-level reconciliation.
    /// </summary>
    public class ReconciliationService : IReconciliationService
    {
       private readonly IEntityService _entityService;
       private readonly ILogger _logger;
 
+      /// <summary>
+      /// Initializes a new instance of the 
+      /// <see cref="ReconciliationService"/> class.
+      /// </summary>
+      /// <param name="entityService">The entity service.</param>
+      /// <param name="logger">The logger instance.</param>
       public ReconciliationService(IEntityService entityService, ILogger logger)
       {
          _entityService = entityService;

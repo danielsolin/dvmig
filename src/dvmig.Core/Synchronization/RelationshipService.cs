@@ -4,17 +4,28 @@ using Microsoft.Xrm.Sdk.Messages;
 
 namespace dvmig.Core.Synchronization
 {
+   /// <summary>
+   /// Implementation of <see cref="IRelationshipService"/> that handles
+   /// operations for N:N intersect entities.
+   /// </summary>
    public class RelationshipService : IRelationshipService
    {
       private readonly IDataverseProvider _target;
       private readonly ILogger _logger;
 
+      /// <summary>
+      /// Initializes a new instance of the 
+      /// <see cref="RelationshipService"/> class.
+      /// </summary>
+      /// <param name="target">The target Dataverse provider.</param>
+      /// <param name="logger">The logger instance.</param>
       public RelationshipService(IDataverseProvider target, ILogger logger)
       {
          _target = target;
          _logger = logger;
       }
 
+      /// <inheritdoc />
       public async Task AssociateAsync(Entity entity, CancellationToken ct = default)
       {
          var request = CreateAssociateRequest(entity);
@@ -24,6 +35,7 @@ namespace dvmig.Core.Synchronization
          await _target.ExecuteAsync(request, ct);
       }
 
+      /// <inheritdoc />
       public AssociateRequest? CreateAssociateRequest(Entity entity)
       {
          var references = entity.Attributes

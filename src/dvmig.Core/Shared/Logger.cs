@@ -8,11 +8,19 @@ using SerilogLogger = Serilog.ILogger;
 
 namespace dvmig.Core.Shared
 {
+   /// <summary>
+   /// Implementation of <see cref="Interfaces.ILogger"/> that uses Serilog
+   /// for file and debug logging, and optionally reports progress to an
+   /// <see cref="IProgress{T}"/>.
+   /// </summary>
    public class Logger : Interfaces.ILogger
    {
       private readonly SerilogLogger _serilog;
       private IProgress<string>? _progress;
 
+      /// <summary>
+      /// Initializes a new instance of the <see cref="Logger"/> class.
+      /// </summary>
       public Logger()
       {
          var appData = Environment.GetFolderPath(
@@ -39,33 +47,39 @@ namespace dvmig.Core.Shared
             .CreateLogger();
       }
 
+      /// <inheritdoc />
       public void AttachProgress(IProgress<string> progress)
       {
          _progress = progress;
       }
 
+      /// <inheritdoc />
       public void DetachProgress()
       {
          _progress = null;
       }
 
+      /// <inheritdoc />
       public void Debug(string message)
       {
          _serilog.Debug(message);
          // Debug messages usually don't go to progress
       }
 
+      /// <inheritdoc />
       public void Debug(string messageTemplate, params object[] propertyValues)
       {
          _serilog.Debug(messageTemplate, propertyValues);
       }
 
+      /// <inheritdoc />
       public void Information(string message)
       {
          _serilog.Information(message);
          _progress?.Report(message);
       }
 
+      /// <inheritdoc />
       public void Information(
          string messageTemplate, 
          params object[] propertyValues
@@ -75,12 +89,14 @@ namespace dvmig.Core.Shared
          ReportWithFormatting(messageTemplate, propertyValues);
       }
 
+      /// <inheritdoc />
       public void Warning(string message)
       {
          _serilog.Warning(message);
          _progress?.Report(message);
       }
 
+      /// <inheritdoc />
       public void Warning(
          string messageTemplate, 
          params object[] propertyValues
@@ -90,6 +106,7 @@ namespace dvmig.Core.Shared
          ReportWithFormatting(messageTemplate, propertyValues);
       }
 
+      /// <inheritdoc />
       public void Warning(
          Exception ex, 
          string messageTemplate, 
@@ -100,12 +117,14 @@ namespace dvmig.Core.Shared
          ReportWithFormatting(messageTemplate, propertyValues);
       }
 
+      /// <inheritdoc />
       public void Error(string message)
       {
          _serilog.Error(message);
          _progress?.Report(message);
       }
 
+      /// <inheritdoc />
       public void Error(
          string messageTemplate, 
          params object[] propertyValues
@@ -115,6 +134,7 @@ namespace dvmig.Core.Shared
          ReportWithFormatting(messageTemplate, propertyValues);
       }
 
+      /// <inheritdoc />
       public void Error(
          Exception ex, 
          string messageTemplate, 

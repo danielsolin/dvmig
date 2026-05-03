@@ -6,13 +6,20 @@ using Microsoft.Xrm.Sdk.Query;
 namespace dvmig.Core.Synchronization
 {
    /// <summary>
-   /// Manages temporary 'dm_sourcedate' records in the target environment.
+   /// Implementation of <see cref="ISourceDateService"/> that manages
+   /// temporary 'dm_sourcedate' records in the target environment to
+   /// facilitate date preservation.
    /// </summary>
    public class SourceDateService : ISourceDateService
    {
       private readonly ILogger _logger;
       private bool? _isDatePreservationSupported;
 
+      /// <summary>
+      /// Initializes a new instance of the 
+      /// <see cref="SourceDateService"/> class.
+      /// </summary>
+      /// <param name="logger">The logger instance.</param>
       public SourceDateService(ILogger logger)
       {
          _logger = logger;

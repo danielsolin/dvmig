@@ -13,6 +13,10 @@ using CT = System.Threading.CancellationToken;
 
 namespace dvmig.Core.Synchronization
 {
+   /// <summary>
+   /// Implementation of <see cref="ISyncRecordService"/> that orchestrates
+   /// the synchronization of individual Dataverse records.
+   /// </summary>
    public class SyncRecordService : ISyncRecordService
    {
       private readonly IDataverseProvider _target;
@@ -32,6 +36,23 @@ namespace dvmig.Core.Synchronization
 
       private const int MaxRecursionDepth = 3;
 
+      /// <summary>
+      /// Initializes a new instance of the 
+      /// <see cref="SyncRecordService"/> class.
+      /// </summary>
+      /// <param name="target">The target Dataverse provider.</param>
+      /// <param name="userResolver">The user resolver.</param>
+      /// <param name="logger">The logger instance.</param>
+      /// <param name="retryService">The retry service.</param>
+      /// <param name="entityService">The entity service.</param>
+      /// <param name="errorService">The error service.</param>
+      /// <param name="dependencyResolver">The dependency resolver.</param>
+      /// <param name="statusService">The status service.</param>
+      /// <param name="metadataService">The metadata service.</param>
+      /// <param name="failureService">The failure service.</param>
+      /// <param name="sourceDateService">The source date service.</param>
+      /// <param name="syncStateService">The sync state service.</param>
+      /// <param name="relationshipService">The relationship service.</param>
       public SyncRecordService(
          IDataverseProvider target,
          IUserResolver userResolver,
@@ -67,6 +88,7 @@ namespace dvmig.Core.Synchronization
 
       #region Record Sync Workflow
 
+      /// <inheritdoc />
       public async Task SyncRecordAndReportAsync(
          Entity entity,
          SyncOptions options,
@@ -124,6 +146,7 @@ namespace dvmig.Core.Synchronization
          }
       }
 
+      /// <inheritdoc />
       public async Task<(bool Success, string? FailureMessage)>
          SyncRecordAsync(
             Entity entity,

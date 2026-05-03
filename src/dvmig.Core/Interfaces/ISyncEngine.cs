@@ -1,5 +1,4 @@
 using dvmig.Core.Synchronization;
-using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Query;
 
 namespace dvmig.Core.Interfaces
