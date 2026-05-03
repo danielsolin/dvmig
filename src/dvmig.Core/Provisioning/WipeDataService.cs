@@ -16,7 +16,8 @@ namespace dvmig.Core.Provisioning
       private readonly IRetryService _retryService;
 
       /// <summary>
-      /// Initializes a new instance of the <see cref="WipeDataService"/> class.
+      /// Initializes a new instance of the
+      /// <see cref="WipeDataService"/> class.
       /// </summary>
       /// <param name="logger">The logger instance.</param>
       /// <param name="retryService">The retry service.</param>
@@ -115,7 +116,10 @@ namespace dvmig.Core.Provisioning
                      progress?.Report(
                         Math.Max(
                            0,
-                           initialTotal - (alreadyDeletedTotal + deletedForThisEntity)
+                           (
+                              initialTotal -
+                              (alreadyDeletedTotal + deletedForThisEntity)
+                           )
                         )
                      );
                   }

@@ -1,7 +1,7 @@
 using dvmig.Core.Interfaces;
-using dvmig.Core.Shared;
 using dvmig.Core.Synchronization;
 using Spectre.Console;
+using static dvmig.Core.Shared.SystemConstants;
 
 namespace dvmig.Cli.Actions
 {
@@ -29,7 +29,10 @@ namespace dvmig.Cli.Actions
          _metadataService = metadataService;
       }
 
-      public async Task HandleMigrationAsync(CancellationToken ct)
+      public async Task HandleMigrationAsync(
+         bool forceResync,
+         CancellationToken ct
+      )
       {
          var (source, target, engine, _) = await SetupSyncEngineAsync();
 
@@ -51,10 +54,10 @@ namespace dvmig.Cli.Actions
          var threads = AnsiConsole.Prompt(
             new SelectionPrompt<int>()
                .Title(
-                  $"Select {SystemConstants.UiMarkup.Green}Max Parallelism[/]"
+                  $"Select {UiMarkup.Green}Max Parallelism[/]"
                   + " (Threads):"
                )
-               .AddChoices(SystemConstants.SyncSettings.ParallelismOptions)
+               .AddChoices(SyncSettings.ParallelismOptions)
          );
 
          await RunMigrationAsync(
@@ -63,32 +66,38 @@ namespace dvmig.Cli.Actions
             target,
             selectedEntities,
             threads,
+            forceResync,
             ct
          );
 
-         CliUI.WriteSuccess("Migration Finished!");
+         var actionName = forceResync ? "Re-sync" : "Migration";
+         CliUI.WriteSuccess($"{actionName} Finished!");
       }
 
-      public async Task HandleRecommendedSyncAsync(CancellationToken ct)
+      public async Task HandleRecommendedSyncAsync(
+         bool forceResync,
+         CancellationToken ct
+      )
       {
          var (source, target, engine, _) = await SetupSyncEngineAsync();
 
          if (source == null || target == null || engine == null)
             return;
 
-         var recommendedEntities = SystemConstants.SyncSettings
+         var recommendedEntities = SyncSettings
             .RecommendedEntities;
 
+         var title = forceResync ? "Re-sync" : "Sync";
          AnsiConsole.MarkupLine(
-            $"{SystemConstants.UiMarkup.BoldCyan}Recommended Sync Order:[/]"
+            $"{UiMarkup.BoldCyan}Recommended {title} Order:[/]"
          );
 
          foreach (var entity in recommendedEntities)
             AnsiConsole.MarkupLine($" - {entity}");
 
-         if (!AnsiConsole.Confirm("Proceed with this sync plan?", true))
+         if (!AnsiConsole.Confirm($"Proceed with this {title} plan?", true))
          {
-            CliUI.WriteWarning("Recommended sync cancelled.");
+            CliUI.WriteWarning($"Recommended {title} cancelled.");
 
             return;
          }
@@ -96,10 +105,10 @@ namespace dvmig.Cli.Actions
          var threads = AnsiConsole.Prompt(
             new SelectionPrompt<int>()
                .Title(
-                  $"Select {SystemConstants.UiMarkup.Green}Max Parallelism[/] "
+                  $"Select {UiMarkup.Green}Max Parallelism[/] "
                   + " (Threads):"
                )
-               .AddChoices(SystemConstants.SyncSettings.ParallelismOptions)
+               .AddChoices(SyncSettings.ParallelismOptions)
          );
 
          await RunMigrationAsync(
@@ -108,10 +117,12 @@ namespace dvmig.Cli.Actions
             target,
             recommendedEntities.ToList(),
             threads,
+            forceResync,
             ct
          );
 
-         CliUI.WriteSuccess("Recommended Migration Finished!");
+         var actionName = forceResync ? "Re-sync" : "Migration";
+         CliUI.WriteSuccess($"Recommended {actionName} Finished!");
       }
 
       private async Task RunMigrationAsync(
@@ -120,169 +131,166 @@ namespace dvmig.Cli.Actions
          IDataverseProvider target,
          List<string> entities,
          int maxThreads,
+         bool forceResync,
          CancellationToken ct
       )
       {
-         foreach (var logicalName in entities)
-         {
-            AnsiConsole.MarkupLine(
-               $"{SystemConstants.UiMarkup.BoldYellow}Migrating " +
-               $"{logicalName}...[/]"
-            );
+         await AnsiConsole.Progress()
+            .Columns(
+               new ProgressColumn[]
+               {
+                  new TaskDescriptionColumn(),
+                  new ProgressBarColumn(),
+                  new PercentageColumn(),
+                  new RemainingTimeColumn(),
+                  new SpinnerColumn(),
+               }
+            )
+            .StartAsync(
+               async ctx =>
+               {
+                  foreach (var logicalName in entities)
+                  {
+                     var actionTitle = forceResync ? "Re-syncing" : "Migrating";
+                     var displayName = char.ToUpper(logicalName[0]) +
+                        logicalName.Substring(1);
 
-            await engine.InitializeEntitySyncAsync(logicalName, ct);
+                     int processed = 0;
+                     int failedCount = 0;
 
-            int processed = 0;
-            int failedCount = 0;
+                     long totalCount = await _metadataService
+                        .GetRecordCountAsync(source, logicalName, ct);
 
-            long totalCount = await _metadataService.GetRecordCountAsync(
-               source,
-               logicalName,
-               ct
-            );
-
-            if (totalCount == 0)
-            {
-               AnsiConsole.MarkupLine(
-                  $"{SystemConstants.UiMarkup.Grey}" +
-                  $"No records found for {logicalName}.[/]"
-               );
-
-               continue;
-            }
-
-            // In the new ID-based approach, we start 'processed' at the count 
-            // of records already existing on the target environment.
-            var targetCount = await _metadataService.GetRecordCountAsync(
-               target,
-               logicalName,
-               ct
-            );
-
-            processed = (int)Math.Min(totalCount, targetCount);
-
-            try
-            {
-               await AnsiConsole.Progress()
-                  .Columns(
-                     new ProgressColumn[]
+                     if (totalCount == 0)
                      {
-                        new TaskDescriptionColumn(),
-                        new ProgressBarColumn(),
-                        new PercentageColumn(),
-                        new RemainingTimeColumn(),
-                        new SpinnerColumn(),
+                        AnsiConsole.MarkupLine(
+                           $"{UiMarkup.Grey}No records found for " +
+                           $"{logicalName}.[/]"
+                        );
+
+                        continue;
                      }
-                  )
-                  .StartAsync(
-                     async ctx =>
+
+                     if (!forceResync)
                      {
-                        var displayName = char.ToUpper(logicalName[0]) +
-                           logicalName.Substring(1);
+                        var targetCount = await _metadataService
+                           .GetRecordCountAsync(target, logicalName, ct);
 
-                        var taskName = $"{displayName} " +
-                           $"({processed}/{totalCount}) " +
-                           $"[[{maxThreads} threads]]";
+                        processed = (int)Math.Min(totalCount, targetCount);
+                     }
 
-                        var task = ctx.AddTask(taskName, true, totalCount);
-                        task.Value = processed;
+                     string GetDesc(int p, long t, double r, int f)
+                     {
+                        var titleMarkup = $"{UiMarkup.BoldRed}{actionTitle} " +
+                           $"{displayName}[/]";
 
-                        var sw = System.Diagnostics.Stopwatch.StartNew();
-                        var lastUpdate = DateTime.MinValue;
-                        var recordProgress = new Progress<bool>(
-                           success =>
-                           {
-                              processed++;
+                        var rateInfo = r > 0 ? $" - {r:F1} r/s" : "";
+                        var desc = $"{titleMarkup} ({p}/{t}) " +
+                           $"[[{UiMarkup.Green}{maxThreads}t{rateInfo}[/]]] ";
 
-                              if (!success)
-                                 failedCount++;
-
-                              var now = DateTime.Now;
-                              if (now - lastUpdate < TimeSpan.FromSeconds(1) &&
-                                  processed < totalCount)
-                                 return;
-
-                              lastUpdate = now;
-                              task.Value = processed;
-
-                              var swElapsed = sw.Elapsed.TotalSeconds;
-                              var recsPerSec = processed / swElapsed;
-
-                              var desc = $"{displayName} " +
-                                 $"({processed}/{totalCount}) " +
-                                 $"[[{SystemConstants.UiMarkup.Green}{maxThreads}t"
-                                 + $" - {recsPerSec:F1} r/s[/]]] ";
-
-                              if (failedCount > 0)
-                                 desc +=
-                                    $" {SystemConstants.UiMarkup.Red}" +
-                                       $"({failedCount} failed)[/]";
-
-                              task.Description = desc;
-                           }
-                        );
-
-                        var options = new SyncOptions
+                        if (f > 0)
                         {
-                           StripMissingDependencies = true,
-                           MaxDegreeOfParallelism = maxThreads
-                        };
+                           desc += $"{UiMarkup.Red}" +
+                              $"({f} failed)[/]";
+                        }
 
-                        Logger.AttachProgress(
-                           new Progress<string>(
-                              msg =>
-                              {
-                                 bool isCritical =
-                                    msg.Contains(
-                                       SystemConstants.UiMarkup.Wait,
-                                       StringComparison.Ordinal
-                                    ) ||
-                                    msg.Contains(
-                                       SystemConstants.ErrorKeywords.TooManyRequests,
-                                       StringComparison.OrdinalIgnoreCase
-                                    ) ||
-                                    msg.StartsWith(SystemConstants.UiMarkup.Yellow) ||
-                                    msg.StartsWith(SystemConstants.UiMarkup.Red);
+                        return desc;
+                     }
 
-                                 if (isCritical)
-                                    AnsiConsole.MarkupLine(msg);
-                              }
-                           )
-                        );
+                     var task = ctx.AddTask(
+                        GetDesc(processed, totalCount, 0, 0),
+                        true,
+                        totalCount
+                     );
 
-                        try
+                     task.Value = processed;
+
+                     var sw = System.Diagnostics.Stopwatch.StartNew();
+                     var lastUpdate = DateTime.MinValue;
+                     var recordProgress = new Progress<bool>(
+                        success =>
                         {
-                           await engine.SyncAsync(
-                              logicalName,
-                              options,
-                              null,
-                              recordProgress,
-                              ct
+                           processed++;
+
+                           if (!success)
+                              failedCount++;
+
+                           var now = DateTime.Now;
+                           if (now - lastUpdate < TimeSpan.FromSeconds(1) &&
+                               processed < totalCount)
+                              return;
+
+                           lastUpdate = now;
+                           task.Value = processed;
+
+                           var swElapsed = sw.Elapsed.TotalSeconds;
+                           var recsPerSec = processed / swElapsed;
+
+                           task.Description = GetDesc(
+                              processed,
+                              totalCount,
+                              recsPerSec,
+                              failedCount
                            );
                         }
-                        finally
-                        {
-                           Logger.DetachProgress();
-                        }
+                     );
 
-                        task.Value = totalCount;
+                     var options = new SyncOptions
+                     {
+                        StripMissingDependencies = true,
+                        MaxDegreeOfParallelism = maxThreads,
+                        ForceResync = forceResync
+                     };
+
+                     Logger.AttachProgress(
+                        new Progress<string>(
+                           msg =>
+                           {
+                              bool isCritical =
+                                 msg.Contains(
+                                    UiMarkup.Wait,
+                                    StringComparison.Ordinal
+                                 ) ||
+                                 msg.Contains(
+                                    ErrorKeywords.TooManyRequests,
+                                    StringComparison.OrdinalIgnoreCase
+                                 ) ||
+                                 msg.StartsWith(UiMarkup.Yellow) ||
+                                 msg.StartsWith(UiMarkup.Red);
+
+                              if (isCritical)
+                                 AnsiConsole.MarkupLine(msg);
+                           }
+                        )
+                     );
+
+                     try
+                     {
+                        await engine.SyncAsync(
+                           logicalName,
+                           options,
+                           null,
+                           recordProgress,
+                           ct
+                        );
                      }
-                  );
-            }
-            catch (OperationCanceledException)
-            {
-               throw;
-            }
-            catch (Exception ex)
-            {
-               var baseEx = ex.GetBaseException();
-               CliUI.WriteError(
-                  $"Sync aborted due to a critical error: {baseEx.Message}"
-               );
-
-               break;
-            }
-         }
+                     catch (Exception ex)
+                     {
+                        var baseEx = ex.GetBaseException();
+                        CliUI.WriteError(
+                           $"Sync aborted for {logicalName}: " +
+                           $"{baseEx.Message}"
+                        );
+                     }
+                     finally
+                     {
+                        Logger.DetachProgress();
+                        task.Value = totalCount;
+                        task.StopTask();
+                     }
+                  }
+               }
+            );
       }
    }
 }

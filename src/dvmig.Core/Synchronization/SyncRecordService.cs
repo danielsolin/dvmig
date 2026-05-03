@@ -154,7 +154,7 @@ namespace dvmig.Core.Synchronization
             CT ct = default
          )
       {
-         bool skipStateCheck = options is ReconciliationSyncOptions;
+         bool skipStateCheck = options.ForceResync;
 
          if (!skipStateCheck && _syncStateService.IsSynced(entity.Id))
          {

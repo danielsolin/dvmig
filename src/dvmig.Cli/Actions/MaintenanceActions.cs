@@ -11,6 +11,7 @@ namespace dvmig.Cli.Actions
       private readonly ISeedingService _seedingService;
       private readonly IWipeDataService _wipeDataService;
       private readonly IMetadataService _metadataService;
+      private readonly IFailureService _failureService;
 
       public MaintenanceActions(
          ConnectionManager connectionManager,
@@ -21,6 +22,7 @@ namespace dvmig.Cli.Actions
          IValidationService validator,
          ISchemaService schemaService,
          IMetadataService metadataService,
+         IFailureService failureService,
          ILogger logger
       ) : base(
          connectionManager,
@@ -34,6 +36,90 @@ namespace dvmig.Cli.Actions
          _seedingService = seedingService;
          _wipeDataService = wipeDataService;
          _metadataService = metadataService;
+         _failureService = failureService;
+      }
+
+      public async Task HandleViewFailuresAsync(CancellationToken ct)
+      {
+         var target = await ConnectionManager.ConnectAsync(
+            ConnectionDirection.Target
+         );
+
+         if (target == null)
+            return;
+
+         bool isInitialized = await _failureService.IsInitializedAsync(
+            target,
+            ct
+         );
+
+         if (!isInitialized)
+         {
+            CliUI.WriteWarning(
+               "Migration failure logging is not initialized on this target."
+            );
+
+            AnsiConsole.MarkupLine(
+               $"{SystemConstants.UiMarkup.Grey}" +
+               "Please use 'Install/Update dvmig Components' " +
+               "to enable this feature.[/]"
+            );
+
+            return;
+         }
+
+         var failures = await CliUI.RunStatusAsync(
+            "Fetching recorded migration failures...",
+            async () => await _failureService.GetFailuresAsync(
+               target,
+               null,
+               ct
+            )
+         );
+
+         if (failures.Count == 0)
+         {
+            CliUI.WriteSuccess(
+               "No migration failures recorded in Target environment."
+            );
+
+            return;
+         }
+
+         var table = new Table();
+         table.AddColumn("Entity");
+         table.AddColumn("Source ID");
+         table.AddColumn("Timestamp (UTC)");
+         table.AddColumn("Error Message");
+
+         foreach (var failure in failures)
+         {
+            table.AddRow(
+               failure.EntityLogicalName,
+               failure.SourceId,
+               failure.TimestampUtc.ToString("yyyy-MM-dd HH:mm:ss"),
+               failure.ErrorMessage
+            );
+         }
+
+         AnsiConsole.Write(table);
+
+         var clearLog = "Would you like to clear the failure log on " +
+                        "the target?";
+
+         if (AnsiConsole.Confirm(clearLog, false))
+         {
+            await CliUI.RunStatusAsync(
+               "Clearing failure log...",
+               Logger,
+               async () => await _failureService.ClearFailuresAsync(
+                  target,
+                  ct
+               )
+            );
+
+            CliUI.WriteSuccess("Failure log cleared.");
+         }
       }
 
       public async Task HandleSeedingAsync(CancellationToken ct)

@@ -145,9 +145,11 @@ namespace dvmig.Core.Synchronization
          CT ct = default
       )
       {
-         var entitiesToSync = entities
-            .Where(e => !_syncStateService.IsSynced(e.Id))
-            .ToList();
+         var entitiesToSync = options.ForceResync
+            ? entities.ToList()
+            : entities
+               .Where(e => !_syncStateService.IsSynced(e.Id))
+               .ToList();
 
          if (!entitiesToSync.Any())
             return;

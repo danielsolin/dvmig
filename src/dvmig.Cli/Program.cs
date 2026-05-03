@@ -13,7 +13,6 @@ namespace dvmig.Cli
    class Program
    {
       private static SyncActions? _migrationActions;
-      private static ReconciliationActions? _reconciliationActions;
       private static MaintenanceActions? _maintenanceActions;
 
       private static CancellationTokenSource? _currentActionCts;
@@ -43,10 +42,6 @@ namespace dvmig.Cli
          var wipeDataService = new WipeDataService(logger, retryService);
          var entityService = new EntityService(logger);
          var metadataService = new MetadataService(logger);
-         var reconciliationService = new ReconciliationService(
-            entityService,
-            logger
-         );
 
          var validationService = new ValidationService();
          var schemaService = new SchemaService(logger);
@@ -55,19 +50,14 @@ namespace dvmig.Cli
 
          var connectionManager = new ConnectionManager(settingsService);
 
-         _migrationActions = new SyncActions(
-            connectionManager,
-            metadataService,
-            pluginService,
-            sourceDateService,
-            validationService,
-            schemaService,
+         // We use the same connection for failure logging as the target
+         var failureService = new FailureService(
+            null!, // Will be set by ConnectionManager during sync
             logger
          );
 
-         _reconciliationActions = new ReconciliationActions(
+         _migrationActions = new SyncActions(
             connectionManager,
-            reconciliationService,
             metadataService,
             pluginService,
             sourceDateService,
@@ -85,6 +75,7 @@ namespace dvmig.Cli
             validationService,
             schemaService,
             metadataService,
+            failureService,
             logger
          );
 
@@ -115,7 +106,6 @@ namespace dvmig.Cli
       private static SelectionPrompt<MenuItem> GetMenu(
          bool developerMode,
          SyncActions syncActions,
-         ReconciliationActions reconciliationActions,
          MaintenanceActions maintenanceActions,
          Action onExit
       )
@@ -130,22 +120,22 @@ namespace dvmig.Cli
             new MenuItem(
                $"Sync Recommended {SystemConstants.UiMarkup.Grey}" +
                "(Accounts, Contacts, Activities)[/]",
-               syncActions.HandleRecommendedSyncAsync
+               ct => syncActions.HandleRecommendedSyncAsync(false, ct)
             ),
             new MenuItem(
-               $"Find & Fix Recommended {SystemConstants.UiMarkup.Grey}" +
-               "(Accounts, Contacts, Activities)[/]",
-               reconciliationActions.HandleRecommendedReconciliationAsync
+               $"Re-sync Recommended {SystemConstants.UiMarkup.Grey}" +
+               "(Force update all records)[/]",
+               ct => syncActions.HandleRecommendedSyncAsync(true, ct)
             ),
             new MenuItem(
                $"Sync Selected {SystemConstants.UiMarkup.Grey}" +
                "(pick entities)[/]",
-               syncActions.HandleMigrationAsync
+               ct => syncActions.HandleMigrationAsync(false, ct)
             ),
             new MenuItem(
-               $"Find & Fix Selected {SystemConstants.UiMarkup.Grey}" +
-               "(pick entities)[/]",
-               reconciliationActions.HandlePerformReconciliationAsync
+               $"Re-sync Selected {SystemConstants.UiMarkup.Grey}" +
+               "(Force update pick entities)[/]",
+               ct => syncActions.HandleMigrationAsync(true, ct)
             )
          };
 
@@ -173,7 +163,7 @@ namespace dvmig.Cli
                ),
                new MenuItem(
                   "View Recorded Migration Failures",
-                  reconciliationActions.HandleViewFailuresAsync
+                  maintenanceActions.HandleViewFailuresAsync
                ),
             };
 
@@ -242,7 +232,6 @@ namespace dvmig.Cli
             var prompt = GetMenu(
                _developerMode,
                _migrationActions!,
-               _reconciliationActions!,
                _maintenanceActions!,
                () => exit = true
             );
