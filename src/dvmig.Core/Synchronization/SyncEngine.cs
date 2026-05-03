@@ -32,6 +32,7 @@ namespace dvmig.Core.Synchronization
       private readonly IFailureService _failureService;
       private readonly ISourceDateService _sourceDateService;
       private readonly ISyncStateService _syncStateService;
+      private readonly IRelationshipService _relationshipService;
       private readonly AsyncRetryPolicy _retryPolicy;
 
       private const int MaxRecursionDepth = 3;
@@ -50,7 +51,8 @@ namespace dvmig.Core.Synchronization
          IMetadataService metadataService,
          IFailureService failureService,
          ISourceDateService sourceDateService,
-         ISyncStateService syncStateService
+         ISyncStateService syncStateService,
+         IRelationshipService relationshipService
       )
       {
          _source = source;
@@ -66,6 +68,7 @@ namespace dvmig.Core.Synchronization
          _failureService = failureService;
          _sourceDateService = sourceDateService;
          _syncStateService = syncStateService;
+         _relationshipService = relationshipService;
 
          _retryPolicy = _retryService.CreateRetryPolicy();
       }

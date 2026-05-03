@@ -78,6 +78,7 @@ namespace dvmig.Tests
          );
 
          var syncStateService = new SyncStateService();
+         var relationshipService = new RelationshipService(_targetMock.Object, _loggerMock.Object);
 
          _engine = new SyncEngine(
             _sourceMock.Object,
@@ -92,7 +93,8 @@ namespace dvmig.Tests
             metadataService,
             failureService,
             _sourceDateServiceMock.Object,
-            syncStateService
+            syncStateService,
+            relationshipService
          );
 
          _userResolverMock.Setup(

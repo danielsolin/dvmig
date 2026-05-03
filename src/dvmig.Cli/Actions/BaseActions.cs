@@ -93,6 +93,7 @@ namespace dvmig.Cli.Actions
          var metadataService = new MetadataService(Logger, target);
          var failureService = new FailureService(target, Logger);
          var syncStateService = new SyncStateService();
+         var relationshipService = new RelationshipService(target, Logger);
 
          var engine = new SyncEngine(
             source,
@@ -107,7 +108,8 @@ namespace dvmig.Cli.Actions
             metadataService,
             failureService,
             SourceDateService,
-            syncStateService
+            syncStateService,
+            relationshipService
          );
 
          return (source, target, engine);
