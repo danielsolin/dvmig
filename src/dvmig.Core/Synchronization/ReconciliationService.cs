@@ -129,6 +129,7 @@ namespace dvmig.Core.Synchronization
           IDataverseProvider source,
           IDataverseProvider target,
           ISyncEngine engine,
+          ISyncRecordService recordService,
           SyncOptions options,
           IProgress<(int Processed, int Total, bool Success)>? progress = null,
           CancellationToken ct = default
@@ -192,7 +193,7 @@ namespace dvmig.Core.Synchronization
 
             if (record != null)
             {
-               var (success, _) = await engine.SyncRecordAsync(
+               var (success, _) = await recordService.SyncRecordAsync(
                   record,
                   reconciliationOptions,
                   ct

@@ -31,7 +31,7 @@ namespace dvmig.Cli.Actions
 
       public async Task HandleMigrationAsync(CancellationToken ct)
       {
-         var (source, target, engine) = await SetupSyncEngineAsync();
+         var (source, target, engine, _) = await SetupSyncEngineAsync();
 
          if (source == null || target == null || engine == null)
             return;
@@ -71,7 +71,7 @@ namespace dvmig.Cli.Actions
 
       public async Task HandleRecommendedSyncAsync(CancellationToken ct)
       {
-         var (source, target, engine) = await SetupSyncEngineAsync();
+         var (source, target, engine, _) = await SetupSyncEngineAsync();
 
          if (source == null || target == null || engine == null)
             return;
@@ -252,7 +252,7 @@ namespace dvmig.Cli.Actions
 
                         try
                         {
-                           await engine.SyncEntityAsync(
+                           await engine.SyncAsync(
                               logicalName,
                               options,
                               null,

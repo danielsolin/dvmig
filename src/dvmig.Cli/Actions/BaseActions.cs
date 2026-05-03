@@ -42,7 +42,8 @@ namespace dvmig.Cli.Actions
       protected async Task<(
          IDataverseProvider? Source,
          IDataverseProvider? Target,
-         ISyncEngine? Engine
+         ISyncEngine? Engine,
+         ISyncRecordService? SyncRecordService
       )> SetupSyncEngineAsync()
       {
          var source = await ConnectionManager.ConnectAsync(
@@ -50,14 +51,14 @@ namespace dvmig.Cli.Actions
          );
 
          if (source == null)
-            return (null, null, null);
+            return (null, null, null, null);
 
          var target = await ConnectionManager.ConnectAsync(
             ConnectionDirection.Target
          );
 
          if (target == null)
-            return (null, null, null);
+            return (null, null, null, null);
 
          bool isReady = await Validator.ValidateTargetEnvironmentAsync(
             target,
@@ -95,8 +96,7 @@ namespace dvmig.Cli.Actions
          var syncStateService = new SyncStateService();
          var relationshipService = new RelationshipService(target, Logger);
 
-         var engine = new SyncEngine(
-            source,
+         var syncRecordService = new SyncRecordService(
             target,
             userResolver,
             Logger,
@@ -112,7 +112,17 @@ namespace dvmig.Cli.Actions
             relationshipService
          );
 
-         return (source, target, engine);
+         var engine = new SyncEngine(
+            source,
+            target,
+            Logger,
+            entityService,
+            metadataService,
+            syncStateService,
+            syncRecordService
+         );
+
+         return (source, target, engine, syncRecordService);
       }
 
       /// <summary>

@@ -115,9 +115,9 @@ namespace dvmig.Cli.Actions
 
       public async Task HandleRecommendedReconciliationAsync(CancellationToken ct)
       {
-         var (source, target, engine) = await SetupSyncEngineAsync();
+         var (source, target, engine, syncRecordService) = await SetupSyncEngineAsync();
 
-         if (source == null || target == null || engine == null)
+         if (source == null || target == null || engine == null || syncRecordService == null)
             return;
 
          var recommendedEntities = SystemConstants.SyncSettings
@@ -145,6 +145,7 @@ namespace dvmig.Cli.Actions
             source,
             target,
             engine,
+            syncRecordService,
             recommendedEntities.ToList(),
             ct
          );
@@ -154,9 +155,9 @@ namespace dvmig.Cli.Actions
 
       public async Task HandlePerformReconciliationAsync(CancellationToken ct)
       {
-         var (source, target, engine) = await SetupSyncEngineAsync();
+         var (source, target, engine, syncRecordService) = await SetupSyncEngineAsync();
 
-         if (source == null || target == null || engine == null)
+         if (source == null || target == null || engine == null || syncRecordService == null)
             return;
 
          var selectedEntities = await CliUI.SelectEntitiesAsync(
@@ -175,6 +176,7 @@ namespace dvmig.Cli.Actions
             source,
             target,
             engine,
+            syncRecordService,
             selectedEntities,
             ct
          );
@@ -186,6 +188,7 @@ namespace dvmig.Cli.Actions
          IDataverseProvider source,
          IDataverseProvider target,
          ISyncEngine engine,
+         ISyncRecordService recordService,
          List<string> entities,
          CancellationToken ct
       )
@@ -240,6 +243,7 @@ namespace dvmig.Cli.Actions
                            source,
                            target,
                            engine,
+                           recordService,
                            options,
                            recordProgress,
                            ct
@@ -265,3 +269,4 @@ namespace dvmig.Cli.Actions
       }
    }
 }
+

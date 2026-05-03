@@ -17,6 +17,7 @@ namespace dvmig.Tests
       private readonly Mock<ISourceDateService> _sourceDateServiceMock;
       private readonly Mock<ILogger> _loggerMock;
       private readonly SyncEngine _engine;
+      private readonly SyncRecordService _syncRecordService;
 
       public SyncEngineTests()
       {
@@ -80,8 +81,7 @@ namespace dvmig.Tests
          var syncStateService = new SyncStateService();
          var relationshipService = new RelationshipService(_targetMock.Object, _loggerMock.Object);
 
-         _engine = new SyncEngine(
-            _sourceMock.Object,
+         _syncRecordService = new SyncRecordService(
             _targetMock.Object,
             _userResolverMock.Object,
             _loggerMock.Object,
@@ -95,6 +95,16 @@ namespace dvmig.Tests
             _sourceDateServiceMock.Object,
             syncStateService,
             relationshipService
+         );
+
+         _engine = new SyncEngine(
+            _sourceMock.Object,
+            _targetMock.Object,
+            _loggerMock.Object,
+            entityService,
+            metadataService,
+            syncStateService,
+            _syncRecordService
          );
 
          _userResolverMock.Setup(
@@ -147,7 +157,7 @@ namespace dvmig.Tests
          var options = new SyncOptions();
 
          // Act
-         var (result, _) = await _engine.SyncRecordAsync(account, options);
+         var (result, _) = await _syncRecordService.SyncRecordAsync(account, options);
 
          // Assert
          Assert.True(result);
@@ -225,7 +235,7 @@ namespace dvmig.Tests
          var options = new SyncOptions();
 
          // Act
-         var (result, _) = await _engine.SyncRecordAsync(contact, options);
+         var (result, _) = await _syncRecordService.SyncRecordAsync(contact, options);
 
          // Assert
          Assert.True(result);
@@ -288,7 +298,7 @@ namespace dvmig.Tests
          var options = new SyncOptions();
 
          // Act
-         var (result, _) = await _engine.SyncRecordAsync(
+         var (result, _) = await _syncRecordService.SyncRecordAsync(
             intersectEntity,
             options
          );
@@ -346,7 +356,7 @@ namespace dvmig.Tests
          var options = new SyncOptions();
 
          // Act
-         await _engine.SyncRecordAsync(account, options);
+         await _syncRecordService.SyncRecordAsync(account, options);
 
          // Assert
          _targetMock.Verify(
@@ -390,7 +400,7 @@ namespace dvmig.Tests
          };
 
          // Act
-         await _engine.SyncRecordAsync(account, options);
+         await _syncRecordService.SyncRecordAsync(account, options);
 
          // Assert
          _sourceDateServiceMock.Verify(
@@ -447,7 +457,7 @@ namespace dvmig.Tests
          var options = new SyncOptions();
 
          // Act
-         var (result, _) = await _engine.SyncRecordAsync(account, options);
+         var (result, _) = await _syncRecordService.SyncRecordAsync(account, options);
 
          // Assert
          Assert.True(result);
@@ -508,7 +518,7 @@ namespace dvmig.Tests
          var options = new SyncOptions();
 
          // Act
-         var (result, _) = await _engine.SyncRecordAsync(account, options);
+         var (result, _) = await _syncRecordService.SyncRecordAsync(account, options);
 
          // Assert
          Assert.True(result);
@@ -564,9 +574,11 @@ namespace dvmig.Tests
          var options = new SyncOptions();
 
          // Act
-         await _engine.SyncAsync(
-            new[] { account },
-            options
+         await _syncRecordService.SyncRecordAndReportAsync(
+            account,
+            options,
+            null,
+            CancellationToken.None
          );
 
          // Assert

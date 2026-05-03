@@ -11,60 +11,6 @@ namespace dvmig.Core.Interfaces
    public interface ISyncEngine
    {
       /// <summary>
-      /// Synchronizes a collection of entities from the source to 
-      /// the target.
-      /// </summary>
-      /// <param name="entities">The collection of entities to sync.</param>
-      /// <param name="options">
-      /// The synchronization configuration options.
-      /// </param>
-      /// <param name="recordProgress">
-      /// An optional progress reporter for individual record 
-      /// success/failure.
-      /// </param>
-      /// <param name="ct">A cancellation token.</param>
-      /// <returns>
-      /// A task representing the asynchronous sync operation.
-      /// </returns>
-      Task SyncAsync(
-         IEnumerable<Entity> entities,
-         SyncOptions options,
-         IProgress<bool>? recordProgress = null,
-         CancellationToken ct = default
-      );
-
-      /// <summary>
-      /// Synchronizes a single entity record from the source to the target.
-      /// </summary>
-      /// <param name="entity">The entity record to synchronize.</param>
-      /// <param name="options">
-      /// The synchronization configuration options.
-      /// </param>
-      /// <param name="ct">A cancellation token.</param>
-      /// <returns>
-      /// True if the synchronization was successful; otherwise, false.
-      /// </returns>
-      Task<(bool Success, string? FailureMessage)> SyncRecordAsync(
-         Entity entity,
-         SyncOptions options,
-         CancellationToken ct = default
-      );
-
-      /// <summary>
-      /// Retrieves a set of valid attributes for extraction, excluding 
-      /// logical or non-readable columns to optimize query performance.
-      /// </summary>
-      /// <param name="logicalName">The logical name of the entity.</param>
-      /// <param name="ct">A cancellation token.</param>
-      /// <returns>
-      /// A configured ColumnSet containing valid attributes.
-      /// </returns>
-      Task<Microsoft.Xrm.Sdk.Query.ColumnSet> GetValidColumnsAsync(
-         string logicalName,
-         CancellationToken ct = default
-      );
-
-      /// <summary>
       /// Synchronizes all records of a specific entity type from the 
       /// source to the target, handling pagination automatically.
       /// </summary>
@@ -79,7 +25,7 @@ namespace dvmig.Core.Interfaces
       /// </param>
       /// <param name="ct">A cancellation token.</param>
       /// <returns>A task representing the operation.</returns>
-      Task SyncEntityAsync(
+      Task SyncAsync(
          string logicalName,
          SyncOptions options,
          QueryExpression? query = null,

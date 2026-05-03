@@ -1,7 +1,5 @@
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Messages;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace dvmig.Core.Interfaces
 {
