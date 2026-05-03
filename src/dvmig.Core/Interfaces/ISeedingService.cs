@@ -18,20 +18,5 @@ namespace dvmig.Core.Interfaces
          int recordCount = 50,
          CancellationToken ct = default
       );
-
-      /// <summary>
-      /// Cleans test data from the specified environment.
-      /// </summary>
-      /// <param name="provider">The Dataverse provider.</param>
-      /// <param name="entities">Optional list of entities to clean.</param>
-      /// <param name="progress">Optional progress reporter for remaining count.</param>
-      /// <param name="ct">A cancellation token.</param>
-      /// <returns>A task representing the asynchronous operation.</returns>
-      Task CleanTestDataAsync(
-         IDataverseProvider provider,
-         List<string>? entities = null,
-         IProgress<long>? progress = null,
-         CancellationToken ct = default
-      );
    }
 }

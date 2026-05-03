@@ -1,9 +1,7 @@
 using Bogus;
 using dvmig.Core.Interfaces;
-using dvmig.Core.Shared;
 using Microsoft.Xrm.Sdk;
-using Microsoft.Xrm.Sdk.Messages;
-using Microsoft.Xrm.Sdk.Query;
+using static dvmig.Core.Shared.SystemConstants;
 
 namespace dvmig.Core.Provisioning
 {
@@ -34,134 +32,127 @@ namespace dvmig.Core.Provisioning
          CancellationToken ct = default
       )
       {
-         _logger.Information($"Seeding {recordCount} records per entity...");
+         _logger.Information(
+            $"Seeding {recordCount} Accounts with related data..."
+         );
 
          var faker = new Faker();
          var retryPolicy = _retryService.CreateRetryPolicy();
 
-         var entities = new[] { "account", "contact" };
-
-         foreach (var logicalName in entities)
+         var activityTypes = new[]
          {
-            for (int i = 0; i < recordCount; i++)
+            DataverseEntities.Task,
+            DataverseEntities.PhoneCall,
+            DataverseEntities.Email
+         };
+
+         for (int i = 0; i < recordCount; i++)
+         {
+            // 1. Create Account
+            var account = new Entity(DataverseEntities.Account);
+            account[DataverseAttributes.Name] = 
+               faker.Company.CompanyName();
+            account[DataverseAttributes.Telephone1] = 
+               faker.Phone.PhoneNumber();
+
+            var accountId = await retryPolicy.ExecuteAsync(
+               async () => await provider.CreateAsync(account, ct)
+            );
+
+            // 2. Create 2-7 Contacts per Account
+            var contactsInAccount = new List<Guid>();
+            int contactCount = faker.Random.Int(2, 7);
+
+            for (int j = 0; j < contactCount; j++)
             {
-               var entity = new Entity(logicalName);
-               if (logicalName == "account")
+               var contact = new Entity(
+                  DataverseEntities.Contact
+               );
+
+               contact[DataverseAttributes.FirstName] = 
+                  faker.Name.FirstName();
+               contact[DataverseAttributes.LastName] = 
+                  faker.Name.LastName();
+               contact[DataverseAttributes.EmailAddress1] = 
+                  faker.Internet.Email();
+
+               contact[DataverseAttributes.ParentCustomerId] =
+                  new EntityReference(
+                     DataverseEntities.Account,
+                     accountId
+                  );
+
+               var contactId = await retryPolicy.ExecuteAsync(
+                  async () => await provider.CreateAsync(contact, ct)
+               );
+
+               contactsInAccount.Add(contactId);
+            }
+
+            // Set Primary Contact on Account
+            var primaryContactId = faker.PickRandom(contactsInAccount);
+            var accountUpdate = new Entity(
+               DataverseEntities.Account, 
+               accountId
+            );
+
+            accountUpdate[DataverseAttributes.PrimaryContactId] =
+               new EntityReference(
+                  DataverseEntities.Contact, 
+                  primaryContactId
+               );
+
+            await retryPolicy.ExecuteAsync(
+               async () => await provider.UpdateAsync(accountUpdate, ct)
+            );
+
+            // 3. Create 5-12 Activities per Account
+            int activityCount = faker.Random.Int(5, 12);
+
+            for (int k = 0; k < activityCount; k++)
+            {
+               var logicalName = faker.PickRandom(activityTypes);
+               var activity = new Entity(logicalName);
+
+               activity[DataverseAttributes.Subject] = 
+                  faker.Lorem.Sentence(5);
+               activity[DataverseAttributes.Description] = 
+                  faker.Lorem.Paragraph();
+               activity[DataverseAttributes.ScheduledEnd] = 
+                  faker.Date.Future();
+
+               // Randomly relate to Account or a random Contact 
+               // within that Account
+               var regardingAttr = 
+                  DataverseAttributes.RegardingObjectId;
+
+               if (faker.Random.Bool())
                {
-                  entity["name"] = faker.Company.CompanyName();
-                  entity["telephone1"] = faker.Phone.PhoneNumber();
+                  activity[regardingAttr] = new EntityReference(
+                     DataverseEntities.Account, 
+                     accountId
+                  );
                }
                else
                {
-                  entity["firstname"] = faker.Name.FirstName();
-                  entity["lastname"] = faker.Name.LastName();
-                  entity["emailaddress1"] = faker.Internet.Email();
+                  activity[regardingAttr] = new EntityReference(
+                     DataverseEntities.Contact, 
+                     faker.PickRandom(contactsInAccount)
+                  );
                }
 
                await retryPolicy.ExecuteAsync(
-                  async () => await provider.CreateAsync(entity, ct)
+                  async () => await provider.CreateAsync(activity, ct)
                );
             }
+
+            _logger.Information(
+               $"Account {i + 1}/{recordCount} seeded with " +
+               $"{contactCount} contacts and {activityCount} activities."
+            );
          }
 
          _logger.Information("Seeding complete.");
-      }
-
-      //DMSFIX: Should the cleanup logic be here in the seeding class?
-      /// <inheritdoc />
-      public async Task CleanTestDataAsync(
-         IDataverseProvider provider,
-         List<string>? entities = null,
-         IProgress<long>? progress = null,
-         CancellationToken ct = default
-      )
-      {
-         var targetEntities = entities ??
-            SystemConstants.SyncSettings.RecommendedEntities.ToList();
-
-         targetEntities.Reverse();
-
-         long totalDeleted = 0;
-         long initialTotal = 0;
-         var lockObject = new object();
-
-         foreach (var entity in targetEntities)
-            initialTotal += await provider.GetRecordCountAsync(entity, ct);
-
-         progress?.Report(initialTotal);
-
-         foreach (var logicalName in targetEntities)
-         {
-            _logger.Information($"Cleaning {logicalName}...");
-
-            while (true)
-            {
-               var query = new QueryExpression(logicalName)
-               {
-                  ColumnSet = new ColumnSet(false),
-                  TopCount = 1000 // Fetch 1000 at a time to process in 10 parallel batches of 100
-               };
-
-               var results = await provider.RetrieveMultipleAsync(query, ct);
-               if (results.Entities.Count == 0)
-                  break;
-
-               // Split the 1000 records into chunks of 100 for parallel batching
-               var chunks = results.Entities
-                  .Select((e, i) => new { Entity = e, Index = i })
-                  .GroupBy(x => x.Index / 100)
-                  .Select(g => g.Select(x => x.Entity).ToList())
-                  .ToList();
-
-               var parallelOptions = new ParallelOptions
-               {
-                  MaxDegreeOfParallelism = 10,
-                  CancellationToken = ct
-               };
-
-               var retryPolicy = _retryService.CreateRetryPolicy();
-
-               await Parallel.ForEachAsync(
-                  chunks,
-                  parallelOptions,
-                  async (chunk, token) =>
-                  {
-                     var multipleRequest = new ExecuteMultipleRequest
-                     {
-                        Settings = new ExecuteMultipleSettings
-                        {
-                           ContinueOnError = true,
-                           ReturnResponses = false
-                        },
-                        Requests = new OrganizationRequestCollection()
-                     };
-
-                     foreach (var entity in chunk)
-                        multipleRequest.Requests.Add(new DeleteRequest
-                        {
-                           Target = entity.ToEntityReference()
-                        });
-
-                     await retryPolicy.ExecuteAsync(
-                        async () => await provider.ExecuteAsync(
-                           multipleRequest, 
-                           token
-                        )
-                     );
-
-                     lock (lockObject)
-                     {
-                        totalDeleted += chunk.Count;
-                        progress?.Report(
-                           Math.Max(0, initialTotal - totalDeleted)
-                        );
-                     }
-                  }
-               );
-            }
-         }
-
-         _logger.Information("Cleanup complete.");
       }
    }
 }

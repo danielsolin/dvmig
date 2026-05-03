@@ -4,6 +4,7 @@ using dvmig.Core.Settings;
 using dvmig.Core.Shared;
 using Microsoft.Crm.Sdk.Messages;
 using Spectre.Console;
+using static dvmig.Core.Shared.SystemConstants;
 
 namespace dvmig.Cli
 {

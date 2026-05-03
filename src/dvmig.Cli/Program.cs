@@ -40,6 +40,7 @@ namespace dvmig.Cli
 
          var settingsService = new SettingsService();
          var seedingService = new SeedingService(logger, retryService);
+         var wipeDataService = new WipeDataService(logger, retryService);
          var entityService = new EntityService(logger);
          var metadataService = new MetadataService(logger);
          var reconciliationService = new ReconciliationService(
@@ -78,6 +79,7 @@ namespace dvmig.Cli
          _maintenanceActions = new MaintenanceActions(
             connectionManager,
             seedingService,
+            wipeDataService,
             pluginService,
             sourceDateService,
             validationService,

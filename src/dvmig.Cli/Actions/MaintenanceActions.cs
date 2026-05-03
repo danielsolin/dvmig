@@ -2,17 +2,20 @@ using dvmig.Core.Interfaces;
 using dvmig.Core.Shared;
 using Microsoft.Crm.Sdk.Messages;
 using Spectre.Console;
+using static dvmig.Core.Shared.SystemConstants;
 
 namespace dvmig.Cli.Actions
 {
    public class MaintenanceActions : BaseActions
    {
       private readonly ISeedingService _seedingService;
+      private readonly IWipeDataService _wipeDataService;
       private readonly IMetadataService _metadataService;
 
       public MaintenanceActions(
          ConnectionManager connectionManager,
          ISeedingService seedingService,
+         IWipeDataService wipeDataService,
          IPluginService pluginService,
          ISourceDateService sourceDateService,
          IValidationService validator,
@@ -29,6 +32,7 @@ namespace dvmig.Cli.Actions
       )
       {
          _seedingService = seedingService;
+         _wipeDataService = wipeDataService;
          _metadataService = metadataService;
       }
 
@@ -43,7 +47,8 @@ namespace dvmig.Cli.Actions
 
          var prompt =
             $"How many {SystemConstants.UiMarkup.BoldBlue}Accounts[/] " +
-            "would you like to generate?";
+            "(with related Contacts and Activities) would you like " +
+            "to generate?";
 
          int count = AnsiConsole.Ask<int>(prompt, 100);
 
@@ -227,7 +232,7 @@ namespace dvmig.Cli.Actions
                "Initializing wipe...",
                async ctx =>
                {
-                  var cleanupTask = _seedingService.CleanTestDataAsync(
+                  var cleanupTask = _wipeDataService.WipeEntitiesAsync(
                      provider,
                      selectedEntities,
                      progress,
