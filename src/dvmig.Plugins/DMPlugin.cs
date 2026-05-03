@@ -102,8 +102,8 @@ namespace dvmig.Plugins
       {
          var entityName = SystemConstants.SourceDate.EntityLogicalName;
          var primaryId = SystemConstants.SourceDate.PrimaryId;
-         var createdDateAttr = SystemConstants.SourceDate.CreatedDate;
-         var modifiedDateAttr = SystemConstants.SourceDate.ModifiedDate;
+         var createdOnAttr = SystemConstants.SourceDate.CreatedOn;
+         var modifiedOnAttr = SystemConstants.SourceDate.ModifiedOn;
          var sourceEntityId = SystemConstants.SourceDate.EntityId;
 
          var logicalNameAttr =
@@ -114,8 +114,8 @@ namespace dvmig.Plugins
                      mapping='logical' distinct='false' count='1'>
                <entity name='{entityName}'>
                   <attribute name='{primaryId}' />
-                  <attribute name='{createdDateAttr}' />
-                  <attribute name='{modifiedDateAttr}' />
+                  <attribute name='{createdOnAttr}' />
+                  <attribute name='{modifiedOnAttr}' />
                   <filter type='and'>
                      <condition attribute='{sourceEntityId}'
                      operator='eq' value='{entityId}' />
@@ -145,10 +145,10 @@ namespace dvmig.Plugins
          Entity sourceDate
       )
       {
-         if (sourceDate.Contains(SystemConstants.SourceDate.CreatedDate))
+         if (sourceDate.Contains(SystemConstants.SourceDate.CreatedOn))
          {
             var createdDate =
-               sourceDate[SystemConstants.SourceDate.CreatedDate];
+               sourceDate[SystemConstants.SourceDate.CreatedOn];
 
             entity[SystemConstants.DataverseAttributes.CreatedOn] =
                createdDate;
@@ -157,9 +157,9 @@ namespace dvmig.Plugins
                createdDate;
          }
 
-         if (sourceDate.Contains(SystemConstants.SourceDate.ModifiedDate))
+         if (sourceDate.Contains(SystemConstants.SourceDate.ModifiedOn))
             entity[SystemConstants.DataverseAttributes.ModifiedOn] =
-               sourceDate[SystemConstants.SourceDate.ModifiedDate];
+               sourceDate[SystemConstants.SourceDate.ModifiedOn];
       }
 
       /// <summary>
@@ -171,9 +171,9 @@ namespace dvmig.Plugins
          Entity sourceDate
       )
       {
-         if (sourceDate.Contains(SystemConstants.SourceDate.ModifiedDate))
+         if (sourceDate.Contains(SystemConstants.SourceDate.ModifiedOn))
             entity[SystemConstants.DataverseAttributes.ModifiedOn] =
-               sourceDate[SystemConstants.SourceDate.ModifiedDate];
+               sourceDate[SystemConstants.SourceDate.ModifiedOn];
       }
    }
 }

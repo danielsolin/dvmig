@@ -23,8 +23,8 @@ namespace dvmig.Core.Shared
          public const string EntityId = "dm_sourceentityid";
          public const string EntityLogicalNameAttr =
             "dm_sourceentitylogicalname";
-         public const string CreatedDate = "dm_sourcecreateddate";
-         public const string ModifiedDate = "dm_sourcemodifieddate";
+         public const string CreatedOn = "dm_sourcecreateddate";
+         public const string ModifiedOn = "dm_sourcemodifieddate";
       }
 
       /// <summary>

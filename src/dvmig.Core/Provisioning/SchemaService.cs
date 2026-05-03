@@ -127,7 +127,7 @@ namespace dvmig.Core.Provisioning
             target,
             entityName,
             existingMeta!,
-            SystemConstants.SourceDate.CreatedDate,
+            SystemConstants.SourceDate.CreatedOn,
             "Source Created Date",
             ct,
             false // DateTime
@@ -137,7 +137,7 @@ namespace dvmig.Core.Provisioning
             target,
             entityName,
             existingMeta!,
-            SystemConstants.SourceDate.ModifiedDate,
+            SystemConstants.SourceDate.ModifiedOn,
             "Source Modified Date",
             ct,
             false // DateTime

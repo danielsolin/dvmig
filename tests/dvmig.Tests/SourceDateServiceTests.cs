@@ -113,9 +113,9 @@ namespace dvmig.Tests
                      e[SystemConstants.SourceDate.EntityLogicalNameAttr]
                         .ToString() ==
                         SystemConstants.DataverseEntities.Account &&
-                     (DateTime)e[SystemConstants.SourceDate.CreatedDate] ==
+                     (DateTime)e[SystemConstants.SourceDate.CreatedOn] ==
                         createdOn &&
-                     (DateTime)e[SystemConstants.SourceDate.ModifiedDate] ==
+                     (DateTime)e[SystemConstants.SourceDate.ModifiedOn] ==
                         modifiedOn
                ),
                It.IsAny<CancellationToken>()

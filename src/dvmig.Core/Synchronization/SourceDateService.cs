@@ -159,11 +159,11 @@ namespace dvmig.Core.Synchronization
             entity.LogicalName.ToLowerInvariant();
 
          if (entity.Contains(SystemConstants.DataverseAttributes.CreatedOn))
-            sourceDate[SystemConstants.SourceDate.CreatedDate] =
+            sourceDate[SystemConstants.SourceDate.CreatedOn] =
                entity[SystemConstants.DataverseAttributes.CreatedOn];
 
          if (entity.Contains(SystemConstants.DataverseAttributes.ModifiedOn))
-            sourceDate[SystemConstants.SourceDate.ModifiedDate] =
+            sourceDate[SystemConstants.SourceDate.ModifiedOn] =
                entity[SystemConstants.DataverseAttributes.ModifiedOn];
 
          return sourceDate;
