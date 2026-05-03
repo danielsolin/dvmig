@@ -114,6 +114,7 @@ namespace dvmig.Core.Providers
          CancellationToken ct = default
       )
       {
+
          return await _client.CreateAsync(entity, ct);
       }
 
@@ -160,6 +161,7 @@ namespace dvmig.Core.Providers
          CancellationToken ct = default
       )
       {
+
          return await _client.RetrieveMultipleAsync(query, ct);
       }
 
@@ -169,6 +171,7 @@ namespace dvmig.Core.Providers
          CancellationToken ct = default
       )
       {
+
          return await _client.ExecuteAsync(request, ct);
       }
 

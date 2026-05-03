@@ -45,6 +45,7 @@ namespace dvmig.Core.Provisioning
                   SystemConstants.PluginRegistration.AssemblyId
                )
             };
+
             assemblyQuery.AddAttributeValue(
                SystemConstants.PluginRegistration.AssemblyName,
                SystemConstants.AppConstants.PluginName
@@ -67,6 +68,7 @@ namespace dvmig.Core.Provisioning
                   SystemConstants.PluginRegistration.TypeId
                )
             };
+
             typeQuery.AddAttributeValue(
                SystemConstants.PluginRegistration.TypeName,
                $"{SystemConstants.AppConstants.PluginName}.DMPlugin"
@@ -88,6 +90,7 @@ namespace dvmig.Core.Provisioning
                   SystemConstants.PluginRegistration.MessageName
                )
             };
+
             stepQuery.AddAttributeValue(
                SystemConstants.PluginRegistration.EventHandler,
                typeId

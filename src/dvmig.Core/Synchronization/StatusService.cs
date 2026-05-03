@@ -50,12 +50,14 @@ namespace dvmig.Core.Synchronization
          );
 
          var stateValue = entity.Contains(
-            SystemConstants.DataverseAttributes.StateCode)
+            SystemConstants.DataverseAttributes.StateCode
+         )
             ? entity[SystemConstants.DataverseAttributes.StateCode]
             : null;
 
          var statusValue = entity.Contains(
-            SystemConstants.DataverseAttributes.StatusCode)
+            SystemConstants.DataverseAttributes.StatusCode
+         )
             ? entity[SystemConstants.DataverseAttributes.StatusCode]
             : null;
 
@@ -67,9 +69,11 @@ namespace dvmig.Core.Synchronization
          );
 
          entity.Attributes.Remove(
-            SystemConstants.DataverseAttributes.StateCode);
+            SystemConstants.DataverseAttributes.StateCode
+         );
          entity.Attributes.Remove(
-            SystemConstants.DataverseAttributes.StatusCode);
+            SystemConstants.DataverseAttributes.StatusCode
+         );
 
          var (success, _) = createOrUpdateFunc != null
             ? await createOrUpdateFunc(entity, options, ct)

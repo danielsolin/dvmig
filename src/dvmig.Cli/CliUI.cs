@@ -54,6 +54,7 @@ namespace dvmig.Cli
          Func<Task<T>> action
       )
       {
+
          return await AnsiConsole.Status()
             .StartAsync(statusMessage, async ctx => await action());
       }

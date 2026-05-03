@@ -94,13 +94,11 @@ namespace dvmig.Core.Synchronization
             );
 
             if (result.Entities.Any())
-            {
                await target.DeleteAsync(
                   SystemConstants.SourceDate.EntityLogicalName,
                   result.Entities[0].Id,
                   ct
                );
-            }
          }
          catch (Exception ex)
          {

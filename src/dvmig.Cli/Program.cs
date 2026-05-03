@@ -9,48 +9,44 @@ using Spectre.Console;
 
 namespace dvmig.Cli
 {
-   /// <summary>
-   /// Entry point for the Terminal User Interface (TUI) version of the
-   /// Dataverse Migrator.
-   /// </summary>
    [SupportedOSPlatform("windows")]
    class Program
    {
-      private record MenuItem(string Label, Func<CancellationToken, Task>? Action);
+      private static SyncActions? _migrationActions;
+      private static ReconciliationActions? _reconciliationActions;
+      private static MaintenanceActions? _maintenanceActions;
 
       private static CancellationTokenSource? _currentActionCts;
       private static DateTime _lastCtrlC = DateTime.MinValue;
+      private static bool _developerMode;
+
+      private record MenuItem(
+         string Label,
+         Func<CancellationToken, Task>? Action
+      );
+
 
       static async Task Main(string[] args)
       {
-         Console.OutputEncoding = Encoding.UTF8;
+         Init(args);
+         InitConsole();
+         await HandleMenuActions();
+      }
 
-         // Set up global Ctrl+C handling
-         Console.CancelKeyPress += (s, e) =>
-         {
-            e.Cancel = true;
-
-            var now = DateTime.Now;
-            if (now - _lastCtrlC < TimeSpan.FromSeconds(1))
-            {
-               // Force immediate exit on double-tap
-               Environment.Exit(0);
-            }
-
-            _lastCtrlC = now;
-
-            // Signal the current action to stop
-            _currentActionCts?.Cancel();
-         };
-
-         var logger = new dvmig.Core.Shared.Logger();
+      private static void Init(string[] args)
+      {
+         var logger = new Logger();
          var retryService = new RetryService(logger);
 
          var settingsService = new SettingsService();
          var seedingService = new SeedingService(logger, retryService);
          var entityService = new EntityService(logger);
          var metadataService = new MetadataService(logger);
-         var reconciliationService = new ReconciliationService(entityService, logger);
+         var reconciliationService = new ReconciliationService(
+            entityService,
+            logger
+         );
+
          var validationService = new ValidationService();
          var schemaService = new SchemaService(logger);
          var sourceDateService = new SourceDateService(logger);
@@ -58,7 +54,7 @@ namespace dvmig.Cli
 
          var connectionManager = new ConnectionManager(settingsService);
 
-         var migrationActions = new MigrationActions(
+         _migrationActions = new SyncActions(
             connectionManager,
             metadataService,
             pluginService,
@@ -68,7 +64,7 @@ namespace dvmig.Cli
             logger
          );
 
-         var reconciliationActions = new ReconciliationActions(
+         _reconciliationActions = new ReconciliationActions(
             connectionManager,
             reconciliationService,
             metadataService,
@@ -79,7 +75,7 @@ namespace dvmig.Cli
             logger
          );
 
-         var maintenanceActions = new MaintenanceActions(
+         _maintenanceActions = new MaintenanceActions(
             connectionManager,
             seedingService,
             pluginService,
@@ -89,78 +85,34 @@ namespace dvmig.Cli
             metadataService,
             logger
          );
-         bool developerMode =
+
+         _developerMode =
             args.Contains(SystemConstants.CliSettings.DevShort) ||
             args.Contains(SystemConstants.CliSettings.DevLong) ||
             args.Contains(SystemConstants.CliSettings.DevFull);
+      }
 
-         CliUI.WriteHeader();
+      private static void InitConsole()
+      {
+         Console.OutputEncoding = Encoding.UTF8;
 
-         bool exit = false;
-
-         while (!exit)
+         Console.CancelKeyPress += (s, e) =>
          {
-            var prompt = GetMenu(
-               developerMode,
-               migrationActions,
-               reconciliationActions,
-               maintenanceActions,
-               () => exit = true
-            );
+            e.Cancel = true;
 
-            MenuItem choice;
-            try
-            {
-               choice = AnsiConsole.Prompt(prompt);
-            }
-            catch (Exception)
-            {
-               // Catch potential Spectre.Console exceptions during interrupt
-               if (!AnsiConsole.Confirm("Back (Y) or Quit (N)?", true))
-                  exit = true;
+            var now = DateTime.Now;
+            if(now - _lastCtrlC < TimeSpan.FromSeconds(1))
+               Environment.Exit(0);
 
-               continue;
-            }
+            _lastCtrlC = now;
 
-            if (choice.Action != null)
-            {
-               _currentActionCts = new CancellationTokenSource();
-
-               try
-               {
-                  await choice.Action(_currentActionCts.Token);
-               }
-               catch (OperationCanceledException)
-               {
-                  AnsiConsole.MarkupLine(
-                     $"\n{SystemConstants.UiMarkup.Yellow}Operation interrupted.[/]"
-                  );
-
-                  if (!AnsiConsole.Confirm("Back (Y) or Quit (N)?", true))
-                     exit = true;
-               }
-               catch (Exception ex)
-               {
-                  CliUI.WriteError($"An unexpected error occurred: {ex.Message}");
-               }
-               finally
-               {
-                  _currentActionCts.Dispose();
-                  _currentActionCts = null;
-               }
-            }
-
-            if (!exit)
-            {
-               CliUI.Pause();
-               CliUI.WriteHeader();
-            }
-         }
+            _currentActionCts?.Cancel();
+         };
       }
 
       private static SelectionPrompt<MenuItem> GetMenu(
          bool developerMode,
-         MigrationActions migrationActions,
+         SyncActions syncActions,
          ReconciliationActions reconciliationActions,
          MaintenanceActions maintenanceActions,
          Action onExit
@@ -174,9 +126,9 @@ namespace dvmig.Cli
          var syncGroup = new List<MenuItem>
          {
             new MenuItem(
-               $"Migrate Recommended {SystemConstants.UiMarkup.Grey}" +
+               $"Sync Recommended {SystemConstants.UiMarkup.Grey}" +
                "(Accounts, Contacts, Activities)[/]",
-               migrationActions.HandleRecommendedSyncAsync
+               syncActions.HandleRecommendedSyncAsync
             ),
             new MenuItem(
                $"Find & Fix Recommended {SystemConstants.UiMarkup.Grey}" +
@@ -184,9 +136,9 @@ namespace dvmig.Cli
                reconciliationActions.HandleRecommendedReconciliationAsync
             ),
             new MenuItem(
-               $"Migrate Selected {SystemConstants.UiMarkup.Grey}" +
+               $"Sync Selected {SystemConstants.UiMarkup.Grey}" +
                "(pick entities)[/]",
-               migrationActions.HandleMigrationAsync
+               syncActions.HandleMigrationAsync
             ),
             new MenuItem(
                $"Find & Fix Selected {SystemConstants.UiMarkup.Grey}" +
@@ -208,13 +160,13 @@ namespace dvmig.Cli
             var maintenanceGroup = new List<MenuItem>
             {
                new MenuItem(
-                  $"Install DVMig Components {SystemConstants.UiMarkup.Grey}" +
-                  "(Target)[/]",
+                  $"Install DVMig Components {SystemConstants.UiMarkup.Grey}"
+                  + "(Target)[/]",
                   maintenanceActions.HandleInstallMenuAsync
                ),
                new MenuItem(
-                  $"Uninstall DVMig Components {SystemConstants.UiMarkup.Grey}" +
-                  "(Target)[/]",
+                  $"Uninstall DVMig Components {SystemConstants.UiMarkup.Grey}"
+                  + "(Target)[/]",
                   maintenanceActions.HandleTargetComponentsCleanupAsync
                ),
                new MenuItem(
@@ -252,27 +204,98 @@ namespace dvmig.Cli
 
             prompt.AddChoiceGroup(
                new MenuItem(
-                  $"🧪 {SystemConstants.UiMarkup.BoldMagenta}Data Management[/]",
+                  $"🧪 {SystemConstants.UiMarkup.BoldMagenta}"
+                  + "Data Management[/]",
                   null
                ),
                dataGroup
             );
          }
 
-         prompt.AddChoices(new[]
-         {
-            new MenuItem(
-               "Exit",
-               (ct) =>
-               {
-                  onExit();
+         prompt.AddChoices(
+            new[]
+            {
+               new MenuItem(
+                  "Exit",
+                  (ct) =>
+                  {
+                     onExit();
 
-                  return Task.CompletedTask;
-               }
-            )
-         });
+                     return Task.CompletedTask;
+                  }
+               )
+            }
+         );
 
          return prompt;
+      }
+
+      private static async Task HandleMenuActions()
+      {
+         CliUI.WriteHeader();
+
+         bool exit = false;
+         while(!exit)
+         {
+            var prompt = GetMenu(
+               _developerMode,
+               _migrationActions!,
+               _reconciliationActions!,
+               _maintenanceActions!,
+               () => exit = true
+            );
+
+            MenuItem choice;
+            try
+            {
+               choice = AnsiConsole.Prompt(prompt);
+            }
+            catch(Exception)
+            {
+               // Handles cases where the prompt is interrupted (e.g., Ctrl+C),
+               // preventing a crash and allowing the user to stay in the app.
+               if(!AnsiConsole.Confirm("Back (Y) or Quit (N)?", true))
+                  exit = true;
+
+               continue;
+            }
+
+            if(choice.Action != null)
+            {
+               _currentActionCts = new CancellationTokenSource();
+
+               try
+               {
+                  await choice.Action(_currentActionCts.Token);
+               }
+               catch(OperationCanceledException)
+               {
+                  AnsiConsole.MarkupLine(
+                     $"\n{SystemConstants.UiMarkup.Yellow}"
+                     + "Operation interrupted.[/]"
+                  );
+
+                  if(!AnsiConsole.Confirm("Back (Y) or Quit (N)?", true))
+                     exit = true;
+               }
+               catch(Exception ex)
+               {
+                  CliUI.WriteError($"An unexpected error occurred: "
+                     + $"{ex.Message}");
+               }
+               finally
+               {
+                  _currentActionCts.Dispose();
+                  _currentActionCts = null;
+               }
+            }
+
+            if(!exit)
+            {
+               CliUI.Pause();
+               CliUI.WriteHeader();
+            }
+         }
       }
    }
 }

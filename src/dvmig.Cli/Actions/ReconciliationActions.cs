@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using dvmig.Core.Interfaces;
 using dvmig.Core.Shared;
 using dvmig.Core.Synchronization;
@@ -212,33 +208,44 @@ namespace dvmig.Cli.Actions
             try
             {
                await AnsiConsole.Status()
-                  .StartAsync("Initializing reconciliation...", async ctx =>
-                  {
-                     var recordProgress = new Progress<(int Processed, int Total, bool Success)>(p =>
+                  .StartAsync(
+                     "Initializing reconciliation...",
+                     async ctx =>
                      {
-                        if (!p.Success)
-                           failedCount++;
+                        var recordProgress = new Progress<(
+                           int Processed,
+                           int Total,
+                           bool Success
+                        )>(
+                           p =>
+                           {
+                              if (!p.Success)
+                                 failedCount++;
 
-                        var desc = $"[yellow]Reconciling {logicalName}...[/] " +
-                           $"{p.Processed}/{p.Total} records processed";
+                              var desc =
+                                 $"[yellow]Reconciling {logicalName}...[/] " +
+                                 $"{p.Processed}/{p.Total} records processed";
 
-                        if (failedCount > 0)
-                           desc +=
-                              $" {SystemConstants.UiMarkup.Red}({failedCount} failed)[/]";
+                              if (failedCount > 0)
+                                 desc +=
+                                    $" {SystemConstants.UiMarkup.Red}" +
+                                    $"({failedCount} failed)[/]";
 
-                        ctx.Status(desc);
-                     });
+                              ctx.Status(desc);
+                           }
+                        );
 
-                     await _reconciliationService.PerformReconciliationAsync(
-                        logicalName,
-                        source,
-                        target,
-                        engine,
-                        options,
-                        recordProgress,
-                        ct
-                     );
-                  });
+                        await _reconciliationService.PerformReconciliationAsync(
+                           logicalName,
+                           source,
+                           target,
+                           engine,
+                           options,
+                           recordProgress,
+                           ct
+                        );
+                     }
+                  );
             }
             catch (OperationCanceledException)
             {

@@ -75,6 +75,7 @@ namespace dvmig.Core.Synchronization
          if (ex != null)
          {
             var msg = ex.Message.ToLower();
+
             isThrottled =
                msg.Contains(SystemConstants.ErrorCodes.ServiceProtectionLimit) ||
                msg.Contains("8004410d") ||

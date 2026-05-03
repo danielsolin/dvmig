@@ -17,7 +17,7 @@ namespace dvmig.Core.Settings
       private readonly string _filePath;
 
       private static readonly byte[] LegacyEntropy =
-          Encoding.UTF8.GetBytes("dvmig-entropy");
+         Encoding.UTF8.GetBytes("dvmig-entropy");
 
       /// <summary>
       /// Initializes a new instance of the 
@@ -26,7 +26,7 @@ namespace dvmig.Core.Settings
       public SettingsService()
       {
          var appData = Environment.GetFolderPath(
-             Environment.SpecialFolder.ApplicationData
+            Environment.SpecialFolder.ApplicationData
          );
 
          var folder = Path.Combine(
@@ -53,15 +53,15 @@ namespace dvmig.Core.Settings
          {
             var json = File.ReadAllText(_filePath);
             var settings = JsonSerializer.Deserialize<UserSettings>(json) ??
-                           new UserSettings();
+               new UserSettings();
 
             if (settings.RememberConnections)
             {
                settings.SourceConnectionString =
-                   Decrypt(settings.SourceConnectionString);
+                  Decrypt(settings.SourceConnectionString);
 
                settings.TargetConnectionString =
-                   Decrypt(settings.TargetConnectionString);
+                  Decrypt(settings.TargetConnectionString);
             }
             else
             {
@@ -91,10 +91,10 @@ namespace dvmig.Core.Settings
             if (settings.RememberConnections)
             {
                settingsCopy.SourceConnectionString =
-                   Encrypt(settings.SourceConnectionString);
+                  Encrypt(settings.SourceConnectionString);
 
                settingsCopy.TargetConnectionString =
-                   Encrypt(settings.TargetConnectionString);
+                  Encrypt(settings.TargetConnectionString);
             }
 
             var json = JsonSerializer.Serialize(settingsCopy);
@@ -119,9 +119,9 @@ namespace dvmig.Core.Settings
          {
             var data = Encoding.UTF8.GetBytes(text);
             var encrypted = ProtectedData.Protect(
-                data,
-                LegacyEntropy,
-                DataProtectionScope.CurrentUser
+               data,
+               LegacyEntropy,
+               DataProtectionScope.CurrentUser
             );
 
             return Convert.ToBase64String(encrypted);
@@ -148,9 +148,9 @@ namespace dvmig.Core.Settings
             {
                // Try mandated decryption with legacy entropy
                var decrypted = ProtectedData.Unprotect(
-                   bytes,
-                   LegacyEntropy,
-                   DataProtectionScope.CurrentUser
+                  bytes,
+                  LegacyEntropy,
+                  DataProtectionScope.CurrentUser
                );
 
                return Encoding.UTF8.GetString(decrypted);
@@ -159,9 +159,9 @@ namespace dvmig.Core.Settings
             {
                // Fallback: try Jules' "no-entropy" format just in case
                var decrypted = ProtectedData.Unprotect(
-                   bytes,
-                   null,
-                   DataProtectionScope.CurrentUser
+                  bytes,
+                  null,
+                  DataProtectionScope.CurrentUser
                );
 
                return Encoding.UTF8.GetString(decrypted);

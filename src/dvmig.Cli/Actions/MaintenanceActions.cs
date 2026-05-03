@@ -1,8 +1,7 @@
 using dvmig.Core.Interfaces;
 using dvmig.Core.Shared;
-using Spectre.Console;
-using Microsoft.Xrm.Sdk.Messages;
 using Microsoft.Crm.Sdk.Messages;
+using Spectre.Console;
 
 namespace dvmig.Cli.Actions
 {
@@ -21,11 +20,11 @@ namespace dvmig.Cli.Actions
          IMetadataService metadataService,
          ILogger logger
       ) : base(
-         connectionManager, 
-         pluginService, 
-         sourceDateService, 
-         validator, 
-         schemaService, 
+         connectionManager,
+         pluginService,
+         sourceDateService,
+         validator,
+         schemaService,
          logger
       )
       {
@@ -42,15 +41,15 @@ namespace dvmig.Cli.Actions
          if (provider == null)
             return;
 
-         var prompt = 
+         var prompt =
             $"How many {SystemConstants.UiMarkup.BoldBlue}Accounts[/] " +
             "would you like to generate?";
 
          int count = AnsiConsole.Ask<int>(prompt, 100);
 
          await CliUI.RunStatusAsync(
-            "Seeding data...", 
-            Logger, 
+            "Seeding data...",
+            Logger,
             async () => await _seedingService.SeedSampleDataAsync(
                provider,
                count,
@@ -82,7 +81,7 @@ namespace dvmig.Cli.Actions
          if (provider == null)
             return;
 
-         var promptMsg = 
+         var promptMsg =
             $"{SystemConstants.UiMarkup.Red}Are you sure you want " +
             "to remove all dvmig system components (schema and plugins) " +
             "from this environment?[/]";
@@ -93,8 +92,8 @@ namespace dvmig.Cli.Actions
          try
          {
             await CliUI.RunStatusAsync(
-               "Uninstalling components...", 
-               Logger, 
+               "Uninstalling components...",
+               Logger,
                async () =>
                {
                   Logger.Information("Cleaning target environment...");
@@ -152,11 +151,13 @@ namespace dvmig.Cli.Actions
          var wipeChoice = AnsiConsole.Prompt(
             new SelectionPrompt<string>()
                .Title($"What data do you want to wipe on {envName}?")
-               .AddChoices(new[]
-               {
-                  "All Recommended Entities (Account, Contact, Activities)",
-                  "Select Specific Entities"
-               })
+               .AddChoices(
+                  new[]
+                  {
+                     "All Recommended Entities (Account, Contact, Activities)",
+                     "Select Specific Entities"
+                  }
+               )
          );
 
          List<string>? selectedEntities = null;
@@ -195,7 +196,7 @@ namespace dvmig.Cli.Actions
          );
 
          var wipeText = SystemConstants.UiMarkup.WipeDataConfirmation;
-         var prompt = 
+         var prompt =
             $"Type {SystemConstants.UiMarkup.BoldRed}{wipeText}[/] " +
             "to confirm:";
 
@@ -212,58 +213,63 @@ namespace dvmig.Cli.Actions
          long initialRecords = -1;
          var startTime = DateTime.Now;
 
-         var progress = new Progress<long>(count =>
-         {
-            remainingRecords = count;
-            if (initialRecords == -1)
-               initialRecords = count;
-         });
+         var progress = new Progress<long>(
+            count =>
+            {
+               remainingRecords = count;
+               if (initialRecords == -1)
+                  initialRecords = count;
+            }
+         );
 
          await AnsiConsole.Status()
-            .StartAsync("Initializing wipe...", async ctx =>
-            {
-               var cleanupTask = _seedingService.CleanTestDataAsync(
-                  provider,
-                  selectedEntities,
-                  progress,
-                  ct
-               );
-
-               while (!cleanupTask.IsCompleted)
+            .StartAsync(
+               "Initializing wipe...",
+               async ctx =>
                {
-                  if (remainingRecords >= 0)
-                  {
-                     var elapsed = DateTime.Now - startTime;
-                     var deleted = initialRecords - remainingRecords;
-                     var etaStr = string.Empty;
+                  var cleanupTask = _seedingService.CleanTestDataAsync(
+                     provider,
+                     selectedEntities,
+                     progress,
+                     ct
+                  );
 
-                     if (deleted > 0 && elapsed.TotalSeconds > 5)
+                  while (!cleanupTask.IsCompleted)
+                  {
+                     if (remainingRecords >= 0)
                      {
-                        var recordsPerSecond = deleted / elapsed.TotalSeconds;
-                        if (recordsPerSecond > 0)
+                        var elapsed = DateTime.Now - startTime;
+                        var deleted = initialRecords - remainingRecords;
+                        var etaStr = string.Empty;
+
+                        if (deleted > 0 && elapsed.TotalSeconds > 5)
                         {
-                           var remainingSeconds = 
-                              remainingRecords / recordsPerSecond;
-                           var remainingTime = 
-                              TimeSpan.FromSeconds(remainingSeconds);
-                           
-                           etaStr = 
-                              $" [grey]{remainingTime:hh\\:mm\\:ss}[/]";
+                           var recordsPerSecond = deleted / elapsed.TotalSeconds;
+                           if (recordsPerSecond > 0)
+                           {
+                              var remainingSeconds =
+                                 remainingRecords / recordsPerSecond;
+                              var remainingTime =
+                                 TimeSpan.FromSeconds(remainingSeconds);
+
+                              etaStr =
+                                 $" [grey]{remainingTime:hh\\:mm\\:ss}[/]";
+                           }
                         }
+
+                        ctx.Status(
+                           $"[yellow]Wiping data...[/] " +
+                           $"{remainingRecords} records remaining..." +
+                           etaStr
+                        );
                      }
 
-                     ctx.Status(
-                        $"[yellow]Wiping data...[/] " +
-                        $"{remainingRecords} records remaining..." +
-                        etaStr
-                     );
+                     await Task.Delay(500, ct);
                   }
 
-                  await Task.Delay(500, ct);
+                  await cleanupTask;
                }
-
-               await cleanupTask;
-            });
+            );
 
          CliUI.WriteSuccess($"Data Wipe Finished for {envName}!");
       }

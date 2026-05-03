@@ -59,6 +59,7 @@ namespace dvmig.Core.Synchronization
                if (IsUserAttribute(attribute.Key))
                {
                   value = await userResolver.MapUserAsync(er, ct);
+
                   if (value == null)
                   {
                      _logger.Warning(
@@ -75,8 +76,8 @@ namespace dvmig.Core.Synchronization
                   }
                }
                else if (idMappingCache.TryGetValue(
-                   $"{er.LogicalName}:{er.Id}",
-                   out var mappedId))
+                  $"{er.LogicalName}:{er.Id}",
+                  out var mappedId))
                   value = new EntityReference(er.LogicalName, mappedId);
             }
             else if (value is EntityCollection collection &&
@@ -98,12 +99,12 @@ namespace dvmig.Core.Synchronization
 
                   foreach (var partyAttr in party.Attributes)
                   {
-                     bool isPartyId = partyAttr.Key == 
+                     bool isPartyId = partyAttr.Key ==
                         SystemConstants.DataverseAttributes.PartyId;
-                     bool isTypeMask = partyAttr.Key == 
+                     bool isTypeMask = partyAttr.Key ==
                         SystemConstants.DataverseAttributes
                            .ParticipationTypeMask;
-                     bool isAddress = partyAttr.Key == 
+                     bool isAddress = partyAttr.Key ==
                         SystemConstants.DataverseAttributes.AddressUsed;
 
                      if (!isPartyId && !isTypeMask && !isAddress)
@@ -119,6 +120,7 @@ namespace dvmig.Core.Synchronization
                                SystemConstants.DataverseEntities.SystemUser)
                         {
                            partyValue = await userResolver.MapUserAsync(pr, ct);
+
                            if (partyValue == null)
                            {
                               _logger.Warning(
@@ -135,8 +137,8 @@ namespace dvmig.Core.Synchronization
                            }
                         }
                         else if (idMappingCache.TryGetValue(
-                            $"{pr.LogicalName}:{pr.Id}",
-                            out var mappedId))
+                           $"{pr.LogicalName}:{pr.Id}",
+                           out var mappedId))
                         {
                            partyValue = new EntityReference(
                               pr.LogicalName,
@@ -165,16 +167,18 @@ namespace dvmig.Core.Synchronization
       public async Task<Guid?> FindExistingOnTargetAsync(
          Entity entity,
          IDataverseProvider target,
-         Func<string, CancellationToken, Task<EntityMetadata?>> 
+         Func<string, CancellationToken, Task<EntityMetadata?>>
             getMetadataFunc,
          CancellationToken ct = default
       )
       {
          var metadata = await getMetadataFunc(entity.LogicalName, ct);
+
          if (metadata == null)
             return null;
 
          var primaryNameAttr = metadata.PrimaryNameAttribute;
+
          if (string.IsNullOrEmpty(primaryNameAttr) ||
              !entity.Contains(primaryNameAttr))
             return null;
@@ -183,6 +187,7 @@ namespace dvmig.Core.Synchronization
          {
             ColumnSet = new ColumnSet(metadata.PrimaryIdAttribute)
          };
+
          query.AddAttributeValue(primaryNameAttr, entity[primaryNameAttr]);
 
          var results = await target.RetrieveMultipleAsync(query, ct);

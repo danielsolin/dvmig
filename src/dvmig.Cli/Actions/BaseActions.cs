@@ -120,8 +120,8 @@ namespace dvmig.Cli.Actions
          try
          {
             await CliUI.RunStatusAsync(
-               "Installing components...", 
-               Logger, 
+               "Installing components...",
+               Logger,
                async () =>
                {
                   await SchemaService.CreateSchemaAsync(target);

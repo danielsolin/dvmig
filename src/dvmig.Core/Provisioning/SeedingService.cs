@@ -137,12 +137,10 @@ namespace dvmig.Core.Provisioning
                      };
 
                      foreach (var entity in chunk)
-                     {
                         multipleRequest.Requests.Add(new DeleteRequest
                         {
                            Target = entity.ToEntityReference()
                         });
-                     }
 
                      await retryPolicy.ExecuteAsync(
                         async () => await provider.ExecuteAsync(

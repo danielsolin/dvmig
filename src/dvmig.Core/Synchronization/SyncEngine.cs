@@ -128,6 +128,7 @@ namespace dvmig.Core.Synchronization
                syncQuery,
                ct
             );
+
             if (response.Entities.Count == 0)
                break;
 

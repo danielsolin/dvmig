@@ -104,6 +104,7 @@ namespace dvmig.Core.Providers
          CancellationToken ct = default
       )
       {
+
          return Task.FromResult(_client.Create(entity));
       }
 
@@ -155,6 +156,7 @@ namespace dvmig.Core.Providers
          CancellationToken ct = default
       )
       {
+
          return Task.FromResult(_client.RetrieveMultiple(query));
       }
 
@@ -164,6 +166,7 @@ namespace dvmig.Core.Providers
          CancellationToken ct = default
       )
       {
+
          return Task.FromResult(_client.Execute(request));
       }
 

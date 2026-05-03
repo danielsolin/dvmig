@@ -5,11 +5,11 @@ using Spectre.Console;
 
 namespace dvmig.Cli.Actions
 {
-   public class MigrationActions : BaseActions
+   public class SyncActions : BaseActions
    {
       private readonly IMetadataService _metadataService;
 
-      public MigrationActions(
+      public SyncActions(
          ConnectionManager connectionManager,
          IMetadataService metadataService,
          IPluginService pluginService,
@@ -33,7 +33,7 @@ namespace dvmig.Cli.Actions
       {
          var (source, target, engine) = await SetupSyncEngineAsync();
 
-         if(source == null || target == null || engine == null)
+         if (source == null || target == null || engine == null)
             return;
 
          var selectedEntities = await CliUI.SelectEntitiesAsync(
@@ -41,7 +41,7 @@ namespace dvmig.Cli.Actions
             source
          );
 
-         if(selectedEntities == null || selectedEntities.Count == 0)
+         if (selectedEntities == null || selectedEntities.Count == 0)
          {
             CliUI.WriteWarning("No entities selected.");
 
@@ -57,7 +57,14 @@ namespace dvmig.Cli.Actions
                .AddChoices(SystemConstants.SyncSettings.ParallelismOptions)
          );
 
-         await RunMigrationAsync(engine, source, target, selectedEntities, threads, ct);
+         await RunMigrationAsync(
+            engine,
+            source,
+            target,
+            selectedEntities,
+            threads,
+            ct
+         );
 
          CliUI.WriteSuccess("Migration Finished!");
       }
@@ -66,7 +73,7 @@ namespace dvmig.Cli.Actions
       {
          var (source, target, engine) = await SetupSyncEngineAsync();
 
-         if(source == null || target == null || engine == null)
+         if (source == null || target == null || engine == null)
             return;
 
          var recommendedEntities = SystemConstants.SyncSettings
@@ -76,10 +83,10 @@ namespace dvmig.Cli.Actions
             $"{SystemConstants.UiMarkup.BoldCyan}Recommended Sync Order:[/]"
          );
 
-         foreach(var entity in recommendedEntities)
+         foreach (var entity in recommendedEntities)
             AnsiConsole.MarkupLine($" - {entity}");
 
-         if(!AnsiConsole.Confirm("Proceed with this sync plan?", true))
+         if (!AnsiConsole.Confirm("Proceed with this sync plan?", true))
          {
             CliUI.WriteWarning("Recommended sync cancelled.");
 
@@ -116,7 +123,7 @@ namespace dvmig.Cli.Actions
          CancellationToken ct
       )
       {
-         foreach(var logicalName in entities)
+         foreach (var logicalName in entities)
          {
             AnsiConsole.MarkupLine(
                $"{SystemConstants.UiMarkup.BoldYellow}Migrating " +
@@ -134,7 +141,7 @@ namespace dvmig.Cli.Actions
                ct
             );
 
-            if(totalCount == 0)
+            if (totalCount == 0)
             {
                AnsiConsole.MarkupLine(
                   $"{SystemConstants.UiMarkup.Grey}" +
@@ -167,98 +174,106 @@ namespace dvmig.Cli.Actions
                         new SpinnerColumn(),
                      }
                   )
-                  .StartAsync(async ctx =>
-                  {
-                     var displayName = char.ToUpper(logicalName[0]) +
-                        logicalName.Substring(1);
-
-                     var taskName = $"{displayName} " +
-                        $"({processed}/{totalCount}) " +
-                        $"[[{maxThreads} threads]]";
-
-                     var task = ctx.AddTask(taskName, true, totalCount);
-                     task.Value = processed;
-
-                     var sw = System.Diagnostics.Stopwatch.StartNew();
-                     var lastUpdate = DateTime.MinValue;
-                     var recordProgress = new Progress<bool>(success =>
+                  .StartAsync(
+                     async ctx =>
                      {
-                        processed++;
+                        var displayName = char.ToUpper(logicalName[0]) +
+                           logicalName.Substring(1);
 
-                        if(!success)
-                           failedCount++;
+                        var taskName = $"{displayName} " +
+                           $"({processed}/{totalCount}) " +
+                           $"[[{maxThreads} threads]]";
 
-                        var now = DateTime.Now;
-                        if(now - lastUpdate < TimeSpan.FromSeconds(1) &&
-                            processed < totalCount)
-                           return;
-
-                        lastUpdate = now;
+                        var task = ctx.AddTask(taskName, true, totalCount);
                         task.Value = processed;
 
-                        var swElapsed = sw.Elapsed.TotalSeconds;
-                        var recsPerSec = processed / swElapsed;
+                        var sw = System.Diagnostics.Stopwatch.StartNew();
+                        var lastUpdate = DateTime.MinValue;
+                        var recordProgress = new Progress<bool>(
+                           success =>
+                           {
+                              processed++;
 
-                        var desc = $"{displayName} " +
-                           $"({processed}/{totalCount}) " +
-                           $"[[{SystemConstants.UiMarkup.Green}{maxThreads}t"
-                           + $" - {recsPerSec:F1} r/s[/]]] ";
+                              if (!success)
+                                 failedCount++;
 
-                        if(failedCount > 0)
-                           desc +=
-                              $" {SystemConstants.UiMarkup.Red}" +
-                                 $"({failedCount} failed)[/]";
+                              var now = DateTime.Now;
+                              if (now - lastUpdate < TimeSpan.FromSeconds(1) &&
+                                  processed < totalCount)
+                                 return;
 
-                        task.Description = desc;
-                     });
+                              lastUpdate = now;
+                              task.Value = processed;
 
-                     var options = new SyncOptions
-                     {
-                        StripMissingDependencies = true,
-                        MaxDegreeOfParallelism = maxThreads
-                     };
+                              var swElapsed = sw.Elapsed.TotalSeconds;
+                              var recsPerSec = processed / swElapsed;
 
-                     Logger.AttachProgress(new Progress<string>(msg =>
-                     {
-                        bool isCritical =
-                           msg.Contains(
-                              SystemConstants.UiMarkup.Wait,
-                              StringComparison.Ordinal
-                           ) ||
-                           msg.Contains(
-                              SystemConstants.ErrorKeywords.TooManyRequests,
-                              StringComparison.OrdinalIgnoreCase
-                           ) ||
-                           msg.StartsWith(SystemConstants.UiMarkup.Yellow) ||
-                           msg.StartsWith(SystemConstants.UiMarkup.Red);
+                              var desc = $"{displayName} " +
+                                 $"({processed}/{totalCount}) " +
+                                 $"[[{SystemConstants.UiMarkup.Green}{maxThreads}t"
+                                 + $" - {recsPerSec:F1} r/s[/]]] ";
 
-                        if(isCritical)
-                           AnsiConsole.MarkupLine(msg);
-                     }));
+                              if (failedCount > 0)
+                                 desc +=
+                                    $" {SystemConstants.UiMarkup.Red}" +
+                                       $"({failedCount} failed)[/]";
 
-                     try
-                     {
-                        await engine.SyncEntityAsync(
-                           logicalName,
-                           options,
-                           null,
-                           recordProgress,
-                           ct
+                              task.Description = desc;
+                           }
                         );
-                     }
-                     finally
-                     {
-                        Logger.DetachProgress();
-                     }
 
-                     task.Value = totalCount;
-                  });
+                        var options = new SyncOptions
+                        {
+                           StripMissingDependencies = true,
+                           MaxDegreeOfParallelism = maxThreads
+                        };
+
+                        Logger.AttachProgress(
+                           new Progress<string>(
+                              msg =>
+                              {
+                                 bool isCritical =
+                                    msg.Contains(
+                                       SystemConstants.UiMarkup.Wait,
+                                       StringComparison.Ordinal
+                                    ) ||
+                                    msg.Contains(
+                                       SystemConstants.ErrorKeywords.TooManyRequests,
+                                       StringComparison.OrdinalIgnoreCase
+                                    ) ||
+                                    msg.StartsWith(SystemConstants.UiMarkup.Yellow) ||
+                                    msg.StartsWith(SystemConstants.UiMarkup.Red);
+
+                                 if (isCritical)
+                                    AnsiConsole.MarkupLine(msg);
+                              }
+                           )
+                        );
+
+                        try
+                        {
+                           await engine.SyncEntityAsync(
+                              logicalName,
+                              options,
+                              null,
+                              recordProgress,
+                              ct
+                           );
+                        }
+                        finally
+                        {
+                           Logger.DetachProgress();
+                        }
+
+                        task.Value = totalCount;
+                     }
+                  );
             }
-            catch(OperationCanceledException)
+            catch (OperationCanceledException)
             {
                throw;
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                var baseEx = ex.GetBaseException();
                CliUI.WriteError(

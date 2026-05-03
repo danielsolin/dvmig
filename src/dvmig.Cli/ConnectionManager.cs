@@ -28,7 +28,7 @@ namespace dvmig.Cli
 
          if (_activeConnections.TryGetValue(direction, out var existing))
          {
-            var msg = 
+            var msg =
                $"An active connection to {SystemConstants.UiMarkup.Green}" +
                $"{label}[/] already exists. Reuse it?";
 
@@ -52,7 +52,7 @@ namespace dvmig.Cli
          {
             var preview = StringMasker.MaskConnectionString(storedConn);
 
-            var confirmMsg = 
+            var confirmMsg =
                $"Use {SystemConstants.UiMarkup.Green}stored[/] {label} " +
                $"connection string?\n{SystemConstants.UiMarkup.Grey}" +
                $"({preview})[/]";
@@ -109,6 +109,7 @@ namespace dvmig.Cli
          if (provider != null)
          {
             _activeConnections[direction] = provider;
+
             CliUI.WriteSuccess($"Connected to {label}");
 
             if (connStr != storedConn)
@@ -126,6 +127,7 @@ namespace dvmig.Cli
                      settings.TargetConnectionString = connStr;
 
                   _settingsService.SaveSettings(settings);
+
                   AnsiConsole.MarkupLine(
                      $"{SystemConstants.UiMarkup.Grey}Settings saved.[/]"
                   );
