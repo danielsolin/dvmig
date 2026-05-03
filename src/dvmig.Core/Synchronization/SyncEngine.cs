@@ -1,5 +1,4 @@
 using dvmig.Core.Interfaces;
-using System.Collections.Concurrent;
 using System.Text.RegularExpressions;
 using dvmig.Core.Shared;
 using Microsoft.Xrm.Sdk;
@@ -32,20 +31,8 @@ namespace dvmig.Core.Synchronization
       private readonly IMetadataService _metadataService;
       private readonly IFailureService _failureService;
       private readonly ISourceDateService _sourceDateService;
+      private readonly ISyncStateService _syncStateService;
       private readonly AsyncRetryPolicy _retryPolicy;
-
-      private readonly ConcurrentDictionary<string, int> _recursionTracker =
-         new ConcurrentDictionary<string, int>();
-
-      private readonly ConcurrentDictionary<string, HashSet<string>>
-         _triedDependencies =
-            new ConcurrentDictionary<string, HashSet<string>>();
-
-      private readonly ConcurrentDictionary<string, Guid> _idMappingCache =
-         new ConcurrentDictionary<string, Guid>();
-
-      private ConcurrentDictionary<Guid, byte> _syncedIds =
-         new ConcurrentDictionary<Guid, byte>();
 
       private const int MaxRecursionDepth = 3;
       #endregion
@@ -62,7 +49,8 @@ namespace dvmig.Core.Synchronization
          IStatusService statusService,
          IMetadataService metadataService,
          IFailureService failureService,
-         ISourceDateService sourceDateService
+         ISourceDateService sourceDateService,
+         ISyncStateService syncStateService
       )
       {
          _source = source;
@@ -77,6 +65,7 @@ namespace dvmig.Core.Synchronization
          _metadataService = metadataService;
          _failureService = failureService;
          _sourceDateService = sourceDateService;
+         _syncStateService = syncStateService;
 
          _retryPolicy = _retryService.CreateRetryPolicy();
       }
@@ -93,9 +82,7 @@ namespace dvmig.Core.Synchronization
             ct
          );
 
-         _syncedIds = new ConcurrentDictionary<Guid, byte>(
-            ids.Select(id => new KeyValuePair<Guid, byte>(id, 1))
-         );
+         _syncStateService.InitializeSyncedIds(ids);
       }
 
       public async Task SyncEntityAsync(
@@ -164,8 +151,8 @@ namespace dvmig.Core.Synchronization
             totalSynced
          );
 
-         _triedDependencies.Clear();
-         _idMappingCache.Clear();
+         _syncStateService.TriedDependencies.Clear();
+         _syncStateService.IdMappingCache.Clear();
       }
 
       public async Task SyncAsync(
@@ -176,13 +163,11 @@ namespace dvmig.Core.Synchronization
       )
       {
          var entitiesToSync = entities
-            .Where(e => !_syncedIds.ContainsKey(e.Id))
+            .Where(e => !_syncStateService.IsSynced(e.Id))
             .ToList();
 
          if (!entitiesToSync.Any())
             return;
-
-         _recursionTracker.Clear();
 
          var parallelOptions = new ParallelOptions
          {
@@ -272,7 +257,7 @@ namespace dvmig.Core.Synchronization
       {
          bool skipStateCheck = options is ReconciliationSyncOptions;
 
-         if (!skipStateCheck && _syncedIds.ContainsKey(entity.Id))
+         if (!skipStateCheck && _syncStateService.IsSynced(entity.Id))
          {
             _logger.Debug(
                "Skipping {Entity}:{Id} - Already synced in current state.",
@@ -284,7 +269,10 @@ namespace dvmig.Core.Synchronization
          }
 
          var recordKey = GetRecordKey(entity);
-         if (!TryEnterRecordScope(recordKey))
+         if (!_syncStateService.TryEnterRecordScope(
+            recordKey,
+            MaxRecursionDepth
+         ))
             return (false, "Max recursion depth reached.");
 
          try
@@ -314,7 +302,7 @@ namespace dvmig.Core.Synchronization
          }
          finally
          {
-            LeaveRecordScope(recordKey);
+            _syncStateService.LeaveRecordScope(recordKey);
          }
       }
 
@@ -345,7 +333,7 @@ namespace dvmig.Core.Synchronization
             metadata,
             options,
             _userResolver,
-            _idMappingCache,
+            _syncStateService.IdMappingCache,
             ct
          );
 
@@ -372,32 +360,6 @@ namespace dvmig.Core.Synchronization
          );
 
          return (true, string.Empty);
-      }
-
-      private bool TryEnterRecordScope(string recordKey)
-      {
-         var depth = _recursionTracker.AddOrUpdate(
-            recordKey,
-            1,
-            (_, v) => v + 1
-         );
-
-         if (depth <= MaxRecursionDepth)
-            return true;
-
-         _logger.Error(
-            "Max recursion depth reached for {Key}. Skipping.",
-            recordKey
-         );
-
-         LeaveRecordScope(recordKey);
-
-         return false;
-      }
-
-      private void LeaveRecordScope(string recordKey)
-      {
-         _recursionTracker.AddOrUpdate(recordKey, 0, (_, v) => v - 1);
       }
 
       private (bool Success, string FailureMessage) MetadataMissing(
@@ -457,8 +419,8 @@ namespace dvmig.Core.Synchronization
       {
          var recordKey = GetRecordKey(sourceEntity);
 
-         _syncedIds.TryAdd(sourceEntity.Id, 1);
-         _idMappingCache[recordKey] = targetEntity.Id;
+         _syncStateService.MarkAsSynced(sourceEntity.Id);
+         _syncStateService.IdMappingCache[recordKey] = targetEntity.Id;
          _logger.Information(
             $"Synced {sourceEntity.LogicalName}:{sourceEntity.Id}"
          );
@@ -467,7 +429,8 @@ namespace dvmig.Core.Synchronization
             return;
 
          await _retryPolicy.ExecuteAsync(
-            async (ctx) => await _sourceDateService.DeleteSourceDateRecordAsync(
+            async (ctx) => await _sourceDateService
+               .DeleteSourceDateRecordAsync(
                _target,
                sourceEntity.LogicalName,
                targetEntity.Id,
@@ -579,8 +542,8 @@ namespace dvmig.Core.Synchronization
             syncRecordFunc: SyncRecordAsync,
             retryEntityFunc: RetryEntityAsync,
             findExistingFunc: FindExistingOnTargetAsync,
-            idMappingCache: _idMappingCache,
-            triedDependencies: _triedDependencies
+            idMappingCache: _syncStateService.IdMappingCache,
+            triedDependencies: _syncStateService.TriedDependencies
          );
       }
 
@@ -599,7 +562,7 @@ namespace dvmig.Core.Synchronization
             syncRecordFunc: SyncRecordAsync,
             retryEntityFunc: RetryEntityAsync,
             findExistingFunc: FindExistingOnTargetAsync,
-            idMappingCache: _idMappingCache
+            idMappingCache: _syncStateService.IdMappingCache
          );
       }
 
@@ -724,7 +687,7 @@ namespace dvmig.Core.Synchronization
             metadata,
             options,
             _userResolver,
-            _idMappingCache,
+            _syncStateService.IdMappingCache,
             ct
          );
 

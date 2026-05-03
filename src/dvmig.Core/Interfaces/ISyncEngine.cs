@@ -1,5 +1,6 @@
 using dvmig.Core.Synchronization;
 using Microsoft.Xrm.Sdk;
+using Microsoft.Xrm.Sdk.Query;
 
 namespace dvmig.Core.Interfaces
 {
@@ -81,7 +82,7 @@ namespace dvmig.Core.Interfaces
       Task SyncEntityAsync(
          string logicalName,
          SyncOptions options,
-         Microsoft.Xrm.Sdk.Query.QueryExpression? query = null,
+         QueryExpression? query = null,
          IProgress<bool>? recordProgress = null,
          CancellationToken ct = default
       );
