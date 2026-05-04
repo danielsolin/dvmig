@@ -59,7 +59,8 @@ namespace dvmig.Tests
 
          providerMock.Setup(p => p.RetrieveMultipleAsync(
             It.Is<QueryExpression>(q => q.EntityName == SystemConstants.DataverseEntities.SystemUser),
-            It.IsAny<CancellationToken>()
+            It.IsAny<CancellationToken>(),
+            It.IsAny<Guid?>()
          )).ReturnsAsync(users);
 
          providerMock.Setup(p => p.CreateAsync(
@@ -83,7 +84,8 @@ namespace dvmig.Tests
                   c.AttributeName == SystemConstants.DataverseAttributes.AccessMode && 
                   (int)c.Values[0] == 0)
             ),
-            It.IsAny<CancellationToken>()
+            It.IsAny<CancellationToken>(),
+            It.IsAny<Guid?>()
          ), Times.Once);
 
          // 2. Verify that CallerId was set during creation

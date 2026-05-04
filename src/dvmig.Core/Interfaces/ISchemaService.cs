@@ -7,7 +7,7 @@ namespace dvmig.Core.Interfaces
    public interface ISchemaService
    {
       /// <summary>
-      /// Creates the 'dm_sourcedate' entity schema and its required 
+      /// Creates the 'dm_sourcedata' entity schema and its required 
       /// attributes in the target environment if they do not already exist.
       /// </summary>
       /// <param name="target">The target Dataverse provider.</param>
@@ -20,7 +20,7 @@ namespace dvmig.Core.Interfaces
       );
 
       /// <summary>
-      /// Removes the 'dm_sourcedate' entity and all its data from 
+      /// Removes the 'dm_sourcedata entity and all its data from 
       /// the target environment.
       /// </summary>
       /// <param name="target">The target Dataverse provider.</param>

@@ -75,7 +75,8 @@ namespace dvmig.Core.Synchronization
          IDataverseProvider target,
          string logicalName,
          Guid entityId,
-         CancellationToken ct = default
+         CancellationToken ct = default,
+         Guid? callerId = null
       )
       {
          if (!await CheckSourceDataEntityExistsAsync(target, ct))
@@ -106,14 +107,16 @@ namespace dvmig.Core.Synchronization
 
             var result = await target.RetrieveMultipleAsync(
                new FetchExpression(fetchXml),
-               ct
+               ct,
+               callerId
             );
 
             if (result.Entities.Any())
                await target.DeleteAsync(
                   SystemConstants.SourceData.EntityLogicalName,
                   result.Entities[0].Id,
-                  ct
+                  ct,
+                  callerId
                );
          }
          catch (Exception ex)

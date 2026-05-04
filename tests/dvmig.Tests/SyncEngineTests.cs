@@ -30,7 +30,8 @@ namespace dvmig.Tests
          _targetMock.Setup(
             t => t.RetrieveMultipleAsync(
                It.IsAny<QueryExpression>(),
-               It.IsAny<CancellationToken>()
+               It.IsAny<CancellationToken>(),
+               It.IsAny<Guid?>()
             )
          ).ReturnsAsync(new EntityCollection());
 
@@ -656,8 +657,8 @@ namespace dvmig.Tests
          // 1. Verify Create was called with CreatorId
          _targetMock.Verify(t => t.CreateAsync(It.IsAny<Entity>(), It.IsAny<CancellationToken>(), creatorId), Times.Once);
 
-         // 2. Verify Update was called with ModifierId to set ModifiedBy
-         _targetMock.Verify(t => t.UpdateAsync(It.IsAny<Entity>(), It.IsAny<CancellationToken>(), modifierId), Times.Once);
+         // 2. Verify Update was NOT called (redundant update removed)
+         _targetMock.Verify(t => t.UpdateAsync(It.IsAny<Entity>(), It.IsAny<CancellationToken>(), modifierId), Times.Never);
       }
    }
 }

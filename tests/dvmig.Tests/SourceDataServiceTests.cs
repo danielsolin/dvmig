@@ -181,7 +181,8 @@ namespace dvmig.Tests
          _targetMock.Verify(
             t => t.RetrieveMultipleAsync(
                It.IsAny<QueryBase>(),
-               It.IsAny<CancellationToken>()
+               It.IsAny<CancellationToken>(),
+               It.IsAny<Guid?>()
             ),
             Times.Never
          );
@@ -213,7 +214,8 @@ namespace dvmig.Tests
          _targetMock.Setup(
             t => t.RetrieveMultipleAsync(
                It.IsAny<QueryBase>(),
-               It.IsAny<CancellationToken>()
+               It.IsAny<CancellationToken>(),
+               It.IsAny<Guid?>()
             )
          ).ReturnsAsync(collection);
 
@@ -227,7 +229,8 @@ namespace dvmig.Tests
             t => t.DeleteAsync(
                SystemConstants.SourceData.EntityLogicalName,
                recordId,
-               It.IsAny<CancellationToken>()
+               It.IsAny<CancellationToken>(),
+               It.IsAny<Guid?>()
             ),
             Times.Once
          );
@@ -248,7 +251,8 @@ namespace dvmig.Tests
          _targetMock.Setup(
             t => t.RetrieveMultipleAsync(
                It.IsAny<QueryBase>(),
-               It.IsAny<CancellationToken>()
+               It.IsAny<CancellationToken>(),
+               It.IsAny<Guid?>()
             )
          ).ReturnsAsync(new EntityCollection());
 
@@ -262,7 +266,8 @@ namespace dvmig.Tests
             t => t.DeleteAsync(
                It.IsAny<string>(),
                It.IsAny<Guid>(),
-               It.IsAny<CancellationToken>()
+               It.IsAny<CancellationToken>(),
+               It.IsAny<Guid?>()
             ),
             Times.Never
          );

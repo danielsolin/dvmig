@@ -145,9 +145,21 @@ namespace dvmig.Core.Providers
       public Task DeleteAsync(
          string entityLogicalName,
          Guid id,
-         CancellationToken ct = default
+         CancellationToken ct = default,
+         Guid? callerId = null
       )
       {
+         if (callerId.HasValue && callerId.Value != Guid.Empty)
+         {
+            using (var clonedClient = _client.Clone())
+            {
+               clonedClient.CallerId = callerId.Value;
+               clonedClient.Delete(entityLogicalName, id);
+
+               return Task.CompletedTask;
+            }
+         }
+
          _client.Delete(entityLogicalName, id);
 
          return Task.CompletedTask;
@@ -159,9 +171,27 @@ namespace dvmig.Core.Providers
          Guid entityId,
          Relationship relationship,
          EntityReferenceCollection relatedEntities,
-         CancellationToken ct = default
+         CancellationToken ct = default,
+         Guid? callerId = null
       )
       {
+         if (callerId.HasValue && callerId.Value != Guid.Empty)
+         {
+            using (var clonedClient = _client.Clone())
+            {
+               clonedClient.CallerId = callerId.Value;
+
+               clonedClient.Associate(
+                  entityLogicalName,
+                  entityId,
+                  relationship,
+                  relatedEntities
+               );
+
+               return Task.CompletedTask;
+            }
+         }
+
          _client.Associate(
             entityLogicalName,
             entityId,
@@ -175,9 +205,20 @@ namespace dvmig.Core.Providers
       /// <inheritdoc />
       public Task<EntityCollection> RetrieveMultipleAsync(
          QueryBase query,
-         CancellationToken ct = default
+         CancellationToken ct = default,
+         Guid? callerId = null
       )
       {
+         if (callerId.HasValue && callerId.Value != Guid.Empty)
+         {
+            using (var clonedClient = _client.Clone())
+            {
+               clonedClient.CallerId = callerId.Value;
+
+               return Task.FromResult(clonedClient.RetrieveMultiple(query));
+            }
+         }
+
          return Task.FromResult(_client.RetrieveMultiple(query));
       }
 

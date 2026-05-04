@@ -1,8 +1,4 @@
-using System;
-using System.Linq;
 using System.Text.RegularExpressions;
-using System.Threading;
-using System.Threading.Tasks;
 using dvmig.Core.Interfaces;
 using dvmig.Core.Shared;
 using Microsoft.Xrm.Sdk;
@@ -220,10 +216,17 @@ namespace dvmig.Core.Synchronization
          if (metadata == null)
             return MetadataMissing(entity);
 
+         var (creatorId, modifierId) = await ResolveAuditUserIdsAsync(
+            entity,
+            options,
+            ct
+         );
+
          if (metadata.IsIntersect == true)
             return await SyncIntersectEntityAsync(
                entity,
                options,
+               modifierId,
                ct
             );
 
@@ -233,12 +236,6 @@ namespace dvmig.Core.Synchronization
             options,
             _userResolver,
             _syncStateService.IdMappingCache,
-            ct
-         );
-
-         var (creatorId, modifierId) = await ResolveAuditUserIdsAsync(
-            entity,
-            options,
             ct
          );
 
@@ -263,6 +260,7 @@ namespace dvmig.Core.Synchronization
             sourceEntity: entity,
             targetEntity: prepared,
             options,
+            modifierId,
             ct
          );
 
@@ -296,6 +294,11 @@ namespace dvmig.Core.Synchronization
             sourceModifier,
             ct
          ))?.Id;
+
+         // Fallback: If modifier is not mapped but creator is, 
+         // use creator as modifier to avoid defaulting to connection user.
+         if (modifierId == null && creatorId != null)
+            modifierId = creatorId;
 
          return (creatorId, modifierId);
       }
@@ -353,6 +356,7 @@ namespace dvmig.Core.Synchronization
          Entity sourceEntity,
          Entity targetEntity,
          SyncOptions options,
+         Guid? modifierId,
          CT ct
       )
       {
@@ -373,7 +377,8 @@ namespace dvmig.Core.Synchronization
                _target,
                sourceEntity.LogicalName,
                targetEntity.Id,
-               ct
+               ct,
+               modifierId
             ),
             CreatePollyContext()
          );
@@ -491,13 +496,18 @@ namespace dvmig.Core.Synchronization
          SyncIntersectEntityAsync(
             Entity entity,
             SyncOptions options,
+            Guid? callerId,
             CT ct
          )
       {
          try
          {
             await _retryPolicy.ExecuteAsync(
-               async (ctx) => await _relationshipService.AssociateAsync(entity, ct),
+               async (ctx) => await _relationshipService.AssociateAsync(
+                  entity,
+                  ct,
+                  callerId
+               ),
                CreatePollyContext()
             );
 
@@ -514,7 +524,7 @@ namespace dvmig.Core.Synchronization
                ex,
                entity,
                options,
-               null,
+               callerId,
                ct,
                treatAlreadyExistsAsSuccess: true
             );
@@ -542,29 +552,6 @@ namespace dvmig.Core.Synchronization
                entity.LogicalName,
                entity.Id
             );
-
-            // If modifier is different from creator, we MUST do an update 
-            // to ensure ModifiedBy is preserved correctly.
-            if (modifierId.HasValue && modifierId != creatorId)
-            {
-               _logger.Debug(
-                  "Modifier {ModifierId} differs from Creator {CreatorId}. " +
-                  "Performing update to preserve ModifiedBy.",
-                  modifierId,
-                  creatorId
-               );
-
-               var updateEntity = new Entity(entity.LogicalName, entity.Id);
-
-               await _retryPolicy.ExecuteAsync(
-                  async (ctx) => await _target.UpdateAsync(
-                     updateEntity,
-                     ct,
-                     modifierId
-                  ),
-                  CreatePollyContext()
-               );
-            }
 
             return (true, string.Empty);
          }
@@ -625,6 +612,7 @@ namespace dvmig.Core.Synchronization
             var (success, _) = await SyncIntersectEntityAsync(
                prepared,
                options,
+               callerId,
                ct
             );
 

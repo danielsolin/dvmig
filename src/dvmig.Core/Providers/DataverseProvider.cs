@@ -150,9 +150,20 @@ namespace dvmig.Core.Providers
       public async Task DeleteAsync(
          string entityLogicalName,
          Guid id,
-         CancellationToken ct = default
+         CancellationToken ct = default,
+         Guid? callerId = null
       )
       {
+         if (callerId.HasValue && callerId.Value != Guid.Empty)
+         {
+            using var clonedClient = _client.Clone();
+            clonedClient.CallerId = callerId.Value;
+
+            await clonedClient.DeleteAsync(entityLogicalName, id, ct);
+
+            return;
+         }
+
          await _client.DeleteAsync(entityLogicalName, id, ct);
       }
 
@@ -162,9 +173,26 @@ namespace dvmig.Core.Providers
          Guid entityId,
          Relationship relationship,
          EntityReferenceCollection relatedEntities,
-         CancellationToken ct = default
+         CancellationToken ct = default,
+         Guid? callerId = null
       )
       {
+         if (callerId.HasValue && callerId.Value != Guid.Empty)
+         {
+            using var clonedClient = _client.Clone();
+            clonedClient.CallerId = callerId.Value;
+
+            await clonedClient.AssociateAsync(
+               entityLogicalName,
+               entityId,
+               relationship,
+               relatedEntities,
+               ct
+            );
+
+            return;
+         }
+
          await _client.AssociateAsync(
             entityLogicalName,
             entityId,
@@ -177,9 +205,18 @@ namespace dvmig.Core.Providers
       /// <inheritdoc />
       public async Task<EntityCollection> RetrieveMultipleAsync(
          QueryBase query,
-         CancellationToken ct = default
+         CancellationToken ct = default,
+         Guid? callerId = null
       )
       {
+         if (callerId.HasValue && callerId.Value != Guid.Empty)
+         {
+            using var clonedClient = _client.Clone();
+            clonedClient.CallerId = callerId.Value;
+
+            return await clonedClient.RetrieveMultipleAsync(query, ct);
+         }
+
          return await _client.RetrieveMultipleAsync(query, ct);
       }
 
