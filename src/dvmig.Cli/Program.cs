@@ -45,7 +45,7 @@ namespace dvmig.Cli
 
          var validationService = new ValidationService();
          var schemaService = new SchemaService(logger);
-         var sourceDateService = new SourceDateService(logger);
+         var sourceDataService = new SourceDataService(logger);
          var pluginService = new PluginService(logger);
 
          var connectionManager = new ConnectionManager(settingsService);
@@ -60,7 +60,7 @@ namespace dvmig.Cli
             connectionManager,
             metadataService,
             pluginService,
-            sourceDateService,
+            sourceDataService,
             validationService,
             schemaService,
             logger
@@ -71,7 +71,7 @@ namespace dvmig.Cli
             seedingService,
             wipeDataService,
             pluginService,
-            sourceDateService,
+            sourceDataService,
             validationService,
             schemaService,
             metadataService,

@@ -16,6 +16,14 @@ namespace dvmig.Core.Provisioning
       private const int LanguageCode = 1033;
       private readonly ILogger _logger;
 
+      private enum AttributeType
+      {
+         String,
+         Memo,
+         DateTime,
+         Lookup
+      }
+
       /// <summary>
       /// Initializes a new instance of the <see cref="SchemaService"/> class.
       /// </summary>
@@ -31,8 +39,8 @@ namespace dvmig.Core.Provisioning
          CancellationToken ct = default
       )
       {
-         // 1. dm_sourcedate
-         await EnsureSourceDateEntityAsync(target, ct);
+         // 1. dm_sourcedata
+         await EnsureSourceDataEntityAsync(target, ct);
 
          // 2. dm_migrationfailure
          await EnsureFailureLogEntityAsync(target, ct);
@@ -44,12 +52,12 @@ namespace dvmig.Core.Provisioning
          _logger.Information("Schema creation completed.");
       }
 
-      private async Task EnsureSourceDateEntityAsync(
+      private async Task EnsureSourceDataEntityAsync(
          IDataverseProvider target,
          CancellationToken ct
       )
       {
-         var entityName = SystemConstants.SourceDate.EntityLogicalName;
+         var entityName = SystemConstants.SourceData.EntityLogicalName;
          var existingMeta = await target.GetEntityMetadataAsync(
             entityName,
             ct
@@ -68,11 +76,11 @@ namespace dvmig.Core.Provisioning
                   SchemaName = entityName,
                   LogicalName = entityName,
                   DisplayName = new Label(
-                     "DVMig Source Date ", 
+                     "DVMig Source Data", 
                      LanguageCode
                   ),
                   DisplayCollectionName = new Label(
-                     "DVMig Source Dates", 
+                     "DVMig Source Data", 
                      LanguageCode
                   ),
                   OwnershipType = OwnershipTypes.UserOwned,
@@ -82,8 +90,8 @@ namespace dvmig.Core.Provisioning
                },
                PrimaryAttribute = new StringAttributeMetadata
                {
-                  SchemaName = SystemConstants.SourceDate.Name,
-                  LogicalName = SystemConstants.SourceDate.Name,
+                  SchemaName = SystemConstants.SourceData.Name,
+                  LogicalName = SystemConstants.SourceData.Name,
                   DisplayName = new Label("Name", LanguageCode),
                   RequiredLevel =
                      new AttributeRequiredLevelManagedProperty(
@@ -109,7 +117,7 @@ namespace dvmig.Core.Provisioning
             target,
             entityName,
             existingMeta!,
-            SystemConstants.SourceDate.EntityId,
+            SystemConstants.SourceData.EntityId,
             "Source Entity ID",
             ct
          );
@@ -118,7 +126,7 @@ namespace dvmig.Core.Provisioning
             target,
             entityName,
             existingMeta!,
-            SystemConstants.SourceDate.EntityLogicalNameAttr,
+            SystemConstants.SourceData.EntityLogicalNameAttr,
             "Source Entity Logical Name",
             ct
          );
@@ -127,20 +135,40 @@ namespace dvmig.Core.Provisioning
             target,
             entityName,
             existingMeta!,
-            SystemConstants.SourceDate.CreatedOn,
+            SystemConstants.SourceData.CreatedOn,
             "Source Created Date",
             ct,
-            false // DateTime
+            AttributeType.DateTime
          );
 
          await CreateAttributeIfMissingAsync(
             target,
             entityName,
             existingMeta!,
-            SystemConstants.SourceDate.ModifiedOn,
+            SystemConstants.SourceData.ModifiedOn,
             "Source Modified Date",
             ct,
-            false // DateTime
+            AttributeType.DateTime
+         );
+
+         await CreateAttributeIfMissingAsync(
+            target,
+            entityName,
+            existingMeta!,
+            SystemConstants.SourceData.CreatedBy,
+            "Source Created By",
+            ct,
+            AttributeType.String
+         );
+
+         await CreateAttributeIfMissingAsync(
+            target,
+            entityName,
+            existingMeta!,
+            SystemConstants.SourceData.ModifiedBy,
+            "Source Modified By",
+            ct,
+            AttributeType.String
          );
       }
 
@@ -221,8 +249,7 @@ namespace dvmig.Core.Provisioning
             SystemConstants.MigrationFailure.ErrorMessage,
             "Error Message",
             ct,
-            true, // IsString
-            true  // IsMemo/LongText
+            AttributeType.Memo
          );
 
          await CreateAttributeIfMissingAsync(
@@ -232,7 +259,7 @@ namespace dvmig.Core.Provisioning
             SystemConstants.MigrationFailure.Timestamp,
             "Failure Timestamp",
             ct,
-            false // DateTime
+            AttributeType.DateTime
          );
       }
 
@@ -243,8 +270,8 @@ namespace dvmig.Core.Provisioning
          string schemaName,
          string displayName,
          CancellationToken ct,
-         bool isString = true,
-         bool isMemo = false
+         AttributeType type = AttributeType.String,
+         string? lookupTarget = null
       )
       {
          if (entityMeta.Attributes != null &&
@@ -258,42 +285,38 @@ namespace dvmig.Core.Provisioning
             entityLogicalName
          );
 
-         AttributeMetadata attr;
-
-         if (isString)
+         AttributeMetadata attr = type switch
          {
-            if (isMemo)
+            AttributeType.Memo => new MemoAttributeMetadata
             {
-               attr = new MemoAttributeMetadata
-               {
-                  SchemaName = schemaName,
-                  LogicalName = schemaName.ToLower(),
-                  DisplayName = new Label(displayName, LanguageCode),
-                  MaxLength = SystemConstants.AppConstants
-                                   .MaxMemoFieldLength
-               };
-            }
-            else
-            {
-               attr = new StringAttributeMetadata
-               {
-                  SchemaName = schemaName,
-                  LogicalName = schemaName.ToLower(),
-                  DisplayName = new Label(displayName, LanguageCode),
-                  MaxLength = 200
-               };
-            }
-         }
-         else
-         {
-            attr = new DateTimeAttributeMetadata
+               SchemaName = schemaName,
+               LogicalName = schemaName.ToLower(),
+               DisplayName = new Label(displayName, LanguageCode),
+               MaxLength = SystemConstants.AppConstants
+                                .MaxMemoFieldLength
+            },
+            AttributeType.DateTime => new DateTimeAttributeMetadata
             {
                SchemaName = schemaName,
                LogicalName = schemaName.ToLower(),
                DisplayName = new Label(displayName, LanguageCode),
                Format = DateTimeFormat.DateAndTime
-            };
-         }
+            },
+            AttributeType.Lookup => new LookupAttributeMetadata
+            {
+               SchemaName = schemaName,
+               LogicalName = schemaName.ToLower(),
+               DisplayName = new Label(displayName, LanguageCode),
+               Targets = new[] { lookupTarget! }
+            },
+            _ => new StringAttributeMetadata
+            {
+               SchemaName = schemaName,
+               LogicalName = schemaName.ToLower(),
+               DisplayName = new Label(displayName, LanguageCode),
+               MaxLength = 200
+            }
+         };
 
          var req = new CreateAttributeRequest
          {
@@ -312,7 +335,7 @@ namespace dvmig.Core.Provisioning
       )
       {
          // 1. dm_migrationfailure (Delete this first as it might reference 
-         //    dm_sourcedate if lookup was manually added)
+         //    dm_sourcedata if lookup was manually added)
          await DropEntityIfPresentAsync(
             target,
             SystemConstants.MigrationFailure.EntityLogicalName,
@@ -322,10 +345,10 @@ namespace dvmig.Core.Provisioning
          _logger.Information("Publishing changes...");
          await target.ExecuteAsync(new PublishAllXmlRequest(), ct);
 
-         // 2. dm_sourcedate
+         // 2. dm_sourcedata
          await DropEntityIfPresentAsync(
             target,
-            SystemConstants.SourceDate.EntityLogicalName,
+            SystemConstants.SourceData.EntityLogicalName,
             ct
          );
 

@@ -29,7 +29,7 @@ namespace dvmig.Core.Synchronization
       private readonly IStatusService _statusService;
       private readonly IMetadataService _metadataService;
       private readonly IFailureService _failureService;
-      private readonly ISourceDateService _sourceDateService;
+      private readonly ISourceDataService _sourceDataService;
       private readonly ISyncStateService _syncStateService;
       private readonly IRelationshipService _relationshipService;
       private readonly AsyncRetryPolicy _retryPolicy;
@@ -50,7 +50,7 @@ namespace dvmig.Core.Synchronization
       /// <param name="statusService">The status service.</param>
       /// <param name="metadataService">The metadata service.</param>
       /// <param name="failureService">The failure service.</param>
-      /// <param name="sourceDateService">The source date service.</param>
+      /// <param name="sourceDataService">The source data service.</param>
       /// <param name="syncStateService">The sync state service.</param>
       /// <param name="relationshipService">The relationship service.</param>
       public SyncRecordService(
@@ -64,7 +64,7 @@ namespace dvmig.Core.Synchronization
          IStatusService statusService,
          IMetadataService metadataService,
          IFailureService failureService,
-         ISourceDateService sourceDateService,
+         ISourceDataService sourceDataService,
          ISyncStateService syncStateService,
          IRelationshipService relationshipService
       )
@@ -79,7 +79,7 @@ namespace dvmig.Core.Synchronization
          _statusService = statusService;
          _metadataService = metadataService;
          _failureService = failureService;
-         _sourceDateService = sourceDateService;
+         _sourceDataService = sourceDataService;
          _syncStateService = syncStateService;
          _relationshipService = relationshipService;
 
@@ -236,11 +236,19 @@ namespace dvmig.Core.Synchronization
             ct
          );
 
-         await PreserveDatesIfRequestedAsync(entity, options, ct);
+         var (creatorId, modifierId) = await ResolveAuditUserIdsAsync(
+            entity,
+            options,
+            ct
+         );
+
+         await PreserveAuditDataIfRequestedAsync(entity, options, ct);
 
          var (success, failureMessage) = await CreateWithFixStrategyAsync(
             prepared,
             options,
+            creatorId,
+            modifierId,
             ct
          );
 
@@ -261,6 +269,37 @@ namespace dvmig.Core.Synchronization
          return (true, string.Empty);
       }
 
+      private async Task<(Guid? CreatorId, Guid? ModifierId)>
+         ResolveAuditUserIdsAsync(
+            Entity sourceEntity,
+            SyncOptions options,
+            CT ct
+         )
+      {
+         if (!options.PreserveAuditData)
+            return (null, null);
+
+         var sourceCreator = sourceEntity.GetAttributeValue<EntityReference>(
+            SystemConstants.DataverseAttributes.CreatedBy
+         );
+
+         var sourceModifier = sourceEntity.GetAttributeValue<EntityReference>(
+            SystemConstants.DataverseAttributes.ModifiedBy
+         );
+
+         var creatorId = (await _userResolver.MapUserAsync(
+            sourceCreator,
+            ct
+         ))?.Id;
+
+         var modifierId = (await _userResolver.MapUserAsync(
+            sourceModifier,
+            ct
+         ))?.Id;
+
+         return (creatorId, modifierId);
+      }
+
       private (bool Success, string FailureMessage) MetadataMissing(
          Entity entity
       )
@@ -278,20 +317,21 @@ namespace dvmig.Core.Synchronization
          );
       }
 
-      private async Task PreserveDatesIfRequestedAsync(
+      private async Task PreserveAuditDataIfRequestedAsync(
          Entity entity,
          SyncOptions options,
          CT ct
       )
       {
-         if (!options.PreserveDates)
+         if (!options.PreserveAuditData)
             return;
 
          try
          {
-            await _sourceDateService.CreateSourceDateRecordAsync(
+            await _sourceDataService.CreateSourceDataRecordAsync(
                _target,
                entity,
+               _userResolver,
                ct
             );
          }
@@ -299,13 +339,13 @@ namespace dvmig.Core.Synchronization
          {
             _logger.Warning(
                ex,
-               "Date preservation failed for {Entity}:{Id}. " +
+               "Audit data preservation failed for {Entity}:{Id}. " +
                "Continuing sync.",
                entity.LogicalName,
                entity.Id
             );
 
-            _logger.Information("Date preservation failed. Continuing...");
+            _logger.Information("Audit data preservation failed. Continuing...");
          }
       }
 
@@ -324,12 +364,12 @@ namespace dvmig.Core.Synchronization
             $"Synced {sourceEntity.LogicalName}:{sourceEntity.Id}"
          );
 
-         if (!options.PreserveDates)
+         if (!options.PreserveAuditData)
             return;
 
          await _retryPolicy.ExecuteAsync(
-            async (ctx) => await _sourceDateService
-               .DeleteSourceDateRecordAsync(
+            async (ctx) => await _sourceDataService
+               .DeleteSourceDataRecordAsync(
                _target,
                sourceEntity.LogicalName,
                targetEntity.Id,
@@ -353,6 +393,7 @@ namespace dvmig.Core.Synchronization
             Exception ex,
             Entity entity,
             SyncOptions options,
+            Guid? modifierId,
             CT ct,
             bool treatAlreadyExistsAsSuccess = false
          )
@@ -367,11 +408,14 @@ namespace dvmig.Core.Synchronization
                entity,
                options,
                ct,
-               updateFunc: _target.UpdateAsync,
+               updateFunc: (e, token) => _target.UpdateAsync(e, token, modifierId),
                statusTransitionFunc: HandleStatusTransitionAsync,
-               resolveMissingDependencyFunc: ResolveMissingDependencyAsync,
-               resolveSqlDependencyFunc: ResolveSqlDependencyAsync,
-               stripAttributeFunc: StripAttributeAndRetryAsync,
+               resolveMissingDependencyFunc: (e, ent, opt, token) =>
+                  ResolveMissingDependencyAsync(e, ent, opt, modifierId, token),
+               resolveSqlDependencyFunc: (msg, ent, opt, token) =>
+                  ResolveSqlDependencyAsync(msg, ent, opt, modifierId, token),
+               stripAttributeFunc: (e, ent, opt, token) =>
+                  StripAttributeAndRetryAsync(e, ent, opt, modifierId, token),
                findExistingFunc: FindExistingOnTargetAsync
             );
 
@@ -397,6 +441,7 @@ namespace dvmig.Core.Synchronization
          Exception ex,
          Entity entity,
          SyncOptions options,
+         Guid? modifierId,
          CT ct
       )
       {
@@ -406,7 +451,8 @@ namespace dvmig.Core.Synchronization
             options,
             ct,
             syncRecordFunc: SyncRecordAsync,
-            retryEntityFunc: RetryEntityAsync,
+            retryEntityFunc: (ent, opt, token) =>
+               RetryEntityAsync(ent, opt, modifierId, token),
             findExistingFunc: FindExistingOnTargetAsync,
             idMappingCache: _syncStateService.IdMappingCache,
             triedDependencies: _syncStateService.TriedDependencies
@@ -417,6 +463,7 @@ namespace dvmig.Core.Synchronization
          string errorMessage,
          Entity entity,
          SyncOptions options,
+         Guid? modifierId,
          CT ct
       )
       {
@@ -426,7 +473,8 @@ namespace dvmig.Core.Synchronization
             options,
             ct,
             syncRecordFunc: SyncRecordAsync,
-            retryEntityFunc: RetryEntityAsync,
+            retryEntityFunc: (ent, opt, token) =>
+               RetryEntityAsync(ent, opt, modifierId, token),
             findExistingFunc: FindExistingOnTargetAsync,
             idMappingCache: _syncStateService.IdMappingCache
          );
@@ -463,6 +511,7 @@ namespace dvmig.Core.Synchronization
                ex,
                entity,
                options,
+               null,
                ct,
                treatAlreadyExistsAsSuccess: true
             );
@@ -473,13 +522,15 @@ namespace dvmig.Core.Synchronization
          CreateWithFixStrategyAsync(
             Entity entity,
             SyncOptions options,
+            Guid? creatorId,
+            Guid? modifierId,
             CT ct
          )
       {
          try
          {
             await _retryPolicy.ExecuteAsync(
-               async (ctx) => await _target.CreateAsync(entity, ct),
+               async (ctx) => await _target.CreateAsync(entity, ct, creatorId),
                CreatePollyContext()
             );
 
@@ -497,6 +548,7 @@ namespace dvmig.Core.Synchronization
                ex,
                entity,
                options,
+               modifierId,
                ct
             );
          }
@@ -522,6 +574,7 @@ namespace dvmig.Core.Synchronization
       private async Task<bool> RetryEntityAsync(
          Entity entity,
          SyncOptions options,
+         Guid? callerId,
          CT ct
       )
       {
@@ -555,6 +608,8 @@ namespace dvmig.Core.Synchronization
          var (created, _) = await CreateWithFixStrategyAsync(
             prepared,
             options,
+            callerId,
+            callerId,
             ct
          );
 
@@ -565,6 +620,7 @@ namespace dvmig.Core.Synchronization
          Exception ex,
          Entity entity,
          SyncOptions options,
+         Guid? modifierId,
          CT ct
       )
       {
@@ -594,6 +650,8 @@ namespace dvmig.Core.Synchronization
                var (success, _) = await CreateWithFixStrategyAsync(
                   entity,
                   options,
+                  modifierId,
+                  modifierId,
                   ct
                );
 

@@ -8,9 +8,9 @@ namespace dvmig.Core.Synchronization
    {
       /// <summary>
       /// Gets or sets a value indicating whether to preserve original
-      /// creation and modification dates.
+      /// source audit data (timestamps and user attribution).
       /// </summary>
-      public bool PreserveDates { get; set; } = true;
+      public bool PreserveAuditData { get; set; } = true;
 
       /// <summary>
       /// Gets or sets a value indicating whether to automatically strip

@@ -205,5 +205,108 @@ namespace dvmig.Tests
          Assert.NotNull(result);
          Assert.Equal(targetId, result.Id);
       }
+
+      [Fact]
+      public async Task MapAllSourceUsersAsync_MapsActiveUsers()
+      {
+         // Arrange
+         var sourceUserId = Guid.NewGuid();
+         var targetUserId = Guid.NewGuid();
+
+         var sourceUser = new Entity(SystemConstants.DataverseEntities.SystemUser, sourceUserId);
+         sourceUser[SystemConstants.DataverseAttributes.FullName] = "Source User";
+         sourceUser[SystemConstants.DataverseAttributes.InternalEmailAddress] = "test@example.com";
+         sourceUser[SystemConstants.DataverseAttributes.AccessMode] = new OptionSetValue(0); // Read-Write (Human)
+
+         var sourceCollection = new EntityCollection(new[] { sourceUser });
+
+         _sourceMock.Setup(s => s.RetrieveMultipleAsync(
+            It.IsAny<QueryExpression>(),
+            It.IsAny<CancellationToken>()
+         )).ReturnsAsync(sourceCollection);
+
+         var targetUser = new Entity(SystemConstants.DataverseEntities.SystemUser, targetUserId);
+         targetUser[SystemConstants.DataverseAttributes.FullName] = "Target User";
+
+         var targetCollection = new EntityCollection(new[] { targetUser });
+
+         _targetMock.Setup(t => t.RetrieveMultipleAsync(
+            It.IsAny<QueryByAttribute>(),
+            It.IsAny<CancellationToken>()
+         )).ReturnsAsync(targetCollection);
+
+         // Act
+         await _resolver.MapAllSourceUsersAsync();
+
+         // Assert
+         var summaries = await _resolver.GetMappingSummaryAsync();
+         Assert.Single(summaries);
+         Assert.Equal("Source User", summaries[0].SourceName);
+         Assert.Equal("Target User", summaries[0].TargetName);
+         Assert.Equal("Mapped", summaries[0].Status);
+         Assert.True(summaries[0].IsHuman);
+      }
+
+      [Fact]
+      public async Task MapAllSourceUsersAsync_IdentifiesSystemUsers()
+      {
+         // Arrange
+         var sourceUserId = Guid.NewGuid();
+         var sourceUser = new Entity(SystemConstants.DataverseEntities.SystemUser, sourceUserId);
+         sourceUser[SystemConstants.DataverseAttributes.FullName] = "# Agent 365";
+         sourceUser[SystemConstants.DataverseAttributes.InternalEmailAddress] = "agent@example.com";
+         sourceUser[SystemConstants.DataverseAttributes.AccessMode] = new OptionSetValue(3); // Non-interactive
+
+         var sourceCollection = new EntityCollection(new[] { sourceUser });
+
+         _sourceMock.Setup(s => s.RetrieveMultipleAsync(
+            It.IsAny<QueryExpression>(),
+            It.IsAny<CancellationToken>()
+         )).ReturnsAsync(sourceCollection);
+
+         _targetMock.Setup(t => t.RetrieveMultipleAsync(
+            It.IsAny<QueryByAttribute>(),
+            It.IsAny<CancellationToken>()
+         )).ReturnsAsync(new EntityCollection());
+
+         // Act
+         await _resolver.MapAllSourceUsersAsync();
+
+         // Assert
+         var summaries = await _resolver.GetMappingSummaryAsync();
+         Assert.Single(summaries);
+         Assert.False(summaries[0].IsHuman);
+      }
+
+      [Fact]
+      public async Task GetMappingSummaryAsync_ReturnsUnmapped_WhenResolutionFails()
+      {
+         // Arrange
+         var sourceUserId = Guid.NewGuid();
+         var sourceUser = new Entity(SystemConstants.DataverseEntities.SystemUser, sourceUserId);
+         sourceUser[SystemConstants.DataverseAttributes.FullName] = "Lonely User";
+
+         var sourceCollection = new EntityCollection(new[] { sourceUser });
+
+         _sourceMock.Setup(s => s.RetrieveMultipleAsync(
+            It.IsAny<QueryExpression>(),
+            It.IsAny<CancellationToken>()
+         )).ReturnsAsync(sourceCollection);
+
+         _targetMock.Setup(t => t.RetrieveMultipleAsync(
+            It.IsAny<QueryByAttribute>(),
+            It.IsAny<CancellationToken>()
+         )).ReturnsAsync(new EntityCollection());
+
+         // Act
+         await _resolver.MapAllSourceUsersAsync();
+
+         // Assert
+         var summaries = await _resolver.GetMappingSummaryAsync();
+         Assert.Single(summaries);
+         Assert.Equal("Lonely User", summaries[0].SourceName);
+         Assert.Equal("Unmapped", summaries[0].Status);
+         Assert.Equal(Guid.Empty, summaries[0].TargetId);
+      }
    }
 }

@@ -12,23 +12,23 @@ namespace dvmig.Core.Synchronization
    public class ErrorService : IErrorService
    {
       private readonly IDataverseProvider _target;
-      private readonly ISourceDateService _sourceDateService;
+      private readonly ISourceDataService _sourceDataService;
       private readonly ILogger _logger;
 
       /// <summary>
       /// Initializes a new instance of the <see cref="ErrorService"/> class.
       /// </summary>
       /// <param name="target">The target Dataverse provider.</param>
-      /// <param name="sourceDateService">The source date service.</param>
+      /// <param name="sourceDataService">The source data service.</param>
       /// <param name="logger">The logger instance.</param>
       public ErrorService(
          IDataverseProvider target,
-         ISourceDateService sourceDateService,
+         ISourceDataService sourceDataService,
          ILogger logger
       )
       {
          _target = target;
-         _sourceDateService = sourceDateService;
+         _sourceDataService = sourceDataService;
          _logger = logger;
       }
 
@@ -56,6 +56,10 @@ namespace dvmig.Core.Synchronization
                findExistingFunc = null
          )
       {
+         // NOTE: Preservation logic removed from ErrorService to maintain 
+         // clean separation of concerns. SyncRecordService handles 
+         // preservation during its main workflow.
+
          var msg = ex.Message.ToLower();
 
          bool isDuplicate =
@@ -100,13 +104,6 @@ namespace dvmig.Core.Synchronization
                         entity[pkName] = targetId.Value;
                   }
                }
-
-               if (options.PreserveDates)
-                  await _sourceDateService.CreateSourceDateRecordAsync(
-                     _target,
-                     entity,
-                     ct
-                  );
 
                if (updateFunc != null)
                   await updateFunc(entity, ct);

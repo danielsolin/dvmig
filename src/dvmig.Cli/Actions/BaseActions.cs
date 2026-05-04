@@ -14,7 +14,7 @@ namespace dvmig.Cli.Actions
    {
       protected readonly ConnectionManager ConnectionManager;
       protected readonly IPluginService PluginService;
-      protected readonly ISourceDateService SourceDateService;
+      protected readonly ISourceDataService SourceDataService;
       protected readonly IValidationService Validator;
       protected readonly ISchemaService SchemaService;
       protected readonly ILogger Logger;
@@ -22,7 +22,7 @@ namespace dvmig.Cli.Actions
       protected BaseActions(
          ConnectionManager connectionManager,
          IPluginService pluginService,
-         ISourceDateService sourceDateService,
+         ISourceDataService sourceDataService,
          IValidationService validator,
          ISchemaService schemaService,
          ILogger logger
@@ -30,7 +30,7 @@ namespace dvmig.Cli.Actions
       {
          ConnectionManager = connectionManager;
          PluginService = pluginService;
-         SourceDateService = sourceDateService;
+         SourceDataService = sourceDataService;
          Validator = validator;
          SchemaService = schemaService;
          Logger = logger;
@@ -44,7 +44,8 @@ namespace dvmig.Cli.Actions
          IDataverseProvider? Source,
          IDataverseProvider? Target,
          ISyncEngine? Engine,
-         ISyncRecordService? SyncRecordService
+         ISyncRecordService? SyncRecordService,
+         IUserResolver? UserResolver
       )> SetupSyncEngineAsync()
       {
          var source = await ConnectionManager.ConnectAsync(
@@ -52,14 +53,14 @@ namespace dvmig.Cli.Actions
          );
 
          if (source == null)
-            return (null, null, null, null);
+            return (null, null, null, null, null);
 
          var target = await ConnectionManager.ConnectAsync(
             ConnectionDirection.Target
          );
 
          if (target == null)
-            return (null, null, null, null);
+            return (null, null, null, null, null);
 
          bool isReady = await Validator.ValidateTargetEnvironmentAsync(
             target,
@@ -81,14 +82,14 @@ namespace dvmig.Cli.Actions
          var entityService = new EntityService(Logger);
          var errorService = new ErrorService(
             target,
-            SourceDateService,
+            SourceDataService,
             Logger
          );
 
          var dependencyResolver = new DependencyResolver(source, Logger);
          var statusService = new StatusService(
             target,
-            SourceDateService,
+            SourceDataService,
             Logger
          );
 
@@ -108,7 +109,7 @@ namespace dvmig.Cli.Actions
             statusService,
             metadataService,
             failureService,
-            SourceDateService,
+            SourceDataService,
             syncStateService,
             relationshipService
          );
@@ -123,7 +124,7 @@ namespace dvmig.Cli.Actions
             syncRecordService
          );
 
-         return (source, target, engine, syncRecordService);
+         return (source, target, engine, syncRecordService, userResolver);
       }
 
       /// <summary>

@@ -12,23 +12,23 @@ namespace dvmig.Core.Synchronization
    public class StatusService : IStatusService
    {
       private readonly IDataverseProvider _target;
-      private readonly ISourceDateService _sourceDateService;
+      private readonly ISourceDataService _sourceDataService;
       private readonly ILogger _logger;
 
       /// <summary>
       /// Initializes a new instance of the <see cref="StatusService"/> class.
       /// </summary>
       /// <param name="target">The target Dataverse provider.</param>
-      /// <param name="sourceDateService">The source date service.</param>
+      /// <param name="sourceDataService">The source data service.</param>
       /// <param name="logger">The logger instance.</param>
       public StatusService(
          IDataverseProvider target,
-         ISourceDateService sourceDateService,
+         ISourceDataService sourceDataService,
          ILogger logger
       )
       {
          _target = target;
-         _sourceDateService = sourceDateService;
+         _sourceDataService = sourceDataService;
          _logger = logger;
       }
 

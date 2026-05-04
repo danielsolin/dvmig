@@ -27,13 +27,13 @@ namespace dvmig.Core.Provisioning
             if (failureMeta == null)
                return false;
 
-            // 2. Check Source Date Entity
-            var sourceDateMeta = await target.GetEntityMetadataAsync(
-               SystemConstants.SourceDate.EntityLogicalName,
+            // 2. Check Source Data Entity
+            var sourceDataMeta = await target.GetEntityMetadataAsync(
+               SystemConstants.SourceData.EntityLogicalName,
                ct
             );
 
-            if (sourceDateMeta == null)
+            if (sourceDataMeta == null)
                return false;
 
             // 3. Check Plugin Assembly

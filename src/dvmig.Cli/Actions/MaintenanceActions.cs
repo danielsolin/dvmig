@@ -18,7 +18,7 @@ namespace dvmig.Cli.Actions
          ISeedingService seedingService,
          IWipeDataService wipeDataService,
          IPluginService pluginService,
-         ISourceDateService sourceDateService,
+         ISourceDataService sourceDataService,
          IValidationService validator,
          ISchemaService schemaService,
          IMetadataService metadataService,
@@ -27,7 +27,7 @@ namespace dvmig.Cli.Actions
       ) : base(
          connectionManager,
          pluginService,
-         sourceDateService,
+         sourceDataService,
          validator,
          schemaService,
          logger

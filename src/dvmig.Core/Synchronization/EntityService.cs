@@ -160,6 +160,8 @@ namespace dvmig.Core.Synchronization
             targetEntity[attribute.Key] = value;
          }
 
+         targetEntity[SystemConstants.DataverseAttributes.ImportSequenceNumber] = 1;
+
          return targetEntity;
       }
 
@@ -201,8 +203,6 @@ namespace dvmig.Core.Synchronization
          var forbidden = new[]
          {
             SystemConstants.DataverseAttributes.VersionNumber,
-            SystemConstants.DataverseAttributes.CreatedBy,
-            SystemConstants.DataverseAttributes.ModifiedBy,
             SystemConstants.DataverseAttributes.CreatedOnBehalfBy,
             SystemConstants.DataverseAttributes.ModifiedOnBehalfBy,
             SystemConstants.DataverseAttributes.OverriddenCreatedOn,

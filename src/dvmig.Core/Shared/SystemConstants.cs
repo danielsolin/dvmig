@@ -13,18 +13,20 @@ namespace dvmig.Core.Shared
       }
 
       /// <summary>
-      /// Constants for the date preservation entity.
+      /// Constants for the source data preservation entity.
       /// </summary>
-      public static class SourceDate
+      public static class SourceData
       {
-         public const string EntityLogicalName = "dm_sourcedate";
-         public const string PrimaryId = "dm_sourcedateid";
+         public const string EntityLogicalName = "dm_sourcedata";
+         public const string PrimaryId = "dm_sourcedataid";
          public const string Name = "dm_name";
          public const string EntityId = "dm_sourceentityid";
          public const string EntityLogicalNameAttr =
             "dm_sourceentitylogicalname";
          public const string CreatedOn = "dm_sourcecreateddate";
          public const string ModifiedOn = "dm_sourcemodifieddate";
+         public const string CreatedBy = "dm_sourcecreatedby";
+         public const string ModifiedBy = "dm_sourcemodifiedby";
       }
 
       /// <summary>
@@ -93,6 +95,8 @@ namespace dvmig.Core.Shared
          public const string Address1City = "address1_city";
          public const string Address1PostalCode = "address1_postalcode";
          public const string WebsiteUrl = "websiteurl";
+         public const string IsDisabled = "isdisabled";
+         public const string AccessMode = "accessmode";
          public const string FirstName = "firstname";
          public const string LastName = "lastname";
          public const string EmailAddress1 = "emailaddress1";

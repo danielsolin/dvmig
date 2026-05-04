@@ -7,19 +7,14 @@ namespace dvmig.Plugins
 {
    /// <summary>
    /// Data Migration Plugin responsible for preserving source environment
-   /// timestamps (CreatedOn and ModifiedOn) during the migration process.
-   /// It works by looking up temporary date records in the dm_sourcedate
-   /// entity and applying them to the target entity before it is saved.
+   /// audit timestamps during the migration. User attribution is handled
+   /// directly by the client-side migration tool.
    /// </summary>
    public class DMPlugin : IPlugin
    {
       /// <summary>
       /// Main entry point for the plugin execution.
       /// </summary>
-      /// <param name="serviceProvider">
-      /// The service provider that contains the execution context,
-      /// tracing service, and organization service factory.
-      /// </param>
       public void Execute(IServiceProvider serviceProvider)
       {
          var context = (IPluginExecutionContext)serviceProvider
@@ -31,22 +26,19 @@ namespace dvmig.Plugins
          var factory = (IOrganizationServiceFactory)serviceProvider
             .GetService(typeof(IOrganizationServiceFactory));
 
-         var service = factory.CreateOrganizationService(context.UserId);
+         // Run as SYSTEM (null) to ensure we can always read dm_sourcedata
+         var service = factory.CreateOrganizationService(null);
 
-         // We allow depth 2 because SyncEngine might trigger an Update
-         // from within its fix logic.
          if (context.Depth > 2)
             return;
 
-         if (!context.InputParameters.Contains("Target"))
-            return;
-
-         if (!(context.InputParameters["Target"] is Entity entity))
+         if (!context.InputParameters.Contains("Target") ||
+             !(context.InputParameters["Target"] is Entity entity))
             return;
 
          try
          {
-            HandleDatePreservation(
+            HandleAuditDataPreservation(
                context,
                service,
                tracingService,
@@ -55,18 +47,11 @@ namespace dvmig.Plugins
          }
          catch (Exception ex)
          {
-            tracingService.Trace(
-               "DMPlugin error: {0}",
-               ex.ToString()
-            );
+            tracingService.Trace("DMPlugin error: {0}", ex.ToString());
          }
       }
 
-      /// <summary>
-      /// Orchestrates the date preservation logic by identifying the
-      /// message type and applying the appropriate source dates.
-      /// </summary>
-      private void HandleDatePreservation(
+      private void HandleAuditDataPreservation(
          IPluginExecutionContext context,
          IOrganizationService service,
          ITracingService tracingService,
@@ -75,39 +60,50 @@ namespace dvmig.Plugins
       {
          var messageName = context.MessageName.ToLower();
 
-         var sourceDate = GetSourceDate(
+         tracingService.Trace(
+            "Handling {0} for {1}:{2}",
+            messageName,
+            entity.LogicalName,
+            entity.Id
+         );
+
+         var sourceData = GetSourceData(
             service,
             entity.Id,
             entity.LogicalName
          );
 
-         if (sourceDate == null)
+         if (sourceData == null)
+         {
+            tracingService.Trace(
+               "No source data found for {0}:{1}. Skipping timestamps.",
+               entity.LogicalName,
+               entity.Id
+            );
+
             return;
+         }
+
+         tracingService.Trace("Applying timestamps from source data...");
 
          if (messageName == "create")
-            ApplyCreateDates(entity, sourceDate);
+            ApplyCreateTimestamps(entity, sourceData, tracingService);
          else if (messageName == "update")
-            ApplyUpdateDates(entity, sourceDate);
+            ApplyUpdateTimestamps(entity, sourceData, tracingService);
       }
 
-      /// <summary>
-      /// Retrieves the source date record from the dm_sourcedate entity
-      /// for the specified target entity.
-      /// </summary>
-      private Entity? GetSourceDate(
+      private Entity? GetSourceData(
          IOrganizationService service,
          Guid entityId,
          string logicalName
       )
       {
-         var entityName = SystemConstants.SourceDate.EntityLogicalName;
-         var primaryId = SystemConstants.SourceDate.PrimaryId;
-         var createdOnAttr = SystemConstants.SourceDate.CreatedOn;
-         var modifiedOnAttr = SystemConstants.SourceDate.ModifiedOn;
-         var sourceEntityId = SystemConstants.SourceDate.EntityId;
-
-         var logicalNameAttr =
-            SystemConstants.SourceDate.EntityLogicalNameAttr;
+         var entityName = SystemConstants.SourceData.EntityLogicalName;
+         var primaryId = SystemConstants.SourceData.PrimaryId;
+         var createdOnAttr = SystemConstants.SourceData.CreatedOn;
+         var modifiedOnAttr = SystemConstants.SourceData.ModifiedOn;
+         var sourceEntityId = SystemConstants.SourceData.EntityId;
+         var logicalNameAttr = SystemConstants.SourceData.EntityLogicalNameAttr;
 
          var fetchXml =
             $@"<fetch version='1.0' output-format='xml-platform'
@@ -130,50 +126,55 @@ namespace dvmig.Plugins
             new FetchExpression(fetchXml)
          );
 
-         if (result.Entities.Count > 0)
-            return result.Entities[0];
-
-         return null;
+         return result.Entities.Count > 0 ? result.Entities[0] : null;
       }
 
-      /// <summary>
-      /// Applies both CreatedOn and ModifiedOn dates from the source
-      /// record to the target entity during a Create operation.
-      /// </summary>
-      private void ApplyCreateDates(
+      private void ApplyCreateTimestamps(
          Entity entity,
-         Entity sourceDate
+         Entity sourceData,
+         ITracingService tracingService
       )
       {
-         if (sourceDate.Contains(SystemConstants.SourceDate.CreatedOn))
+         if (sourceData.Contains(SystemConstants.SourceData.CreatedOn))
          {
-            var createdDate =
-               sourceDate[SystemConstants.SourceDate.CreatedOn];
+            var createdDate = sourceData[SystemConstants.SourceData.CreatedOn];
 
-            entity[SystemConstants.DataverseAttributes.CreatedOn] =
-               createdDate;
+            tracingService.Trace("Setting CreatedOn to {0}", createdDate);
+
+            entity[SystemConstants.DataverseAttributes.CreatedOn] = createdDate;
 
             entity[SystemConstants.DataverseAttributes.OverriddenCreatedOn] =
                createdDate;
          }
 
-         if (sourceDate.Contains(SystemConstants.SourceDate.ModifiedOn))
+         if (sourceData.Contains(SystemConstants.SourceData.ModifiedOn))
+         {
+            tracingService.Trace(
+               "Setting ModifiedOn to {0}",
+               sourceData[SystemConstants.SourceData.ModifiedOn]
+            );
+
             entity[SystemConstants.DataverseAttributes.ModifiedOn] =
-               sourceDate[SystemConstants.SourceDate.ModifiedOn];
+               sourceData[SystemConstants.SourceData.ModifiedOn];
+         }
       }
 
-      /// <summary>
-      /// Applies the ModifiedOn date from the source record to the
-      /// target entity during an Update operation.
-      /// </summary>
-      private void ApplyUpdateDates(
+      private void ApplyUpdateTimestamps(
          Entity entity,
-         Entity sourceDate
+         Entity sourceData,
+         ITracingService tracingService
       )
       {
-         if (sourceDate.Contains(SystemConstants.SourceDate.ModifiedOn))
+         if (sourceData.Contains(SystemConstants.SourceData.ModifiedOn))
+         {
+            tracingService.Trace(
+               "Setting ModifiedOn to {0}",
+               sourceData[SystemConstants.SourceData.ModifiedOn]
+            );
+
             entity[SystemConstants.DataverseAttributes.ModifiedOn] =
-               sourceDate[SystemConstants.SourceDate.ModifiedOn];
+               sourceData[SystemConstants.SourceData.ModifiedOn];
+         }
       }
    }
 }

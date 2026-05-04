@@ -39,7 +39,7 @@ namespace dvmig.Tests
 
       [Fact]
       public async Task
-         ValidateTargetEnvironmentAsync_ReturnsFalse_WhenSourceDateSchemaMissing()
+         ValidateTargetEnvironmentAsync_ReturnsFalse_WhenSourceDataSchemaMissing()
       {
          _targetMock.Setup(
             t => t.GetEntityMetadataAsync(
@@ -50,7 +50,7 @@ namespace dvmig.Tests
 
          _targetMock.Setup(
             t => t.GetEntityMetadataAsync(
-               SystemConstants.SourceDate.EntityLogicalName,
+               SystemConstants.SourceData.EntityLogicalName,
                It.IsAny<CancellationToken>()
             )
          ).ReturnsAsync((EntityMetadata?)null);

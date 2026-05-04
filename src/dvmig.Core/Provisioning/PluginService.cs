@@ -264,7 +264,7 @@ namespace dvmig.Core.Provisioning
                typeId
             );
          step[SystemConstants.PluginRegistration.Stage] =
-            new OptionSetValue(20);           // Pre-operation
+            new OptionSetValue(20);           // Pre-Operation
          step[SystemConstants.PluginRegistration.SupportedDeployment] =
             new OptionSetValue(0); // Server
          step[SystemConstants.PluginRegistration.Rank] = 1;

@@ -13,14 +13,14 @@ namespace dvmig.Cli.Actions
          ConnectionManager connectionManager,
          IMetadataService metadataService,
          IPluginService pluginService,
-         ISourceDateService sourceDateService,
+         ISourceDataService sourceDataService,
          IValidationService validator,
          ISchemaService schemaService,
          ILogger logger
       ) : base(
          connectionManager,
          pluginService,
-         sourceDateService,
+         sourceDataService,
          validator,
          schemaService,
          logger
@@ -34,9 +34,11 @@ namespace dvmig.Cli.Actions
          bool forceResync = false
       )
       {
-         var (source, target, engine, _) = await SetupSyncEngineAsync();
+         var (source, target, engine, _, userResolver) =
+            await SetupSyncEngineAsync();
 
-         if (source == null || target == null || engine == null)
+         if (source == null || target == null || engine == null ||
+             userResolver == null)
             return;
 
          var selectedEntities = await CliUI.SelectEntitiesAsync(
@@ -50,6 +52,9 @@ namespace dvmig.Cli.Actions
 
             return;
          }
+
+         if (!await PrepareUserMappingsAsync(userResolver, ct))
+            return;
 
          await HandleSyncFlowAsync(
             engine,
@@ -66,9 +71,11 @@ namespace dvmig.Cli.Actions
          bool forceResync = false
       )
       {
-         var (source, target, engine, _) = await SetupSyncEngineAsync();
+         var (source, target, engine, _, userResolver) =
+            await SetupSyncEngineAsync();
 
-         if (source == null || target == null || engine == null)
+         if (source == null || target == null || engine == null ||
+             userResolver == null)
             return;
 
          var recommendedEntities = SyncSettings.RecommendedEntities.ToList();
@@ -88,6 +95,9 @@ namespace dvmig.Cli.Actions
             return;
          }
 
+         if (!await PrepareUserMappingsAsync(userResolver, ct))
+            return;
+
          await HandleSyncFlowAsync(
             engine,
             source,
@@ -96,6 +106,75 @@ namespace dvmig.Cli.Actions
             forceResync,
             ct
          );
+      }
+
+      private async Task<bool> PrepareUserMappingsAsync(
+         IUserResolver userResolver,
+         CancellationToken ct
+      )
+      {
+         AnsiConsole.MarkupLine(
+            $"\n{UiMarkup.BoldCyan}Phase: User Mapping Verification[/]"
+         );
+
+         await CliUI.RunStatusAsync(
+            "Mapping source users to target environment...",
+            Logger,
+            async () => await userResolver.MapAllSourceUsersAsync(ct)
+         );
+
+         var mappings = await userResolver.GetMappingSummaryAsync(ct);
+
+         if (!mappings.Any())
+         {
+            CliUI.WriteWarning("No active users found to map.");
+
+            return true;
+         }
+
+         var humanMappings = mappings.Where(m => m.IsHuman).ToList();
+         var systemCount = mappings.Count - humanMappings.Count;
+
+         var table = new Table()
+            .Border(TableBorder.Rounded)
+            .AddColumn("Source User")
+            .AddColumn("Target User")
+            .AddColumn("Status");
+
+         foreach (var mapping in humanMappings)
+         {
+            var statusColor = mapping.Status == "Mapped" ? "green" : "yellow";
+
+            table.AddRow(
+               mapping.SourceName,
+               mapping.TargetName,
+               $"[{statusColor}]{mapping.Status}[/]"
+            );
+         }
+
+         AnsiConsole.Write(table);
+
+         if (systemCount > 0)
+         {
+            AnsiConsole.MarkupLine(
+               $"{UiMarkup.Grey}Note: {systemCount} system accounts mapped " +
+               "automatically and hidden from this view.[/]"
+            );
+         }
+
+         AnsiConsole.WriteLine();
+
+         if (!AnsiConsole.Confirm(
+            "Accept these user mappings and proceed with migration?",
+            true
+         ))
+         {
+            CliUI.WriteWarning("Migration cancelled by user.");
+
+            return false;
+         }
+
+         return true;
       }
 
       private async Task HandleSyncFlowAsync(
@@ -244,7 +323,8 @@ namespace dvmig.Cli.Actions
                      {
                         StripMissingDependencies = true,
                         MaxDegreeOfParallelism = maxThreads,
-                        ForceResync = forceResync
+                        ForceResync = forceResync,
+                        PreserveAuditData = true
                      };
 
                      Logger.AttachProgress(

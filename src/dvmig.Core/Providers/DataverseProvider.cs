@@ -111,9 +111,17 @@ namespace dvmig.Core.Providers
       /// <inheritdoc />
       public async Task<Guid> CreateAsync(
          Entity entity,
-         CancellationToken ct = default
+         CancellationToken ct = default,
+         Guid? callerId = null
       )
       {
+         if (callerId.HasValue && callerId.Value != Guid.Empty)
+         {
+            using var clonedClient = _client.Clone();
+            clonedClient.CallerId = callerId.Value;
+
+            return await clonedClient.CreateAsync(entity, ct);
+         }
 
          return await _client.CreateAsync(entity, ct);
       }
@@ -121,9 +129,20 @@ namespace dvmig.Core.Providers
       /// <inheritdoc />
       public async Task UpdateAsync(
          Entity entity,
-         CancellationToken ct = default
+         CancellationToken ct = default,
+         Guid? callerId = null
       )
       {
+         if (callerId.HasValue && callerId.Value != Guid.Empty)
+         {
+            using var clonedClient = _client.Clone();
+            clonedClient.CallerId = callerId.Value;
+
+            await clonedClient.UpdateAsync(entity, ct);
+
+            return;
+         }
+
          await _client.UpdateAsync(entity, ct);
       }
 
@@ -161,16 +180,23 @@ namespace dvmig.Core.Providers
          CancellationToken ct = default
       )
       {
-
          return await _client.RetrieveMultipleAsync(query, ct);
       }
 
       /// <inheritdoc />
       public async Task<OrganizationResponse> ExecuteAsync(
          OrganizationRequest request,
-         CancellationToken ct = default
+         CancellationToken ct = default,
+         Guid? callerId = null
       )
       {
+         if (callerId.HasValue && callerId.Value != Guid.Empty)
+         {
+            using var clonedClient = _client.Clone();
+            clonedClient.CallerId = callerId.Value;
+
+            return await clonedClient.ExecuteAsync(request, ct);
+         }
 
          return await _client.ExecuteAsync(request, ct);
       }
