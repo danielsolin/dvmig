@@ -17,3 +17,6 @@ TestResults/
 *.swp
 GEMINI.md
 CLAUDE.md
+/.gemini/settings.json
+/.gitignore
+/.gemini/settings.json
