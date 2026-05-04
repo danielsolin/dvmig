@@ -290,35 +290,40 @@ namespace dvmig.Cli.Actions
 
                      var sw = System.Diagnostics.Stopwatch.StartNew();
                      var lastUpdate = DateTime.MinValue;
+                     var progressLock = new object();
+
                      var recordProgress = new Progress<bool>(
                         success =>
                         {
-                           processed++;
+                           var currentProcessed = Interlocked.Increment(ref processed);
 
                            if (!success)
-                              failedCount++;
+                              Interlocked.Increment(ref failedCount);
 
-                           var now = DateTime.Now;
-                           if (now - lastUpdate < TimeSpan.FromSeconds(1)
-                                 && processed < totalCount)
-                              return;
+                           lock (progressLock)
+                           {
+                              var now = DateTime.Now;
+                              if (now - lastUpdate < TimeSpan.FromSeconds(1)
+                                    && currentProcessed < totalCount)
+                                 return;
 
-                           lastUpdate = now;
-                           task.Value = processed;
+                              lastUpdate = now;
+                              task.Value = currentProcessed;
 
-                           var swElapsed = sw.Elapsed.TotalSeconds;
-                           var recsPerSec = processed / swElapsed;
+                              var swElapsed = sw.Elapsed.TotalSeconds;
+                              var recsPerSec = currentProcessed / swElapsed;
 
-                           task.Description = GetDesc
-                           (
-                              processed,
-                              totalCount,
-                              recsPerSec,
-                              failedCount,
-                              maxThreads,
-                              actionTitle,
-                              displayName
-                           );
+                              task.Description = GetDesc
+                              (
+                                 currentProcessed,
+                                 totalCount,
+                                 recsPerSec,
+                                 failedCount,
+                                 maxThreads,
+                                 actionTitle,
+                                 displayName
+                              );
+                           }
                         }
                      );
 
@@ -373,6 +378,20 @@ namespace dvmig.Cli.Actions
                      finally
                      {
                         Logger.DetachProgress();
+                        
+                        var finalElapsed = sw.Elapsed.TotalSeconds;
+                        var finalRate = processed / (finalElapsed > 0 ? finalElapsed : 1);
+                        
+                        task.Description = GetDesc(
+                           processed,
+                           totalCount,
+                           finalRate,
+                           failedCount,
+                           maxThreads,
+                           actionTitle,
+                           displayName
+                        );
+                        
                         task.Value = totalCount;
                         task.StopTask();
                      }
