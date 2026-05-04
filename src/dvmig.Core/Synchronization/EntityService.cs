@@ -209,8 +209,7 @@ namespace dvmig.Core.Synchronization
             SystemConstants.DataverseAttributes.ImportSequenceNumber,
             SystemConstants.DataverseAttributes.Address1Id,
             SystemConstants.DataverseAttributes.Address2Id,
-            SystemConstants.DataverseAttributes.CreatedBy,
-            SystemConstants.DataverseAttributes.ModifiedBy
+            SystemConstants.DataverseAttributes.CreatedBy
          };
 
          return forbidden.Contains(attributeName.ToLower());
@@ -221,7 +220,8 @@ namespace dvmig.Core.Synchronization
       {
          var userFields = new[]
          {
-            SystemConstants.DataverseAttributes.OwnerId
+            SystemConstants.DataverseAttributes.OwnerId,
+            SystemConstants.DataverseAttributes.ModifiedBy
          };
 
          return userFields.Contains(attributeName.ToLower());
