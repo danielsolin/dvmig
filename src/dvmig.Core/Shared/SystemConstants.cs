@@ -178,6 +178,7 @@ namespace dvmig.Core.Shared
          public static readonly int[] ParallelismOptions =
             new[]
             {
+               1,
                10,
                20,
                30,

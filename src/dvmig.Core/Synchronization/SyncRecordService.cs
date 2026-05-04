@@ -409,7 +409,8 @@ namespace dvmig.Core.Synchronization
                options,
                ct,
                updateFunc: (e, token) => _target.UpdateAsync(e, token, modifierId),
-               statusTransitionFunc: HandleStatusTransitionAsync,
+               statusTransitionFunc: (e, opt, token) =>
+                  HandleStatusTransitionAsync(e, opt, modifierId, token),
                resolveMissingDependencyFunc: (e, ent, opt, token) =>
                   ResolveMissingDependencyAsync(e, ent, opt, modifierId, token),
                resolveSqlDependencyFunc: (msg, ent, opt, token) =>
@@ -427,13 +428,15 @@ namespace dvmig.Core.Synchronization
       private async Task<bool> HandleStatusTransitionAsync(
          Entity entity,
          SyncOptions options,
+         Guid? modifierId,
          CT ct
       )
       {
          return await _statusService.HandleStatusTransitionAsync(
             entity,
             options,
-            ct
+            ct,
+            callerId: modifierId
          );
       }
 
@@ -539,6 +542,29 @@ namespace dvmig.Core.Synchronization
                entity.LogicalName,
                entity.Id
             );
+
+            // If modifier is different from creator, we MUST do an update 
+            // to ensure ModifiedBy is preserved correctly.
+            if (modifierId.HasValue && modifierId != creatorId)
+            {
+               _logger.Debug(
+                  "Modifier {ModifierId} differs from Creator {CreatorId}. " +
+                  "Performing update to preserve ModifiedBy.",
+                  modifierId,
+                  creatorId
+               );
+
+               var updateEntity = new Entity(entity.LogicalName, entity.Id);
+
+               await _retryPolicy.ExecuteAsync(
+                  async (ctx) => await _target.UpdateAsync(
+                     updateEntity,
+                     ct,
+                     modifierId
+                  ),
+                  CreatePollyContext()
+               );
+            }
 
             return (true, string.Empty);
          }

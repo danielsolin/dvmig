@@ -611,5 +611,53 @@ namespace dvmig.Tests
             Times.Once
          );
       }
+
+      [Fact]
+      public async Task SyncRecordAsync_PreservesModifiedBy_WhenDifferentFromCreator()
+      {
+         // Arrange
+         var accountId = Guid.NewGuid();
+         var creatorId = Guid.NewGuid();
+         var modifierId = Guid.NewGuid();
+
+         var creatorRef = new EntityReference(
+            SystemConstants.DataverseEntities.SystemUser,
+            creatorId
+         );
+
+         var modifierRef = new EntityReference(
+            SystemConstants.DataverseEntities.SystemUser,
+            modifierId
+         );
+
+         var account = new Entity(
+            SystemConstants.DataverseEntities.Account,
+            accountId
+         );
+
+         account[SystemConstants.DataverseAttributes.Name] = "Audit Test";
+         account[SystemConstants.DataverseAttributes.CreatedBy] = creatorRef;
+         account[SystemConstants.DataverseAttributes.ModifiedBy] = modifierRef;
+
+         _userResolverMock.Setup(m => m.MapUserAsync(creatorRef, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(creatorRef);
+         _userResolverMock.Setup(m => m.MapUserAsync(modifierRef, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(modifierRef);
+
+         _targetMock.Setup(t => t.CreateAsync(It.IsAny<Entity>(), It.IsAny<CancellationToken>(), creatorId))
+            .ReturnsAsync(accountId);
+
+         var options = new SyncOptions { PreserveAuditData = true };
+
+         // Act
+         await _syncRecordService.SyncRecordAsync(account, options);
+
+         // Assert
+         // 1. Verify Create was called with CreatorId
+         _targetMock.Verify(t => t.CreateAsync(It.IsAny<Entity>(), It.IsAny<CancellationToken>(), creatorId), Times.Once);
+
+         // 2. Verify Update was called with ModifierId to set ModifiedBy
+         _targetMock.Verify(t => t.UpdateAsync(It.IsAny<Entity>(), It.IsAny<CancellationToken>(), modifierId), Times.Once);
+      }
    }
 }

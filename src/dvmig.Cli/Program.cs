@@ -113,7 +113,8 @@ namespace dvmig.Cli
          var prompt = new SelectionPrompt<MenuItem>()
             .Title("What would you like to do?")
             .PageSize(15)
-            .UseConverter(m => m.Label);
+            .UseConverter(m => m.Label)
+            .HighlightStyle(new Style { Foreground = Color.MediumOrchid });
 
          var syncGroup = new List<MenuItem>
          {
