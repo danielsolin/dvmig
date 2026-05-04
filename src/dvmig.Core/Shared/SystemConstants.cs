@@ -1,3 +1,8 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
+
 namespace dvmig.Core.Shared
 {
    /// <summary>
@@ -55,7 +60,21 @@ namespace dvmig.Core.Shared
          public const string Contact = "contact";
          public const string Task = "task";
          public const string PhoneCall = "phonecall";
+         public const string Appointment = "appointment";
          public const string Email = "email";
+
+         public static IList<string> ToList()
+         {
+            return typeof(DataverseEntities)
+               .GetFields(
+                  BindingFlags.Public |
+                  BindingFlags.Static |
+                  BindingFlags.FlattenHierarchy
+               )
+               .Where(f => f.IsLiteral && !f.IsInitOnly)
+               .Select(f => f.GetValue(null)?.ToString() ?? string.Empty)
+               .ToList();
+         }
       }
 
       /// <summary>

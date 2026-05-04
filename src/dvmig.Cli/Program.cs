@@ -131,12 +131,12 @@ namespace dvmig.Cli
             new MenuItem(
                $"Sync Selected {SystemConstants.UiMarkup.Grey}" +
                "(pick entities)[/]",
-               ct => syncActions.HandleMigrationAsync(ct, false)
+               ct => syncActions.HandleSelectedSyncAsync(ct, false)
             ),
             new MenuItem(
                $"Re-sync Selected {SystemConstants.UiMarkup.Grey}" +
                "(Force update pick entities)[/]",
-               ct => syncActions.HandleMigrationAsync(ct, true)
+               ct => syncActions.HandleSelectedSyncAsync(ct, true)
             )
          };
 

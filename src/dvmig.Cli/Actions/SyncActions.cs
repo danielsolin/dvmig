@@ -29,7 +29,7 @@ namespace dvmig.Cli.Actions
          _metadataService = metadataService;
       }
 
-      public async Task HandleMigrationAsync(
+      public async Task HandleSelectedSyncAsync(
          CancellationToken ct,
          bool forceResync = false
       )
@@ -233,8 +233,10 @@ namespace dvmig.Cli.Actions
             .StartAsync(
                async ctx =>
                {
-                  foreach (var logicalName in entities)
+                  foreach (var rawLogicalName in entities)
                   {
+                     var logicalName = rawLogicalName.ToLowerInvariant();
+
                      var actionTitle = forceResync ? "Re-syncing" : "Migrating";
                      var displayName = char.ToUpper(logicalName[0]) +
                         logicalName.Substring(1);
@@ -242,8 +244,21 @@ namespace dvmig.Cli.Actions
                      int processed = 0;
                      int failedCount = 0;
 
-                     long totalCount = await _metadataService
+                     var sourceCountTask = _metadataService
                         .GetRecordCountAsync(source, logicalName, ct);
+
+                     var targetCountTask = forceResync
+                        ? Task.FromResult(0L)
+                        : _metadataService.GetRecordCountAsync(
+                           target,
+                           logicalName,
+                           ct
+                        );
+
+                     await Task.WhenAll(sourceCountTask, targetCountTask);
+
+                     long totalCount = await sourceCountTask;
+                     long targetCount = await targetCountTask;
 
                      if (totalCount == 0)
                      {
@@ -255,34 +270,18 @@ namespace dvmig.Cli.Actions
                         continue;
                      }
 
-                     if (!forceResync)
-                     {
-                        var targetCount = await _metadataService
-                           .GetRecordCountAsync(target, logicalName, ct);
-
-                        processed = (int)Math.Min(totalCount, targetCount);
-                     }
-
-                     string GetDesc(int p, long t, double r, int f)
-                     {
-                        var titleMarkup = $"{UiMarkup.BoldRed}{actionTitle} " +
-                           $"{displayName}[/]";
-
-                        var rateInfo = r > 0 ? $" - {r:F1} r/s" : "";
-                        var desc = $"{titleMarkup} ({p}/{t}) " +
-                           $"[[{UiMarkup.Green}{maxThreads}t{rateInfo}[/]]] ";
-
-                        if (f > 0)
-                        {
-                           desc += $"{UiMarkup.Red}" +
-                              $"({f} failed)[/]";
-                        }
-
-                        return desc;
-                     }
+                     processed = (int)Math.Min(totalCount, targetCount);
 
                      var task = ctx.AddTask(
-                        GetDesc(processed, totalCount, 0, 0),
+                        GetDesc(
+                           processed,
+                           totalCount,
+                           0,
+                           0,
+                           maxThreads,
+                           actionTitle,
+                           displayName
+                        ),
                         true,
                         totalCount
                      );
@@ -300,8 +299,8 @@ namespace dvmig.Cli.Actions
                               failedCount++;
 
                            var now = DateTime.Now;
-                           if (now - lastUpdate < TimeSpan.FromSeconds(1) &&
-                               processed < totalCount)
+                           if (now - lastUpdate < TimeSpan.FromSeconds(1)
+                                 && processed < totalCount)
                               return;
 
                            lastUpdate = now;
@@ -310,11 +309,15 @@ namespace dvmig.Cli.Actions
                            var swElapsed = sw.Elapsed.TotalSeconds;
                            var recsPerSec = processed / swElapsed;
 
-                           task.Description = GetDesc(
+                           task.Description = GetDesc
+                           (
                               processed,
                               totalCount,
                               recsPerSec,
-                              failedCount
+                              failedCount,
+                              maxThreads,
+                              actionTitle,
+                              displayName
                            );
                         }
                      );
@@ -376,6 +379,24 @@ namespace dvmig.Cli.Actions
                   }
                }
             );
+      }
+
+      private static string GetDesc(int p, long t, double r, int f, int maxThreads, string? actionTitle, string? displayName)
+      {
+         var titleMarkup = $"{UiMarkup.BoldRed}{actionTitle} " +
+            $"{displayName}[/]";
+
+         var rateInfo = r > 0 ? $" - {r:F1} r/s" : "";
+         var desc = $"{titleMarkup} ({p}/{t}) " +
+            $"[[{UiMarkup.Green}{maxThreads}t{rateInfo}[/]]] ";
+
+         if(f > 0)
+         {
+            desc += $"{UiMarkup.Red}" +
+               $"({f} failed)[/]";
+         }
+
+         return desc;
       }
    }
 }

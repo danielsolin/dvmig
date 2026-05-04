@@ -1,9 +1,9 @@
 using dvmig.Core.Interfaces;
 using System.Collections.Concurrent;
-using dvmig.Core.Shared;
 using Microsoft.Xrm.Sdk.Metadata;
 using Microsoft.Xrm.Sdk.Query;
 using Microsoft.Xrm.Sdk.Messages;
+using static dvmig.Core.Shared.SystemConstants;
 
 namespace dvmig.Core.Synchronization
 {
@@ -83,13 +83,13 @@ namespace dvmig.Core.Synchronization
          {
             meta.PrimaryIdAttribute,
             meta.PrimaryNameAttribute ?? string.Empty,
-            SystemConstants.DataverseAttributes.OwnerId,
-            SystemConstants.DataverseAttributes.StateCode,
-            SystemConstants.DataverseAttributes.StatusCode,
-            SystemConstants.DataverseAttributes.CreatedOn,
-            SystemConstants.DataverseAttributes.ModifiedOn,
-            SystemConstants.DataverseAttributes.TransactionCurrencyId,
-            SystemConstants.DataverseAttributes.ExchangeRate
+            DataverseAttributes.OwnerId,
+            DataverseAttributes.StateCode,
+            DataverseAttributes.StatusCode,
+            DataverseAttributes.CreatedOn,
+            DataverseAttributes.ModifiedOn,
+            DataverseAttributes.TransactionCurrencyId,
+            DataverseAttributes.ExchangeRate
          };
 
          var attributes = meta.Attributes
