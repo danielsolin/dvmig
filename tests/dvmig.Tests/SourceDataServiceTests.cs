@@ -51,8 +51,7 @@ namespace dvmig.Tests
          _targetMock.Verify(
             t => t.CreateAsync(
                It.IsAny<Entity>(),
-               It.IsAny<CancellationToken>(),
-               It.IsAny<Guid?>()
+               It.IsAny<CancellationToken>()
             ),
             Times.Never
          );
@@ -82,8 +81,7 @@ namespace dvmig.Tests
          _targetMock.Verify(
             t => t.CreateAsync(
                It.IsAny<Entity>(),
-               It.IsAny<CancellationToken>(),
-               It.IsAny<Guid?>()
+               It.IsAny<CancellationToken>()
             ),
             Times.Never
          );
@@ -93,8 +91,6 @@ namespace dvmig.Tests
       public async Task CreateSourceDataRecordAsync_CreatesEntity_WhenSupported()
       {
          var entityId = Guid.NewGuid();
-         var sourceUserId = Guid.NewGuid();
-         var targetUserId = Guid.NewGuid();
 
          var entity = new Entity(
             SystemConstants.DataverseEntities.Account,
@@ -106,23 +102,6 @@ namespace dvmig.Tests
 
          entity[SystemConstants.DataverseAttributes.CreatedOn] = createdOn;
          entity[SystemConstants.DataverseAttributes.ModifiedOn] = modifiedOn;
-         entity[SystemConstants.DataverseAttributes.CreatedBy] =
-            new EntityReference(
-               SystemConstants.DataverseEntities.SystemUser,
-               sourceUserId
-            );
-
-         var targetUserRef = new EntityReference(
-            SystemConstants.DataverseEntities.SystemUser,
-            targetUserId
-         );
-
-         _userResolverMock.Setup(
-            u => u.MapUserAsync(
-               It.Is<EntityReference>(er => er.Id == sourceUserId),
-               It.IsAny<CancellationToken>()
-            )
-         ).ReturnsAsync(targetUserRef);
 
          _targetMock.Setup(
             t => t.GetEntityMetadataAsync(
@@ -151,12 +130,9 @@ namespace dvmig.Tests
                      (DateTime)e[SystemConstants.SourceData.CreatedOn] ==
                         createdOn &&
                      (DateTime)e[SystemConstants.SourceData.ModifiedOn] ==
-                        modifiedOn &&
-                     e[SystemConstants.SourceData.CreatedBy].ToString() ==
-                        targetUserId.ToString()
+                        modifiedOn
                ),
-               It.IsAny<CancellationToken>(),
-               It.IsAny<Guid?>()
+               It.IsAny<CancellationToken>()
             ),
             Times.Once
          );
@@ -181,8 +157,7 @@ namespace dvmig.Tests
          _targetMock.Verify(
             t => t.RetrieveMultipleAsync(
                It.IsAny<QueryBase>(),
-               It.IsAny<CancellationToken>(),
-               It.IsAny<Guid?>()
+               It.IsAny<CancellationToken>()
             ),
             Times.Never
          );
@@ -214,8 +189,7 @@ namespace dvmig.Tests
          _targetMock.Setup(
             t => t.RetrieveMultipleAsync(
                It.IsAny<QueryBase>(),
-               It.IsAny<CancellationToken>(),
-               It.IsAny<Guid?>()
+               It.IsAny<CancellationToken>()
             )
          ).ReturnsAsync(collection);
 
@@ -229,8 +203,7 @@ namespace dvmig.Tests
             t => t.DeleteAsync(
                SystemConstants.SourceData.EntityLogicalName,
                recordId,
-               It.IsAny<CancellationToken>(),
-               It.IsAny<Guid?>()
+               It.IsAny<CancellationToken>()
             ),
             Times.Once
          );
@@ -251,8 +224,7 @@ namespace dvmig.Tests
          _targetMock.Setup(
             t => t.RetrieveMultipleAsync(
                It.IsAny<QueryBase>(),
-               It.IsAny<CancellationToken>(),
-               It.IsAny<Guid?>()
+               It.IsAny<CancellationToken>()
             )
          ).ReturnsAsync(new EntityCollection());
 
@@ -266,8 +238,7 @@ namespace dvmig.Tests
             t => t.DeleteAsync(
                It.IsAny<string>(),
                It.IsAny<Guid>(),
-               It.IsAny<CancellationToken>(),
-               It.IsAny<Guid?>()
+               It.IsAny<CancellationToken>()
             ),
             Times.Never
          );

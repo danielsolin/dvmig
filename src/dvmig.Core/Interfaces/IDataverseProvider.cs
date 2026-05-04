@@ -50,14 +50,10 @@ namespace dvmig.Core.Interfaces
       /// </summary>
       /// <param name="entity">The entity to create.</param>
       /// <param name="ct">A cancellation token.</param>
-      /// <param name="callerId">
-      /// Optional ID of the user to impersonate for this operation.
-      /// </param>
       /// <returns>The ID of the newly created record.</returns>
       Task<Guid> CreateAsync(
          Entity entity,
-         CancellationToken ct = default,
-         Guid? callerId = null
+         CancellationToken ct = default
       );
 
       /// <summary>
@@ -65,13 +61,9 @@ namespace dvmig.Core.Interfaces
       /// </summary>
       /// <param name="entity">The entity containing the updates.</param>
       /// <param name="ct">A cancellation token.</param>
-      /// <param name="callerId">
-      /// Optional ID of the user to impersonate for this operation.
-      /// </param>
       Task UpdateAsync(
          Entity entity,
-         CancellationToken ct = default,
-         Guid? callerId = null
+         CancellationToken ct = default
       );
 
       /// <summary>
@@ -82,14 +74,10 @@ namespace dvmig.Core.Interfaces
       /// </param>
       /// <param name="id">The ID of the record to delete.</param>
       /// <param name="ct">A cancellation token.</param>
-      /// <param name="callerId">
-      /// Optional ID of the user to impersonate for this operation.
-      /// </param>
       Task DeleteAsync(
          string entityLogicalName,
          Guid id,
-         CancellationToken ct = default,
-         Guid? callerId = null
+         CancellationToken ct = default
       );
 
       /// <summary>
@@ -104,16 +92,12 @@ namespace dvmig.Core.Interfaces
       /// The collection of related entities.
       /// </param>
       /// <param name="ct">A cancellation token.</param>
-      /// <param name="callerId">
-      /// Optional ID of the user to impersonate for this operation.
-      /// </param>
       Task AssociateAsync(
          string entityLogicalName,
          Guid entityId,
          Relationship relationship,
          EntityReferenceCollection relatedEntities,
-         CancellationToken ct = default,
-         Guid? callerId = null
+         CancellationToken ct = default
       );
 
       /// <summary>
@@ -121,14 +105,10 @@ namespace dvmig.Core.Interfaces
       /// </summary>
       /// <param name="query">The query to execute.</param>
       /// <param name="ct">A cancellation token.</param>
-      /// <param name="callerId">
-      /// Optional ID of the user to impersonate for this operation.
-      /// </param>
       /// <returns>The resulting entity collection.</returns>
       Task<EntityCollection> RetrieveMultipleAsync(
          QueryBase query,
-         CancellationToken ct = default,
-         Guid? callerId = null
+         CancellationToken ct = default
       );
 
       /// <summary>
@@ -136,14 +116,10 @@ namespace dvmig.Core.Interfaces
       /// </summary>
       /// <param name="request">The request to execute.</param>
       /// <param name="ct">A cancellation token.</param>
-      /// <param name="callerId">
-      /// Optional ID of the user to impersonate for this operation.
-      /// </param>
       /// <returns>The organization response.</returns>
       Task<OrganizationResponse> ExecuteAsync(
          OrganizationRequest request,
-         CancellationToken ct = default,
-         Guid? callerId = null
+         CancellationToken ct = default
       );
 
       /// <summary>
@@ -185,11 +161,5 @@ namespace dvmig.Core.Interfaces
 
          return 0;
       }
-
-      /// <summary>
-      /// Gets or sets the ID of the user on whose behalf the operations
-      /// are executed.
-      /// </summary>
-      Guid? CallerId { get; set; }
    }
 }

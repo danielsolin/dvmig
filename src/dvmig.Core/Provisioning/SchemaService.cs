@@ -150,26 +150,6 @@ namespace dvmig.Core.Provisioning
             ct,
             AttributeType.DateTime
          );
-
-         await CreateAttributeIfMissingAsync(
-            target,
-            entityName,
-            existingMeta!,
-            SystemConstants.SourceData.CreatedBy,
-            "Source Created By",
-            ct,
-            AttributeType.String
-         );
-
-         await CreateAttributeIfMissingAsync(
-            target,
-            entityName,
-            existingMeta!,
-            SystemConstants.SourceData.ModifiedBy,
-            "Source Modified By",
-            ct,
-            AttributeType.String
-         );
       }
 
       private async Task EnsureFailureLogEntityAsync(

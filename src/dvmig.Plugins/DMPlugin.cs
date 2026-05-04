@@ -7,8 +7,7 @@ namespace dvmig.Plugins
 {
    /// <summary>
    /// Data Migration Plugin responsible for preserving source environment
-   /// audit timestamps during the migration. User attribution is handled
-   /// directly by the client-side migration tool.
+   /// audit timestamps during the migration.
    /// </summary>
    public class DMPlugin : IPlugin
    {

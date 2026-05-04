@@ -50,16 +50,12 @@ namespace dvmig.Core.Interfaces
       /// <param name="ct">
       /// A cancellation token that can be used to cancel the operation.
       /// </param>
-      /// <param name="callerId">
-      /// Optional ID of the user to impersonate for this operation.
-      /// </param>
       /// <returns>A task that represents the asynchronous deletion.</returns>
       Task DeleteSourceDataRecordAsync(
          IDataverseProvider target,
          string logicalName,
          Guid entityId,
-         CancellationToken ct = default,
-         Guid? callerId = null
+         CancellationToken ct = default
       );
    }
 }

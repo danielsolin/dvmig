@@ -30,8 +30,6 @@ namespace dvmig.Core.Shared
             "dm_sourceentitylogicalname";
          public const string CreatedOn = "dm_sourcecreateddate";
          public const string ModifiedOn = "dm_sourcemodifieddate";
-         public const string CreatedBy = "dm_sourcecreatedby";
-         public const string ModifiedBy = "dm_sourcemodifiedby";
       }
 
       /// <summary>
@@ -92,8 +90,6 @@ namespace dvmig.Core.Shared
          public const string SystemUserId = "systemuserid";
          public const string FullName = "fullname";
          public const string OwnerId = "ownerid";
-         public const string CreatedBy = "createdby";
-         public const string ModifiedBy = "modifiedby";
          public const string CreatedOnBehalfBy = "createdonbehalfby";
          public const string ModifiedOnBehalfBy = "modifiedonbehalfby";
          public const string OverriddenCreatedOn = "overriddencreatedon";

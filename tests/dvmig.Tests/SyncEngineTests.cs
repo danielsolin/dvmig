@@ -30,8 +30,7 @@ namespace dvmig.Tests
          _targetMock.Setup(
             t => t.RetrieveMultipleAsync(
                It.IsAny<QueryExpression>(),
-               It.IsAny<CancellationToken>(),
-               It.IsAny<Guid?>()
+               It.IsAny<CancellationToken>()
             )
          ).ReturnsAsync(new EntityCollection());
 
@@ -137,11 +136,10 @@ namespace dvmig.Tests
                It.Is<Entity>(
                   e => e.LogicalName == SystemConstants.DataverseEntities.Account
                ),
-               It.IsAny<CancellationToken>(),
-               It.IsAny<Guid?>()
+               It.IsAny<CancellationToken>()
             )
-         ).Returns<Entity, CancellationToken, Guid?>(
-            (e, ct, cid) =>
+         ).Returns<Entity, CancellationToken>(
+            (e, ct) =>
             {
                callCount++;
 
@@ -198,11 +196,10 @@ namespace dvmig.Tests
                It.Is<Entity>(
                   e => e.LogicalName == SystemConstants.DataverseEntities.Contact
                ),
-               It.IsAny<CancellationToken>(),
-               It.IsAny<Guid?>()
+               It.IsAny<CancellationToken>()
             )
-         ).Returns<Entity, CancellationToken, Guid?>(
-            (e, ct, cid) =>
+         ).Returns<Entity, CancellationToken>(
+            (e, ct) =>
             {
                contactCreateCalls++;
 
@@ -231,8 +228,7 @@ namespace dvmig.Tests
                It.Is<Entity>(
                   e => e.LogicalName == SystemConstants.DataverseEntities.Account
                ),
-               It.IsAny<CancellationToken>(),
-               It.IsAny<Guid?>()
+               It.IsAny<CancellationToken>()
             )
          ).ReturnsAsync(accountId);
 
@@ -250,8 +246,7 @@ namespace dvmig.Tests
                It.Is<Entity>(
                   e => e.LogicalName == SystemConstants.DataverseEntities.Account
                ),
-               It.IsAny<CancellationToken>(),
-               It.IsAny<Guid?>()
+               It.IsAny<CancellationToken>()
             ),
             Times.Once
          );
@@ -296,8 +291,7 @@ namespace dvmig.Tests
          _targetMock.Setup(
             t => t.ExecuteAsync(
                It.IsAny<AssociateRequest>(),
-               It.IsAny<CancellationToken>(),
-               It.IsAny<Guid?>()
+               It.IsAny<CancellationToken>()
             )
          ).ReturnsAsync(new AssociateResponse());
 
@@ -315,8 +309,7 @@ namespace dvmig.Tests
          _targetMock.Verify(
             t => t.ExecuteAsync(
                It.IsAny<AssociateRequest>(),
-               It.IsAny<CancellationToken>(),
-               It.IsAny<Guid?>()
+               It.IsAny<CancellationToken>()
             ),
             Times.Once
          );
@@ -356,8 +349,7 @@ namespace dvmig.Tests
          _targetMock.Setup(
             t => t.CreateAsync(
                It.IsAny<Entity>(),
-               It.IsAny<CancellationToken>(),
-               It.IsAny<Guid?>()
+               It.IsAny<CancellationToken>()
             )
          ).ReturnsAsync(account.Id);
 
@@ -375,8 +367,7 @@ namespace dvmig.Tests
                         e[SystemConstants.DataverseAttributes.OwnerId]).Id ==
                         targetUserId
                ),
-               It.IsAny<CancellationToken>(),
-               It.IsAny<Guid?>()
+               It.IsAny<CancellationToken>()
             ),
             Times.Once
          );
@@ -399,8 +390,7 @@ namespace dvmig.Tests
          _targetMock.Setup(
             t => t.CreateAsync(
                It.IsAny<Entity>(),
-               It.IsAny<CancellationToken>(),
-               It.IsAny<Guid?>()
+               It.IsAny<CancellationToken>()
             )
          ).ReturnsAsync(account.Id);
 
@@ -444,11 +434,10 @@ namespace dvmig.Tests
          _targetMock.Setup(
             t => t.CreateAsync(
                It.IsAny<Entity>(),
-               It.IsAny<CancellationToken>(),
-               It.IsAny<Guid?>()
+               It.IsAny<CancellationToken>()
             )
-         ).Returns<Entity, CancellationToken, Guid?>(
-            (e, ct, cid) =>
+         ).Returns<Entity, CancellationToken>(
+            (e, ct) =>
             {
                createCalls++;
 
@@ -462,8 +451,7 @@ namespace dvmig.Tests
          _targetMock.Setup(
             t => t.UpdateAsync(
                It.Is<Entity>(e => e.Id == accountId),
-               It.IsAny<CancellationToken>(),
-               It.IsAny<Guid?>()
+               It.IsAny<CancellationToken>()
             )
          ).Returns(Task.CompletedTask);
 
@@ -483,8 +471,7 @@ namespace dvmig.Tests
                      (string)e[SystemConstants.DataverseAttributes.Telephone1] ==
                         "12345"
                ),
-               It.IsAny<CancellationToken>(),
-               It.IsAny<Guid?>()
+               It.IsAny<CancellationToken>()
             ),
             Times.Once
          );
@@ -509,11 +496,10 @@ namespace dvmig.Tests
          _targetMock.Setup(
             t => t.CreateAsync(
                It.IsAny<Entity>(),
-               It.IsAny<CancellationToken>(),
-               It.IsAny<Guid?>()
+               It.IsAny<CancellationToken>()
             )
-         ).Returns<Entity, CancellationToken, Guid?>(
-            (e, ct, cid) =>
+         ).Returns<Entity, CancellationToken>(
+            (e, ct) =>
             {
                callCount++;
 
@@ -571,8 +557,7 @@ namespace dvmig.Tests
                It.Is<Entity>(
                   e => e.LogicalName == SystemConstants.DataverseEntities.Account
                ),
-               It.IsAny<CancellationToken>(),
-               It.IsAny<Guid?>()
+               It.IsAny<CancellationToken>()
             )
          ).ThrowsAsync(new Exception("Create failed"));
 
@@ -583,8 +568,7 @@ namespace dvmig.Tests
                      e.LogicalName ==
                         SystemConstants.MigrationFailure.EntityLogicalName
                ),
-               It.IsAny<CancellationToken>(),
-               It.IsAny<Guid?>()
+               It.IsAny<CancellationToken>()
             )
          ).ReturnsAsync(Guid.NewGuid());
 
@@ -606,59 +590,10 @@ namespace dvmig.Tests
                      e.LogicalName ==
                         SystemConstants.MigrationFailure.EntityLogicalName
                ),
-               It.IsAny<CancellationToken>(),
-               It.IsAny<Guid?>()
+               It.IsAny<CancellationToken>()
             ),
             Times.Once
          );
-      }
-
-      [Fact]
-      public async Task SyncRecordAsync_PreservesModifiedBy_WhenDifferentFromCreator()
-      {
-         // Arrange
-         var accountId = Guid.NewGuid();
-         var creatorId = Guid.NewGuid();
-         var modifierId = Guid.NewGuid();
-
-         var creatorRef = new EntityReference(
-            SystemConstants.DataverseEntities.SystemUser,
-            creatorId
-         );
-
-         var modifierRef = new EntityReference(
-            SystemConstants.DataverseEntities.SystemUser,
-            modifierId
-         );
-
-         var account = new Entity(
-            SystemConstants.DataverseEntities.Account,
-            accountId
-         );
-
-         account[SystemConstants.DataverseAttributes.Name] = "Audit Test";
-         account[SystemConstants.DataverseAttributes.CreatedBy] = creatorRef;
-         account[SystemConstants.DataverseAttributes.ModifiedBy] = modifierRef;
-
-         _userResolverMock.Setup(m => m.MapUserAsync(creatorRef, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(creatorRef);
-         _userResolverMock.Setup(m => m.MapUserAsync(modifierRef, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(modifierRef);
-
-         _targetMock.Setup(t => t.CreateAsync(It.IsAny<Entity>(), It.IsAny<CancellationToken>(), creatorId))
-            .ReturnsAsync(accountId);
-
-         var options = new SyncOptions { PreserveAuditData = true };
-
-         // Act
-         await _syncRecordService.SyncRecordAsync(account, options);
-
-         // Assert
-         // 1. Verify Create was called with CreatorId
-         _targetMock.Verify(t => t.CreateAsync(It.IsAny<Entity>(), It.IsAny<CancellationToken>(), creatorId), Times.Once);
-
-         // 2. Verify Update was NOT called (redundant update removed)
-         _targetMock.Verify(t => t.UpdateAsync(It.IsAny<Entity>(), It.IsAny<CancellationToken>(), modifierId), Times.Never);
       }
    }
 }

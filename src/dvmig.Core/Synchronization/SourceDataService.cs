@@ -40,11 +40,7 @@ namespace dvmig.Core.Synchronization
             sourceEntity.Contains(
                SystemConstants.DataverseAttributes.CreatedOn) ||
             sourceEntity.Contains(
-               SystemConstants.DataverseAttributes.ModifiedOn) ||
-            sourceEntity.Contains(
-               SystemConstants.DataverseAttributes.CreatedBy) ||
-            sourceEntity.Contains(
-               SystemConstants.DataverseAttributes.ModifiedBy);
+               SystemConstants.DataverseAttributes.ModifiedOn);
 
          if (!hasAuditData)
             return;
@@ -75,8 +71,7 @@ namespace dvmig.Core.Synchronization
          IDataverseProvider target,
          string logicalName,
          Guid entityId,
-         CancellationToken ct = default,
-         Guid? callerId = null
+         CancellationToken ct = default
       )
       {
          if (!await CheckSourceDataEntityExistsAsync(target, ct))
@@ -107,16 +102,14 @@ namespace dvmig.Core.Synchronization
 
             var result = await target.RetrieveMultipleAsync(
                new FetchExpression(fetchXml),
-               ct,
-               callerId
+               ct
             );
 
             if (result.Entities.Any())
                await target.DeleteAsync(
                   SystemConstants.SourceData.EntityLogicalName,
                   result.Entities[0].Id,
-                  ct,
-                  callerId
+                  ct
                );
          }
          catch (Exception ex)
@@ -165,7 +158,7 @@ namespace dvmig.Core.Synchronization
          return _isSourceDataSupported.Value;
       }
 
-      private async Task<Entity> CreateSourceDataRecordAsync(
+      private Task<Entity> CreateSourceDataRecordAsync(
          Entity entity,
          IUserResolver userResolver,
          CancellationToken ct
@@ -189,55 +182,7 @@ namespace dvmig.Core.Synchronization
             sourceData[SystemConstants.SourceData.ModifiedOn] =
                entity[SystemConstants.DataverseAttributes.ModifiedOn];
 
-         if (entity.Contains(SystemConstants.DataverseAttributes.CreatedBy))
-         {
-            var sourceUser = entity.GetAttributeValue<EntityReference>(
-               SystemConstants.DataverseAttributes.CreatedBy
-            );
-
-            var mappedUser = await userResolver.MapUserAsync(sourceUser, ct);
-            if (mappedUser != null)
-            {
-               sourceData[SystemConstants.SourceData.CreatedBy] =
-                  mappedUser.Id.ToString();
-            }
-            else
-            {
-               _logger.Warning(
-                  "Could not map CreatedBy user {UserId} for {Entity}:{Id}. " +
-                  "User attribution for this field will default to the current caller.",
-                  sourceUser.Id,
-                  entity.LogicalName,
-                  entity.Id
-               );
-            }
-         }
-
-         if (entity.Contains(SystemConstants.DataverseAttributes.ModifiedBy))
-         {
-            var sourceUser = entity.GetAttributeValue<EntityReference>(
-               SystemConstants.DataverseAttributes.ModifiedBy
-            );
-
-            var mappedUser = await userResolver.MapUserAsync(sourceUser, ct);
-            if (mappedUser != null)
-            {
-               sourceData[SystemConstants.SourceData.ModifiedBy] =
-                  mappedUser.Id.ToString();
-            }
-            else
-            {
-               _logger.Warning(
-                  "Could not map ModifiedBy user {UserId} for {Entity}:{Id}. " +
-                  "User attribution for this field will default to the current caller.",
-                  sourceUser.Id,
-                  entity.LogicalName,
-                  entity.Id
-               );
-            }
-         }
-
-         return sourceData;
+         return Task.FromResult(sourceData);
       }
    }
 }

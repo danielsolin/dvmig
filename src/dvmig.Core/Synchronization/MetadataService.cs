@@ -134,11 +134,10 @@ namespace dvmig.Core.Synchronization
 
          return response.EntityMetadata
             .Where(e =>
-               (e.IsCustomEntity == true) &&
                e.IsIntersect == false &&
                e.IsValidForAdvancedFind == true &&
-               !string.IsNullOrEmpty(
-                  e.DisplayName?.UserLocalizedLabel?.Label))
+               e.IsImportable == true &&
+               e.IsLogicalEntity == false)
             .OrderBy(e =>
                e.DisplayName?.UserLocalizedLabel?.Label ??
                e.LogicalName)

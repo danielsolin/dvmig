@@ -42,7 +42,7 @@ namespace dvmig.Tests
       }
 
       [Fact]
-      public async Task SeedSampleDataAsync_DiscoversAndUsesUsersForImpersonation()
+      public async Task SeedSampleDataAsync_CreatesRecords()
       {
          // Arrange
          var providerMock = new Mock<IDataverseProvider>();
@@ -50,49 +50,24 @@ namespace dvmig.Tests
          _retryServiceMock.Setup(r => r.CreateRetryPolicy(It.IsAny<int>()))
             .Returns(retryPolicy);
 
-         var user1Id = Guid.NewGuid();
-         var user1 = new Entity(SystemConstants.DataverseEntities.SystemUser, user1Id);
-         user1[SystemConstants.DataverseAttributes.FullName] = "Sample User 1";
-         user1[SystemConstants.DataverseAttributes.FirstName] = "Sample";
-
-         var users = new EntityCollection(new List<Entity> { user1 });
-
-         providerMock.Setup(p => p.RetrieveMultipleAsync(
-            It.Is<QueryExpression>(q => q.EntityName == SystemConstants.DataverseEntities.SystemUser),
-            It.IsAny<CancellationToken>(),
-            It.IsAny<Guid?>()
-         )).ReturnsAsync(users);
-
          providerMock.Setup(p => p.CreateAsync(
             It.IsAny<Entity>(),
-            It.IsAny<CancellationToken>(),
-            It.IsAny<Guid?>()
+            It.IsAny<CancellationToken>()
          )).ReturnsAsync(Guid.NewGuid());
+
+         providerMock.Setup(p => p.UpdateAsync(
+            It.IsAny<Entity>(),
+            It.IsAny<CancellationToken>()
+         )).Returns(Task.CompletedTask);
 
          // Act
          await _seedingService.SeedSampleDataAsync(providerMock.Object, 1);
 
          // Assert
-         // 1. Verify that retrieve multiple was called for users with correct filters
-         providerMock.Verify(p => p.RetrieveMultipleAsync(
-            It.Is<QueryExpression>(q => 
-               q.EntityName == SystemConstants.DataverseEntities.SystemUser &&
-               q.Criteria.Conditions.Any(c => 
-                  c.AttributeName == SystemConstants.DataverseAttributes.IsDisabled && 
-                  (bool)c.Values[0] == false) &&
-               q.Criteria.Conditions.Any(c => 
-                  c.AttributeName == SystemConstants.DataverseAttributes.AccessMode && 
-                  (int)c.Values[0] == 0)
-            ),
-            It.IsAny<CancellationToken>(),
-            It.IsAny<Guid?>()
+         providerMock.Verify(p => p.CreateAsync(
+            It.Is<Entity>(e => e.LogicalName == SystemConstants.DataverseEntities.Account),
+            It.IsAny<CancellationToken>()
          ), Times.Once);
-
-         // 2. Verify that CallerId was set during creation
-         providerMock.VerifySet(p => p.CallerId = user1Id, Times.AtLeastOnce());
-         
-         // 3. Verify it was restored (assuming null was the original value in mock)
-         providerMock.VerifySet(p => p.CallerId = It.IsAny<Guid?>(), Times.AtLeastOnce());
       }
    }
 }

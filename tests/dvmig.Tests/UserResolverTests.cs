@@ -128,8 +128,7 @@ namespace dvmig.Tests
                      ) &&
                      q.Values.Contains("test@example.com")
                ),
-               It.IsAny<CancellationToken>(),
-               It.IsAny<Guid?>()
+               It.IsAny<CancellationToken>()
             )
          ).ReturnsAsync(targetCollection);
 
@@ -184,8 +183,7 @@ namespace dvmig.Tests
                         SystemConstants.DataverseAttributes.InternalEmailAddress
                      )
                ),
-               It.IsAny<CancellationToken>(),
-               It.IsAny<Guid?>()
+               It.IsAny<CancellationToken>()
             )
          ).ReturnsAsync(emptyCollection);
 
@@ -198,8 +196,7 @@ namespace dvmig.Tests
                      ) &&
                      q.Values.Contains("domain\\user")
                ),
-               It.IsAny<CancellationToken>(),
-               It.IsAny<Guid?>()
+               It.IsAny<CancellationToken>()
             )
          ).ReturnsAsync(targetCollection);
 
@@ -225,8 +222,7 @@ namespace dvmig.Tests
 
          _sourceMock.Setup(s => s.RetrieveMultipleAsync(
             It.IsAny<QueryExpression>(),
-            It.IsAny<CancellationToken>(),
-            It.IsAny<Guid?>()
+            It.IsAny<CancellationToken>()
          )).ReturnsAsync(sourceCollection);
 
          var targetUser = new Entity(SystemConstants.DataverseEntities.SystemUser, targetUserId);
@@ -236,8 +232,7 @@ namespace dvmig.Tests
 
          _targetMock.Setup(t => t.RetrieveMultipleAsync(
             It.IsAny<QueryByAttribute>(),
-            It.IsAny<CancellationToken>(),
-            It.IsAny<Guid?>()
+            It.IsAny<CancellationToken>()
          )).ReturnsAsync(targetCollection);
 
          // Act
@@ -266,14 +261,12 @@ namespace dvmig.Tests
 
          _sourceMock.Setup(s => s.RetrieveMultipleAsync(
             It.IsAny<QueryExpression>(),
-            It.IsAny<CancellationToken>(),
-            It.IsAny<Guid?>()
+            It.IsAny<CancellationToken>()
          )).ReturnsAsync(sourceCollection);
 
          _targetMock.Setup(t => t.RetrieveMultipleAsync(
             It.IsAny<QueryByAttribute>(),
-            It.IsAny<CancellationToken>(),
-            It.IsAny<Guid?>()
+            It.IsAny<CancellationToken>()
          )).ReturnsAsync(new EntityCollection());
 
          // Act
@@ -297,14 +290,12 @@ namespace dvmig.Tests
 
          _sourceMock.Setup(s => s.RetrieveMultipleAsync(
             It.IsAny<QueryExpression>(),
-            It.IsAny<CancellationToken>(),
-            It.IsAny<Guid?>()
+            It.IsAny<CancellationToken>()
          )).ReturnsAsync(sourceCollection);
 
          _targetMock.Setup(t => t.RetrieveMultipleAsync(
             It.IsAny<QueryByAttribute>(),
-            It.IsAny<CancellationToken>(),
-            It.IsAny<Guid?>()
+            It.IsAny<CancellationToken>()
          )).ReturnsAsync(new EntityCollection());
 
          // Act

@@ -208,7 +208,9 @@ namespace dvmig.Core.Synchronization
             SystemConstants.DataverseAttributes.OverriddenCreatedOn,
             SystemConstants.DataverseAttributes.ImportSequenceNumber,
             SystemConstants.DataverseAttributes.Address1Id,
-            SystemConstants.DataverseAttributes.Address2Id
+            SystemConstants.DataverseAttributes.Address2Id,
+            "createdby",
+            "modifiedby"
          };
 
          return forbidden.Contains(attributeName.ToLower());
@@ -219,9 +221,7 @@ namespace dvmig.Core.Synchronization
       {
          var userFields = new[]
          {
-            SystemConstants.DataverseAttributes.OwnerId,
-            SystemConstants.DataverseAttributes.CreatedBy,
-            SystemConstants.DataverseAttributes.ModifiedBy
+            SystemConstants.DataverseAttributes.OwnerId
          };
 
          return userFields.Contains(attributeName.ToLower());

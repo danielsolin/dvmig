@@ -79,8 +79,7 @@ namespace dvmig.Tests
                   q => q.EntityName == 
                      SystemConstants.PluginRegistration.AssemblyEntity
                ),
-               It.IsAny<CancellationToken>(),
-               It.IsAny<Guid?>()
+               It.IsAny<CancellationToken>()
             )
          ).ReturnsAsync(new EntityCollection());
 
@@ -108,8 +107,7 @@ namespace dvmig.Tests
                   q => q.EntityName == 
                      SystemConstants.PluginRegistration.AssemblyEntity
                ),
-               It.IsAny<CancellationToken>(),
-               It.IsAny<Guid?>()
+               It.IsAny<CancellationToken>()
             )
          ).ReturnsAsync(new EntityCollection
          {
@@ -122,8 +120,7 @@ namespace dvmig.Tests
                   q => q.EntityName == 
                      SystemConstants.PluginRegistration.TypeEntity
                ),
-               It.IsAny<CancellationToken>(),
-               It.IsAny<Guid?>()
+               It.IsAny<CancellationToken>()
             )
          ).ReturnsAsync(new EntityCollection());
 
@@ -151,8 +148,7 @@ namespace dvmig.Tests
                   q => q.EntityName == 
                      SystemConstants.PluginRegistration.AssemblyEntity
                ),
-               It.IsAny<CancellationToken>(),
-               It.IsAny<Guid?>()
+               It.IsAny<CancellationToken>()
             )
          ).ReturnsAsync(new EntityCollection
          {
@@ -165,8 +161,7 @@ namespace dvmig.Tests
                   q => q.EntityName == 
                      SystemConstants.PluginRegistration.TypeEntity
                ),
-               It.IsAny<CancellationToken>(),
-               It.IsAny<Guid?>()
+               It.IsAny<CancellationToken>()
             )
          ).ReturnsAsync(new EntityCollection
          {
@@ -179,8 +174,7 @@ namespace dvmig.Tests
                   q => q.EntityName == 
                      SystemConstants.PluginRegistration.StepEntity
                ),
-               It.IsAny<CancellationToken>(),
-               It.IsAny<Guid?>()
+               It.IsAny<CancellationToken>()
             )
          ).ReturnsAsync(new EntityCollection());
 
@@ -208,8 +202,7 @@ namespace dvmig.Tests
                   q => q.EntityName == 
                      SystemConstants.PluginRegistration.AssemblyEntity
                ),
-               It.IsAny<CancellationToken>(),
-               It.IsAny<Guid?>()
+               It.IsAny<CancellationToken>()
             )
          ).ReturnsAsync(new EntityCollection
          {
@@ -223,8 +216,7 @@ namespace dvmig.Tests
                   q => q.EntityName == 
                      SystemConstants.PluginRegistration.TypeEntity
                ),
-               It.IsAny<CancellationToken>(),
-               It.IsAny<Guid?>()
+               It.IsAny<CancellationToken>()
             )
          ).ReturnsAsync(new EntityCollection
          {
@@ -242,8 +234,7 @@ namespace dvmig.Tests
                   q => q.EntityName == 
                      SystemConstants.PluginRegistration.StepEntity
                ),
-               It.IsAny<CancellationToken>(),
-               It.IsAny<Guid?>()
+               It.IsAny<CancellationToken>()
             )
          ).ReturnsAsync(new EntityCollection
          {

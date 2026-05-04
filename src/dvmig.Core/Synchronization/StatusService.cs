@@ -39,8 +39,7 @@ namespace dvmig.Core.Synchronization
          CancellationToken ct = default,
          Func<Entity, SyncOptions, CancellationToken,
             Task<(bool Success, string? FailureMessage)>>?
-            createOrUpdateFunc = null,
-         Guid? callerId = null
+            createOrUpdateFunc = null
       )
       {
          var recordKey = $"{entity.LogicalName}:{entity.Id}";
@@ -78,7 +77,7 @@ namespace dvmig.Core.Synchronization
 
          var (success, _) = createOrUpdateFunc != null
             ? await createOrUpdateFunc(entity, options, ct)
-            : await BasicCreateAsync(entity, ct, callerId);
+            : await BasicCreateAsync(entity, ct);
 
          if (success && (stateValue != null || statusValue != null))
          {
@@ -102,7 +101,7 @@ namespace dvmig.Core.Synchronization
                      Status = statusOsv ?? new OptionSetValue(-1)
                   };
 
-                  await _target.ExecuteAsync(request, ct, callerId);
+                  await _target.ExecuteAsync(request, ct);
                }
                else
                {
@@ -140,7 +139,7 @@ namespace dvmig.Core.Synchronization
                         SystemConstants.DataverseAttributes.StatusCode
                      ] = statusValue;
 
-                  await _target.UpdateAsync(transitionUpdate, ct, callerId);
+                  await _target.UpdateAsync(transitionUpdate, ct);
 
                   _logger.Information(
                      "Applied transition via fallback Update for {Key}",
@@ -178,13 +177,12 @@ namespace dvmig.Core.Synchronization
       private async Task<(bool Success, string? FailureMessage)>
          BasicCreateAsync(
             Entity entity,
-            CancellationToken ct,
-            Guid? callerId
+            CancellationToken ct
          )
       {
          try
          {
-            await _target.CreateAsync(entity, ct, callerId);
+            await _target.CreateAsync(entity, ct);
 
             return (true, string.Empty);
          }

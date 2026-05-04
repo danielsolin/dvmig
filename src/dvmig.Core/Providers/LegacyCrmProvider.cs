@@ -38,19 +38,6 @@ namespace dvmig.Core.Providers
       }
 
       /// <inheritdoc />
-      public Guid? CallerId
-      {
-         get
-         {
-            return _client.CallerId;
-         }
-         set
-         {
-            _client.CallerId = value ?? Guid.Empty;
-         }
-      }
-
-      /// <inheritdoc />
       public Task<Entity?> RetrieveAsync(
          string entityLogicalName,
          Guid id,
@@ -101,41 +88,18 @@ namespace dvmig.Core.Providers
       /// <inheritdoc />
       public Task<Guid> CreateAsync(
          Entity entity,
-         CancellationToken ct = default,
-         Guid? callerId = null
+         CancellationToken ct = default
       )
       {
-         if (callerId.HasValue && callerId.Value != Guid.Empty)
-         {
-            using (var clonedClient = _client.Clone())
-            {
-               clonedClient.CallerId = callerId.Value;
-
-               return Task.FromResult(clonedClient.Create(entity));
-            }
-         }
-
          return Task.FromResult(_client.Create(entity));
       }
 
       /// <inheritdoc />
       public Task UpdateAsync(
          Entity entity,
-         CancellationToken ct = default,
-         Guid? callerId = null
+         CancellationToken ct = default
       )
       {
-         if (callerId.HasValue && callerId.Value != Guid.Empty)
-         {
-            using (var clonedClient = _client.Clone())
-            {
-               clonedClient.CallerId = callerId.Value;
-               clonedClient.Update(entity);
-
-               return Task.CompletedTask;
-            }
-         }
-
          _client.Update(entity);
 
          return Task.CompletedTask;
@@ -145,21 +109,9 @@ namespace dvmig.Core.Providers
       public Task DeleteAsync(
          string entityLogicalName,
          Guid id,
-         CancellationToken ct = default,
-         Guid? callerId = null
+         CancellationToken ct = default
       )
       {
-         if (callerId.HasValue && callerId.Value != Guid.Empty)
-         {
-            using (var clonedClient = _client.Clone())
-            {
-               clonedClient.CallerId = callerId.Value;
-               clonedClient.Delete(entityLogicalName, id);
-
-               return Task.CompletedTask;
-            }
-         }
-
          _client.Delete(entityLogicalName, id);
 
          return Task.CompletedTask;
@@ -171,27 +123,9 @@ namespace dvmig.Core.Providers
          Guid entityId,
          Relationship relationship,
          EntityReferenceCollection relatedEntities,
-         CancellationToken ct = default,
-         Guid? callerId = null
+         CancellationToken ct = default
       )
       {
-         if (callerId.HasValue && callerId.Value != Guid.Empty)
-         {
-            using (var clonedClient = _client.Clone())
-            {
-               clonedClient.CallerId = callerId.Value;
-
-               clonedClient.Associate(
-                  entityLogicalName,
-                  entityId,
-                  relationship,
-                  relatedEntities
-               );
-
-               return Task.CompletedTask;
-            }
-         }
-
          _client.Associate(
             entityLogicalName,
             entityId,
@@ -205,40 +139,18 @@ namespace dvmig.Core.Providers
       /// <inheritdoc />
       public Task<EntityCollection> RetrieveMultipleAsync(
          QueryBase query,
-         CancellationToken ct = default,
-         Guid? callerId = null
+         CancellationToken ct = default
       )
       {
-         if (callerId.HasValue && callerId.Value != Guid.Empty)
-         {
-            using (var clonedClient = _client.Clone())
-            {
-               clonedClient.CallerId = callerId.Value;
-
-               return Task.FromResult(clonedClient.RetrieveMultiple(query));
-            }
-         }
-
          return Task.FromResult(_client.RetrieveMultiple(query));
       }
 
       /// <inheritdoc />
       public Task<OrganizationResponse> ExecuteAsync(
          OrganizationRequest request,
-         CancellationToken ct = default,
-         Guid? callerId = null
+         CancellationToken ct = default
       )
       {
-         if (callerId.HasValue && callerId.Value != Guid.Empty)
-         {
-            using (var clonedClient = _client.Clone())
-            {
-               clonedClient.CallerId = callerId.Value;
-
-               return Task.FromResult(clonedClient.Execute(request));
-            }
-         }
-
          return Task.FromResult(_client.Execute(request));
       }
 
