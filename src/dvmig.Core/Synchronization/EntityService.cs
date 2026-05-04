@@ -200,7 +200,7 @@ namespace dvmig.Core.Synchronization
       /// <inheritdoc />
       public bool IsForbiddenAttribute(string attributeName)
       {
-         var forbidden = new[]
+         var forbidden = new string[]
          {
             SystemConstants.DataverseAttributes.VersionNumber,
             SystemConstants.DataverseAttributes.CreatedOnBehalfBy,
@@ -210,7 +210,7 @@ namespace dvmig.Core.Synchronization
             SystemConstants.DataverseAttributes.Address1Id,
             SystemConstants.DataverseAttributes.Address2Id,
             SystemConstants.DataverseAttributes.CreatedBy,
-            "modifiedby"
+            SystemConstants.DataverseAttributes.ModifiedBy
          };
 
          return forbidden.Contains(attributeName.ToLower());

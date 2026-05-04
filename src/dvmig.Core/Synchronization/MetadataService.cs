@@ -89,7 +89,9 @@ namespace dvmig.Core.Synchronization
             DataverseAttributes.CreatedOn,
             DataverseAttributes.ModifiedOn,
             DataverseAttributes.TransactionCurrencyId,
-            DataverseAttributes.ExchangeRate
+            DataverseAttributes.ExchangeRate,
+            DataverseAttributes.CreatedBy,
+            DataverseAttributes.ModifiedBy
          };
 
          var attributes = meta.Attributes

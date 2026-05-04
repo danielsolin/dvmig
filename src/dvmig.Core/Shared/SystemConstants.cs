@@ -91,6 +91,7 @@ namespace dvmig.Core.Shared
          public const string FullName = "fullname";
          public const string OwnerId = "ownerid";
          public const string CreatedBy = "createdby";
+         public const string ModifiedBy = "modifiedby";
          public const string CreatedOnBehalfBy = "createdonbehalfby";
          public const string ModifiedOnBehalfBy = "modifiedonbehalfby";
          public const string OverriddenCreatedOn = "overriddencreatedon";
