@@ -248,6 +248,7 @@ namespace dvmig.Core.Synchronization
 
          var (success, failureMessage) = await CreateWithFixStrategyAsync(
             prepared,
+            entity,
             options,
             creatorId,
             ct
@@ -361,7 +362,8 @@ namespace dvmig.Core.Synchronization
       private async Task<(bool success, string failureMessage)>
          HandleSyncExceptionWithRetryAsync(
             Exception ex,
-            Entity entity,
+            Entity preparedEntity,
+            Entity sourceEntity,
             SyncOptions options,
             Guid? creatorId,
             CT ct,
@@ -375,18 +377,18 @@ namespace dvmig.Core.Synchronization
          var (success, failureMessage) =
             await _errorService.HandleSyncExceptionAsync(
                ex,
-               entity,
+               preparedEntity,
                options,
                ct,
                updateFunc: (e, token) => _target.UpdateAsync(e, token),
                statusTransitionFunc: (e, opt, token) =>
-                  HandleStatusTransitionAsync(e, opt, token),
+                  HandleStatusTransitionAsync(sourceEntity, opt, token),
                resolveMissingDependencyFunc: (e, ent, opt, token) =>
-                  ResolveMissingDependencyAsync(e, ent, opt, creatorId, token),
+                  ResolveMissingDependencyAsync(e, sourceEntity, opt, creatorId, token),
                resolveSqlDependencyFunc: (msg, ent, opt, token) =>
-                  ResolveSqlDependencyAsync(msg, ent, opt, creatorId, token),
+                  ResolveSqlDependencyAsync(msg, sourceEntity, opt, creatorId, token),
                stripAttributeFunc: (e, ent, opt, token) =>
-                  StripAttributeAndRetryAsync(e, ent, opt, creatorId, token),
+                  StripAttributeAndRetryAsync(e, ent, sourceEntity, opt, creatorId, token),
                findExistingFunc: FindExistingOnTargetAsync
             );
 
@@ -484,6 +486,7 @@ namespace dvmig.Core.Synchronization
             return await HandleSyncExceptionWithRetryAsync(
                ex,
                entity,
+               entity,
                options,
                null,
                ct,
@@ -494,7 +497,8 @@ namespace dvmig.Core.Synchronization
 
       private async Task<(bool success, string failureMessage)>
          CreateWithFixStrategyAsync(
-            Entity entity,
+            Entity preparedEntity,
+            Entity sourceEntity,
             SyncOptions options,
             Guid? creatorId,
             CT ct
@@ -503,14 +507,14 @@ namespace dvmig.Core.Synchronization
          try
          {
             await _retryPolicy.ExecuteAsync(
-               async (ctx) => await _target.CreateAsync(entity, ct, creatorId),
+               async (ctx) => await _target.CreateAsync(preparedEntity, ct, creatorId),
                CreatePollyContext()
             );
 
             _logger.Information(
                "Created {Key}:{Id}",
-               entity.LogicalName,
-               entity.Id
+               preparedEntity.LogicalName,
+               preparedEntity.Id
             );
 
             return (true, string.Empty);
@@ -519,7 +523,8 @@ namespace dvmig.Core.Synchronization
          {
             return await HandleSyncExceptionWithRetryAsync(
                ex,
-               entity,
+               preparedEntity,
+               sourceEntity,
                options,
                creatorId,
                ct
@@ -580,6 +585,7 @@ namespace dvmig.Core.Synchronization
 
          var (created, _) = await CreateWithFixStrategyAsync(
             prepared,
+            entity,
             options,
             creatorId,
             ct
@@ -590,7 +596,8 @@ namespace dvmig.Core.Synchronization
 
       private async Task<bool> StripAttributeAndRetryAsync(
          Exception ex,
-         Entity entity,
+         Entity preparedEntity,
+         Entity sourceEntity,
          SyncOptions options,
          Guid? creatorId,
          CT ct
@@ -604,23 +611,24 @@ namespace dvmig.Core.Synchronization
          if (match.Success)
          {
             var attrName = match.Groups[1].Value;
-            if (entity.Attributes.Contains(attrName))
+            if (preparedEntity.Attributes.Contains(attrName))
             {
                _logger.Warning(
                   "Stripping attribute '{Attr}' for {Key}:{Id}",
                   attrName,
-                  entity.LogicalName,
-                  entity.Id
+                  preparedEntity.LogicalName,
+                  preparedEntity.Id
                );
 
                _logger.Information(
                   $"Stripping attribute '{attrName}' and retrying..."
                );
 
-               entity.Attributes.Remove(attrName);
+               preparedEntity.Attributes.Remove(attrName);
 
                var (success, _) = await CreateWithFixStrategyAsync(
-                  entity,
+                  preparedEntity,
+                  sourceEntity,
                   options,
                   creatorId,
                   ct
