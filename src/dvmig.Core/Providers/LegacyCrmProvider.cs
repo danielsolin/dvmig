@@ -106,9 +106,19 @@ namespace dvmig.Core.Providers
       /// <inheritdoc />
       public Task UpdateAsync(
          Entity entity,
-         CancellationToken ct = default
+         CancellationToken ct = default,
+         Guid? callerId = null
       )
       {
+         if (callerId.HasValue && callerId.Value != Guid.Empty)
+         {
+            using var clonedClient = _client.Clone();
+            clonedClient.CallerId = callerId.Value;
+            clonedClient.Update(entity);
+
+            return Task.CompletedTask;
+         }
+
          _client.Update(entity);
 
          return Task.CompletedTask;
@@ -157,9 +167,18 @@ namespace dvmig.Core.Providers
       /// <inheritdoc />
       public Task<OrganizationResponse> ExecuteAsync(
          OrganizationRequest request,
-         CancellationToken ct = default
+         CancellationToken ct = default,
+         Guid? callerId = null
       )
       {
+         if (callerId.HasValue && callerId.Value != Guid.Empty)
+         {
+            using var clonedClient = _client.Clone();
+            clonedClient.CallerId = callerId.Value;
+
+            return Task.FromResult(clonedClient.Execute(request));
+         }
+
          return Task.FromResult(_client.Execute(request));
       }
 

@@ -216,10 +216,37 @@ namespace dvmig.Core.Synchronization
          if (metadata == null)
             return MetadataMissing(entity);
 
+         Guid? creatorId = null;
+         Guid? modifiedById = null;
+
+         if (options.PreserveAuditData)
+         {
+            var sourceCreator = entity.GetAttributeValue<EntityReference>(
+               SystemConstants.DataverseAttributes.CreatedBy
+            );
+
+            if (sourceCreator != null)
+               creatorId = (await _userResolver.MapUserAsync(sourceCreator, ct))?.Id;
+
+            var sourceModifier = entity.GetAttributeValue<EntityReference>(
+               SystemConstants.DataverseAttributes.ModifiedBy
+            );
+
+            if (sourceModifier != null)
+               modifiedById = (await _userResolver.MapUserAsync(sourceModifier, ct))?.Id;
+
+            if (creatorId == null)
+               creatorId = modifiedById;
+            
+            if (modifiedById == null)
+               modifiedById = creatorId;
+         }
+
          if (metadata.IsIntersect == true)
             return await SyncIntersectEntityAsync(
                entity,
                options,
+               creatorId,
                ct
             );
 
@@ -232,18 +259,6 @@ namespace dvmig.Core.Synchronization
             ct
          );
 
-         Guid? creatorId = null;
-
-         if (options.PreserveAuditData)
-         {
-            var sourceCreator = entity.GetAttributeValue<EntityReference>(
-               SystemConstants.DataverseAttributes.CreatedBy
-            );
-
-            if (sourceCreator != null)
-               creatorId = (await _userResolver.MapUserAsync(sourceCreator, ct))?.Id;
-         }
-
          await PreserveAuditDataIfRequestedAsync(entity, options, ct);
 
          var (success, failureMessage) = await CreateWithFixStrategyAsync(
@@ -251,6 +266,7 @@ namespace dvmig.Core.Synchronization
             entity,
             options,
             creatorId,
+            modifiedById,
             ct
          );
 
@@ -366,6 +382,7 @@ namespace dvmig.Core.Synchronization
             Entity sourceEntity,
             SyncOptions options,
             Guid? creatorId,
+            Guid? modifiedById,
             CT ct,
             bool treatAlreadyExistsAsSuccess = false
          )
@@ -380,15 +397,15 @@ namespace dvmig.Core.Synchronization
                preparedEntity,
                options,
                ct,
-               updateFunc: (e, token) => _target.UpdateAsync(e, token),
+               updateFunc: (e, token) => _target.UpdateAsync(e, token, modifiedById),
                statusTransitionFunc: (e, opt, token) =>
-                  HandleStatusTransitionAsync(sourceEntity, opt, token),
+                  HandleStatusTransitionAsync(sourceEntity, opt, token, modifiedById),
                resolveMissingDependencyFunc: (e, ent, opt, token) =>
-                  ResolveMissingDependencyAsync(e, sourceEntity, opt, creatorId, token),
+                  ResolveMissingDependencyAsync(e, sourceEntity, opt, creatorId, modifiedById, token),
                resolveSqlDependencyFunc: (msg, ent, opt, token) =>
-                  ResolveSqlDependencyAsync(msg, sourceEntity, opt, creatorId, token),
+                  ResolveSqlDependencyAsync(msg, sourceEntity, opt, creatorId, modifiedById, token),
                stripAttributeFunc: (e, ent, opt, token) =>
-                  StripAttributeAndRetryAsync(e, ent, sourceEntity, opt, creatorId, token),
+                  StripAttributeAndRetryAsync(e, ent, sourceEntity, opt, creatorId, modifiedById, token),
                findExistingFunc: FindExistingOnTargetAsync
             );
 
@@ -400,13 +417,16 @@ namespace dvmig.Core.Synchronization
       private async Task<bool> HandleStatusTransitionAsync(
          Entity entity,
          SyncOptions options,
-         CT ct
+         CT ct,
+         Guid? callerId = null
       )
       {
          return await _statusService.HandleStatusTransitionAsync(
             entity,
             options,
-            ct
+            ct,
+            null,
+            callerId
          );
       }
 
@@ -415,6 +435,7 @@ namespace dvmig.Core.Synchronization
          Entity entity,
          SyncOptions options,
          Guid? creatorId,
+         Guid? modifiedById,
          CT ct
       )
       {
@@ -425,7 +446,7 @@ namespace dvmig.Core.Synchronization
             ct,
             syncRecordFunc: SyncRecordAsync,
             retryEntityFunc: (ent, opt, token) =>
-               RetryEntityAsync(ent, opt, creatorId, token),
+               RetryEntityAsync(ent, opt, creatorId, modifiedById, token),
             findExistingFunc: FindExistingOnTargetAsync,
             idMappingCache: _syncStateService.IdMappingCache,
             triedDependencies: _syncStateService.TriedDependencies
@@ -437,6 +458,7 @@ namespace dvmig.Core.Synchronization
          Entity entity,
          SyncOptions options,
          Guid? creatorId,
+         Guid? modifiedById,
          CT ct
       )
       {
@@ -447,7 +469,7 @@ namespace dvmig.Core.Synchronization
             ct,
             syncRecordFunc: SyncRecordAsync,
             retryEntityFunc: (ent, opt, token) =>
-               RetryEntityAsync(ent, opt, creatorId, token),
+               RetryEntityAsync(ent, opt, creatorId, modifiedById, token),
             findExistingFunc: FindExistingOnTargetAsync,
             idMappingCache: _syncStateService.IdMappingCache
          );
@@ -461,6 +483,7 @@ namespace dvmig.Core.Synchronization
          SyncIntersectEntityAsync(
             Entity entity,
             SyncOptions options,
+            Guid? callerId,
             CT ct
          )
       {
@@ -469,7 +492,8 @@ namespace dvmig.Core.Synchronization
             await _retryPolicy.ExecuteAsync(
                async (ctx) => await _relationshipService.AssociateAsync(
                   entity,
-                  ct
+                  ct,
+                  callerId
                ),
                CreatePollyContext()
             );
@@ -488,7 +512,8 @@ namespace dvmig.Core.Synchronization
                entity,
                entity,
                options,
-               null,
+               callerId,
+               callerId,
                ct,
                treatAlreadyExistsAsSuccess: true
             );
@@ -501,6 +526,7 @@ namespace dvmig.Core.Synchronization
             Entity sourceEntity,
             SyncOptions options,
             Guid? creatorId,
+            Guid? modifiedById,
             CT ct
          )
       {
@@ -527,6 +553,7 @@ namespace dvmig.Core.Synchronization
                sourceEntity,
                options,
                creatorId,
+               modifiedById,
                ct
             );
          }
@@ -553,6 +580,7 @@ namespace dvmig.Core.Synchronization
          Entity entity,
          SyncOptions options,
          Guid? creatorId,
+         Guid? modifiedById,
          CT ct
       )
       {
@@ -577,6 +605,7 @@ namespace dvmig.Core.Synchronization
             var (success, _) = await SyncIntersectEntityAsync(
                prepared,
                options,
+               creatorId,
                ct
             );
 
@@ -588,6 +617,7 @@ namespace dvmig.Core.Synchronization
             entity,
             options,
             creatorId,
+            modifiedById,
             ct
          );
 
@@ -600,6 +630,7 @@ namespace dvmig.Core.Synchronization
          Entity sourceEntity,
          SyncOptions options,
          Guid? creatorId,
+         Guid? modifiedById,
          CT ct
       )
       {
@@ -631,6 +662,7 @@ namespace dvmig.Core.Synchronization
                   sourceEntity,
                   options,
                   creatorId,
+                  modifiedById,
                   ct
                );
 

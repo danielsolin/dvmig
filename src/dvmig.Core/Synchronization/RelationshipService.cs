@@ -28,7 +28,8 @@ namespace dvmig.Core.Synchronization
       /// <inheritdoc />
       public async Task AssociateAsync(
          Entity entity,
-         CancellationToken ct = default
+         CancellationToken ct = default,
+         Guid? callerId = null
       )
       {
          var request = CreateAssociateRequest(entity);
@@ -37,7 +38,7 @@ namespace dvmig.Core.Synchronization
                "Invalid N:N relationship record."
             );
 
-         await _target.ExecuteAsync(request, ct);
+         await _target.ExecuteAsync(request, ct, callerId);
       }
 
       /// <inheritdoc />

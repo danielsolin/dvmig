@@ -58,7 +58,8 @@ namespace dvmig.Tests
 
          providerMock.Setup(p => p.UpdateAsync(
             It.IsAny<Entity>(),
-            It.IsAny<CancellationToken>()
+            It.IsAny<CancellationToken>(),
+            It.IsAny<Guid?>()
          )).Returns(Task.CompletedTask);
 
          // Act

@@ -287,7 +287,8 @@ namespace dvmig.Tests
          _targetMock.Setup(
             t => t.ExecuteAsync(
                It.IsAny<AssociateRequest>(),
-               It.IsAny<CancellationToken>()
+               It.IsAny<CancellationToken>(),
+               It.IsAny<Guid?>()
             )
          ).ReturnsAsync(new AssociateResponse());
 
@@ -305,7 +306,8 @@ namespace dvmig.Tests
          _targetMock.Verify(
             t => t.ExecuteAsync(
                It.IsAny<AssociateRequest>(),
-               It.IsAny<CancellationToken>()
+               It.IsAny<CancellationToken>(),
+               It.IsAny<Guid?>()
             ),
             Times.Once
          );
@@ -443,7 +445,8 @@ namespace dvmig.Tests
          _targetMock.Setup(
             t => t.UpdateAsync(
                It.Is<Entity>(e => e.Id == accountId),
-               It.IsAny<CancellationToken>()
+               It.IsAny<CancellationToken>(),
+               It.IsAny<Guid?>()
             )
          ).Returns(Task.CompletedTask);
 
@@ -463,7 +466,8 @@ namespace dvmig.Tests
                      (string)e[SystemConstants.DataverseAttributes.Telephone1] ==
                         "12345"
                ),
-               It.IsAny<CancellationToken>()
+               It.IsAny<CancellationToken>(),
+               It.IsAny<Guid?>()
             ),
             Times.Once
          );

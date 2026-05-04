@@ -20,6 +20,7 @@ namespace dvmig.Core.Interfaces
       /// <param name="createOrUpdateFunc">
       /// Optional custom function for the base create/update.
       /// </param>
+      /// <param name="callerId">Optional ID of the user to impersonate.</param>
       /// <returns>True if the transition was successful.</returns>
       Task<bool> HandleStatusTransitionAsync(
          Entity entity,
@@ -27,7 +28,8 @@ namespace dvmig.Core.Interfaces
          CancellationToken ct = default,
          Func<Entity, SyncOptions, CancellationToken,
             Task<(bool Success, string? FailureMessage)>>?
-            createOrUpdateFunc = null
+            createOrUpdateFunc = null,
+         Guid? callerId = null
       );
    }
 }

@@ -14,9 +14,11 @@ namespace dvmig.Core.Interfaces
       /// </summary>
       /// <param name="entity">The intersect entity to associate.</param>
       /// <param name="ct">A cancellation token.</param>
+      /// <param name="callerId">Optional ID of the user to impersonate.</param>
       Task AssociateAsync(
          Entity entity,
-         CancellationToken ct = default
+         CancellationToken ct = default,
+         Guid? callerId = null
       );
 
       /// <summary>

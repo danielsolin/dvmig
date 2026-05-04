@@ -51,7 +51,8 @@ namespace dvmig.Tests
          _targetMock.Verify(
             t => t.ExecuteAsync(
                It.Is<OrganizationRequest>(r => r.RequestName == "CreateEntity"),
-               It.IsAny<CancellationToken>()
+               It.IsAny<CancellationToken>(),
+               It.IsAny<Guid?>()
             ),
             Times.Exactly(2)
          );
@@ -79,7 +80,8 @@ namespace dvmig.Tests
          _targetMock.Verify(
             t => t.ExecuteAsync(
                It.Is<OrganizationRequest>(r => r.RequestName == "CreateEntity"),
-               It.IsAny<CancellationToken>()
+               It.IsAny<CancellationToken>(),
+               It.IsAny<Guid?>()
             ),
             Times.Never
          );

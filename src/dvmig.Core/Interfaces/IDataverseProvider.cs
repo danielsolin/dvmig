@@ -65,9 +65,13 @@ namespace dvmig.Core.Interfaces
       /// </summary>
       /// <param name="entity">The entity containing the updates.</param>
       /// <param name="ct">A cancellation token.</param>
+      /// <param name="callerId">
+      /// Optional ID of the user to impersonate for this operation.
+      /// </param>
       Task UpdateAsync(
          Entity entity,
-         CancellationToken ct = default
+         CancellationToken ct = default,
+         Guid? callerId = null
       );
 
       /// <summary>
@@ -120,10 +124,14 @@ namespace dvmig.Core.Interfaces
       /// </summary>
       /// <param name="request">The request to execute.</param>
       /// <param name="ct">A cancellation token.</param>
+      /// <param name="callerId">
+      /// Optional ID of the user to impersonate for this operation.
+      /// </param>
       /// <returns>The organization response.</returns>
       Task<OrganizationResponse> ExecuteAsync(
          OrganizationRequest request,
-         CancellationToken ct = default
+         CancellationToken ct = default,
+         Guid? callerId = null
       );
 
       /// <summary>
