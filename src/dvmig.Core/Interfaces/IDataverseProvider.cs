@@ -50,10 +50,14 @@ namespace dvmig.Core.Interfaces
       /// </summary>
       /// <param name="entity">The entity to create.</param>
       /// <param name="ct">A cancellation token.</param>
+      /// <param name="callerId">
+      /// Optional ID of the user to impersonate for this operation.
+      /// </param>
       /// <returns>The ID of the newly created record.</returns>
       Task<Guid> CreateAsync(
          Entity entity,
-         CancellationToken ct = default
+         CancellationToken ct = default,
+         Guid? callerId = null
       );
 
       /// <summary>

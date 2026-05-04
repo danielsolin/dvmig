@@ -98,9 +98,18 @@ namespace dvmig.Core.Providers
       /// <inheritdoc />
       public async Task<Guid> CreateAsync(
          Entity entity,
-         CancellationToken ct = default
+         CancellationToken ct = default,
+         Guid? callerId = null
       )
       {
+         if (callerId.HasValue && callerId.Value != Guid.Empty)
+         {
+            using var clonedClient = _client.Clone();
+            clonedClient.CallerId = callerId.Value;
+
+            return await clonedClient.CreateAsync(entity, ct);
+         }
+
          return await _client.CreateAsync(entity, ct);
       }
 

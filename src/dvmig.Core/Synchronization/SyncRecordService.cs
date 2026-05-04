@@ -232,11 +232,24 @@ namespace dvmig.Core.Synchronization
             ct
          );
 
+         Guid? creatorId = null;
+
+         if (options.PreserveAuditData)
+         {
+            var sourceCreator = entity.GetAttributeValue<EntityReference>(
+               SystemConstants.DataverseAttributes.CreatedBy
+            );
+
+            if (sourceCreator != null)
+               creatorId = (await _userResolver.MapUserAsync(sourceCreator, ct))?.Id;
+         }
+
          await PreserveAuditDataIfRequestedAsync(entity, options, ct);
 
          var (success, failureMessage) = await CreateWithFixStrategyAsync(
             prepared,
             options,
+            creatorId,
             ct
          );
 
@@ -350,6 +363,7 @@ namespace dvmig.Core.Synchronization
             Exception ex,
             Entity entity,
             SyncOptions options,
+            Guid? creatorId,
             CT ct,
             bool treatAlreadyExistsAsSuccess = false
          )
@@ -368,11 +382,11 @@ namespace dvmig.Core.Synchronization
                statusTransitionFunc: (e, opt, token) =>
                   HandleStatusTransitionAsync(e, opt, token),
                resolveMissingDependencyFunc: (e, ent, opt, token) =>
-                  ResolveMissingDependencyAsync(e, ent, opt, token),
+                  ResolveMissingDependencyAsync(e, ent, opt, creatorId, token),
                resolveSqlDependencyFunc: (msg, ent, opt, token) =>
-                  ResolveSqlDependencyAsync(msg, ent, opt, token),
+                  ResolveSqlDependencyAsync(msg, ent, opt, creatorId, token),
                stripAttributeFunc: (e, ent, opt, token) =>
-                  StripAttributeAndRetryAsync(e, ent, opt, token),
+                  StripAttributeAndRetryAsync(e, ent, opt, creatorId, token),
                findExistingFunc: FindExistingOnTargetAsync
             );
 
@@ -398,6 +412,7 @@ namespace dvmig.Core.Synchronization
          Exception ex,
          Entity entity,
          SyncOptions options,
+         Guid? creatorId,
          CT ct
       )
       {
@@ -408,7 +423,7 @@ namespace dvmig.Core.Synchronization
             ct,
             syncRecordFunc: SyncRecordAsync,
             retryEntityFunc: (ent, opt, token) =>
-               RetryEntityAsync(ent, opt, token),
+               RetryEntityAsync(ent, opt, creatorId, token),
             findExistingFunc: FindExistingOnTargetAsync,
             idMappingCache: _syncStateService.IdMappingCache,
             triedDependencies: _syncStateService.TriedDependencies
@@ -419,6 +434,7 @@ namespace dvmig.Core.Synchronization
          string errorMessage,
          Entity entity,
          SyncOptions options,
+         Guid? creatorId,
          CT ct
       )
       {
@@ -429,7 +445,7 @@ namespace dvmig.Core.Synchronization
             ct,
             syncRecordFunc: SyncRecordAsync,
             retryEntityFunc: (ent, opt, token) =>
-               RetryEntityAsync(ent, opt, token),
+               RetryEntityAsync(ent, opt, creatorId, token),
             findExistingFunc: FindExistingOnTargetAsync,
             idMappingCache: _syncStateService.IdMappingCache
          );
@@ -469,6 +485,7 @@ namespace dvmig.Core.Synchronization
                ex,
                entity,
                options,
+               null,
                ct,
                treatAlreadyExistsAsSuccess: true
             );
@@ -479,13 +496,14 @@ namespace dvmig.Core.Synchronization
          CreateWithFixStrategyAsync(
             Entity entity,
             SyncOptions options,
+            Guid? creatorId,
             CT ct
          )
       {
          try
          {
             await _retryPolicy.ExecuteAsync(
-               async (ctx) => await _target.CreateAsync(entity, ct),
+               async (ctx) => await _target.CreateAsync(entity, ct, creatorId),
                CreatePollyContext()
             );
 
@@ -503,6 +521,7 @@ namespace dvmig.Core.Synchronization
                ex,
                entity,
                options,
+               creatorId,
                ct
             );
          }
@@ -528,6 +547,7 @@ namespace dvmig.Core.Synchronization
       private async Task<bool> RetryEntityAsync(
          Entity entity,
          SyncOptions options,
+         Guid? creatorId,
          CT ct
       )
       {
@@ -561,6 +581,7 @@ namespace dvmig.Core.Synchronization
          var (created, _) = await CreateWithFixStrategyAsync(
             prepared,
             options,
+            creatorId,
             ct
          );
 
@@ -571,6 +592,7 @@ namespace dvmig.Core.Synchronization
          Exception ex,
          Entity entity,
          SyncOptions options,
+         Guid? creatorId,
          CT ct
       )
       {
@@ -600,6 +622,7 @@ namespace dvmig.Core.Synchronization
                var (success, _) = await CreateWithFixStrategyAsync(
                   entity,
                   options,
+                  creatorId,
                   ct
                );
 

@@ -52,7 +52,8 @@ namespace dvmig.Tests
 
          providerMock.Setup(p => p.CreateAsync(
             It.IsAny<Entity>(),
-            It.IsAny<CancellationToken>()
+            It.IsAny<CancellationToken>(),
+            It.IsAny<Guid?>()
          )).ReturnsAsync(Guid.NewGuid());
 
          providerMock.Setup(p => p.UpdateAsync(
@@ -66,7 +67,8 @@ namespace dvmig.Tests
          // Assert
          providerMock.Verify(p => p.CreateAsync(
             It.Is<Entity>(e => e.LogicalName == SystemConstants.DataverseEntities.Account),
-            It.IsAny<CancellationToken>()
+            It.IsAny<CancellationToken>(),
+            It.IsAny<Guid?>()
          ), Times.Once);
       }
    }

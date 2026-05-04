@@ -51,7 +51,8 @@ namespace dvmig.Tests
          _targetMock.Verify(
             t => t.CreateAsync(
                It.IsAny<Entity>(),
-               It.IsAny<CancellationToken>()
+               It.IsAny<CancellationToken>(),
+               It.IsAny<Guid?>()
             ),
             Times.Never
          );
@@ -81,7 +82,8 @@ namespace dvmig.Tests
          _targetMock.Verify(
             t => t.CreateAsync(
                It.IsAny<Entity>(),
-               It.IsAny<CancellationToken>()
+               It.IsAny<CancellationToken>(),
+               It.IsAny<Guid?>()
             ),
             Times.Never
          );
@@ -132,7 +134,8 @@ namespace dvmig.Tests
                      (DateTime)e[SystemConstants.SourceData.ModifiedOn] ==
                         modifiedOn
                ),
-               It.IsAny<CancellationToken>()
+               It.IsAny<CancellationToken>(),
+               It.IsAny<Guid?>()
             ),
             Times.Once
          );

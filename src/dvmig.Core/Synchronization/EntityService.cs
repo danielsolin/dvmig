@@ -209,7 +209,7 @@ namespace dvmig.Core.Synchronization
             SystemConstants.DataverseAttributes.ImportSequenceNumber,
             SystemConstants.DataverseAttributes.Address1Id,
             SystemConstants.DataverseAttributes.Address2Id,
-            "createdby",
+            SystemConstants.DataverseAttributes.CreatedBy,
             "modifiedby"
          };
 
