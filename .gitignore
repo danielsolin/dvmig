@@ -1,23 +1,29 @@
-old
-.vs
-MODERNIZATION.md
-
-# .NET Ignore Patterns
-bin/
-obj/
-*.user
-*.userosscache
-*.sln.docstates
-_ReSharper*/
-*.suo
-*.user
-*.userosscache
-*.sln.docstates
+# .NET Core
+[Bb]in/
+[Oo]bj/
+[Pp]ackages/
 TestResults/
+
+# IDEs
+.vs/
+.vscode/
+*.user
+*.userosscache
+*.sln.docstates
+*.suo
+_ReSharper*/
+
+# OS
 *.swp
-GEMINI.md
-CLAUDE.md
-/.gemini/settings.json
-/.gitignore
+.DS_Store
+Thumbs.db
+
+# Project Specific
+.gemini/
+.claude/settings.local.json
+publish-minimal.ps1.local
+
+# Gemini CLI
 /.gemini/settings.json
 /AGENTS.md
+MEMORY.md
