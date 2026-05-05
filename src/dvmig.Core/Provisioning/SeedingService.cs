@@ -12,17 +12,14 @@ namespace dvmig.Core.Provisioning
    public class SeedingService : ISeedingService
    {
       private readonly ILogger _logger;
-      private readonly ISyncResilienceService _resilience;
 
       /// <summary>
       /// Initializes a new instance of the <see cref="SeedingService"/> class.
       /// </summary>
       /// <param name="logger">The logger instance.</param>
-      /// <param name="resilience">The resilience service.</param>
-      public SeedingService(ILogger logger, ISyncResilienceService resilience)
+      public SeedingService(ILogger logger)
       {
          _logger = logger;
-         _resilience = resilience;
       }
 
       /// <inheritdoc />
@@ -37,7 +34,6 @@ namespace dvmig.Core.Provisioning
          );
 
          var faker = new Faker();
-         var retryPolicy = _resilience.CreateRetryPolicy();
 
          var activityTypes = new[]
          {
@@ -55,9 +51,7 @@ namespace dvmig.Core.Provisioning
             account[DataverseAttributes.Telephone1] =
                faker.Phone.PhoneNumber();
 
-            var accountId = await retryPolicy.ExecuteAsync(
-               async () => await provider.CreateAsync(account, ct)
-            );
+            var accountId = await provider.CreateAsync(account, ct);
 
             // 2. Create 2-7 Contacts per Account
             var contactsInAccount = new List<Guid>();
@@ -82,9 +76,7 @@ namespace dvmig.Core.Provisioning
                      accountId
                   );
 
-               var contactId = await retryPolicy.ExecuteAsync(
-                  async () => await provider.CreateAsync(contact, ct)
-               );
+               var contactId = await provider.CreateAsync(contact, ct);
 
                contactsInAccount.Add(contactId);
             }
@@ -102,9 +94,7 @@ namespace dvmig.Core.Provisioning
                   primaryContactId
                );
 
-            await retryPolicy.ExecuteAsync(
-               async () => await provider.UpdateAsync(accountUpdate, ct)
-            );
+            await provider.UpdateAsync(accountUpdate, ct);
 
             // 3. Create 5-12 Activities per Account
             int activityCount = faker.Random.Int(5, 12);
@@ -141,9 +131,7 @@ namespace dvmig.Core.Provisioning
                   );
                }
 
-               await retryPolicy.ExecuteAsync(
-                  async () => await provider.CreateAsync(activity, ct)
-               );
+               await provider.CreateAsync(activity, ct);
             }
 
             _logger.Information(

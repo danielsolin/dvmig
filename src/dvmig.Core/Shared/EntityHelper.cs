@@ -37,5 +37,32 @@ namespace dvmig.Core.Shared
       {
          return GetRecordKey(er.LogicalName, er.Id);
       }
+
+      /// <summary>
+      /// Determines whether an exception represents a transient Dataverse error.
+      /// </summary>
+      /// <param name="ex">The exception to check.</param>
+      /// <returns>True if the error is transient; otherwise, false.</returns>
+      public static bool IsTransientError(System.Exception ex)
+      {
+         if (ex == null)
+            return false;
+
+         var msg = ex.Message.ToLower();
+
+         bool isTransient =
+            msg.Contains(SystemConstants.ErrorCodes.ServiceProtectionLimit) ||
+            msg.Contains(SystemConstants.ErrorCodes.ConnectionTimeout) ||
+            msg.Contains(SystemConstants.ErrorKeywords.TooManyRequests) ||
+            msg.Contains("exceeded the limit") ||
+            msg.Contains(SystemConstants.ErrorKeywords.CombinedExecutionTime) ||
+            msg.Contains(SystemConstants.ErrorKeywords.GenericSqlError) ||
+            msg.Contains(SystemConstants.ErrorKeywords.Timeout);
+
+         if (isTransient)
+            return true;
+
+         return ex.InnerException != null && IsTransientError(ex.InnerException);
+      }
    }
 }

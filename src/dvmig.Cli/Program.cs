@@ -2,10 +2,12 @@ using System.Runtime.Versioning;
 using System.Text;
 
 using dvmig.Cli.Actions;
+using dvmig.Core.Interfaces;
 using dvmig.Core.Provisioning;
 using dvmig.Core.Settings;
 using dvmig.Core.Shared;
 using dvmig.Core.Synchronization;
+using Microsoft.Extensions.DependencyInjection;
 
 using Spectre.Console;
 
@@ -14,9 +16,7 @@ namespace dvmig.Cli
    [SupportedOSPlatform("windows")]
    class Program
    {
-      private static SyncActions? _migrationActions;
-      private static MaintenanceActions? _maintenanceActions;
-
+      private static IServiceProvider? _serviceProvider;
       private static CancellationTokenSource? _currentActionCts;
       private static DateTime _lastCtrlC = DateTime.MinValue;
       private static bool _developerMode;
@@ -25,7 +25,6 @@ namespace dvmig.Cli
          string Label,
          Func<CancellationToken, Task>? Action
       );
-
 
       static async Task Main(string[] args)
       {
@@ -36,57 +35,28 @@ namespace dvmig.Cli
 
       private static void Init(string[] args)
       {
-         var logger = new Logger();
+         var services = new ServiceCollection();
 
-         // Global resilience (used for retries by provisioning services)
-         var resilience = new SyncResilienceService(
-            null!,
-            null!,
-            new SyncStateService(),
-            logger
-         );
+         // Shared Infrastructure
+         services.AddSingleton<ILogger, Logger>();
+         services.AddSingleton<ISettingsService, SettingsService>();
+         services.AddSingleton<ConnectionManager>();
+         services.AddSingleton<ISyncStateService, SyncStateService>();
 
-         var settingsService = new SettingsService();
-         var seedingService = new SeedingService(logger, resilience);
-         var wipeDataService = new WipeDataService(logger, resilience);
-         var entityService = new EntityService(logger);
-         var metadataService = new MetadataService(logger);
+         // Provisioning & Metadata
+         services.AddTransient<ISeedingService, SeedingService>();
+         services.AddTransient<IWipeDataService, WipeDataService>();
+         services.AddTransient<IEntityService, EntityService>();
 
-         var validationService = new ValidationService();
-         var schemaService = new SchemaService(logger);
-         var sourceDataService = new SourceDataService(logger);
-         var pluginService = new PluginService(logger);
+         services.AddTransient<IValidationService, ValidationService>();
+         services.AddTransient<ISchemaService, SchemaService>();
+         services.AddTransient<IPluginService, PluginService>();
 
-         var connectionManager = new ConnectionManager(settingsService);
+         // CLI Actions
+         services.AddTransient<SyncActions>();
+         services.AddTransient<MaintenanceActions>();
 
-         // We use the same connection for failure logging as the target
-         var failureService = new FailureService(
-            null!, // Will be set by ConnectionManager during sync
-            logger
-         );
-
-         _migrationActions = new SyncActions(
-            connectionManager,
-            metadataService,
-            pluginService,
-            sourceDataService,
-            validationService,
-            schemaService,
-            logger
-         );
-
-         _maintenanceActions = new MaintenanceActions(
-            connectionManager,
-            seedingService,
-            wipeDataService,
-            pluginService,
-            sourceDataService,
-            validationService,
-            schemaService,
-            metadataService,
-            failureService,
-            logger
-         );
+         _serviceProvider = services.BuildServiceProvider();
 
          _developerMode =
             args.Contains(SystemConstants.CliSettings.DevShort) ||
@@ -240,14 +210,24 @@ namespace dvmig.Cli
       {
          CliUI.WriteHeader();
 
+         if (_serviceProvider == null)
+         {
+            CliUI.WriteError("Service provider is not initialized.");
+            return;
+         }
+
+         var syncActions = _serviceProvider.GetRequiredService<SyncActions>();
+         var maintenanceActions = _serviceProvider
+            .GetRequiredService<MaintenanceActions>();
+
          bool exit = false;
 
          while (!exit)
          {
             var prompt = GetMenu(
                _developerMode,
-               _migrationActions!,
-               _maintenanceActions!,
+               syncActions,
+               maintenanceActions,
                () => exit = true
             );
 

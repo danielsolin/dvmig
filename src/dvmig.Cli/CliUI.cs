@@ -108,7 +108,7 @@ namespace dvmig.Cli
       }
 
       public static async Task<List<string>?> SelectEntitiesAsync(
-         IMetadataService metadataService,
+         IEntityService entityService,
          IDataverseProvider provider
       )
       {
@@ -118,7 +118,7 @@ namespace dvmig.Cli
             {
                try
                {
-                  return await metadataService
+                  return await entityService
                      .GetMigrationEntitiesAsync(
                         provider,
                         default

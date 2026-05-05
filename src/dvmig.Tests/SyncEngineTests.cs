@@ -14,7 +14,6 @@ namespace dvmig.Tests
       private readonly Mock<IDataverseProvider> _sourceMock;
       private readonly Mock<IDataverseProvider> _targetMock;
       private readonly Mock<IUserResolver> _userResolverMock;
-      private readonly Mock<ISourceDataService> _sourceDataServiceMock;
       private readonly Mock<ILogger> _loggerMock;
       private readonly SyncEngine _engine;
 
@@ -23,7 +22,6 @@ namespace dvmig.Tests
          _sourceMock = new Mock<IDataverseProvider>();
          _targetMock = new Mock<IDataverseProvider>();
          _userResolverMock = new Mock<IUserResolver>();
-         _sourceDataServiceMock = new Mock<ISourceDataService>();
          _loggerMock = new Mock<ILogger>();
 
          _targetMock.Setup(
@@ -47,30 +45,8 @@ namespace dvmig.Tests
             )
          ).ReturnsAsync(defaultMetadata);
 
-         var entityService = new EntityService(_loggerMock.Object);
+         var entityService = new EntityService(_loggerMock.Object, _targetMock.Object);
          var syncStateService = new SyncStateService();
-
-         var resilience = new SyncResilienceService(
-            _sourceMock.Object,
-            _targetMock.Object,
-            syncStateService,
-            _loggerMock.Object
-         );
-
-         var metadataService = new MetadataService(
-            _loggerMock.Object,
-            _targetMock.Object
-         );
-
-         var failureService = new FailureService(
-            _targetMock.Object,
-            _loggerMock.Object
-         );
-
-         var relationshipService = new RelationshipService(
-            _targetMock.Object,
-            _loggerMock.Object
-         );
 
          _engine = new SyncEngine(
             _sourceMock.Object,
@@ -78,12 +54,7 @@ namespace dvmig.Tests
             _userResolverMock.Object,
             _loggerMock.Object,
             entityService,
-            resilience,
-            metadataService,
-            failureService,
-            _sourceDataServiceMock.Object,
-            syncStateService,
-            relationshipService
+            syncStateService
          );
 
          _userResolverMock.Setup(
@@ -397,14 +368,13 @@ namespace dvmig.Tests
          await _engine.SyncRecordAsync(account, options);
 
          // Assert
-         _sourceDataServiceMock.Verify(
-            p => p.CreateSourceDataRecordAsync(
-               _targetMock.Object,
-               account,
-               _userResolverMock.Object,
-               It.IsAny<CancellationToken>()
+         _targetMock.Verify(
+            t => t.CreateAsync(
+               It.Is<Entity>(e => e.LogicalName == SystemConstants.SourceData.EntityLogicalName),
+               It.IsAny<CancellationToken>(),
+               It.IsAny<Guid?>()
             ),
-            Times.Once
+            Times.AtLeastOnce
          );
       }
 
@@ -475,59 +445,6 @@ namespace dvmig.Tests
             ),
             Times.Once
          );
-      }
-
-      [Fact]
-      public async Task SyncRecordAsync_Retry_OnServiceProtectionLimit()
-      {
-         // Arrange
-         var accountId = Guid.NewGuid();
-
-         var account = new Entity(
-            SystemConstants.DataverseEntities.Account,
-            accountId
-         )
-         {
-            [SystemConstants.DataverseAttributes.Name] = "Retry Test"
-         };
-
-         int callCount = 0;
-
-         _targetMock.Setup(
-            t => t.CreateAsync(
-               It.IsAny<Entity>(),
-               It.IsAny<CancellationToken>(),
-               It.IsAny<Guid?>()
-            )
-         ).Returns<Entity, CancellationToken, Guid?>(
-            (e, ct, callerId) =>
-            {
-               callCount++;
-
-               // Simulate Service Protection Limit error
-               if (callCount == 1)
-               {
-                  throw new Exception(
-                     "Rate limit exceeded. Error Code: 0x" +
-                     SystemConstants.ErrorCodes.ServiceProtectionLimit
-                  );
-               }
-
-               return Task.FromResult(accountId);
-            }
-         );
-
-         var options = new SyncOptions();
-
-         // Act
-         var (result, _) = await _engine.SyncRecordAsync(
-            account,
-            options
-         );
-
-         // Assert
-         Assert.True(result);
-         Assert.Equal(2, callCount); // Verified that it retried
       }
 
       [Fact]

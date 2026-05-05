@@ -13,18 +13,15 @@ namespace dvmig.Core.Provisioning
    public class WipeDataService : IWipeDataService
    {
       private readonly ILogger _logger;
-      private readonly ISyncResilienceService _resilience;
 
       /// <summary>
       /// Initializes a new instance of the
       /// <see cref="WipeDataService"/> class.
       /// </summary>
       /// <param name="logger">The logger instance.</param>
-      /// <param name="resilience">The resilience service.</param>
-      public WipeDataService(ILogger logger, ISyncResilienceService resilience)
+      public WipeDataService(ILogger logger)
       {
          _logger = logger;
-         _resilience = resilience;
       }
 
       /// <inheritdoc />
@@ -154,14 +151,7 @@ namespace dvmig.Core.Provisioning
                Target = entity.ToEntityReference()
             });
 
-         var retryPolicy = _resilience.CreateRetryPolicy();
-
-         await retryPolicy.ExecuteAsync(
-            async () => await provider.ExecuteAsync(
-               multipleRequest,
-               ct
-            )
-         );
+         await provider.ExecuteAsync(multipleRequest, ct);
       }
    }
 }

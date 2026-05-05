@@ -1,5 +1,6 @@
 using dvmig.Core.Interfaces;
 using dvmig.Core.Shared;
+using dvmig.Core.Synchronization;
 using Microsoft.Crm.Sdk.Messages;
 using Spectre.Console;
 using static dvmig.Core.Shared.SystemConstants;
@@ -10,33 +11,27 @@ namespace dvmig.Cli.Actions
    {
       private readonly ISeedingService _seedingService;
       private readonly IWipeDataService _wipeDataService;
-      private readonly IMetadataService _metadataService;
-      private readonly IFailureService _failureService;
 
       public MaintenanceActions(
          ConnectionManager connectionManager,
          ISeedingService seedingService,
          IWipeDataService wipeDataService,
          IPluginService pluginService,
-         ISourceDataService sourceDataService,
          IValidationService validator,
          ISchemaService schemaService,
-         IMetadataService metadataService,
-         IFailureService failureService,
+         IEntityService entityService,
          ILogger logger
       ) : base(
          connectionManager,
          pluginService,
-         sourceDataService,
          validator,
          schemaService,
-         logger
+         logger,
+         entityService
       )
       {
          _seedingService = seedingService;
          _wipeDataService = wipeDataService;
-         _metadataService = metadataService;
-         _failureService = failureService;
       }
 
       public async Task HandleViewFailuresAsync(CancellationToken ct)
@@ -48,7 +43,16 @@ namespace dvmig.Cli.Actions
          if (target == null)
             return;
 
-         bool isInitialized = await _failureService.IsInitializedAsync(
+         var engine = new SyncEngine(
+            null!,
+            target,
+            null!,
+            Logger,
+            EntityService,
+            new SyncStateService()
+         );
+
+         bool isInitialized = await engine.IsFailureLoggingInitializedAsync(
             target,
             ct
          );
@@ -70,7 +74,7 @@ namespace dvmig.Cli.Actions
 
          var failures = await CliUI.RunStatusAsync(
             "Fetching recorded migration failures...",
-            async () => await _failureService.GetFailuresAsync(
+            async () => await engine.GetFailuresAsync(
                target,
                null,
                ct
@@ -112,7 +116,7 @@ namespace dvmig.Cli.Actions
             await CliUI.RunStatusAsync(
                "Clearing failure log...",
                Logger,
-               async () => await _failureService.ClearFailuresAsync(
+               async () => await engine.ClearFailuresAsync(
                   target,
                   ct
                )
@@ -256,7 +260,7 @@ namespace dvmig.Cli.Actions
          if (wipeChoice == "Select Specific Entities")
          {
             selectedEntities = await CliUI.SelectEntitiesAsync(
-               _metadataService,
+               EntityService,
                provider
             );
 

@@ -1,9 +1,11 @@
+using System.Text.RegularExpressions;
 using dvmig.Core.Interfaces;
 using dvmig.Core.Shared;
+using Microsoft.Crm.Sdk.Messages;
 using Microsoft.Xrm.Sdk;
+using Microsoft.Xrm.Sdk.Messages;
 using Microsoft.Xrm.Sdk.Query;
-using Polly;
-using Polly.Retry;
+using static dvmig.Core.Shared.SystemConstants;
 
 using CT = System.Threading.CancellationToken;
 
@@ -12,7 +14,7 @@ namespace dvmig.Core.Synchronization
    /// <summary>
    /// Core orchestrator responsible for synchronizing data records between
    /// source and target Dataverse environments, managing both high-level
-   /// pagination and granular record-level resilience.
+   /// pagination and record-level resilience.
    /// </summary>
    public class SyncEngine : ISyncEngine
    {
@@ -21,14 +23,9 @@ namespace dvmig.Core.Synchronization
       private readonly IUserResolver _userResolver;
       private readonly ILogger _logger;
       private readonly IEntityService _entityService;
-      private readonly ISyncResilienceService _resilience;
-      private readonly IMetadataService _metadataService;
-      private readonly IFailureService _failureService;
-      private readonly ISourceDataService _sourceDataService;
       private readonly ISyncStateService _syncStateService;
-      private readonly IRelationshipService _relationshipService;
-      private readonly AsyncRetryPolicy _retryPolicy;
 
+      private bool? _isSourceDataSupported;
       private const int MaxRecursionDepth = 3;
 
       /// <summary>
@@ -40,12 +37,7 @@ namespace dvmig.Core.Synchronization
          IUserResolver userResolver,
          ILogger logger,
          IEntityService entityService,
-         ISyncResilienceService resilience,
-         IMetadataService metadataService,
-         IFailureService failureService,
-         ISourceDataService sourceDataService,
-         ISyncStateService syncStateService,
-         IRelationshipService relationshipService
+         ISyncStateService syncStateService
       )
       {
          _source = source;
@@ -53,16 +45,7 @@ namespace dvmig.Core.Synchronization
          _userResolver = userResolver;
          _logger = logger;
          _entityService = entityService;
-         _resilience = resilience;
-         _metadataService = metadataService;
-         _failureService = failureService;
-         _sourceDataService = sourceDataService;
          _syncStateService = syncStateService;
-         _relationshipService = relationshipService;
-
-         _retryPolicy = _resilience.CreateRetryPolicy();
-
-         _resilience.SetEngine(this);
       }
 
       #region Entity Sync Orchestration (Batch)
@@ -93,7 +76,7 @@ namespace dvmig.Core.Synchronization
       {
          await InitializeEntitySyncAsync(logicalName, ct);
 
-         var columns = await _metadataService.GetValidColumnsAsync(
+         var columns = await _entityService.GetValidColumnsAsync(
             logicalName,
             ct
          );
@@ -215,7 +198,7 @@ namespace dvmig.Core.Synchronization
 
             if (!success)
             {
-               await LogFailureWithRetryAsync(
+               await LogFailureToTargetAsync(
                   entity,
                   failureMessage ?? "Sync failed.",
                   ct
@@ -233,9 +216,9 @@ namespace dvmig.Core.Synchronization
                entity.Id
             );
 
-            await LogFailureWithRetryAsync(
+            await LogFailureToTargetAsync(
                entity,
-               _resilience.FormatFailureMessage("SyncAsync", ex),
+               FormatFailureMessage("SyncAsync", ex),
                ct
             );
 
@@ -276,7 +259,7 @@ namespace dvmig.Core.Synchronization
             CT ct
          )
       {
-         var metadata = await _metadataService.GetMetadataAsync(
+         var metadata = await _entityService.GetMetadataAsync(
             entity.LogicalName,
             ct
          );
@@ -306,30 +289,21 @@ namespace dvmig.Core.Synchronization
             );
 
             if (sourceCreator != null)
-            {
-               creatorId = (await _userResolver.MapUserAsync(
-                  sourceCreator,
-                  ct
-               ))?.Id;
-            }
+               creatorId = (await _userResolver.MapUserAsync(sourceCreator, ct))?
+                  .Id;
 
             var sourceModifier = entity.GetAttributeValue<EntityReference>(
                SystemConstants.DataverseAttributes.ModifiedBy
             );
 
             if (sourceModifier != null)
-            {
                modifiedById = (await _userResolver.MapUserAsync(
                   sourceModifier,
                   ct
                ))?.Id;
-            }
 
-            if (creatorId == null)
-               creatorId = modifiedById;
-
-            if (modifiedById == null)
-               modifiedById = creatorId;
+            creatorId ??= modifiedById;
+            modifiedById ??= creatorId;
          }
 
          await PreserveAuditDataIfRequestedAsync(entity, options, ct);
@@ -373,12 +347,7 @@ namespace dvmig.Core.Synchronization
 
          try
          {
-            await _sourceDataService.CreateSourceDataRecordAsync(
-               _target,
-               entity,
-               _userResolver,
-               ct
-            );
+            await CreateSourceDataRecordAsync(_target, entity, ct);
          }
          catch (Exception ex)
          {
@@ -411,50 +380,429 @@ namespace dvmig.Core.Synchronization
 
          if (options.PreserveAuditData)
          {
-            await _retryPolicy.ExecuteAsync(
-               async (ctx) => await _sourceDataService
-                  .DeleteSourceDataRecordAsync(
-                     _target,
-                     sourceEntity.LogicalName,
-                     targetEntity.Id,
-                     ct
-                  ),
-               CreatePollyContext()
+            await DeleteSourceDataRecordAsync(
+               _target,
+               sourceEntity.LogicalName,
+               targetEntity.Id,
+               ct
             );
          }
       }
 
       #endregion
 
-      #region Error Recovery Helpers
+      #region Error Handling & Resilience
 
-      private async Task<(bool success, string failureMessage)>
-         HandleSyncExceptionWithRetryAsync(
+      public async Task<(bool Success, string FailureMessage)>
+         HandleSyncExceptionAsync(
             Exception ex,
             Entity entity,
             Entity sourceEntity,
             SyncOptions options,
-            Guid? creatorId,
-            Guid? modifiedById,
-            bool treatAlreadyExistsAsSuccess = false
+            Guid? creatorId = null,
+            Guid? modifiedById = null,
+            CT ct = default
          )
       {
-         if (treatAlreadyExistsAsSuccess &&
-            ex.Message.Contains(SystemConstants.ErrorKeywords.AlreadyExists))
-            return (true, string.Empty);
+         var msg = ex.Message.ToLower();
 
-         var (success, failureMessage) =
-            await _resilience.HandleSyncExceptionAsync(
+         bool isDuplicate =
+            msg.Contains(SystemConstants.ErrorKeywords.AlreadyExists) ||
+            msg.Contains(SystemConstants.ErrorKeywords.DuplicateCurrency) ||
+            msg.Contains(SystemConstants.ErrorKeywords.DuplicateKey);
+
+         if (isDuplicate)
+            return await HandleDuplicateAsync(entity, modifiedById, ct);
+
+         if (msg.Contains(SystemConstants.ErrorKeywords.InvalidStatusCode))
+         {
+            var success = await HandleStatusTransitionAsync(
+               entity,
+               sourceEntity,
+               options,
+               ct,
+               modifiedById
+            );
+
+            if (success)
+               return (true, string.Empty);
+
+            return (false, FormatFailureMessage("Status transition failed", ex));
+         }
+
+         if (msg.Contains(SystemConstants.ErrorKeywords.DoesNotExist) ||
+             msg.Contains(SystemConstants.ErrorKeywords.ForeignKeyConflict))
+         {
+            var success = await ResolveDependencyAsync(
                ex,
                entity,
                sourceEntity,
                options,
                creatorId,
                modifiedById,
-               default
+               ct
             );
 
-         return (success, failureMessage ?? "Unknown error");
+            if (success)
+               return (true, string.Empty);
+
+            return (
+               false,
+               FormatFailureMessage("Dependency resolution failed", ex)
+            );
+         }
+
+         if (msg.Contains(SystemConstants.ErrorKeywords.CannotBeModified) ||
+             msg.Contains(SystemConstants.ErrorKeywords.CannotBeSetOnCreation) ||
+             msg.Contains(SystemConstants.ErrorKeywords.OutsideValidRange))
+         {
+            var success = await StripAttributeAndRetryAsync(
+               ex,
+               entity,
+               sourceEntity,
+               options,
+               creatorId,
+               modifiedById,
+               ct
+            );
+
+            if (success)
+               return (true, string.Empty);
+
+            return (false, FormatFailureMessage("Attribute stripping failed", ex));
+         }
+
+         _logger.Error(
+            ex,
+            "Unresolved error for {Key}:{Id}",
+            entity.LogicalName,
+            entity.Id
+         );
+
+         return (false, FormatFailureMessage("Unresolved error", ex));
+      }
+
+      private async Task<(bool Success, string FailureMessage)>
+         HandleDuplicateAsync(
+            Entity entity,
+            Guid? modifiedById,
+            CT ct
+         )
+      {
+         _logger.Information(
+            "{Key}:{Id} already exists. Attempting update.",
+            entity.LogicalName,
+            entity.Id
+         );
+
+         try
+         {
+            var targetId = await FindExistingOnTargetAsync(entity, ct);
+
+            if (targetId.HasValue && targetId.Value != entity.Id)
+            {
+               entity.Id = targetId.Value;
+
+               var pk = await _target.GetPrimaryIdAttributeAsync(
+                  entity.LogicalName,
+                  ct
+               ) ?? $"{entity.LogicalName}id";
+
+               if (entity.Attributes.Contains(pk))
+                  entity[pk] = targetId.Value;
+            }
+
+            await _target.UpdateAsync(entity, ct, modifiedById);
+
+            return (true, string.Empty);
+         }
+         catch (Exception updateEx)
+         {
+            _logger.Warning(
+               "Update failed for existing record {Key}:{Id}: {Msg}.",
+               entity.LogicalName,
+               entity.Id,
+               updateEx.Message
+            );
+
+            return (true, string.Empty);
+         }
+      }
+
+      private async Task<bool> HandleStatusTransitionAsync(
+         Entity entity,
+         Entity sourceEntity,
+         SyncOptions options,
+         CT ct,
+         Guid? callerId = null
+      )
+      {
+         var stateValue = entity.Contains(
+            SystemConstants.DataverseAttributes.StateCode
+         )
+            ? entity[SystemConstants.DataverseAttributes.StateCode]
+            : null;
+
+         var statusValue = entity.Contains(
+            SystemConstants.DataverseAttributes.StatusCode
+         )
+            ? entity[SystemConstants.DataverseAttributes.StatusCode]
+            : null;
+
+         entity.Attributes.Remove(SystemConstants.DataverseAttributes.StateCode);
+         entity.Attributes.Remove(SystemConstants.DataverseAttributes.StatusCode);
+
+         sourceEntity.Attributes.Remove(
+            SystemConstants.DataverseAttributes.StateCode
+         );
+         sourceEntity.Attributes.Remove(
+            SystemConstants.DataverseAttributes.StatusCode
+         );
+
+         var (success, _) = await SyncRecordAsync(sourceEntity, options, ct);
+
+         if (success && (stateValue != null || statusValue != null))
+         {
+            try
+            {
+               var stateOsv = ToOptionSetValue(stateValue);
+               var statusOsv = ToOptionSetValue(statusValue);
+
+               if (stateOsv != null)
+               {
+                  var request = new SetStateRequest
+                  {
+                     EntityMoniker = entity.ToEntityReference(),
+                     State = stateOsv,
+                     Status = statusOsv ?? new OptionSetValue(-1)
+                  };
+
+                  await _target.ExecuteAsync(request, ct, callerId);
+               }
+            }
+            catch (Exception ex)
+            {
+               _logger.Warning(
+                  "SetState failed for {Key}:{Id}: {Msg}. Trying fallback Update.",
+                  entity.LogicalName,
+                  entity.Id,
+                  ex.Message
+               );
+
+               try
+               {
+                  var fallback = new Entity(entity.LogicalName, entity.Id);
+
+                  if (stateValue != null)
+                     fallback[SystemConstants.DataverseAttributes.StateCode] =
+                        stateValue;
+
+                  if (statusValue != null)
+                     fallback[SystemConstants.DataverseAttributes.StatusCode] =
+                        statusValue;
+
+                  await _target.UpdateAsync(fallback, ct, callerId);
+               }
+               catch
+               {
+                  // Final failure ignored
+               }
+            }
+         }
+
+         return success;
+      }
+
+      private async Task<bool> ResolveDependencyAsync(
+         Exception ex,
+         Entity entity,
+         Entity sourceEntity,
+         SyncOptions options,
+         Guid? creatorId = null,
+         Guid? modifiedById = null,
+         CT ct = default
+      )
+      {
+         if (ex.Message.Contains(SystemConstants.ErrorKeywords.ForeignKeyConflict))
+         {
+            var match = Regex.Match(ex.Message, @"column '(\w+)'");
+
+            if (match.Success)
+            {
+               var columnName = match.Groups[1].Value.ToLower();
+               var attr = entity.Attributes
+                  .FirstOrDefault(a => a.Key.ToLower() == columnName);
+
+               if (attr.Value is EntityReference er)
+                  return await ResolveDependencyInternalAsync(
+                     er.LogicalName,
+                     er.Id,
+                     entity,
+                     sourceEntity,
+                     options,
+                     creatorId,
+                     modifiedById,
+                     ct
+                  );
+            }
+
+            return false;
+         }
+
+         var pattern = @"(?:Entity )?'?(\w+)'? [Ww]ith Id\s*=\s*([a-fA-F0-9-]+)";
+         var m = Regex.Match(ex.Message, pattern, RegexOptions.IgnoreCase);
+
+         if (!m.Success)
+            return false;
+
+         var type = m.Groups[1].Value.ToLower();
+         var id = Guid.Parse(m.Groups[2].Value);
+
+         return await ResolveDependencyInternalAsync(
+            type,
+            id,
+            entity,
+            sourceEntity,
+            options,
+            creatorId,
+            modifiedById,
+            ct
+         );
+      }
+
+      private async Task<bool> ResolveDependencyInternalAsync(
+         string type,
+         Guid id,
+         Entity parent,
+         Entity sourceParent,
+         SyncOptions options,
+         Guid? creatorId,
+         Guid? modifiedById,
+         CT ct
+      )
+      {
+         var parentKey = EntityHelper.GetRecordKey(parent);
+         var depKey = EntityHelper.GetRecordKey(type, id);
+
+         var tried = _syncStateService.TriedDependencies.GetOrAdd(
+            parentKey,
+            _ => new HashSet<string>()
+         );
+
+         if (tried.Contains(depKey))
+         {
+            if (options.StripMissingDependencies)
+               return await StripSpecificAttributeAsync(
+                  type,
+                  id,
+                  parent,
+                  sourceParent,
+                  options,
+                  ct
+               );
+
+            return false;
+         }
+
+         tried.Add(depKey);
+
+         _logger.Information("Resolving missing dependency: {0}", depKey);
+
+         var record = await _source.RetrieveAsync(type, id, null, ct);
+
+         if (record != null)
+         {
+            var (success, _) = await SyncRecordAsync(record, options, ct);
+
+            if (success)
+               return (await SyncRecordAsync(sourceParent, options, ct)).Success;
+         }
+
+         if (options.StripMissingDependencies)
+            return await StripSpecificAttributeAsync(
+               type,
+               id,
+               parent,
+               sourceParent,
+               options,
+               ct
+            );
+
+         return false;
+      }
+
+      private async Task<bool> StripSpecificAttributeAsync(
+         string type,
+         Guid id,
+         Entity parent,
+         Entity sourceParent,
+         SyncOptions options,
+         CT ct
+      )
+      {
+         var attr = parent.Attributes
+            .FirstOrDefault(a =>
+               a.Value is EntityReference er &&
+               er.LogicalName == type &&
+               er.Id == id
+            ).Key;
+
+         if (string.IsNullOrEmpty(attr))
+            return false;
+
+         _logger.Warning(
+            "Stripping missing dependency '{0}' from {1}",
+            attr,
+            parent.LogicalName
+         );
+
+         parent.Attributes.Remove(attr);
+         sourceParent.Attributes.Remove(attr);
+
+         return (await SyncRecordAsync(sourceParent, options, ct)).Success;
+      }
+
+      private async Task<bool> StripAttributeAndRetryAsync(
+         Exception ex,
+         Entity entity,
+         Entity sourceEntity,
+         SyncOptions options,
+         Guid? creatorId,
+         Guid? modifiedById,
+         CT ct
+      )
+      {
+         var match = Regex.Match(ex.Message, @"'(\w+)'");
+
+         if (match.Success)
+         {
+            var attr = match.Groups[1].Value;
+
+            if (entity.Attributes.Contains(attr))
+            {
+               _logger.Warning("Stripping problematic attribute '{0}'", attr);
+
+               entity.Attributes.Remove(attr);
+               sourceEntity.Attributes.Remove(attr);
+
+               return (await SyncRecordAsync(sourceEntity, options, ct)).Success;
+            }
+         }
+
+         return false;
+      }
+
+      public string FormatFailureMessage(string context, Exception ex)
+      {
+         return $"{context}: {ex.GetType().Name}: {ex.Message}";
+      }
+
+      private OptionSetValue? ToOptionSetValue(object? value)
+      {
+         if (value == null)
+            return null;
+
+         return value is OptionSetValue osv ? osv : new OptionSetValue((int)value);
       }
 
       #endregion
@@ -483,36 +831,22 @@ namespace dvmig.Core.Synchronization
 
          try
          {
-            await _retryPolicy.ExecuteAsync(
-               async (ctx) => await _relationshipService.AssociateAsync(
-                  entity,
-                  ct
-               ),
-               CreatePollyContext()
-            );
+            await _entityService.AssociateAsync(_target, entity, ct, callerId);
 
-            _logger.Information(
-               "Associated N:N {Key}",
-               entity.LogicalName
-            );
+            _logger.Information("Associated N:N {Key}", entity.LogicalName);
 
             return (true, string.Empty);
          }
          catch (Exception ex)
          {
-            return await HandleSyncExceptionWithRetryAsync(
-               ex,
-               entity,
-               entity,
-               options,
-               callerId,
-               callerId,
-               treatAlreadyExistsAsSuccess: true
-            );
+            if (ex.Message.Contains(SystemConstants.ErrorKeywords.AlreadyExists))
+               return (true, string.Empty);
+
+            return (false, FormatFailureMessage("AssociateAsync", ex));
          }
       }
 
-      private async Task<(bool success, string failureMessage)>
+      private async Task<(bool Success, string FailureMessage)>
          CreateWithFixStrategyAsync(
             Entity preparedEntity,
             Entity sourceEntity,
@@ -524,14 +858,7 @@ namespace dvmig.Core.Synchronization
       {
          try
          {
-            await _retryPolicy.ExecuteAsync(
-               async (ctx) => await _target.CreateAsync(
-                  preparedEntity,
-                  ct,
-                  creatorId
-               ),
-               CreatePollyContext()
-            );
+            await _target.CreateAsync(preparedEntity, ct, creatorId);
 
             _logger.Information(
                "Created {Key}:{Id}",
@@ -539,45 +866,311 @@ namespace dvmig.Core.Synchronization
                preparedEntity.Id
             );
 
-            // If modifier is different from creator, we MUST do an update 
-            // to ensure ModifiedBy is preserved correctly for NEW records.
             if (modifiedById.HasValue && modifiedById != creatorId)
             {
-               _logger.Debug(
-                  "Modifier {ModifierId} differs from Creator {CreatorId}. " +
-                  "Performing update to preserve ModifiedBy.",
-                  modifiedById.Value,
-                  creatorId?.ToString() ?? "NULL"
-               );
-
                var updateEntity = new Entity(
                   preparedEntity.LogicalName,
                   preparedEntity.Id
                );
 
-               await _retryPolicy.ExecuteAsync(
-                  async (ctx) => await _target.UpdateAsync(
-                     updateEntity,
-                     ct,
-                     modifiedById
-                  ),
-                  CreatePollyContext()
-               );
+               await _target.UpdateAsync(updateEntity, ct, modifiedById);
             }
 
             return (true, string.Empty);
          }
          catch (Exception ex)
          {
-            return await HandleSyncExceptionWithRetryAsync(
+            return await HandleSyncExceptionAsync(
                ex,
                preparedEntity,
                sourceEntity,
                options,
                creatorId,
-               modifiedById
+               modifiedById,
+               ct
             );
          }
+      }
+
+      #endregion
+
+      #region Failure Management
+
+      /// <inheritdoc />
+      public async Task LogFailureToTargetAsync(
+         Entity entity,
+         string errorMessage,
+         CT ct = default
+      )
+      {
+         try
+         {
+            var failure = new Entity(
+               SystemConstants.MigrationFailure.EntityLogicalName
+            );
+
+            var failureName = EntityHelper.GetRecordKey(entity);
+
+            failure[SystemConstants.MigrationFailure.Name] =
+               failureName.Length <= 100
+                  ? failureName
+                  : failureName.Substring(0, 100);
+
+            failure[SystemConstants.MigrationFailure.SourceId] =
+               entity.Id.ToString();
+
+            failure[SystemConstants.MigrationFailure.EntityLogicalNameAttr] =
+               entity.LogicalName;
+
+            failure[SystemConstants.MigrationFailure.ErrorMessage] =
+               errorMessage;
+
+            failure[SystemConstants.MigrationFailure.Timestamp] =
+               DateTime.UtcNow;
+
+            await _target.CreateAsync(failure, ct);
+         }
+         catch (Exception ex)
+         {
+            _logger.Error(
+               ex,
+               "Failed to log migration failure for {Entity}:{Id}",
+               entity.LogicalName,
+               entity.Id
+            );
+         }
+      }
+
+      /// <inheritdoc />
+      public async Task<List<MigrationFailureRecord>> GetFailuresAsync(
+         IDataverseProvider target,
+         string? entityLogicalName = null,
+         CT ct = default
+      )
+      {
+         var query = new QueryExpression(
+            SystemConstants.MigrationFailure.EntityLogicalName
+         )
+         {
+            ColumnSet = new ColumnSet(
+               SystemConstants.MigrationFailure.SourceId,
+               SystemConstants.MigrationFailure.EntityLogicalNameAttr,
+               SystemConstants.MigrationFailure.ErrorMessage,
+               SystemConstants.MigrationFailure.Timestamp
+            )
+         };
+
+         if (!string.IsNullOrEmpty(entityLogicalName))
+            query.Criteria.AddCondition(
+               SystemConstants.MigrationFailure.EntityLogicalNameAttr,
+               ConditionOperator.Equal,
+               entityLogicalName
+            );
+
+         query.AddOrder(
+            SystemConstants.MigrationFailure.Timestamp,
+            OrderType.Ascending
+         );
+
+         var result = await target.RetrieveMultipleAsync(query, ct);
+
+         return result.Entities
+            .Select(e => new MigrationFailureRecord
+            {
+               Id = e.Id,
+               EntityLogicalName = e.GetAttributeValue<string>(
+                  SystemConstants.MigrationFailure.EntityLogicalNameAttr
+               ) ?? SystemConstants.MigrationFailure.NotAvailable,
+               SourceId = e.GetAttributeValue<string>(
+                  SystemConstants.MigrationFailure.SourceId
+               ) ?? SystemConstants.MigrationFailure.NotAvailable,
+               ErrorMessage = e.GetAttributeValue<string>(
+                  SystemConstants.MigrationFailure.ErrorMessage
+               ) ?? SystemConstants.MigrationFailure.NotAvailable,
+               TimestampUtc = e.GetAttributeValue<DateTime>(
+                  SystemConstants.MigrationFailure.Timestamp
+               )
+            })
+            .ToList();
+      }
+
+      /// <inheritdoc />
+      public async Task ClearFailuresAsync(
+         IDataverseProvider target,
+         CT ct = default
+      )
+      {
+         var query = new QueryExpression(
+            SystemConstants.MigrationFailure.EntityLogicalName
+         )
+         {
+            ColumnSet = new ColumnSet(false)
+         };
+
+         var result = await target.RetrieveMultipleAsync(query, ct);
+
+         foreach (var entity in result.Entities)
+         {
+            ct.ThrowIfCancellationRequested();
+            await target.DeleteAsync(
+               SystemConstants.MigrationFailure.EntityLogicalName,
+               entity.Id,
+               ct
+            );
+         }
+      }
+
+      /// <inheritdoc />
+      public async Task<bool> IsFailureLoggingInitializedAsync(
+         IDataverseProvider target,
+         CT ct = default
+      )
+      {
+         var meta = await target.GetEntityMetadataAsync(
+            SystemConstants.MigrationFailure.EntityLogicalName,
+            ct
+         );
+
+         return meta != null;
+      }
+
+      #endregion
+
+      #region Audit Data Preservation (Internal)
+
+      private async Task CreateSourceDataRecordAsync(
+         IDataverseProvider target,
+         Entity sourceEntity,
+         CT ct = default
+      )
+      {
+         if (!await CheckSourceDataEntityExistsAsync(target, ct))
+            return;
+
+         bool hasAuditData =
+            sourceEntity.Contains(DataverseAttributes.CreatedOn) ||
+            sourceEntity.Contains(DataverseAttributes.ModifiedOn);
+
+         if (!hasAuditData)
+            return;
+
+         var sourceData = new Entity(
+            SystemConstants.SourceData.EntityLogicalName
+         );
+
+         sourceData[SystemConstants.SourceData.EntityId] =
+            sourceEntity.Id.ToString();
+
+         sourceData[SystemConstants.SourceData.EntityLogicalNameAttr] =
+            sourceEntity.LogicalName.ToLowerInvariant();
+
+         if (sourceEntity.Contains(DataverseAttributes.CreatedOn))
+            sourceData[SystemConstants.SourceData.CreatedOn] =
+               sourceEntity[DataverseAttributes.CreatedOn];
+
+         if (sourceEntity.Contains(DataverseAttributes.ModifiedOn))
+            sourceData[SystemConstants.SourceData.ModifiedOn] =
+               sourceEntity[DataverseAttributes.ModifiedOn];
+
+         try
+         {
+            await target.CreateAsync(sourceData, ct);
+         }
+         catch (Exception ex)
+         {
+            _logger.Warning(
+               ex,
+               "Failed to create source data record for {Entity}:{Id}",
+               sourceEntity.LogicalName,
+               sourceEntity.Id
+            );
+         }
+      }
+
+      private async Task DeleteSourceDataRecordAsync(
+         IDataverseProvider target,
+         string logicalName,
+         Guid entityId,
+         CT ct = default
+      )
+      {
+         if (!await CheckSourceDataEntityExistsAsync(target, ct))
+            return;
+
+         try
+         {
+            var entityName = SystemConstants.SourceData.EntityLogicalName;
+            var primaryId = SystemConstants.SourceData.PrimaryId;
+            var sourceEntityId = SystemConstants.SourceData.EntityId;
+            var logicalNameAttr =
+               SystemConstants.SourceData.EntityLogicalNameAttr;
+
+            var fetchXml = $@"
+<fetch version='1.0' output-format='xml-platform' mapping='logical' 
+       distinct='false' count='1'>
+  <entity name='{entityName}'>
+    <attribute name='{primaryId}' />
+    <filter type='and'>
+      <condition attribute='{sourceEntityId}' operator='eq' value='{entityId}' />
+      <condition attribute='{logicalNameAttr}' operator='eq' 
+                 value='{logicalName.ToLowerInvariant()}' />
+    </filter>
+  </entity>
+</fetch>";
+
+            var result = await target.RetrieveMultipleAsync(
+               new FetchExpression(fetchXml),
+               ct
+            );
+
+            if (result.Entities.Any())
+               await target.DeleteAsync(
+                  SystemConstants.SourceData.EntityLogicalName,
+                  result.Entities[0].Id,
+                  ct
+               );
+         }
+         catch (Exception ex)
+         {
+            _logger.Warning(
+               ex,
+               "Failed to delete source data record for {Entity}:{Id}",
+               logicalName,
+               entityId
+            );
+         }
+      }
+
+      private async Task<bool> CheckSourceDataEntityExistsAsync(
+         IDataverseProvider target,
+         CT ct
+      )
+      {
+         if (_isSourceDataSupported.HasValue)
+            return _isSourceDataSupported.Value;
+
+         try
+         {
+            var meta = await target.GetEntityMetadataAsync(
+               SystemConstants.SourceData.EntityLogicalName,
+               ct
+            );
+
+            _isSourceDataSupported = meta != null;
+         }
+         catch
+         {
+            _isSourceDataSupported = false;
+         }
+
+         if (_isSourceDataSupported == false)
+            _logger.Warning(
+               "Source data preservation entity '{Entity}' not found. " +
+               "Audit data preservation will be disabled.",
+               SystemConstants.SourceData.EntityLogicalName
+            );
+
+         return _isSourceDataSupported.Value;
       }
 
       #endregion
@@ -593,39 +1186,8 @@ namespace dvmig.Core.Synchronization
          return await _entityService.FindExistingOnTargetAsync(
             entity,
             _target,
-            _metadataService.GetMetadataAsync,
             ct
          );
-      }
-
-      private Context CreatePollyContext() => new Context();
-
-      private async Task LogFailureWithRetryAsync(
-         Entity entity,
-         string failureMessage,
-         CT ct
-      )
-      {
-         try
-         {
-            await _retryPolicy.ExecuteAsync(
-               async (ctx) => await _failureService.LogFailureToTargetAsync(
-                  entity,
-                  failureMessage,
-                  ct
-               ),
-               CreatePollyContext()
-            );
-         }
-         catch (Exception logEx)
-         {
-            _logger.Error(
-               logEx,
-               "Failed to log failure for {Entity}:{Id}",
-               entity.LogicalName,
-               entity.Id
-            );
-         }
       }
 
       #endregion

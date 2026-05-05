@@ -1,4 +1,5 @@
 using dvmig.Core.Synchronization;
+using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Query;
 
 namespace dvmig.Core.Interfaces
@@ -9,21 +10,12 @@ namespace dvmig.Core.Interfaces
    /// </summary>
    public interface ISyncEngine
    {
+      #region Core Sync Operations
+
       /// <summary>
       /// Synchronizes all records of a specific entity type from the 
       /// source to the target, handling pagination automatically.
       /// </summary>
-      /// <param name="logicalName">The logical name of the entity.</param>
-      /// <param name="options">The sync options.</param>
-      /// <param name="query">
-      /// An optional query to filter the records to be synchronized. 
-      /// If null, all records are fetched.
-      /// </param>
-      /// <param name="recordProgress">
-      /// Progress reporter for success/failure.
-      /// </param>
-      /// <param name="ct">A cancellation token.</param>
-      /// <returns>A task representing the operation.</returns>
       Task SyncAsync(
          string logicalName,
          SyncOptions options,
@@ -33,12 +25,8 @@ namespace dvmig.Core.Interfaces
       );
 
       /// <summary>
-      /// Initializes the sync engine for a specific entity type, ensuring 
-      /// the state tracker is ready for the current job.
+      /// Initializes the sync engine for a specific entity type.
       /// </summary>
-      /// <param name="logicalName">The logical name of the entity.</param>
-      /// <param name="ct">A cancellation token.</param>
-      /// <returns>A task representing the asynchronous operation.</returns>
       Task InitializeEntitySyncAsync(
          string logicalName,
          CancellationToken ct = default
@@ -49,8 +37,8 @@ namespace dvmig.Core.Interfaces
       /// via the progress reporter.
       /// </summary>
       Task SyncRecordAndReportAsync(
-         Microsoft.Xrm.Sdk.Entity entity,
-         Synchronization.SyncOptions options,
+         Entity entity,
+         SyncOptions options,
          IProgress<bool>? recordProgress,
          CancellationToken ct = default
       );
@@ -59,18 +47,57 @@ namespace dvmig.Core.Interfaces
       /// Synchronizes a single entity record to the target environment.
       /// </summary>
       Task<(bool Success, string? FailureMessage)> SyncRecordAsync(
-         Microsoft.Xrm.Sdk.Entity entity,
-         Synchronization.SyncOptions options,
+         Entity entity,
+         SyncOptions options,
          CancellationToken ct = default
       );
 
       /// <summary>
-      /// Finds an existing record on the target environment that matches 
-      /// the source record.
+      /// Finds an existing record on the target environment.
       /// </summary>
       Task<Guid?> FindExistingOnTargetAsync(
-         Microsoft.Xrm.Sdk.Entity entity,
+         Entity entity,
          CancellationToken ct = default
       );
+
+      #endregion
+
+      #region Failure Management
+
+      /// <summary>
+      /// Logs a migration failure directly to the target environment.
+      /// </summary>
+      Task LogFailureToTargetAsync(
+         Entity entity,
+         string errorMessage,
+         CancellationToken ct = default
+      );
+
+      /// <summary>
+      /// Retrieves recorded migration failures from the target environment.
+      /// </summary>
+      Task<List<MigrationFailureRecord>> GetFailuresAsync(
+         IDataverseProvider target,
+         string? entityLogicalName = null,
+         CancellationToken ct = default
+      );
+
+      /// <summary>
+      /// Clears all recorded failures on the target environment.
+      /// </summary>
+      Task ClearFailuresAsync(
+         IDataverseProvider target,
+         CancellationToken ct = default
+      );
+
+      /// <summary>
+      /// Checks if the target environment supports migration failure logging.
+      /// </summary>
+      Task<bool> IsFailureLoggingInitializedAsync(
+         IDataverseProvider target,
+         CancellationToken ct = default
+      );
+
+      #endregion
    }
 }

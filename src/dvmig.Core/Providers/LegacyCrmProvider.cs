@@ -1,9 +1,12 @@
 using dvmig.Core.Interfaces;
+using dvmig.Core.Shared;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Messages;
 using Microsoft.Xrm.Sdk.Metadata;
 using Microsoft.Xrm.Sdk.Query;
 using Microsoft.Xrm.Tooling.Connector;
+using Polly;
+using Polly.Retry;
 
 namespace dvmig.Core.Providers
 {
@@ -15,6 +18,7 @@ namespace dvmig.Core.Providers
    public class LegacyCrmProvider : IDataverseProvider, IDisposable
    {
       private readonly CrmServiceClient _client;
+      private readonly AsyncRetryPolicy _retryPolicy;
 
       /// <inheritdoc />
       public string ConnectionString { get; }
@@ -35,109 +39,159 @@ namespace dvmig.Core.Providers
             throw new Exception(
                $"Legacy CRM connection failed: {_client.LastCrmError}"
             );
+
+         _retryPolicy = Policy
+            .Handle<Exception>(EntityHelper.IsTransientError)
+            .WaitAndRetryAsync(
+               5,
+               attempt => TimeSpan.FromSeconds(
+                  Math.Min(Math.Pow(2, attempt + 2), 30)
+               )
+            );
+      }
+
+      private async Task<T> ExecuteWithRetryAsync<T>(
+         Func<CancellationToken, Task<T>> action,
+         CancellationToken ct
+      )
+      {
+         return await _retryPolicy.ExecuteAsync(
+            async () => await action(ct)
+         );
+      }
+
+      private async Task ExecuteWithRetryAsync(
+         Func<CancellationToken, Task> action,
+         CancellationToken ct
+      )
+      {
+         await _retryPolicy.ExecuteAsync(
+            async () => await action(ct)
+         );
       }
 
       /// <inheritdoc />
-      public Task<Entity?> RetrieveAsync(
+      public async Task<Entity?> RetrieveAsync(
          string entityLogicalName,
          Guid id,
          string[]? columns = null,
          CancellationToken ct = default
       )
       {
-         try
-         {
-            var columnSet = columns == null
-               ? new ColumnSet(true)
-               : new ColumnSet(columns);
+         return await ExecuteWithRetryAsync(
+            async (token) => await Task.Run(() =>
+            {
+               try
+               {
+                  var columnSet = columns == null
+                     ? new ColumnSet(true)
+                     : new ColumnSet(columns);
 
-            return Task.FromResult<Entity?>(
-               _client.Retrieve(
-                  entityLogicalName,
-                  id,
-                  columnSet
-               )
-            );
-         }
-         catch (Exception ex)
-         {
-            if (ex.IsNotFoundException())
-               return Task.FromResult<Entity?>(null);
+                  return _client.Retrieve(
+                     entityLogicalName,
+                     id,
+                     columnSet
+                  );
+               }
+               catch (Exception ex)
+               {
+                  if (ex.IsNotFoundException())
+                     return null;
 
-            throw;
-         }
+                  throw;
+               }
+            }, token),
+            ct
+         );
       }
 
       /// <inheritdoc />
-      public Task<EntityMetadata?> GetEntityMetadataAsync(
+      public async Task<EntityMetadata?> GetEntityMetadataAsync(
          string entityLogicalName,
          CancellationToken ct = default
       )
       {
-         var response = _client.Execute(
-            new RetrieveEntityRequest
+         return await ExecuteWithRetryAsync(
+            async (token) => await Task.Run(() =>
             {
-               LogicalName = entityLogicalName,
-               EntityFilters = EntityFilters.Attributes
-            }
-         ) as RetrieveEntityResponse;
+               var response = _client.Execute(
+                  new RetrieveEntityRequest
+                  {
+                     LogicalName = entityLogicalName,
+                     EntityFilters = EntityFilters.Attributes
+                  }
+               ) as RetrieveEntityResponse;
 
-         return Task.FromResult(response?.EntityMetadata);
+               return response?.EntityMetadata;
+            }, token),
+            ct
+         );
       }
 
       /// <inheritdoc />
-      public Task<Guid> CreateAsync(
+      public async Task<Guid> CreateAsync(
          Entity entity,
          CancellationToken ct = default,
          Guid? callerId = null
       )
       {
-         if (callerId.HasValue && callerId.Value != Guid.Empty)
-         {
-            using var clonedClient = _client.Clone();
-            clonedClient.CallerId = callerId.Value;
+         return await ExecuteWithRetryAsync(
+            async (token) => await Task.Run(() =>
+            {
+               if (callerId.HasValue && callerId.Value != Guid.Empty)
+               {
+                  using var clonedClient = _client.Clone();
+                  clonedClient.CallerId = callerId.Value;
 
-            return Task.FromResult(clonedClient.Create(entity));
-         }
+                  return clonedClient.Create(entity);
+               }
 
-         return Task.FromResult(_client.Create(entity));
+               return _client.Create(entity);
+            }, token),
+            ct
+         );
       }
 
       /// <inheritdoc />
-      public Task UpdateAsync(
+      public async Task UpdateAsync(
          Entity entity,
          CancellationToken ct = default,
          Guid? callerId = null
       )
       {
-         if (callerId.HasValue && callerId.Value != Guid.Empty)
-         {
-            using var clonedClient = _client.Clone();
-            clonedClient.CallerId = callerId.Value;
-            clonedClient.Update(entity);
+         await ExecuteWithRetryAsync(
+            async (token) => await Task.Run(() =>
+            {
+               if (callerId.HasValue && callerId.Value != Guid.Empty)
+               {
+                  using var clonedClient = _client.Clone();
+                  clonedClient.CallerId = callerId.Value;
+                  clonedClient.Update(entity);
 
-            return Task.CompletedTask;
-         }
+                  return;
+               }
 
-         _client.Update(entity);
-
-         return Task.CompletedTask;
+               _client.Update(entity);
+            }, token),
+            ct
+         );
       }
 
       /// <inheritdoc />
-      public Task DeleteAsync(
+      public async Task DeleteAsync(
          string entityLogicalName,
          Guid id,
          CancellationToken ct = default
       )
       {
-         _client.Delete(entityLogicalName, id);
-
-         return Task.CompletedTask;
+         await ExecuteWithRetryAsync(
+            async (token) => await Task.Run(() => _client.Delete(entityLogicalName, id), token),
+            ct
+         );
       }
 
       /// <inheritdoc />
-      public Task AssociateAsync(
+      public async Task AssociateAsync(
          string entityLogicalName,
          Guid entityId,
          Relationship relationship,
@@ -145,41 +199,51 @@ namespace dvmig.Core.Providers
          CancellationToken ct = default
       )
       {
-         _client.Associate(
-            entityLogicalName,
-            entityId,
-            relationship,
-            relatedEntities
+         await ExecuteWithRetryAsync(
+            async (token) => await Task.Run(() => _client.Associate(
+               entityLogicalName,
+               entityId,
+               relationship,
+               relatedEntities
+            ), token),
+            ct
          );
-
-         return Task.CompletedTask;
       }
 
       /// <inheritdoc />
-      public Task<EntityCollection> RetrieveMultipleAsync(
+      public async Task<EntityCollection> RetrieveMultipleAsync(
          QueryBase query,
          CancellationToken ct = default
       )
       {
-         return Task.FromResult(_client.RetrieveMultiple(query));
+         return await ExecuteWithRetryAsync(
+            async (token) => await Task.Run(() => _client.RetrieveMultiple(query), token),
+            ct
+         );
       }
 
       /// <inheritdoc />
-      public Task<OrganizationResponse> ExecuteAsync(
+      public async Task<OrganizationResponse> ExecuteAsync(
          OrganizationRequest request,
          CancellationToken ct = default,
          Guid? callerId = null
       )
       {
-         if (callerId.HasValue && callerId.Value != Guid.Empty)
-         {
-            using var clonedClient = _client.Clone();
-            clonedClient.CallerId = callerId.Value;
+         return await ExecuteWithRetryAsync(
+            async (token) => await Task.Run(() =>
+            {
+               if (callerId.HasValue && callerId.Value != Guid.Empty)
+               {
+                  using var clonedClient = _client.Clone();
+                  clonedClient.CallerId = callerId.Value;
 
-            return Task.FromResult(clonedClient.Execute(request));
-         }
+                  return clonedClient.Execute(request);
+               }
 
-         return Task.FromResult(_client.Execute(request));
+               return _client.Execute(request);
+            }, token),
+            ct
+         );
       }
 
       /// <summary>

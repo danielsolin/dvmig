@@ -8,27 +8,23 @@ namespace dvmig.Cli.Actions
 {
    public class SyncActions : BaseActions
    {
-      private readonly IMetadataService _metadataService;
-
       public SyncActions(
          ConnectionManager connectionManager,
-         IMetadataService metadataService,
          IPluginService pluginService,
-         ISourceDataService sourceDataService,
          IValidationService validator,
          ISchemaService schemaService,
-         ILogger logger
+         ILogger logger,
+         IEntityService entityService
       )
          : base(
             connectionManager,
             pluginService,
-            sourceDataService,
             validator,
             schemaService,
-            logger
+            logger,
+            entityService
          )
       {
-         _metadataService = metadataService;
       }
 
       public async Task HandleSelectedSyncAsync(
@@ -44,7 +40,7 @@ namespace dvmig.Cli.Actions
             return;
 
          var selectedEntities = await CliUI.SelectEntitiesAsync(
-            _metadataService,
+            EntityService,
             source
          );
 
@@ -219,16 +215,14 @@ namespace dvmig.Cli.Actions
                      var displayName = char.ToUpper(logicalName[0]) +
                         logicalName.Substring(1);
 
-                     var sourceCountTask = _metadataService.GetRecordCountAsync(
-                        source,
+                     var sourceCountTask = source.GetRecordCountAsync(
                         logicalName,
                         ct
                      );
 
                      var targetCountTask = forceResync
                         ? Task.FromResult(0L)
-                        : _metadataService.GetRecordCountAsync(
-                           target,
+                        : target.GetRecordCountAsync(
                            logicalName,
                            ct
                         );

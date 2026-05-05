@@ -135,6 +135,19 @@ namespace dvmig.Core.Interfaces
       );
 
       /// <summary>
+      /// Gets the primary ID attribute name for a specific entity.
+      /// </summary>
+      public async Task<string?> GetPrimaryIdAttributeAsync(
+         string entityLogicalName,
+         CancellationToken ct = default
+      )
+      {
+         var metadata = await GetEntityMetadataAsync(entityLogicalName, ct);
+
+         return metadata?.PrimaryIdAttribute;
+      }
+
+      /// <summary>
       /// Gets the total record count for a specific entity type.
       /// </summary>
       /// <param name="entityName">The logical name of the entity.</param>

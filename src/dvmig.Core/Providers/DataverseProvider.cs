@@ -1,9 +1,12 @@
 using dvmig.Core.Interfaces;
+using dvmig.Core.Shared;
 using Microsoft.PowerPlatform.Dataverse.Client;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Messages;
 using Microsoft.Xrm.Sdk.Metadata;
 using Microsoft.Xrm.Sdk.Query;
+using Polly;
+using Polly.Retry;
 
 namespace dvmig.Core.Providers
 {
@@ -14,6 +17,7 @@ namespace dvmig.Core.Providers
    public class DataverseProvider : IDataverseProvider, IDisposable
    {
       private readonly ServiceClient _client;
+      private readonly AsyncRetryPolicy _retryPolicy;
 
       /// <inheritdoc />
       public string ConnectionString { get; }
@@ -34,6 +38,35 @@ namespace dvmig.Core.Providers
             throw new Exception(
                $"Dataverse connection failed: {_client.LastError}"
             );
+
+         _retryPolicy = Policy
+            .Handle<Exception>(EntityHelper.IsTransientError)
+            .WaitAndRetryAsync(
+               5,
+               attempt => TimeSpan.FromSeconds(
+                  Math.Min(Math.Pow(2, attempt + 2), 30)
+               )
+            );
+      }
+
+      private async Task<T> ExecuteWithRetryAsync<T>(
+         Func<CancellationToken, Task<T>> action,
+         CancellationToken ct
+      )
+      {
+         return await _retryPolicy.ExecuteAsync(
+            async () => await action(ct)
+         );
+      }
+
+      private async Task ExecuteWithRetryAsync(
+         Func<CancellationToken, Task> action,
+         CancellationToken ct
+      )
+      {
+         await _retryPolicy.ExecuteAsync(
+            async () => await action(ct)
+         );
       }
 
       /// <inheritdoc />
@@ -44,26 +77,32 @@ namespace dvmig.Core.Providers
          CancellationToken ct = default
       )
       {
-         try
-         {
-            var columnSet = columns == null
-               ? new ColumnSet(true)
-               : new ColumnSet(columns);
+         return await ExecuteWithRetryAsync(
+            async (token) =>
+            {
+               try
+               {
+                  var columnSet = columns == null
+                     ? new ColumnSet(true)
+                     : new ColumnSet(columns);
 
-            return await _client.RetrieveAsync(
-               entityLogicalName,
-               id,
-               columnSet,
-               ct
-            );
-         }
-         catch (Exception ex)
-         {
-            if (ex.IsNotFoundException())
-               return null;
+                  return await _client.RetrieveAsync(
+                     entityLogicalName,
+                     id,
+                     columnSet,
+                     token
+                  );
+               }
+               catch (Exception ex)
+               {
+                  if (ex.IsNotFoundException())
+                     return null;
 
-            throw;
-         }
+                  throw;
+               }
+            },
+            ct
+         );
       }
 
       /// <inheritdoc />
@@ -72,26 +111,32 @@ namespace dvmig.Core.Providers
          CancellationToken ct = default
       )
       {
-         try
-         {
-            var response = await _client.ExecuteAsync(
-               new RetrieveEntityRequest
+         return await ExecuteWithRetryAsync(
+            async (token) =>
+            {
+               try
                {
-                  LogicalName = entityLogicalName,
-                  EntityFilters = EntityFilters.Attributes
-               },
-               ct
-            ) as RetrieveEntityResponse;
+                  var response = await _client.ExecuteAsync(
+                     new RetrieveEntityRequest
+                     {
+                        LogicalName = entityLogicalName,
+                        EntityFilters = EntityFilters.Attributes
+                     },
+                     token
+                  ) as RetrieveEntityResponse;
 
-            return response?.EntityMetadata;
-         }
-         catch
-         {
-            // If entity doesn't exist, RetrieveEntityRequest throws.
-            // We return null to indicate missing metadata.
+                  return response?.EntityMetadata;
+               }
+               catch
+               {
+                  // If entity doesn't exist, RetrieveEntityRequest throws.
+                  // We return null to indicate missing metadata.
 
-            return null;
-         }
+                  return null;
+               }
+            },
+            ct
+         );
       }
 
       /// <inheritdoc />
@@ -101,15 +146,21 @@ namespace dvmig.Core.Providers
          Guid? callerId = null
       )
       {
-         if (callerId.HasValue && callerId.Value != Guid.Empty)
-         {
-            using var clonedClient = _client.Clone();
-            clonedClient.CallerId = callerId.Value;
+         return await ExecuteWithRetryAsync(
+            async (token) =>
+            {
+               if (callerId.HasValue && callerId.Value != Guid.Empty)
+               {
+                  using var clonedClient = _client.Clone();
+                  clonedClient.CallerId = callerId.Value;
 
-            return await clonedClient.CreateAsync(entity, ct);
-         }
+                  return await clonedClient.CreateAsync(entity, token);
+               }
 
-         return await _client.CreateAsync(entity, ct);
+               return await _client.CreateAsync(entity, token);
+            },
+            ct
+         );
       }
 
       /// <inheritdoc />
@@ -119,16 +170,22 @@ namespace dvmig.Core.Providers
          Guid? callerId = null
       )
       {
-         if (callerId.HasValue && callerId.Value != Guid.Empty)
-         {
-            using var clonedClient = _client.Clone();
-            clonedClient.CallerId = callerId.Value;
-            await clonedClient.UpdateAsync(entity, ct);
+         await ExecuteWithRetryAsync(
+            async (token) =>
+            {
+               if (callerId.HasValue && callerId.Value != Guid.Empty)
+               {
+                  using var clonedClient = _client.Clone();
+                  clonedClient.CallerId = callerId.Value;
+                  await clonedClient.UpdateAsync(entity, token);
 
-            return;
-         }
+                  return;
+               }
 
-         await _client.UpdateAsync(entity, ct);
+               await _client.UpdateAsync(entity, token);
+            },
+            ct
+         );
       }
 
       /// <inheritdoc />
@@ -138,7 +195,11 @@ namespace dvmig.Core.Providers
          CancellationToken ct = default
       )
       {
-         await _client.DeleteAsync(entityLogicalName, id, ct);
+         await ExecuteWithRetryAsync(
+            async (token) =>
+               await _client.DeleteAsync(entityLogicalName, id, token),
+            ct
+         );
       }
 
       /// <inheritdoc />
@@ -150,11 +211,15 @@ namespace dvmig.Core.Providers
          CancellationToken ct = default
       )
       {
-         await _client.AssociateAsync(
-            entityLogicalName,
-            entityId,
-            relationship,
-            relatedEntities,
+         await ExecuteWithRetryAsync(
+            async (token) =>
+               await _client.AssociateAsync(
+                  entityLogicalName,
+                  entityId,
+                  relationship,
+                  relatedEntities,
+                  token
+               ),
             ct
          );
       }
@@ -165,7 +230,10 @@ namespace dvmig.Core.Providers
          CancellationToken ct = default
       )
       {
-         return await _client.RetrieveMultipleAsync(query, ct);
+         return await ExecuteWithRetryAsync(
+            async (token) => await _client.RetrieveMultipleAsync(query, token),
+            ct
+         );
       }
 
       /// <inheritdoc />
@@ -175,15 +243,21 @@ namespace dvmig.Core.Providers
          Guid? callerId = null
       )
       {
-         if (callerId.HasValue && callerId.Value != Guid.Empty)
-         {
-            using var clonedClient = _client.Clone();
-            clonedClient.CallerId = callerId.Value;
+         return await ExecuteWithRetryAsync(
+            async (token) =>
+            {
+               if (callerId.HasValue && callerId.Value != Guid.Empty)
+               {
+                  using var clonedClient = _client.Clone();
+                  clonedClient.CallerId = callerId.Value;
 
-            return await clonedClient.ExecuteAsync(request, ct);
-         }
+                  return await clonedClient.ExecuteAsync(request, token);
+               }
 
-         return await _client.ExecuteAsync(request, ct);
+               return await _client.ExecuteAsync(request, token);
+            },
+            ct
+         );
       }
 
       /// <summary>

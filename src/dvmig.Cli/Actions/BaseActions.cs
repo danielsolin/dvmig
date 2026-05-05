@@ -14,26 +14,26 @@ namespace dvmig.Cli.Actions
    {
       protected readonly ConnectionManager ConnectionManager;
       protected readonly IPluginService PluginService;
-      protected readonly ISourceDataService SourceDataService;
       protected readonly IValidationService Validator;
       protected readonly ISchemaService SchemaService;
       protected readonly ILogger Logger;
+      protected readonly IEntityService EntityService;
 
       protected BaseActions(
          ConnectionManager connectionManager,
          IPluginService pluginService,
-         ISourceDataService sourceDataService,
          IValidationService validator,
          ISchemaService schemaService,
-         ILogger logger
+         ILogger logger,
+         IEntityService entityService
       )
       {
          ConnectionManager = connectionManager;
          PluginService = pluginService;
-         SourceDataService = sourceDataService;
          Validator = validator;
          SchemaService = schemaService;
          Logger = logger;
+         EntityService = entityService;
       }
 
       /// <summary>
@@ -78,30 +78,18 @@ namespace dvmig.Cli.Actions
 
          var userResolver = new UserResolver(source, target, Logger);
          var syncStateService = new SyncStateService();
-         var resilience = new SyncResilienceService(
-            source,
-            target,
-            syncStateService,
-            Logger
-         );
 
-         var entityService = new EntityService(Logger);
-         var metadataService = new MetadataService(Logger, target);
-         var failureService = new FailureService(target, Logger);
-         var relationshipService = new RelationshipService(target, Logger);
+         // We create a fresh EntityService for this sync run that's bound 
+         // to the current target for metadata caching.
+         var syncEntityService = new EntityService(Logger, target);
 
          var engine = new SyncEngine(
             source,
             target,
             userResolver,
             Logger,
-            entityService,
-            resilience,
-            metadataService,
-            failureService,
-            SourceDataService,
-            syncStateService,
-            relationshipService
+            syncEntityService,
+            syncStateService
          );
 
          return (source, target, engine, userResolver);

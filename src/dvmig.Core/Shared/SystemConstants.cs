@@ -128,6 +128,38 @@ namespace dvmig.Core.Shared
       }
 
       /// <summary>
+      /// Attributes that should not be copied from source to target.
+      /// </summary>
+      public static readonly HashSet<string> ForbiddenAttributes =
+         new HashSet<string>(System.StringComparer.OrdinalIgnoreCase)
+         {
+            DataverseAttributes.CreatedOn,
+            DataverseAttributes.ModifiedOn,
+            DataverseAttributes.CreatedBy,
+            DataverseAttributes.ModifiedBy,
+            DataverseAttributes.CreatedOnBehalfBy,
+            DataverseAttributes.ModifiedOnBehalfBy,
+            DataverseAttributes.OverriddenCreatedOn,
+            DataverseAttributes.ImportSequenceNumber,
+            DataverseAttributes.VersionNumber,
+            DataverseAttributes.Address1Id,
+            DataverseAttributes.Address2Id
+         };
+
+      /// <summary>
+      /// Attributes that represent references to SystemUser records.
+      /// </summary>
+      public static readonly HashSet<string> UserAttributes =
+         new HashSet<string>(System.StringComparer.OrdinalIgnoreCase)
+         {
+            DataverseAttributes.OwnerId,
+            DataverseAttributes.CreatedBy,
+            DataverseAttributes.ModifiedBy,
+            DataverseAttributes.CreatedOnBehalfBy,
+            DataverseAttributes.ModifiedOnBehalfBy
+         };
+
+      /// <summary>
       /// Keywords found in Dataverse error messages for pattern matching.
       /// </summary>
       public static class ErrorKeywords
