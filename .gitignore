@@ -7,6 +7,7 @@ TestResults/
 # IDEs
 .vs/
 .vscode/
+.claude/
 *.user
 *.userosscache
 *.sln.docstates
@@ -19,8 +20,6 @@ _ReSharper*/
 Thumbs.db
 
 # Project Specific
-.gemini/
-.claude/settings.local.json
 publish-minimal.ps1.local
 
 # Gemini CLI
