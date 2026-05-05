@@ -26,3 +26,5 @@ publish-minimal.ps1.local
 /.gemini/settings.json
 /AGENTS.md
 MEMORY.md
+GEMINI.md
+CLAUDE.md
