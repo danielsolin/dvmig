@@ -37,14 +37,13 @@ namespace dvmig.Cli.Actions
       }
 
       /// <summary>
-      /// Sets up the synchronization engine by connecting to both source 
+      /// Sets up the synchronization engine by connecting to both source
       /// and target, and ensuring the target environment is prepared.
       /// </summary>
       protected async Task<(
          IDataverseProvider? Source,
          IDataverseProvider? Target,
          ISyncEngine? Engine,
-         ISyncRecordService? SyncRecordService,
          IUserResolver? UserResolver
       )> SetupSyncEngineAsync()
       {
@@ -53,14 +52,14 @@ namespace dvmig.Cli.Actions
          );
 
          if (source == null)
-            return (null, null, null, null, null);
+            return (null, null, null, null);
 
          var target = await ConnectionManager.ConnectAsync(
             ConnectionDirection.Target
          );
 
          if (target == null)
-            return (null, null, null, null, null);
+            return (null, null, null, null);
 
          bool isReady = await Validator.ValidateTargetEnvironmentAsync(
             target,
@@ -86,7 +85,7 @@ namespace dvmig.Cli.Actions
          var syncStateService = new SyncStateService();
          var relationshipService = new RelationshipService(target, Logger);
 
-         var syncRecordService = new SyncRecordService(
+         var engine = new SyncEngine(
             source,
             target,
             userResolver,
@@ -100,19 +99,8 @@ namespace dvmig.Cli.Actions
             relationshipService
          );
 
-         var engine = new SyncEngine(
-            source,
-            target,
-            Logger,
-            entityService,
-            metadataService,
-            syncStateService,
-            syncRecordService
-         );
-
-         return (source, target, engine, syncRecordService, userResolver);
+         return (source, target, engine, userResolver);
       }
-
       /// <summary>
       /// Handles the installation of dvmig components on the 
       /// target environment.

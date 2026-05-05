@@ -43,5 +43,25 @@ namespace dvmig.Core.Interfaces
          string logicalName,
          CancellationToken ct = default
       );
+
+      /// <summary>
+      /// Synchronizes a single entity record and reports success or failure 
+      /// via the progress reporter.
+      /// </summary>
+      Task SyncRecordAndReportAsync(
+         Microsoft.Xrm.Sdk.Entity entity,
+         Synchronization.SyncOptions options,
+         IProgress<bool>? recordProgress,
+         CancellationToken ct = default
+      );
+
+      /// <summary>
+      /// Synchronizes a single entity record to the target environment.
+      /// </summary>
+      Task<(bool Success, string? FailureMessage)> SyncRecordAsync(
+         Microsoft.Xrm.Sdk.Entity entity,
+         Synchronization.SyncOptions options,
+         CancellationToken ct = default
+      );
    }
 }
