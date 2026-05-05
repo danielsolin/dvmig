@@ -41,7 +41,7 @@ namespace dvmig.Core.Synchronization
                SystemConstants.MigrationFailure.EntityLogicalName
             );
 
-            var failureName = $"{entity.LogicalName}:{entity.Id}";
+            var failureName = EntityHelper.GetRecordKey(entity);
 
             failure[SystemConstants.MigrationFailure.Name] =
                failureName.Length <= 100

@@ -254,7 +254,7 @@ namespace dvmig.Core.Synchronization
          if (!options.ForceResync && _syncStateService.IsSynced(entity.Id))
             return (true, string.Empty);
 
-         var recordKey = $"{entity.LogicalName}:{entity.Id}";
+         var recordKey = EntityHelper.GetRecordKey(entity);
 
          if (!_syncStateService.TryEnterRecordScope(recordKey, MaxRecursionDepth))
             return (false, "Max recursion depth reached.");
@@ -348,7 +348,7 @@ namespace dvmig.Core.Synchronization
             return (
                false,
                failureMessage ??
-                  $"Failed to sync {entity.LogicalName}:{entity.Id}."
+                  $"Failed to sync {EntityHelper.GetRecordKey(entity)}."
             );
          }
 
@@ -398,7 +398,7 @@ namespace dvmig.Core.Synchronization
          CT ct
       )
       {
-         var recordKey = $"{sourceEntity.LogicalName}:{sourceEntity.Id}";
+         var recordKey = EntityHelper.GetRecordKey(sourceEntity);
 
          _syncStateService.MarkAsSynced(sourceEntity.Id);
          _syncStateService.IdMappingCache[recordKey] = targetEntity.Id;

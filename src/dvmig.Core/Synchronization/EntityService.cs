@@ -76,7 +76,7 @@ namespace dvmig.Core.Synchronization
                   }
                }
                else if (idMappingCache.TryGetValue(
-                  $"{er.LogicalName}:{er.Id}",
+                  EntityHelper.GetRecordKey(er),
                   out var mappedId))
                   value = new EntityReference(er.LogicalName, mappedId);
             }
@@ -137,7 +137,7 @@ namespace dvmig.Core.Synchronization
                            }
                         }
                         else if (idMappingCache.TryGetValue(
-                           $"{pr.LogicalName}:{pr.Id}",
+                           EntityHelper.GetRecordKey(pr),
                            out var mappedId))
                         {
                            partyValue = new EntityReference(

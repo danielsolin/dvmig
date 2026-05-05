@@ -378,8 +378,8 @@ namespace dvmig.Core.Synchronization
          CancellationToken ct
       )
       {
-         var parentKey = $"{parent.LogicalName}:{parent.Id}";
-         var depKey = $"{type}:{id}";
+         var parentKey = EntityHelper.GetRecordKey(parent);
+         var depKey = EntityHelper.GetRecordKey(type, id);
 
          var tried = _state.TriedDependencies.GetOrAdd(
             parentKey,
