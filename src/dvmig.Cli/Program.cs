@@ -39,7 +39,12 @@ namespace dvmig.Cli
          var logger = new Logger();
 
          // Global resilience (used for retries by provisioning services)
-         var resilience = new SyncResilienceService(null!, null!, logger);
+         var resilience = new SyncResilienceService(
+            null!,
+            null!,
+            new SyncStateService(),
+            logger
+         );
 
          var settingsService = new SettingsService();
          var seedingService = new SeedingService(logger, resilience);

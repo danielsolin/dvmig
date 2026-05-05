@@ -63,5 +63,14 @@ namespace dvmig.Core.Interfaces
          Synchronization.SyncOptions options,
          CancellationToken ct = default
       );
+
+      /// <summary>
+      /// Finds an existing record on the target environment that matches 
+      /// the source record.
+      /// </summary>
+      Task<Guid?> FindExistingOnTargetAsync(
+         Microsoft.Xrm.Sdk.Entity entity,
+         CancellationToken ct = default
+      );
    }
 }

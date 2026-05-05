@@ -62,10 +62,7 @@ namespace dvmig.Core.Synchronization
 
          _retryPolicy = _resilience.CreateRetryPolicy();
 
-         _resilience.SetSyncCallbacks(
-            SyncRecordAsync,
-            FindExistingOnTargetAsync
-         );
+         _resilience.SetEngine(this);
       }
 
       #region Entity Sync Orchestration (Batch)
@@ -156,8 +153,7 @@ namespace dvmig.Core.Synchronization
             totalSynced
          );
 
-         _syncStateService.TriedDependencies.Clear();
-         _syncStateService.IdMappingCache.Clear();
+         _syncStateService.ClearState();
       }
 
       private async Task ProcessBatchAsync(
@@ -588,7 +584,8 @@ namespace dvmig.Core.Synchronization
 
       #region Private Helpers
 
-      private async Task<Guid?> FindExistingOnTargetAsync(
+      /// <inheritdoc />
+      public async Task<Guid?> FindExistingOnTargetAsync(
          Entity entity,
          CT ct
       )

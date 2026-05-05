@@ -48,9 +48,12 @@ namespace dvmig.Tests
          ).ReturnsAsync(defaultMetadata);
 
          var entityService = new EntityService(_loggerMock.Object);
+         var syncStateService = new SyncStateService();
+
          var resilience = new SyncResilienceService(
             _sourceMock.Object,
             _targetMock.Object,
+            syncStateService,
             _loggerMock.Object
          );
 
@@ -63,8 +66,6 @@ namespace dvmig.Tests
             _targetMock.Object,
             _loggerMock.Object
          );
-
-         var syncStateService = new SyncStateService();
 
          var relationshipService = new RelationshipService(
             _targetMock.Object,

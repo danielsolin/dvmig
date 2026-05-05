@@ -77,12 +77,17 @@ namespace dvmig.Cli.Actions
          }
 
          var userResolver = new UserResolver(source, target, Logger);
-         var resilience = new SyncResilienceService(source, target, Logger);
-         var entityService = new EntityService(Logger);
+         var syncStateService = new SyncStateService();
+         var resilience = new SyncResilienceService(
+            source,
+            target,
+            syncStateService,
+            Logger
+         );
 
+         var entityService = new EntityService(Logger);
          var metadataService = new MetadataService(Logger, target);
          var failureService = new FailureService(target, Logger);
-         var syncStateService = new SyncStateService();
          var relationshipService = new RelationshipService(target, Logger);
 
          var engine = new SyncEngine(

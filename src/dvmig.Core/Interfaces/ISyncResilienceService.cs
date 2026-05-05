@@ -66,21 +66,8 @@ namespace dvmig.Core.Interfaces
       AsyncRetryPolicy CreateRetryPolicy(int maxRetries = 5);
 
       /// <summary>
-      /// Sets the callback functions needed for record-level recovery.
+      /// Sets the sync engine reference needed for record-level recovery.
       /// </summary>
-      void SetSyncCallbacks(
-         Func<
-            Entity,
-            SyncOptions,
-            CancellationToken,
-            Task<(bool Success, string? FailureMessage)>
-         > syncRecordFunc,
-         Func<Entity, CancellationToken, Task<Guid?>> findExistingFunc
-      );
-
-      /// <summary>
-      /// Clears internal state trackers (e.g. tried dependencies).
-      /// </summary>
-      void ResetState();
+      void SetEngine(ISyncEngine engine);
    }
 }

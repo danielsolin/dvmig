@@ -14,48 +14,27 @@ namespace dvmig.Core.Synchronization
    {
       private readonly IDataverseProvider _source;
       private readonly IDataverseProvider _target;
+      private readonly ISyncStateService _state;
       private readonly ILogger _logger;
 
-      private Func<
-         Entity,
-         SyncOptions,
-         CancellationToken,
-         Task<(bool Success, string? FailureMessage)>
-      >? _syncRecordFunc;
-
-      private Func<Entity, CancellationToken, Task<Guid?>>? _findExistingFunc;
-
-      private readonly ConcurrentDictionary<string, HashSet<string>>
-         _triedDependencies = new ConcurrentDictionary<string, HashSet<string>>();
+      private ISyncEngine? _engine;
 
       public SyncResilienceService(
          IDataverseProvider source,
          IDataverseProvider target,
+         ISyncStateService state,
          ILogger logger
       )
       {
          _source = source;
          _target = target;
+         _state = state;
          _logger = logger;
       }
 
-      public void SetSyncCallbacks(
-         Func<
-            Entity,
-            SyncOptions,
-            CancellationToken,
-            Task<(bool Success, string? FailureMessage)>
-         > syncRecordFunc,
-         Func<Entity, CancellationToken, Task<Guid?>> findExistingFunc
-      )
+      public void SetEngine(ISyncEngine engine)
       {
-         _syncRecordFunc = syncRecordFunc;
-         _findExistingFunc = findExistingFunc;
-      }
-
-      public void ResetState()
-      {
-         _triedDependencies.Clear();
+         _engine = engine;
       }
 
       #region Error Handling (formerly ErrorService)
@@ -164,9 +143,9 @@ namespace dvmig.Core.Synchronization
 
          try
          {
-            if (_findExistingFunc != null)
+            if (_engine != null)
             {
-               var targetId = await _findExistingFunc(entity, ct);
+               var targetId = await _engine.FindExistingOnTargetAsync(entity, ct);
 
                if (targetId.HasValue && targetId.Value != entity.Id)
                {
@@ -238,14 +217,14 @@ namespace dvmig.Core.Synchronization
             SystemConstants.DataverseAttributes.StatusCode
          );
 
-         var (success, _) = _syncRecordFunc != null
-            ? await _syncRecordFunc(sourceEntity, options, ct)
-            : (false, "Sync record function missing");
+         var (success, _) = _engine != null
+            ? await _engine.SyncRecordAsync(sourceEntity, options, ct)
+            : (false, "Sync engine missing");
 
          if (success && (stateValue != null || statusValue != null))
          {
             try
-            {
+               {
                var stateOsv = ToOptionSetValue(stateValue);
                var statusOsv = ToOptionSetValue(statusValue);
 
@@ -402,7 +381,7 @@ namespace dvmig.Core.Synchronization
          var parentKey = $"{parent.LogicalName}:{parent.Id}";
          var depKey = $"{type}:{id}";
 
-         var tried = _triedDependencies.GetOrAdd(
+         var tried = _state.TriedDependencies.GetOrAdd(
             parentKey,
             _ => new HashSet<string>()
          );
@@ -432,9 +411,9 @@ namespace dvmig.Core.Synchronization
 
          var record = await _source.RetrieveAsync(type, id, null, ct);
 
-         if (record != null && _syncRecordFunc != null)
+         if (record != null && _engine != null)
          {
-            var (success, _) = await _syncRecordFunc(record, options, ct);
+            var (success, _) = await _engine.SyncRecordAsync(record, options, ct);
 
             if (success)
                return await RetrySyncAsync(sourceParent, options, ct);
@@ -526,10 +505,10 @@ namespace dvmig.Core.Synchronization
          CancellationToken ct
       )
       {
-         if (_syncRecordFunc == null)
+         if (_engine == null)
             return false;
 
-         var (success, _) = await _syncRecordFunc(entity, options, ct);
+         var (success, _) = await _engine.SyncRecordAsync(entity, options, ct);
 
          return success;
       }
