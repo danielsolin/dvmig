@@ -1,3 +1,4 @@
+using dvmig.Cli.Providers;
 using dvmig.Core.Interfaces;
 using dvmig.Core.Synchronization;
 using Spectre.Console;
@@ -35,7 +36,7 @@ namespace dvmig.Cli.Actions
          bool forceResync = false
       )
       {
-         var (source, target, engine, _, userResolver) =
+         var (source, target, engine, userResolver) =
             await SetupSyncEngineAsync();
 
          if (source == null || target == null || engine == null ||
@@ -72,7 +73,7 @@ namespace dvmig.Cli.Actions
          bool forceResync = false
       )
       {
-         var (source, target, engine, _, userResolver) =
+         var (source, target, engine, userResolver) =
             await SetupSyncEngineAsync();
 
          if (source == null || target == null || engine == null ||
@@ -218,9 +219,6 @@ namespace dvmig.Cli.Actions
                      var displayName = char.ToUpper(logicalName[0]) +
                         logicalName.Substring(1);
 
-                     int processed = 0;
-                     int failedCount = 0;
-
                      var sourceCountTask = _metadataService.GetRecordCountAsync(
                         source,
                         logicalName,
@@ -250,62 +248,23 @@ namespace dvmig.Cli.Actions
                         continue;
                      }
 
-                     processed = (int)Math.Min(totalCount, targetCount);
+                     var initialProcessed = (int)Math.Min(totalCount, targetCount);
 
                      var task = ctx.AddTask(
-                        GetDesc(
-                           processed,
-                           totalCount,
-                           0,
-                           0,
-                           maxThreads,
-                           actionTitle,
-                           displayName
-                        ),
+                        "Initializing...",
                         true,
                         totalCount
                      );
 
-                     task.Value = processed;
+                     task.Value = initialProcessed;
 
-                     var sw = System.Diagnostics.Stopwatch.StartNew();
-                     var lastUpdate = DateTime.MinValue;
-                     var progressLock = new object();
-
-                     var recordProgress = new Progress<bool>(
-                        success =>
-                        {
-                           var currentProcessed =
-                              Interlocked.Increment(ref processed);
-
-                           if (!success)
-                              Interlocked.Increment(ref failedCount);
-
-                           lock (progressLock)
-                           {
-                              var now = DateTime.Now;
-
-                              if (now - lastUpdate < TimeSpan.FromSeconds(1)
-                                    && currentProcessed < totalCount)
-                                 return;
-
-                              lastUpdate = now;
-                              task.Value = currentProcessed;
-
-                              var swElapsed = sw.Elapsed.TotalSeconds;
-                              var recsPerSec = currentProcessed / swElapsed;
-
-                              task.Description = GetDesc(
-                                 currentProcessed,
-                                 totalCount,
-                                 recsPerSec,
-                                 failedCount,
-                                 maxThreads,
-                                 actionTitle,
-                                 displayName
-                              );
-                           }
-                        }
+                     var progressProvider = new MigrationProgressProvider(
+                        task,
+                        maxThreads,
+                        actionTitle,
+                        displayName,
+                        totalCount,
+                        initialProcessed
                      );
 
                      var options = new SyncOptions
@@ -344,7 +303,7 @@ namespace dvmig.Cli.Actions
                            logicalName,
                            options,
                            null,
-                           recordProgress,
+                           progressProvider.GetProgressReporter(),
                            ct
                         );
                      }
@@ -360,24 +319,7 @@ namespace dvmig.Cli.Actions
                      finally
                      {
                         Logger.DetachProgress();
-
-                        var finalElapsed = sw.Elapsed.TotalSeconds;
-                        var finalRate = processed / (finalElapsed > 0
-                           ? finalElapsed
-                           : 1);
-
-                        task.Description = GetDesc(
-                           processed,
-                           totalCount,
-                           finalRate,
-                           failedCount,
-                           maxThreads,
-                           actionTitle,
-                           displayName
-                        );
-
-                        task.Value = totalCount;
-                        task.StopTask();
+                        progressProvider.FinalizeProgress();
                      }
                   }
                }
@@ -385,30 +327,6 @@ namespace dvmig.Cli.Actions
 
          var actionName = forceResync ? "Re-sync" : "Migration";
          CliUI.WriteSuccess($"{actionName} Finished!");
-      }
-
-      private static string GetDesc(
-         int p,
-         long t,
-         double r,
-         int f,
-         int maxThreads,
-         string? actionTitle,
-         string? displayName
-      )
-      {
-         var titleMarkup = $"{UiMarkup.BoldRed}{actionTitle} " +
-            $"{displayName}[/]";
-
-         var rateInfo = r > 0 ? $" - {r:F1} r/s" : "";
-         var desc = $"{titleMarkup} ({p}/{t}) " +
-            $"[[{UiMarkup.Green}{maxThreads}t{rateInfo}[/]]] ";
-
-         if (f > 0)
-            desc += $"{UiMarkup.Red}" +
-               $"({f} failed)[/]";
-
-         return desc;
       }
    }
 }
