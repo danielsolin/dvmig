@@ -1,5 +1,5 @@
-using dvmig.Core.Interfaces;
 using System.Collections.Concurrent;
+using dvmig.Core.Interfaces;
 using dvmig.Core.Shared;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Metadata;
@@ -160,7 +160,8 @@ namespace dvmig.Core.Synchronization
             targetEntity[attribute.Key] = value;
          }
 
-         targetEntity[SystemConstants.DataverseAttributes.ImportSequenceNumber] = 1;
+         targetEntity[SystemConstants.DataverseAttributes
+            .ImportSequenceNumber] = 1;
 
          return targetEntity;
       }
@@ -248,6 +249,7 @@ namespace dvmig.Core.Synchronization
          while (true)
          {
             var results = await provider.RetrieveMultipleAsync(query, ct);
+
             foreach (var entity in results.Entities)
                ids.Add(entity.Id);
 

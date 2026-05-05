@@ -1,8 +1,8 @@
-using dvmig.Core.Interfaces;
 using System.Collections.Concurrent;
+using dvmig.Core.Interfaces;
+using Microsoft.Xrm.Sdk.Messages;
 using Microsoft.Xrm.Sdk.Metadata;
 using Microsoft.Xrm.Sdk.Query;
-using Microsoft.Xrm.Sdk.Messages;
 using static dvmig.Core.Shared.SystemConstants;
 
 namespace dvmig.Core.Synchronization
@@ -15,6 +15,7 @@ namespace dvmig.Core.Synchronization
    {
       private readonly ILogger _logger;
       private readonly IDataverseProvider? _target;
+
       private readonly ConcurrentDictionary<string, EntityMetadata> _cache =
          new ConcurrentDictionary<string, EntityMetadata>();
 
@@ -74,6 +75,7 @@ namespace dvmig.Core.Synchronization
       )
       {
          var meta = await GetMetadataAsync(logicalName, ct);
+
          if (meta == null || meta.Attributes == null)
             return new ColumnSet(true);
 
@@ -134,7 +136,7 @@ namespace dvmig.Core.Synchronization
          var response = (RetrieveAllEntitiesResponse)await
             provider.ExecuteAsync(request, ct);
 
-         return response.EntityMetadata
+         var entities = response.EntityMetadata
             .Where(e =>
                e.IsIntersect == false &&
                e.IsValidForAdvancedFind == true &&
@@ -144,6 +146,8 @@ namespace dvmig.Core.Synchronization
                e.DisplayName?.UserLocalizedLabel?.Label ??
                e.LogicalName)
             .ToList();
+
+         return entities;
       }
 
       /// <inheritdoc />

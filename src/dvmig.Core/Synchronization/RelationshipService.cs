@@ -33,6 +33,7 @@ namespace dvmig.Core.Synchronization
       )
       {
          var request = CreateAssociateRequest(entity);
+
          if (request == null)
             throw new System.InvalidOperationException(
                "Invalid N:N relationship record."

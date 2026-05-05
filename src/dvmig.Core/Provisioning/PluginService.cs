@@ -42,9 +42,14 @@ namespace dvmig.Core.Provisioning
             if (!File.Exists(assemblyPath))
                assemblyPath = Path.Combine(
                   AppDomain.CurrentDomain.BaseDirectory,
-                  "..", "..", "..", "..",
+                  "..",
+                  "..",
+                  "..",
+                  "..",
                   SystemConstants.AppConstants.PluginName,
-                  "bin", "Debug", "netstandard2.0",
+                  "bin",
+                  "Debug",
+                  "netstandard2.0",
                   SystemConstants.AppConstants.PluginAssemblyName
                );
          }
@@ -77,7 +82,7 @@ namespace dvmig.Core.Provisioning
          assembly[SystemConstants.PluginRegistration.IsolationMode] =
             new OptionSetValue(2); // Sandbox
          assembly[SystemConstants.PluginRegistration.SourceType] =
-            new OptionSetValue(0);    // Database
+            new OptionSetValue(0); // Database
          assembly[SystemConstants.PluginRegistration.PublicKeyToken] =
             "397f674bbcd3d607";
          assembly[SystemConstants.PluginRegistration.Version] = "1.0.0.0";
@@ -126,7 +131,6 @@ namespace dvmig.Core.Provisioning
       /// </summary>
       /// <param name="target">The target Dataverse provider.</param>
       /// <param name="assemblyId">The ID of the deployed assembly.</param>
-      /// <param name="progress">An optional progress reporter.</param>
       /// <param name="ct">A cancellation token.</param>
       private async Task RegisterPluginStepAsync(
          IDataverseProvider target,
@@ -211,7 +215,6 @@ namespace dvmig.Core.Provisioning
       /// <param name="target">The target Dataverse provider.</param>
       /// <param name="typeId">The ID of the plugin type.</param>
       /// <param name="messageName">The name of the SDK message.</param>
-      /// <param name="progress">An optional progress reporter.</param>
       /// <param name="ct">A cancellation token.</param>
       private async Task RegisterStepForMessageAsync(
          IDataverseProvider target,
@@ -264,12 +267,12 @@ namespace dvmig.Core.Provisioning
                typeId
             );
          step[SystemConstants.PluginRegistration.Stage] =
-            new OptionSetValue(20);           // Pre-Operation
+            new OptionSetValue(20); // Pre-Operation
          step[SystemConstants.PluginRegistration.SupportedDeployment] =
             new OptionSetValue(0); // Server
          step[SystemConstants.PluginRegistration.Rank] = 1;
          step[SystemConstants.PluginRegistration.Mode] =
-            new OptionSetValue(0);             // Synchronous
+            new OptionSetValue(0); // Synchronous
          step[SystemConstants.PluginRegistration.EventHandler] =
             new EntityReference(
                SystemConstants.PluginRegistration.TypeEntity,
@@ -454,9 +457,7 @@ namespace dvmig.Core.Provisioning
             _logger.Information("Plugin assembly removed successfully.");
          }
          else
-         {
             _logger.Information("No plugin assembly found to remove.");
-         }
       }
    }
 }

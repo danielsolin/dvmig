@@ -46,14 +46,19 @@ namespace dvmig.Core.Interfaces
          Entity entity,
          SyncOptions options,
          CancellationToken ct = default,
-         Func<Entity, SyncOptions, CancellationToken,
-            Task<(bool Success, string? FailureMessage)>>?
-            syncRecordFunc = null,
-         Func<Entity, SyncOptions, CancellationToken,
-            Task<bool>>?
-            retryEntityFunc = null,
-         Func<Entity, CancellationToken, Task<Guid?>>?
-            findExistingFunc = null,
+         Func<
+            Entity,
+            SyncOptions,
+            CancellationToken,
+            Task<(bool Success, string? FailureMessage)>
+         >? syncRecordFunc = null,
+         Func<
+            Entity,
+            SyncOptions,
+            CancellationToken,
+            Task<bool>
+         >? retryEntityFunc = null,
+         Func<Entity, CancellationToken, Task<Guid?>>? findExistingFunc = null,
          ConcurrentDictionary<string, Guid>? idMappingCache = null,
          ConcurrentDictionary<string, HashSet<string>>?
             triedDependencies = null
@@ -90,14 +95,19 @@ namespace dvmig.Core.Interfaces
          Entity entity,
          SyncOptions options,
          CancellationToken ct = default,
-         Func<Entity, SyncOptions, CancellationToken,
-            Task<(bool Success, string? FailureMessage)>>?
-            syncRecordFunc = null,
-         Func<Entity, SyncOptions, CancellationToken,
-            Task<bool>>?
-            retryEntityFunc = null,
-         Func<Entity, CancellationToken, Task<Guid?>>?
-            findExistingFunc = null,
+         Func<
+            Entity,
+            SyncOptions,
+            CancellationToken,
+            Task<(bool Success, string? FailureMessage)>
+         >? syncRecordFunc = null,
+         Func<
+            Entity,
+            SyncOptions,
+            CancellationToken,
+            Task<bool>
+         >? retryEntityFunc = null,
+         Func<Entity, CancellationToken, Task<Guid?>>? findExistingFunc = null,
          ConcurrentDictionary<string, Guid>? idMappingCache = null
       );
    }

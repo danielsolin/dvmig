@@ -36,7 +36,11 @@ namespace dvmig.Tests
                SystemConstants.SourceData.EntityLogicalName,
                It.IsAny<CancellationToken>()
             )
-         ).ReturnsAsync((EntityMetadata?)default).ReturnsAsync(entityMetadata);
+         ).ReturnsAsync(
+            (EntityMetadata?)default
+         ).ReturnsAsync(
+            entityMetadata
+         );
 
          // Mock dm_migrationfailure
          _targetMock.SetupSequence(
@@ -44,13 +48,19 @@ namespace dvmig.Tests
                SystemConstants.MigrationFailure.EntityLogicalName,
                It.IsAny<CancellationToken>()
             )
-         ).ReturnsAsync((EntityMetadata?)default).ReturnsAsync(entityMetadata);
+         ).ReturnsAsync(
+            (EntityMetadata?)default
+         ).ReturnsAsync(
+            entityMetadata
+         );
 
          await _schemaService.CreateSchemaAsync(_targetMock.Object, default);
 
          _targetMock.Verify(
             t => t.ExecuteAsync(
-               It.Is<OrganizationRequest>(r => r.RequestName == "CreateEntity"),
+               It.Is<OrganizationRequest>(
+                  r => r.RequestName == "CreateEntity"
+               ),
                It.IsAny<CancellationToken>(),
                It.IsAny<Guid?>()
             ),
@@ -79,7 +89,9 @@ namespace dvmig.Tests
 
          _targetMock.Verify(
             t => t.ExecuteAsync(
-               It.Is<OrganizationRequest>(r => r.RequestName == "CreateEntity"),
+               It.Is<OrganizationRequest>(
+                  r => r.RequestName == "CreateEntity"
+               ),
                It.IsAny<CancellationToken>(),
                It.IsAny<Guid?>()
             ),

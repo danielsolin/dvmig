@@ -1,10 +1,10 @@
+using System.ServiceModel;
 using dvmig.Core.Interfaces;
 using dvmig.Core.Shared;
 using Microsoft.Crm.Sdk.Messages;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Messages;
 using Microsoft.Xrm.Sdk.Metadata;
-using System.ServiceModel;
 
 namespace dvmig.Core.Provisioning
 {
@@ -65,7 +65,8 @@ namespace dvmig.Core.Provisioning
 
          if (existingMeta == null)
          {
-            _logger.Information("Creating '{Entity}' entity...",
+            _logger.Information(
+               "Creating '{Entity}' entity...",
                entityName
             );
 
@@ -76,11 +77,11 @@ namespace dvmig.Core.Provisioning
                   SchemaName = entityName,
                   LogicalName = entityName,
                   DisplayName = new Label(
-                     "DVMig Source Data", 
+                     "DVMig Source Data",
                      LanguageCode
                   ),
                   DisplayCollectionName = new Label(
-                     "DVMig Source Data", 
+                     "DVMig Source Data",
                      LanguageCode
                   ),
                   OwnershipType = OwnershipTypes.UserOwned,
@@ -165,7 +166,8 @@ namespace dvmig.Core.Provisioning
 
          if (existingMeta == null)
          {
-            _logger.Information("Creating '{Entity}' entity...",
+            _logger.Information(
+               "Creating '{Entity}' entity...",
                entityName
             );
 
@@ -256,11 +258,10 @@ namespace dvmig.Core.Provisioning
       {
          if (entityMeta.Attributes != null &&
              entityMeta.Attributes.Any(a => a.LogicalName == schemaName))
-         {
             return;
-         }
 
-         _logger.Information("Creating attribute {Attr} on {Entity}...",
+         _logger.Information(
+            "Creating attribute {Attr} on {Entity}...",
             schemaName,
             entityLogicalName
          );
@@ -344,7 +345,8 @@ namespace dvmig.Core.Provisioning
          CancellationToken ct
       )
       {
-         _logger.Information("Checking for '{Entity}' entity...",
+         _logger.Information(
+            "Checking for '{Entity}' entity...",
             logicalName
          );
 
@@ -355,7 +357,8 @@ namespace dvmig.Core.Provisioning
 
          if (existingMeta != null)
          {
-            _logger.Information("Deleting '{Entity}' entity...",
+            _logger.Information(
+               "Deleting '{Entity}' entity...",
                logicalName
             );
 
@@ -372,7 +375,8 @@ namespace dvmig.Core.Provisioning
                ex.Message.Contains("referenced by")
             )
             {
-               _logger.Warning("Deletion of {Entity} failed due to dependencies.",
+               _logger.Warning(
+                  "Deletion of {Entity} failed due to dependencies.",
                   logicalName
                );
 
@@ -382,7 +386,7 @@ namespace dvmig.Core.Provisioning
                   ObjectId = existingMeta.MetadataId ?? Guid.Empty
                };
 
-               var depRes = await target.ExecuteAsync(depReq, ct) 
+               var depRes = await target.ExecuteAsync(depReq, ct)
                   as RetrieveDependenciesForDeleteResponse;
 
                var blockers = new List<string>();
@@ -397,28 +401,26 @@ namespace dvmig.Core.Provisioning
                         "dependentcomponentobjectid");
 
                      string? depName = await TryGetDependencyNameAsync(
-                        target, 
-                        depType ?? 0, 
-                        depId, 
+                        target,
+                        depType ?? 0,
+                        depId,
                         ct
                      );
 
                      if (!string.IsNullOrEmpty(depName))
                         blockers.Add($"{depName} (Type {depType})");
                      else
-                     {
                         blockers.Add(
                            $"Unknown Component {depId} (Type {depType})"
                         );
-                     }
                   }
                }
 
-               var blockerList = blockers.Count > 0 
-                  ? string.Join(", ", blockers) 
+               var blockerList = blockers.Count > 0
+                  ? string.Join(", ", blockers)
                   : "unidentified components";
 
-               var errorMsg = 
+               var errorMsg =
                   $"Cannot delete entity '{logicalName}' because it is " +
                   $"referenced by: {blockerList}. Please manually remove " +
                   "these references (e.g., from Model-driven Apps, " +
@@ -430,11 +432,10 @@ namespace dvmig.Core.Provisioning
             }
          }
          else
-         {
-            _logger.Information("'{Entity}' entity not found.",
+            _logger.Information(
+               "'{Entity}' entity not found.",
                logicalName
             );
-         }
       }
 
       private async Task<string?> TryGetDependencyNameAsync(

@@ -84,6 +84,7 @@ namespace dvmig.Core.Synchronization
          {
             ColumnSet = columns
          };
+
          syncQuery.PageInfo = new PagingInfo
          {
             Count = 500,
@@ -164,14 +165,15 @@ namespace dvmig.Core.Synchronization
             entitiesToSync,
             parallelOptions,
             async (entity, token) =>
+            {
                await _syncRecordService.SyncRecordAndReportAsync(
                   entity,
                   options,
                   recordProgress,
                   token
-               )
+               );
+            }
          );
       }
    }
 }
-

@@ -1,8 +1,8 @@
+using System.ServiceModel;
 using dvmig.Core.Interfaces;
 using dvmig.Core.Shared;
 using Microsoft.Xrm.Sdk.Messages;
 using Microsoft.Xrm.Sdk.Metadata;
-using System.ServiceModel;
 
 namespace dvmig.Core.Providers
 {

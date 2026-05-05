@@ -170,6 +170,7 @@ namespace dvmig.Core.Shared
             );
 
             var formatted = string.Format(formattedTemplate, propertyValues);
+
             _progress.Report(formatted);
          }
          catch

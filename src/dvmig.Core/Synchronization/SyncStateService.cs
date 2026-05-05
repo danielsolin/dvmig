@@ -1,7 +1,4 @@
-using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
 using dvmig.Core.Interfaces;
 
 namespace dvmig.Core.Synchronization
@@ -20,11 +17,15 @@ namespace dvmig.Core.Synchronization
 
       /// <inheritdoc />
       public ConcurrentDictionary<string, HashSet<string>> TriedDependencies
-         { get; } = new ConcurrentDictionary<string, HashSet<string>>();
+      {
+         get;
+      } = new ConcurrentDictionary<string, HashSet<string>>();
 
       /// <inheritdoc />
       public ConcurrentDictionary<string, Guid> IdMappingCache
-         { get; } = new ConcurrentDictionary<string, Guid>();
+      {
+         get;
+      } = new ConcurrentDictionary<string, Guid>();
 
       /// <inheritdoc />
       public void InitializeSyncedIds(IEnumerable<Guid> ids)

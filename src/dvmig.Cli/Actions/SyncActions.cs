@@ -1,6 +1,8 @@
 using dvmig.Core.Interfaces;
 using dvmig.Core.Synchronization;
+
 using Spectre.Console;
+
 using static dvmig.Core.Shared.SystemConstants;
 
 namespace dvmig.Cli.Actions
@@ -17,14 +19,15 @@ namespace dvmig.Cli.Actions
          IValidationService validator,
          ISchemaService schemaService,
          ILogger logger
-      ) : base(
-         connectionManager,
-         pluginService,
-         sourceDataService,
-         validator,
-         schemaService,
-         logger
       )
+         : base(
+            connectionManager,
+            pluginService,
+            sourceDataService,
+            validator,
+            schemaService,
+            logger
+         )
       {
          _metadataService = metadataService;
       }
@@ -244,8 +247,11 @@ namespace dvmig.Cli.Actions
                      int processed = 0;
                      int failedCount = 0;
 
-                     var sourceCountTask = _metadataService
-                        .GetRecordCountAsync(source, logicalName, ct);
+                     var sourceCountTask = _metadataService.GetRecordCountAsync(
+                        source,
+                        logicalName,
+                        ct
+                     );
 
                      var targetCountTask = forceResync
                         ? Task.FromResult(0L)
@@ -295,7 +301,8 @@ namespace dvmig.Cli.Actions
                      var recordProgress = new Progress<bool>(
                         success =>
                         {
-                           var currentProcessed = Interlocked.Increment(ref processed);
+                           var currentProcessed =
+                              Interlocked.Increment(ref processed);
 
                            if (!success)
                               Interlocked.Increment(ref failedCount);
@@ -313,8 +320,7 @@ namespace dvmig.Cli.Actions
                               var swElapsed = sw.Elapsed.TotalSeconds;
                               var recsPerSec = currentProcessed / swElapsed;
 
-                              task.Description = GetDesc
-                              (
+                              task.Description = GetDesc(
                                  currentProcessed,
                                  totalCount,
                                  recsPerSec,
@@ -378,10 +384,12 @@ namespace dvmig.Cli.Actions
                      finally
                      {
                         Logger.DetachProgress();
-                        
+
                         var finalElapsed = sw.Elapsed.TotalSeconds;
-                        var finalRate = processed / (finalElapsed > 0 ? finalElapsed : 1);
-                        
+                        var finalRate = processed / (finalElapsed > 0
+                           ? finalElapsed
+                           : 1);
+
                         task.Description = GetDesc(
                            processed,
                            totalCount,
@@ -391,7 +399,7 @@ namespace dvmig.Cli.Actions
                            actionTitle,
                            displayName
                         );
-                        
+
                         task.Value = totalCount;
                         task.StopTask();
                      }
@@ -400,7 +408,15 @@ namespace dvmig.Cli.Actions
             );
       }
 
-      private static string GetDesc(int p, long t, double r, int f, int maxThreads, string? actionTitle, string? displayName)
+      private static string GetDesc(
+         int p,
+         long t,
+         double r,
+         int f,
+         int maxThreads,
+         string? actionTitle,
+         string? displayName
+      )
       {
          var titleMarkup = $"{UiMarkup.BoldRed}{actionTitle} " +
             $"{displayName}[/]";
@@ -409,11 +425,9 @@ namespace dvmig.Cli.Actions
          var desc = $"{titleMarkup} ({p}/{t}) " +
             $"[[{UiMarkup.Green}{maxThreads}t{rateInfo}[/]]] ";
 
-         if(f > 0)
-         {
+         if (f > 0)
             desc += $"{UiMarkup.Red}" +
                $"({f} failed)[/]";
-         }
 
          return desc;
       }

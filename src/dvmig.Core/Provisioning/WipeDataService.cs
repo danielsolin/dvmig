@@ -88,6 +88,7 @@ namespace dvmig.Core.Provisioning
             };
 
             var results = await provider.RetrieveMultipleAsync(query, ct);
+
             if (results.Entities.Count == 0)
                break;
 
@@ -113,6 +114,7 @@ namespace dvmig.Core.Provisioning
                   lock (lockObject)
                   {
                      deletedForThisEntity += chunk.Count;
+
                      progress?.Report(
                         Math.Max(
                            0,

@@ -164,6 +164,7 @@ namespace dvmig.Core.Synchronization
          }
 
          var recordKey = GetRecordKey(entity);
+
          if (!_syncStateService.TryEnterRecordScope(
             recordKey,
             MaxRecursionDepth
@@ -185,6 +186,7 @@ namespace dvmig.Core.Synchronization
          catch (Exception ex)
          {
             _logger.Error(ex, "Failed to sync {Key}", recordKey);
+
             _logger.Information(
                $"FAILED {entity.LogicalName}:{entity.Id} - " +
                $"{ex.Message}"
@@ -226,29 +228,41 @@ namespace dvmig.Core.Synchronization
             );
 
             if (sourceCreator != null)
-               creatorId = (await _userResolver.MapUserAsync(sourceCreator, ct))?.Id;
+            {
+               creatorId = (await _userResolver.MapUserAsync(
+                  sourceCreator,
+                  ct
+               ))?.Id;
+            }
 
             var sourceModifier = entity.GetAttributeValue<EntityReference>(
                SystemConstants.DataverseAttributes.ModifiedBy
             );
 
             if (sourceModifier != null)
-               modifiedById = (await _userResolver.MapUserAsync(sourceModifier, ct))?.Id;
+            {
+               modifiedById = (await _userResolver.MapUserAsync(
+                  sourceModifier,
+                  ct
+               ))?.Id;
+            }
 
             if (creatorId == null)
                creatorId = modifiedById;
-            
+
             if (modifiedById == null)
                modifiedById = creatorId;
          }
 
          if (metadata.IsIntersect == true)
+         {
             return await SyncIntersectEntityAsync(
                entity,
                options,
                creatorId,
                ct
             );
+         }
 
          var prepared = await _entityService.PrepareEntityForTargetAsync(
             entity,
@@ -271,11 +285,13 @@ namespace dvmig.Core.Synchronization
          );
 
          if (!success)
+         {
             return (
                false,
                failureMessage ??
                   $"Failed to sync {entity.LogicalName}:{entity.Id}."
             );
+         }
 
          await CompleteSuccessfulSyncAsync(
             sourceEntity: entity,
@@ -347,6 +363,7 @@ namespace dvmig.Core.Synchronization
 
          _syncStateService.MarkAsSynced(sourceEntity.Id);
          _syncStateService.IdMappingCache[recordKey] = targetEntity.Id;
+
          _logger.Information(
             $"Synced {sourceEntity.LogicalName}:{sourceEntity.Id}"
          );
@@ -357,11 +374,11 @@ namespace dvmig.Core.Synchronization
          await _retryPolicy.ExecuteAsync(
             async (ctx) => await _sourceDataService
                .DeleteSourceDataRecordAsync(
-               _target,
-               sourceEntity.LogicalName,
-               targetEntity.Id,
-               ct
-            ),
+                  _target,
+                  sourceEntity.LogicalName,
+                  targetEntity.Id,
+                  ct
+               ),
             CreatePollyContext()
          );
       }
@@ -397,15 +414,46 @@ namespace dvmig.Core.Synchronization
                preparedEntity,
                options,
                ct,
-               updateFunc: (e, token) => _target.UpdateAsync(e, token, modifiedById),
+               updateFunc: (e, token) => _target.UpdateAsync(
+                  e,
+                  token,
+                  modifiedById
+               ),
                statusTransitionFunc: (e, opt, token) =>
-                  HandleStatusTransitionAsync(sourceEntity, opt, token, modifiedById),
+                  HandleStatusTransitionAsync(
+                     sourceEntity,
+                     opt,
+                     token,
+                     modifiedById
+                  ),
                resolveMissingDependencyFunc: (e, ent, opt, token) =>
-                  ResolveMissingDependencyAsync(e, sourceEntity, opt, creatorId, modifiedById, token),
+                  ResolveMissingDependencyAsync(
+                     e,
+                     sourceEntity,
+                     opt,
+                     creatorId,
+                     modifiedById,
+                     token
+                  ),
                resolveSqlDependencyFunc: (msg, ent, opt, token) =>
-                  ResolveSqlDependencyAsync(msg, sourceEntity, opt, creatorId, modifiedById, token),
+                  ResolveSqlDependencyAsync(
+                     msg,
+                     sourceEntity,
+                     opt,
+                     creatorId,
+                     modifiedById,
+                     token
+                  ),
                stripAttributeFunc: (e, ent, opt, token) =>
-                  StripAttributeAndRetryAsync(e, ent, sourceEntity, opt, creatorId, modifiedById, token),
+                  StripAttributeAndRetryAsync(
+                     e,
+                     ent,
+                     sourceEntity,
+                     opt,
+                     creatorId,
+                     modifiedById,
+                     token
+                  ),
                findExistingFunc: FindExistingOnTargetAsync
             );
 
@@ -533,7 +581,11 @@ namespace dvmig.Core.Synchronization
          try
          {
             await _retryPolicy.ExecuteAsync(
-               async (ctx) => await _target.CreateAsync(preparedEntity, ct, creatorId),
+               async (ctx) => await _target.CreateAsync(
+                  preparedEntity,
+                  ct,
+                  creatorId
+               ),
                CreatePollyContext()
             );
 
@@ -588,6 +640,7 @@ namespace dvmig.Core.Synchronization
             entity.LogicalName,
             ct
          );
+
          if (metadata == null)
             return false;
 
@@ -642,6 +695,7 @@ namespace dvmig.Core.Synchronization
          if (match.Success)
          {
             var attrName = match.Groups[1].Value;
+
             if (preparedEntity.Attributes.Contains(attrName))
             {
                _logger.Warning(
@@ -676,6 +730,7 @@ namespace dvmig.Core.Synchronization
       #endregion
 
       #region Retry And Failure Logging
+
       private Context CreatePollyContext()
       {
          var context = new Context();
@@ -721,6 +776,7 @@ namespace dvmig.Core.Synchronization
             );
          }
       }
+
       #endregion
    }
 }

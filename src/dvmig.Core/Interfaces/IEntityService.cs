@@ -1,7 +1,7 @@
-using Microsoft.Xrm.Sdk;
-using Microsoft.Xrm.Sdk.Metadata;
 using System.Collections.Concurrent;
 using dvmig.Core.Synchronization;
+using Microsoft.Xrm.Sdk;
+using Microsoft.Xrm.Sdk.Metadata;
 
 namespace dvmig.Core.Interfaces
 {
@@ -19,8 +19,12 @@ namespace dvmig.Core.Interfaces
       /// <param name="sourceEntity">The original entity from the source.</param>
       /// <param name="metadata">Metadata for the entity type.</param>
       /// <param name="options">Synchronization options.</param>
-      /// <param name="userResolver">The user resolver to use for mapping.</param>
-      /// <param name="idMappingCache">A cache of already mapped record IDs.</param>
+      /// <param name="userResolver">
+      /// The user resolver to use for mapping.
+      /// </param>
+      /// <param name="idMappingCache">
+      /// A cache of already mapped record IDs.
+      /// </param>
       /// <param name="ct">A cancellation token.</param>
       /// <returns>A prepared entity ready for the target environment.</returns>
       Task<Entity> PrepareEntityForTargetAsync(
@@ -57,7 +61,9 @@ namespace dvmig.Core.Interfaces
       /// Checks if an attribute is forbidden for create/update operations.
       /// </summary>
       /// <param name="attributeName">The logical name of the attribute.</param>
-      /// <returns>True if the attribute is forbidden; otherwise, false.</returns>
+      /// <returns>
+      /// True if the attribute is forbidden; otherwise, false.
+      /// </returns>
       bool IsForbiddenAttribute(string attributeName);
 
       /// <summary>

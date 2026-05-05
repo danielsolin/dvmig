@@ -2,8 +2,11 @@ using dvmig.Core.Interfaces;
 using dvmig.Core.Providers;
 using dvmig.Core.Settings;
 using dvmig.Core.Shared;
+
 using Microsoft.Crm.Sdk.Messages;
+
 using Spectre.Console;
+
 using static dvmig.Core.Shared.SystemConstants;
 
 namespace dvmig.Cli
@@ -115,8 +118,9 @@ namespace dvmig.Cli
 
             if (connStr != storedConn)
             {
-               var savePrompt = $"Save this {label} connection string " +
-                                "for future use?";
+               var savePrompt =
+                  $"Save this {label} connection string " +
+                  "for future use?";
 
                if (AnsiConsole.Confirm(savePrompt, true))
                {

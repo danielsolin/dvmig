@@ -42,6 +42,7 @@ namespace dvmig.Core.Synchronization
             );
 
             var failureName = $"{entity.LogicalName}:{entity.Id}";
+
             failure[SystemConstants.MigrationFailure.Name] =
                failureName.Length <= 100
                   ? failureName
@@ -136,22 +137,26 @@ namespace dvmig.Core.Synchronization
 
          var result = await target.RetrieveMultipleAsync(query, ct);
 
-         return result.Entities.Select(e => new MigrationFailureRecord
-         {
-            Id = e.Id,
-            EntityLogicalName = e.GetAttributeValue<string>(
-               SystemConstants.MigrationFailure.EntityLogicalNameAttr
-            ) ?? SystemConstants.MigrationFailure.NotAvailable,
-            SourceId = e.GetAttributeValue<string>(
-               SystemConstants.MigrationFailure.SourceId
-            ) ?? SystemConstants.MigrationFailure.NotAvailable,
-            ErrorMessage = e.GetAttributeValue<string>(
-               SystemConstants.MigrationFailure.ErrorMessage
-            ) ?? SystemConstants.MigrationFailure.NotAvailable,
-            TimestampUtc = e.GetAttributeValue<DateTime>(
-               SystemConstants.MigrationFailure.Timestamp
-            )
-         }).ToList();
+         var records = result.Entities
+            .Select(e => new MigrationFailureRecord
+            {
+               Id = e.Id,
+               EntityLogicalName = e.GetAttributeValue<string>(
+                  SystemConstants.MigrationFailure.EntityLogicalNameAttr
+               ) ?? SystemConstants.MigrationFailure.NotAvailable,
+               SourceId = e.GetAttributeValue<string>(
+                  SystemConstants.MigrationFailure.SourceId
+               ) ?? SystemConstants.MigrationFailure.NotAvailable,
+               ErrorMessage = e.GetAttributeValue<string>(
+                  SystemConstants.MigrationFailure.ErrorMessage
+               ) ?? SystemConstants.MigrationFailure.NotAvailable,
+               TimestampUtc = e.GetAttributeValue<DateTime>(
+                  SystemConstants.MigrationFailure.Timestamp
+               )
+            })
+            .ToList();
+
+         return records;
       }
 
       /// <inheritdoc />

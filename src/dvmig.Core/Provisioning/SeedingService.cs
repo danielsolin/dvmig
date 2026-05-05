@@ -1,7 +1,6 @@
 using Bogus;
 using dvmig.Core.Interfaces;
 using Microsoft.Xrm.Sdk;
-using Microsoft.Xrm.Sdk.Query;
 using static dvmig.Core.Shared.SystemConstants;
 
 namespace dvmig.Core.Provisioning
@@ -157,4 +156,3 @@ namespace dvmig.Core.Provisioning
       }
    }
 }
-

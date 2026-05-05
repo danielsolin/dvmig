@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -203,7 +202,7 @@ namespace dvmig.Core.Shared
                50
             };
 
-         public static readonly System.Collections.Generic.IReadOnlyList<string>
+         public static readonly IReadOnlyList<string>
             RecommendedEntities =
                new[]
                {

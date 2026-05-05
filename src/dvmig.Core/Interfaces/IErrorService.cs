@@ -1,5 +1,5 @@
-using Microsoft.Xrm.Sdk;
 using dvmig.Core.Synchronization;
+using Microsoft.Xrm.Sdk;
 
 namespace dvmig.Core.Interfaces
 {
@@ -41,21 +41,42 @@ namespace dvmig.Core.Interfaces
          SyncOptions options,
          CancellationToken ct = default,
          Func<Entity, CancellationToken, Task>? updateFunc = null,
-         Func<Entity, SyncOptions, CancellationToken, Task<bool>>?
-            statusTransitionFunc = null,
-         Func<Exception, Entity, SyncOptions, CancellationToken,
-            Task<bool>>? resolveMissingDependencyFunc = null,
-         Func<string, Entity, SyncOptions, CancellationToken,
-            Task<bool>>? resolveSqlDependencyFunc = null,
-         Func<Exception, Entity, SyncOptions, CancellationToken,
-            Task<bool>>? stripAttributeFunc = null,
+         Func<
+            Entity,
+            SyncOptions,
+            CancellationToken,
+            Task<bool>
+         >? statusTransitionFunc = null,
+         Func<
+            Exception,
+            Entity,
+            SyncOptions,
+            CancellationToken,
+            Task<bool>
+         >? resolveMissingDependencyFunc = null,
+         Func<
+            string,
+            Entity,
+            SyncOptions,
+            CancellationToken,
+            Task<bool>
+         >? resolveSqlDependencyFunc = null,
+         Func<
+            Exception,
+            Entity,
+            SyncOptions,
+            CancellationToken,
+            Task<bool>
+         >? stripAttributeFunc = null,
          Func<Entity, CancellationToken, Task<Guid?>>? findExistingFunc = null
       );
 
       /// <summary>
       /// Formats a standardized failure message for logging.
       /// </summary>
-      /// <param name="context">The operation context where the error occurred.</param>
+      /// <param name="context">
+      /// The operation context where the error occurred.
+      /// </param>
       /// <param name="ex">The exception to format.</param>
       /// <returns>A formatted error string.</returns>
       string FormatFailureMessage(string context, Exception ex);

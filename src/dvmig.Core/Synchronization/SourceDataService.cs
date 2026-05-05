@@ -86,19 +86,17 @@ namespace dvmig.Core.Synchronization
                SystemConstants.SourceData.EntityLogicalNameAttr;
 
             var fetchXml = $@"
-                    <fetch version='1.0' output-format='xml-platform' 
-                           mapping='logical' distinct='false' count='1'>
-                      <entity name='{entityName}'>
-                        <attribute name='{primaryId}' />
-                        <filter type='and'>
-                          <condition attribute='{sourceEntityId}' 
-                            operator='eq' value='{entityId}' />
-                          <condition attribute='{logicalNameAttr}' 
-                            operator='eq' 
-                            value='{logicalName.ToLowerInvariant()}' />
-                        </filter>
-                      </entity>
-                    </fetch>";
+<fetch version='1.0' output-format='xml-platform' mapping='logical' 
+       distinct='false' count='1'>
+  <entity name='{entityName}'>
+    <attribute name='{primaryId}' />
+    <filter type='and'>
+      <condition attribute='{sourceEntityId}' operator='eq' value='{entityId}' />
+      <condition attribute='{logicalNameAttr}' operator='eq' 
+                 value='{logicalName.ToLowerInvariant()}' />
+    </filter>
+  </entity>
+</fetch>";
 
             var result = await target.RetrieveMultipleAsync(
                new FetchExpression(fetchXml),

@@ -1,9 +1,11 @@
 using dvmig.Core.Interfaces;
 using dvmig.Core.Provisioning;
 using dvmig.Core.Shared;
+
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Metadata;
 using Microsoft.Xrm.Sdk.Query;
+
 using Moq;
 
 namespace dvmig.Tests
@@ -28,7 +30,8 @@ namespace dvmig.Tests
                SystemConstants.MigrationFailure.EntityLogicalName,
                It.IsAny<CancellationToken>()
             )
-         ).ReturnsAsync((EntityMetadata?)null);
+         )
+            .ReturnsAsync((EntityMetadata?)null);
 
          var result = await _service.ValidateTargetEnvironmentAsync(
             _targetMock.Object
@@ -46,14 +49,16 @@ namespace dvmig.Tests
                SystemConstants.MigrationFailure.EntityLogicalName,
                It.IsAny<CancellationToken>()
             )
-         ).ReturnsAsync(new EntityMetadata());
+         )
+            .ReturnsAsync(new EntityMetadata());
 
          _targetMock.Setup(
             t => t.GetEntityMetadataAsync(
                SystemConstants.SourceData.EntityLogicalName,
                It.IsAny<CancellationToken>()
             )
-         ).ReturnsAsync((EntityMetadata?)null);
+         )
+            .ReturnsAsync((EntityMetadata?)null);
 
          var result = await _service.ValidateTargetEnvironmentAsync(
             _targetMock.Object
@@ -71,17 +76,19 @@ namespace dvmig.Tests
                It.IsAny<string>(),
                It.IsAny<CancellationToken>()
             )
-         ).ReturnsAsync(new EntityMetadata());
+         )
+            .ReturnsAsync(new EntityMetadata());
 
          _targetMock.Setup(
             t => t.RetrieveMultipleAsync(
                It.Is<QueryByAttribute>(
-                  q => q.EntityName == 
+                  q => q.EntityName ==
                      SystemConstants.PluginRegistration.AssemblyEntity
                ),
                It.IsAny<CancellationToken>()
             )
-         ).ReturnsAsync(new EntityCollection());
+         )
+            .ReturnsAsync(new EntityCollection());
 
          var result = await _service.ValidateTargetEnvironmentAsync(
             _targetMock.Object
@@ -99,30 +106,33 @@ namespace dvmig.Tests
                It.IsAny<string>(),
                It.IsAny<CancellationToken>()
             )
-         ).ReturnsAsync(new EntityMetadata());
+         )
+            .ReturnsAsync(new EntityMetadata());
 
          _targetMock.Setup(
             t => t.RetrieveMultipleAsync(
                It.Is<QueryByAttribute>(
-                  q => q.EntityName == 
+                  q => q.EntityName ==
                      SystemConstants.PluginRegistration.AssemblyEntity
                ),
                It.IsAny<CancellationToken>()
             )
-         ).ReturnsAsync(new EntityCollection
-         {
-            Entities = { new Entity("pluginassembly") }
-         });
+         )
+            .ReturnsAsync(new EntityCollection
+            {
+               Entities = { new Entity("pluginassembly") }
+            });
 
          _targetMock.Setup(
             t => t.RetrieveMultipleAsync(
                It.Is<QueryByAttribute>(
-                  q => q.EntityName == 
+                  q => q.EntityName ==
                      SystemConstants.PluginRegistration.TypeEntity
                ),
                It.IsAny<CancellationToken>()
             )
-         ).ReturnsAsync(new EntityCollection());
+         )
+            .ReturnsAsync(new EntityCollection());
 
          var result = await _service.ValidateTargetEnvironmentAsync(
             _targetMock.Object
@@ -140,43 +150,53 @@ namespace dvmig.Tests
                It.IsAny<string>(),
                It.IsAny<CancellationToken>()
             )
-         ).ReturnsAsync(new EntityMetadata());
+         )
+            .ReturnsAsync(new EntityMetadata());
 
          _targetMock.Setup(
             t => t.RetrieveMultipleAsync(
                It.Is<QueryByAttribute>(
-                  q => q.EntityName == 
+                  q => q.EntityName ==
                      SystemConstants.PluginRegistration.AssemblyEntity
                ),
                It.IsAny<CancellationToken>()
             )
-         ).ReturnsAsync(new EntityCollection
-         {
-            Entities = { new Entity("pluginassembly") }
-         });
+         )
+            .ReturnsAsync(new EntityCollection
+            {
+               Entities = { new Entity("pluginassembly") }
+            });
 
          _targetMock.Setup(
             t => t.RetrieveMultipleAsync(
                It.Is<QueryByAttribute>(
-                  q => q.EntityName == 
+                  q => q.EntityName ==
                      SystemConstants.PluginRegistration.TypeEntity
                ),
                It.IsAny<CancellationToken>()
             )
-         ).ReturnsAsync(new EntityCollection
-         {
-            Entities = { new Entity("plugintype") { Id = Guid.NewGuid() } }
-         });
+         )
+            .ReturnsAsync(new EntityCollection
+            {
+               Entities =
+               {
+                  new Entity("plugintype")
+                  {
+                     Id = Guid.NewGuid()
+                  }
+               }
+            });
 
          _targetMock.Setup(
             t => t.RetrieveMultipleAsync(
                It.Is<QueryByAttribute>(
-                  q => q.EntityName == 
+                  q => q.EntityName ==
                      SystemConstants.PluginRegistration.StepEntity
                ),
                It.IsAny<CancellationToken>()
             )
-         ).ReturnsAsync(new EntityCollection());
+         )
+            .ReturnsAsync(new EntityCollection());
 
          var result = await _service.ValidateTargetEnvironmentAsync(
             _targetMock.Object
@@ -194,52 +214,67 @@ namespace dvmig.Tests
                It.IsAny<string>(),
                It.IsAny<CancellationToken>()
             )
-         ).ReturnsAsync(new EntityMetadata());
+         )
+            .ReturnsAsync(new EntityMetadata());
 
          _targetMock.Setup(
             t => t.RetrieveMultipleAsync(
                It.Is<QueryByAttribute>(
-                  q => q.EntityName == 
+                  q => q.EntityName ==
                      SystemConstants.PluginRegistration.AssemblyEntity
                ),
                It.IsAny<CancellationToken>()
             )
-         ).ReturnsAsync(new EntityCollection
-         {
-            Entities = { new Entity("pluginassembly") }
-         });
+         )
+            .ReturnsAsync(new EntityCollection
+            {
+               Entities = { new Entity("pluginassembly") }
+            });
 
          var typeId = Guid.NewGuid();
          _targetMock.Setup(
             t => t.RetrieveMultipleAsync(
                It.Is<QueryByAttribute>(
-                  q => q.EntityName == 
+                  q => q.EntityName ==
                      SystemConstants.PluginRegistration.TypeEntity
                ),
                It.IsAny<CancellationToken>()
             )
-         ).ReturnsAsync(new EntityCollection
-         {
-            Entities = { new Entity("plugintype") { Id = typeId } }
-         });
+         )
+            .ReturnsAsync(new EntityCollection
+            {
+               Entities =
+               {
+                  new Entity("plugintype")
+                  {
+                     Id = typeId
+                  }
+               }
+            });
 
          var step1 = new Entity(SystemConstants.PluginRegistration.StepEntity);
          step1[SystemConstants.PluginRegistration.MessageName] = "Create";
+
          var step2 = new Entity(SystemConstants.PluginRegistration.StepEntity);
          step2[SystemConstants.PluginRegistration.MessageName] = "Update";
 
          _targetMock.Setup(
             t => t.RetrieveMultipleAsync(
                It.Is<QueryByAttribute>(
-                  q => q.EntityName == 
+                  q => q.EntityName ==
                      SystemConstants.PluginRegistration.StepEntity
                ),
                It.IsAny<CancellationToken>()
             )
-         ).ReturnsAsync(new EntityCollection
-         {
-            Entities = { step1, step2 }
-         });
+         )
+            .ReturnsAsync(new EntityCollection
+            {
+               Entities =
+               {
+                  step1,
+                  step2
+               }
+            });
 
          var result = await _service.ValidateTargetEnvironmentAsync(
             _targetMock.Object

@@ -2,7 +2,6 @@ using dvmig.Core.Interfaces;
 using dvmig.Core.Provisioning;
 using dvmig.Core.Shared;
 using Microsoft.Xrm.Sdk;
-using Microsoft.Xrm.Sdk.Query;
 using Moq;
 using Polly;
 
@@ -47,30 +46,42 @@ namespace dvmig.Tests
          // Arrange
          var providerMock = new Mock<IDataverseProvider>();
          var retryPolicy = Policy.Handle<Exception>().RetryAsync(0);
+
          _retryServiceMock.Setup(r => r.CreateRetryPolicy(It.IsAny<int>()))
             .Returns(retryPolicy);
 
-         providerMock.Setup(p => p.CreateAsync(
-            It.IsAny<Entity>(),
-            It.IsAny<CancellationToken>(),
-            It.IsAny<Guid?>()
-         )).ReturnsAsync(Guid.NewGuid());
+         providerMock.Setup(
+            p => p.CreateAsync(
+               It.IsAny<Entity>(),
+               It.IsAny<CancellationToken>(),
+               It.IsAny<Guid?>()
+            )
+         ).ReturnsAsync(Guid.NewGuid());
 
-         providerMock.Setup(p => p.UpdateAsync(
-            It.IsAny<Entity>(),
-            It.IsAny<CancellationToken>(),
-            It.IsAny<Guid?>()
-         )).Returns(Task.CompletedTask);
+         providerMock.Setup(
+            p => p.UpdateAsync(
+               It.IsAny<Entity>(),
+               It.IsAny<CancellationToken>(),
+               It.IsAny<Guid?>()
+            )
+         ).Returns(Task.CompletedTask);
 
          // Act
          await _seedingService.SeedSampleDataAsync(providerMock.Object, 1);
 
          // Assert
-         providerMock.Verify(p => p.CreateAsync(
-            It.Is<Entity>(e => e.LogicalName == SystemConstants.DataverseEntities.Account),
-            It.IsAny<CancellationToken>(),
-            It.IsAny<Guid?>()
-         ), Times.Once);
+         providerMock.Verify(
+            p => p.CreateAsync(
+               It.Is<Entity>(
+                  e =>
+                     e.LogicalName ==
+                        SystemConstants.DataverseEntities.Account
+               ),
+               It.IsAny<CancellationToken>(),
+               It.IsAny<Guid?>()
+            ),
+            Times.Once
+         );
       }
    }
 }

@@ -1,5 +1,5 @@
-using dvmig.Core.Interfaces;
 using System.Collections.Concurrent;
+using dvmig.Core.Interfaces;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Query;
 using static dvmig.Core.Shared.SystemConstants;
@@ -7,8 +7,8 @@ using static dvmig.Core.Shared.SystemConstants;
 namespace dvmig.Core.Synchronization
 {
    /// <summary>
-   /// Resolves user references from a source Dataverse environment to a target 
-   /// environment.
+   /// Resolves user references from a source Dataverse environment to a 
+   /// target environment.
    /// </summary>
    public class UserResolver : IUserResolver
    {
@@ -89,9 +89,7 @@ namespace dvmig.Core.Synchronization
          var results = await _source.RetrieveMultipleAsync(query, ct);
 
          foreach (var user in results.Entities)
-         {
             await MapUserInternalAsync(user, ct);
-         }
       }
 
       /// <inheritdoc />
@@ -169,7 +167,10 @@ namespace dvmig.Core.Synchronization
 
          if (!string.IsNullOrEmpty(email))
          {
-            _logger.Debug("Searching for target user by email: {Email}", email);
+            _logger.Debug(
+               "Searching for target user by email: {Email}",
+               email
+            );
 
             var mapped = await FindTargetUserAsync(
                DataverseAttributes.InternalEmailAddress,
@@ -179,9 +180,13 @@ namespace dvmig.Core.Synchronization
 
             if (mapped.HasValue)
             {
-               _logger.Debug("Found match by email for user {Id}", sourceUserId);
+               _logger.Debug(
+                  "Found match by email for user {Id}",
+                  sourceUserId
+               );
 
                _mappingCache[sourceUserId] = mapped.Value.UserRef;
+
                _summaries[sourceUserId] = new UserMappingSummary(
                   sourceFullName,
                   sourceUserId,
@@ -195,10 +200,9 @@ namespace dvmig.Core.Synchronization
             }
          }
 
-         var domainName = sourceUserData
-            .GetAttributeValue<string>(
-               DataverseAttributes.DomainName
-            );
+         var domainName = sourceUserData.GetAttributeValue<string>(
+            DataverseAttributes.DomainName
+         );
 
          if (!string.IsNullOrEmpty(domainName))
          {
@@ -221,6 +225,7 @@ namespace dvmig.Core.Synchronization
                );
 
                _mappingCache[sourceUserId] = mapped.Value.UserRef;
+
                _summaries[sourceUserId] = new UserMappingSummary(
                   sourceFullName,
                   sourceUserId,
@@ -233,7 +238,6 @@ namespace dvmig.Core.Synchronization
                return mapped.Value.UserRef;
             }
          }
-
 
          _logger.Warning(
             "Could not map source user {FullName} ({Id})",
@@ -275,11 +279,11 @@ namespace dvmig.Core.Synchronization
 
          if (user != null)
          {
-            return (
-               user.ToEntityReference(),
-               user.GetAttributeValue<string>(DataverseAttributes.FullName) ??
-                  "Unknown Target User"
-            );
+            var fullName = user.GetAttributeValue<string>(
+               DataverseAttributes.FullName
+            ) ?? "Unknown Target User";
+
+            return (user.ToEntityReference(), fullName);
          }
 
          return null;

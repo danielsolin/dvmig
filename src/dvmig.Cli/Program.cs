@@ -1,10 +1,12 @@
 using System.Runtime.Versioning;
 using System.Text;
+
 using dvmig.Cli.Actions;
 using dvmig.Core.Provisioning;
-using dvmig.Core.Shared;
 using dvmig.Core.Settings;
+using dvmig.Core.Shared;
 using dvmig.Core.Synchronization;
+
 using Spectre.Console;
 
 namespace dvmig.Cli
@@ -94,7 +96,8 @@ namespace dvmig.Cli
             e.Cancel = true;
 
             var now = DateTime.Now;
-            if(now - _lastCtrlC < TimeSpan.FromSeconds(1))
+
+            if (now - _lastCtrlC < TimeSpan.FromSeconds(1))
                Environment.Exit(0);
 
             _lastCtrlC = now;
@@ -114,7 +117,10 @@ namespace dvmig.Cli
             .Title("What would you like to do?")
             .PageSize(15)
             .UseConverter(m => m.Label)
-            .HighlightStyle(new Style { Foreground = Color.MediumOrchid });
+            .HighlightStyle(new Style
+            {
+               Foreground = Color.MediumOrchid
+            });
 
          var syncGroup = new List<MenuItem>
          {
@@ -228,7 +234,8 @@ namespace dvmig.Cli
          CliUI.WriteHeader();
 
          bool exit = false;
-         while(!exit)
+
+         while (!exit)
          {
             var prompt = GetMenu(
                _developerMode,
@@ -238,21 +245,22 @@ namespace dvmig.Cli
             );
 
             MenuItem choice;
+
             try
             {
                choice = AnsiConsole.Prompt(prompt);
             }
-            catch(Exception)
+            catch (Exception)
             {
                // Handles cases where the prompt is interrupted (e.g., Ctrl+C),
                // preventing a crash and allowing the user to stay in the app.
-               if(!AnsiConsole.Confirm("Back (Y) or Quit (N)?", true))
+               if (!AnsiConsole.Confirm("Back (Y) or Quit (N)?", true))
                   exit = true;
 
                continue;
             }
 
-            if(choice.Action != null)
+            if (choice.Action != null)
             {
                _currentActionCts = new CancellationTokenSource();
 
@@ -260,17 +268,17 @@ namespace dvmig.Cli
                {
                   await choice.Action(_currentActionCts.Token);
                }
-               catch(OperationCanceledException)
+               catch (OperationCanceledException)
                {
                   AnsiConsole.MarkupLine(
                      $"\n{SystemConstants.UiMarkup.Yellow}"
                      + "Operation interrupted.[/]"
                   );
 
-                  if(!AnsiConsole.Confirm("Back (Y) or Quit (N)?", true))
+                  if (!AnsiConsole.Confirm("Back (Y) or Quit (N)?", true))
                      exit = true;
                }
-               catch(Exception ex)
+               catch (Exception ex)
                {
                   CliUI.WriteError($"An unexpected error occurred: "
                      + $"{ex.Message}");
@@ -282,7 +290,7 @@ namespace dvmig.Cli
                }
             }
 
-            if(!exit)
+            if (!exit)
             {
                CliUI.Pause();
                CliUI.WriteHeader();

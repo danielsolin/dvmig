@@ -1,5 +1,5 @@
-using Microsoft.Xrm.Sdk;
 using dvmig.Core.Synchronization;
+using Microsoft.Xrm.Sdk;
 
 namespace dvmig.Core.Interfaces
 {
@@ -26,9 +26,12 @@ namespace dvmig.Core.Interfaces
          Entity entity,
          SyncOptions options,
          CancellationToken ct = default,
-         Func<Entity, SyncOptions, CancellationToken,
-            Task<(bool Success, string? FailureMessage)>>?
-            createOrUpdateFunc = null,
+         Func<
+            Entity,
+            SyncOptions,
+            CancellationToken,
+            Task<(bool Success, string? FailureMessage)>
+         >? createOrUpdateFunc = null,
          Guid? callerId = null
       );
    }

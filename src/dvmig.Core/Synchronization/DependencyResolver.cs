@@ -1,6 +1,6 @@
-using dvmig.Core.Interfaces;
 using System.Collections.Concurrent;
 using System.Text.RegularExpressions;
+using dvmig.Core.Interfaces;
 using Microsoft.Xrm.Sdk;
 
 namespace dvmig.Core.Synchronization

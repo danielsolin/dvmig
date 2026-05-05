@@ -1,7 +1,7 @@
 using dvmig.Core.Interfaces;
 using dvmig.Core.Shared;
-using Microsoft.Xrm.Sdk;
 using Microsoft.Crm.Sdk.Messages;
+using Microsoft.Xrm.Sdk;
 
 namespace dvmig.Core.Synchronization
 {

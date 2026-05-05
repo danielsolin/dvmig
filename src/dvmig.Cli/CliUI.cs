@@ -1,5 +1,6 @@
 using dvmig.Core.Interfaces;
 using dvmig.Core.Shared;
+
 using Spectre.Console;
 
 namespace dvmig.Cli
@@ -15,6 +16,7 @@ namespace dvmig.Cli
       /// </summary>
       /// <param name="statusMessage">The message to display.</param>
       /// <param name="action">The asynchronous action to execute.</param>
+      /// <param name="logger">The logger instance.</param>
       public static async Task RunStatusAsync(
          string statusMessage,
          ILogger logger,
@@ -49,6 +51,9 @@ namespace dvmig.Cli
       /// Runs an asynchronous task with a spinning status indicator that 
       /// returns a value.
       /// </summary>
+      /// <typeparam name="T">The return type.</typeparam>
+      /// <param name="statusMessage">The message to display.</param>
+      /// <param name="action">The asynchronous action to execute.</param>
       public static async Task<T> RunStatusAsync<T>(
          string statusMessage,
          Func<Task<T>> action

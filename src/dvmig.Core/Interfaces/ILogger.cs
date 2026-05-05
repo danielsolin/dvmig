@@ -18,7 +18,7 @@ namespace dvmig.Core.Interfaces
       /// <param name="messageTemplate">The message template.</param>
       /// <param name="propertyValues">The values to format.</param>
       void Debug(string messageTemplate, params object[] propertyValues);
-      
+
       /// <summary>
       /// Logs an information-level message.
       /// </summary>
@@ -31,7 +31,7 @@ namespace dvmig.Core.Interfaces
       /// <param name="messageTemplate">The message template.</param>
       /// <param name="propertyValues">The values to format.</param>
       void Information(string messageTemplate, params object[] propertyValues);
-      
+
       /// <summary>
       /// Logs a warning-level message.
       /// </summary>
@@ -52,11 +52,11 @@ namespace dvmig.Core.Interfaces
       /// <param name="messageTemplate">The message template.</param>
       /// <param name="propertyValues">The values to format.</param>
       void Warning(
-         Exception ex, 
-         string messageTemplate, 
+         Exception ex,
+         string messageTemplate,
          params object[] propertyValues
       );
-      
+
       /// <summary>
       /// Logs an error-level message.
       /// </summary>
@@ -77,11 +77,11 @@ namespace dvmig.Core.Interfaces
       /// <param name="messageTemplate">The message template.</param>
       /// <param name="propertyValues">The values to format.</param>
       void Error(
-         Exception ex, 
-         string messageTemplate, 
+         Exception ex,
+         string messageTemplate,
          params object[] propertyValues
       );
-      
+
       /// <summary>
       /// Attaches a progress reporter to the logger.
       /// </summary>
