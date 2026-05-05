@@ -48,23 +48,10 @@ namespace dvmig.Tests
             )
          ).ReturnsAsync(defaultMetadata);
 
-         var retryService = new RetryService(_loggerMock.Object);
          var entityService = new EntityService(_loggerMock.Object);
-
-         var errorService = new ErrorService(
-            _targetMock.Object,
-            _sourceDataServiceMock.Object,
-            _loggerMock.Object
-         );
-
-         var dependencyResolver = new DependencyResolver(
+         var resilience = new SyncResilienceService(
             _sourceMock.Object,
-            _loggerMock.Object
-         );
-
-         var statusService = new StatusService(
             _targetMock.Object,
-            _sourceDataServiceMock.Object,
             _loggerMock.Object
          );
 
@@ -86,14 +73,12 @@ namespace dvmig.Tests
          );
 
          _syncRecordService = new SyncRecordService(
+            _sourceMock.Object,
             _targetMock.Object,
             _userResolverMock.Object,
             _loggerMock.Object,
-            retryService,
             entityService,
-            errorService,
-            dependencyResolver,
-            statusService,
+            resilience,
             metadataService,
             failureService,
             _sourceDataServiceMock.Object,

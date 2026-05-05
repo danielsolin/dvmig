@@ -11,7 +11,7 @@ namespace dvmig.Tests
    {
       private readonly Mock<ILogger> _loggerMock;
       private readonly Mock<IDataverseProvider> _targetMock;
-      private readonly Mock<IRetryService> _retryServiceMock;
+      private readonly Mock<ISyncResilienceService> _resilienceMock;
       private readonly PluginService _pluginService;
       private readonly SeedingService _seedingService;
 
@@ -19,12 +19,12 @@ namespace dvmig.Tests
       {
          _loggerMock = new Mock<ILogger>();
          _targetMock = new Mock<IDataverseProvider>();
-         _retryServiceMock = new Mock<IRetryService>();
+         _resilienceMock = new Mock<ISyncResilienceService>();
          _pluginService = new PluginService(_loggerMock.Object);
 
          _seedingService = new SeedingService(
             _loggerMock.Object,
-            _retryServiceMock.Object
+            _resilienceMock.Object
          );
       }
 
@@ -47,7 +47,7 @@ namespace dvmig.Tests
          var providerMock = new Mock<IDataverseProvider>();
          var retryPolicy = Policy.Handle<Exception>().RetryAsync(0);
 
-         _retryServiceMock.Setup(r => r.CreateRetryPolicy(It.IsAny<int>()))
+         _resilienceMock.Setup(r => r.CreateRetryPolicy(It.IsAny<int>()))
             .Returns(retryPolicy);
 
          providerMock.Setup(

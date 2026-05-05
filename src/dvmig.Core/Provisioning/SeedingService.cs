@@ -12,17 +12,17 @@ namespace dvmig.Core.Provisioning
    public class SeedingService : ISeedingService
    {
       private readonly ILogger _logger;
-      private readonly IRetryService _retryService;
+      private readonly ISyncResilienceService _resilience;
 
       /// <summary>
       /// Initializes a new instance of the <see cref="SeedingService"/> class.
       /// </summary>
       /// <param name="logger">The logger instance.</param>
-      /// <param name="retryService">The retry service.</param>
-      public SeedingService(ILogger logger, IRetryService retryService)
+      /// <param name="resilience">The resilience service.</param>
+      public SeedingService(ILogger logger, ISyncResilienceService resilience)
       {
          _logger = logger;
-         _retryService = retryService;
+         _resilience = resilience;
       }
 
       /// <inheritdoc />
@@ -37,7 +37,7 @@ namespace dvmig.Core.Provisioning
          );
 
          var faker = new Faker();
-         var retryPolicy = _retryService.CreateRetryPolicy();
+         var retryPolicy = _resilience.CreateRetryPolicy();
 
          var activityTypes = new[]
          {

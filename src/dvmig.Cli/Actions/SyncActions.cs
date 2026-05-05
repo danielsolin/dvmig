@@ -1,8 +1,6 @@
 using dvmig.Core.Interfaces;
 using dvmig.Core.Synchronization;
-
 using Spectre.Console;
-
 using static dvmig.Core.Shared.SystemConstants;
 
 namespace dvmig.Cli.Actions
@@ -59,7 +57,7 @@ namespace dvmig.Cli.Actions
          if (!await PrepareUserMappingsAsync(userResolver, ct))
             return;
 
-         await HandleSyncFlowAsync(
+         await ExecuteSyncWorkflowAsync(
             engine,
             source,
             target,
@@ -101,7 +99,7 @@ namespace dvmig.Cli.Actions
          if (!await PrepareUserMappingsAsync(userResolver, ct))
             return;
 
-         await HandleSyncFlowAsync(
+         await ExecuteSyncWorkflowAsync(
             engine,
             source,
             target,
@@ -180,7 +178,7 @@ namespace dvmig.Cli.Actions
          return true;
       }
 
-      private async Task HandleSyncFlowAsync(
+      private async Task ExecuteSyncWorkflowAsync(
          ISyncEngine engine,
          IDataverseProvider source,
          IDataverseProvider target,
@@ -189,7 +187,7 @@ namespace dvmig.Cli.Actions
          CancellationToken ct
       )
       {
-         var threads = AnsiConsole.Prompt(
+         var maxThreads = AnsiConsole.Prompt(
             new SelectionPrompt<int>()
                .Title(
                   $"Select {UiMarkup.Green}Max Parallelism[/]"
@@ -198,30 +196,6 @@ namespace dvmig.Cli.Actions
                .AddChoices(SyncSettings.ParallelismOptions)
          );
 
-         await RunMigrationAsync(
-            engine,
-            source,
-            target,
-            entities,
-            threads,
-            forceResync,
-            ct
-         );
-
-         var actionName = forceResync ? "Re-sync" : "Migration";
-         CliUI.WriteSuccess($"{actionName} Finished!");
-      }
-
-      private async Task RunMigrationAsync(
-         ISyncEngine engine,
-         IDataverseProvider source,
-         IDataverseProvider target,
-         List<string> entities,
-         int maxThreads,
-         bool forceResync,
-         CancellationToken ct
-      )
-      {
          await AnsiConsole.Progress()
             .Columns(
                new ProgressColumn[]
@@ -310,6 +284,7 @@ namespace dvmig.Cli.Actions
                            lock (progressLock)
                            {
                               var now = DateTime.Now;
+
                               if (now - lastUpdate < TimeSpan.FromSeconds(1)
                                     && currentProcessed < totalCount)
                                  return;
@@ -376,6 +351,7 @@ namespace dvmig.Cli.Actions
                      catch (Exception ex)
                      {
                         var baseEx = ex.GetBaseException();
+
                         CliUI.WriteError(
                            $"Sync aborted for {logicalName}: " +
                            $"{baseEx.Message}"
@@ -406,6 +382,9 @@ namespace dvmig.Cli.Actions
                   }
                }
             );
+
+         var actionName = forceResync ? "Re-sync" : "Migration";
+         CliUI.WriteSuccess($"{actionName} Finished!");
       }
 
       private static string GetDesc(

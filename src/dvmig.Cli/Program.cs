@@ -37,11 +37,13 @@ namespace dvmig.Cli
       private static void Init(string[] args)
       {
          var logger = new Logger();
-         var retryService = new RetryService(logger);
+
+         // Global resilience (used for retries by provisioning services)
+         var resilience = new SyncResilienceService(null!, null!, logger);
 
          var settingsService = new SettingsService();
-         var seedingService = new SeedingService(logger, retryService);
-         var wipeDataService = new WipeDataService(logger, retryService);
+         var seedingService = new SeedingService(logger, resilience);
+         var wipeDataService = new WipeDataService(logger, resilience);
          var entityService = new EntityService(logger);
          var metadataService = new MetadataService(logger);
 
