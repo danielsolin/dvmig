@@ -1,7 +1,6 @@
 using Bogus;
 using dvmig.Core.Interfaces;
 using Microsoft.Xrm.Sdk;
-using Microsoft.Xrm.Sdk.Query;
 using static dvmig.Core.Shared.SystemConstants;
 
 namespace dvmig.Core.Provisioning
@@ -44,207 +43,224 @@ namespace dvmig.Core.Provisioning
          );
 
          var activityTypes = DataverseEntities.ToList()
-            .Where(e => e.IsActivityEntity)
+            .Where(e => e.IsActivityEntity && !e.IsSystemEntity)
             .Select(e => e.Name)
             .ToArray();
 
          for (int i = 0; i < recordCount; i++)
          {
-            // 1. Create Account
-            var account = new Entity(DataverseEntities.Account.Name);
-            account[DataverseAttributes.Name] =
-               faker.Company.CompanyName();
-            account[DataverseAttributes.Telephone1] =
-               faker.Phone.PhoneNumber();
+            var (accountId, createdDate, accountCallerId) =
+               await CreateAccountAsync(provider, faker, availableUserIds, ct);
 
-            // Randomize audit fields
-            var createdDate = faker.Date.Past(2);
-            var modifiedDate = faker.Date.Between(
+            var contactIds = await CreateContactsForAccountAsync(
+               provider,
+               faker,
+               accountId,
                createdDate,
-               DateTime.UtcNow
+               availableUserIds,
+               ct
             );
 
-            account[DataverseAttributes.OverriddenCreatedOn] = createdDate;
-            account[DataverseAttributes.ModifiedOn] = modifiedDate;
-
-            var accountCallerId = availableUserIds.Count > 0
-               ? faker.PickRandom(availableUserIds)
-               : (Guid?)null;
-
-            if (accountCallerId.HasValue)
-            {
-               account[DataverseAttributes.CreatedBy] = new EntityReference(
-                  DataverseEntities.SystemUser.Name,
-                  accountCallerId.Value
-               );
-            }
-
-            var accountId = await provider.CreateAsync(
-               account,
-               ct,
-               accountCallerId
+            await SetPrimaryContactAsync(
+               provider,
+               faker,
+               accountId,
+               contactIds,
+               accountCallerId,
+               ct
             );
 
-            // 2. Create 2-7 Contacts per Account
-            var contactsInAccount = new List<Guid>();
-            int contactCount = faker.Random.Int(2, 7);
-
-            for (int j = 0; j < contactCount; j++)
-            {
-               var contact = new Entity(
-                  DataverseEntities.Contact.Name
-               );
-
-               contact[DataverseAttributes.FirstName] =
-                  faker.Name.FirstName();
-               contact[DataverseAttributes.LastName] =
-                  faker.Name.LastName();
-               contact[DataverseAttributes.EmailAddress1] =
-                  faker.Internet.Email();
-
-               contact[DataverseAttributes.ParentCustomerId] =
-                  new EntityReference(
-                     DataverseEntities.Account.Name,
-                     accountId
-                  );
-
-               // Randomize audit fields
-               var contactCreatedDate = faker.Date.Between(
-                  createdDate,
-                  DateTime.UtcNow
-               );
-
-               var contactModifiedDate = faker.Date.Between(
-                  contactCreatedDate,
-                  DateTime.UtcNow
-               );
-
-               contact[DataverseAttributes.OverriddenCreatedOn] =
-                  contactCreatedDate;
-
-               contact[DataverseAttributes.ModifiedOn] = contactModifiedDate;
-
-               var contactCallerId = availableUserIds.Count > 0
-                  ? faker.PickRandom(availableUserIds)
-                  : (Guid?)null;
-
-               if (contactCallerId.HasValue)
-               {
-                  contact[DataverseAttributes.CreatedBy] = new EntityReference(
-                     DataverseEntities.SystemUser.Name,
-                     contactCallerId.Value
-                  );
-               }
-
-               var contactId = await provider.CreateAsync(
-                  contact,
-                  ct,
-                  contactCallerId
-               );
-
-               contactsInAccount.Add(contactId);
-            }
-
-            // Set Primary Contact on Account
-            var primaryContactId = faker.PickRandom(contactsInAccount);
-            var accountUpdate = new Entity(
-               DataverseEntities.Account.Name,
-               accountId
+            var activityCount = await CreateActivitiesForAccountAsync(
+               provider,
+               faker,
+               accountId,
+               contactIds,
+               activityTypes,
+               createdDate,
+               availableUserIds,
+               ct
             );
-
-            accountUpdate[DataverseAttributes.PrimaryContactId] =
-               new EntityReference(
-                  DataverseEntities.Contact.Name,
-                  primaryContactId
-               );
-
-            // Update modified date on account update
-            accountUpdate[DataverseAttributes.ModifiedOn] = DateTime.UtcNow;
-
-            await provider.UpdateAsync(
-               accountUpdate,
-               ct,
-               accountCallerId
-            );
-
-            // 3. Create 5-12 Activities per Account
-            int activityCount = faker.Random.Int(5, 12);
-
-            for (int k = 0; k < activityCount; k++)
-            {
-               var logicalName = faker.PickRandom(activityTypes);
-               var activity = new Entity(logicalName);
-
-               activity[DataverseAttributes.Subject] =
-                  faker.Lorem.Sentence(5);
-               activity[DataverseAttributes.Description] =
-                  faker.Lorem.Paragraph();
-               activity[DataverseAttributes.ScheduledEnd] =
-                  faker.Date.Future();
-
-               // Randomize audit fields
-               var activityCreatedDate = faker.Date.Between(
-                  createdDate,
-                  DateTime.UtcNow
-               );
-
-               var activityModifiedDate = faker.Date.Between(
-                  activityCreatedDate,
-                  DateTime.UtcNow
-               );
-
-               activity[DataverseAttributes.OverriddenCreatedOn] =
-                  activityCreatedDate;
-
-               activity[DataverseAttributes.ModifiedOn] = activityModifiedDate;
-
-               // Randomly relate to Account or a random Contact 
-               // within that Account
-               var regardingAttr =
-                  DataverseAttributes.RegardingObjectId;
-
-               if (faker.Random.Bool())
-               {
-                  activity[regardingAttr] = new EntityReference(
-                     DataverseEntities.Account.Name,
-                     accountId
-                  );
-               }
-               else
-               {
-                  activity[regardingAttr] = new EntityReference(
-                     DataverseEntities.Contact.Name,
-                     faker.PickRandom(contactsInAccount)
-                  );
-               }
-
-               var activityCallerId = availableUserIds.Count > 0
-                  ? faker.PickRandom(availableUserIds)
-                  : (Guid?)null;
-
-               if (activityCallerId.HasValue)
-               {
-                  activity[DataverseAttributes.CreatedBy] =
-                     new EntityReference(
-                        DataverseEntities.SystemUser.Name,
-                        activityCallerId.Value
-                     );
-               }
-
-               await provider.CreateAsync(
-                  activity,
-                  ct,
-                  activityCallerId
-               );
-            }
 
             _logger.Information(
                $"Account {i + 1}/{recordCount} seeded with " +
-               $"{contactCount} contacts and {activityCount} activities."
+               $"{contactIds.Count} contacts and {activityCount} activities."
             );
          }
 
          _logger.Information("Seeding complete.");
+      }
+
+      private async Task<(Guid Id, DateTime CreatedOn, Guid? CallerId)>
+         CreateAccountAsync(
+            IDataverseProvider provider,
+            Faker faker,
+            List<Guid> availableUserIds,
+            CancellationToken ct
+         )
+      {
+         var account = new Entity(DataverseEntities.Account.Name);
+         account[DataverseAttributes.Name] = faker.Company.CompanyName();
+         account[DataverseAttributes.Telephone1] = faker.Phone.PhoneNumber();
+
+         var createdDate = faker.Date.Past(2);
+         var modifiedDate = faker.Date.Between(createdDate, DateTime.UtcNow);
+
+         account[DataverseAttributes.OverriddenCreatedOn] = createdDate;
+         account[DataverseAttributes.ModifiedOn] = modifiedDate;
+
+         var callerId = availableUserIds.Count > 0
+            ? faker.PickRandom(availableUserIds)
+            : (Guid?)null;
+
+         if (callerId.HasValue)
+         {
+            account[DataverseAttributes.CreatedBy] = new EntityReference(
+               DataverseEntities.SystemUser.Name,
+               callerId.Value
+            );
+         }
+
+         var accountId = await provider.CreateAsync(account, ct, callerId);
+
+         return (accountId, createdDate, callerId);
+      }
+
+      private async Task<List<Guid>> CreateContactsForAccountAsync(
+         IDataverseProvider provider,
+         Faker faker,
+         Guid accountId,
+         DateTime accountCreatedDate,
+         List<Guid> availableUserIds,
+         CancellationToken ct
+      )
+      {
+         var contactIds = new List<Guid>();
+         int contactCount = faker.Random.Int(2, 7);
+
+         for (int j = 0; j < contactCount; j++)
+         {
+            var contact = new Entity(DataverseEntities.Contact.Name);
+            contact[DataverseAttributes.FirstName] = faker.Name.FirstName();
+            contact[DataverseAttributes.LastName] = faker.Name.LastName();
+            contact[DataverseAttributes.EmailAddress1] = faker.Internet.Email();
+
+            contact[DataverseAttributes.ParentCustomerId] =
+               new EntityReference(DataverseEntities.Account.Name, accountId);
+
+            var createdDate = faker.Date.Between(
+               accountCreatedDate,
+               DateTime.UtcNow
+            );
+
+            var modifiedDate = faker.Date.Between(createdDate, DateTime.UtcNow);
+
+            contact[DataverseAttributes.OverriddenCreatedOn] = createdDate;
+            contact[DataverseAttributes.ModifiedOn] = modifiedDate;
+
+            var callerId = availableUserIds.Count > 0
+               ? faker.PickRandom(availableUserIds)
+               : (Guid?)null;
+
+            if (callerId.HasValue)
+            {
+               contact[DataverseAttributes.CreatedBy] = new EntityReference(
+                  DataverseEntities.SystemUser.Name,
+                  callerId.Value
+               );
+            }
+
+            var contactId = await provider.CreateAsync(contact, ct, callerId);
+            contactIds.Add(contactId);
+         }
+
+         return contactIds;
+      }
+
+      private async Task SetPrimaryContactAsync(
+         IDataverseProvider provider,
+         Faker faker,
+         Guid accountId,
+         List<Guid> contactIds,
+         Guid? callerId,
+         CancellationToken ct
+      )
+      {
+         var primaryContactId = faker.PickRandom(contactIds);
+         var accountUpdate = new Entity(
+            DataverseEntities.Account.Name,
+            accountId
+         );
+
+         accountUpdate[DataverseAttributes.PrimaryContactId] =
+            new EntityReference(DataverseEntities.Contact.Name, primaryContactId);
+
+         accountUpdate[DataverseAttributes.ModifiedOn] = DateTime.UtcNow;
+
+         await provider.UpdateAsync(accountUpdate, ct, callerId);
+      }
+
+      private async Task<int> CreateActivitiesForAccountAsync(
+         IDataverseProvider provider,
+         Faker faker,
+         Guid accountId,
+         List<Guid> contactIds,
+         string[] activityTypes,
+         DateTime accountCreatedDate,
+         List<Guid> availableUserIds,
+         CancellationToken ct
+      )
+      {
+         int activityCount = faker.Random.Int(5, 12);
+
+         for (int k = 0; k < activityCount; k++)
+         {
+            var logicalName = faker.PickRandom(activityTypes);
+            var activity = new Entity(logicalName);
+
+            activity[DataverseAttributes.Subject] = faker.Lorem.Sentence(5);
+            activity[DataverseAttributes.Description] = faker.Lorem.Paragraph();
+            activity[DataverseAttributes.ScheduledEnd] = faker.Date.Future();
+
+            var createdDate = faker.Date.Between(
+               accountCreatedDate,
+               DateTime.UtcNow
+            );
+
+            var modifiedDate = faker.Date.Between(createdDate, DateTime.UtcNow);
+
+            activity[DataverseAttributes.OverriddenCreatedOn] = createdDate;
+            activity[DataverseAttributes.ModifiedOn] = modifiedDate;
+
+            if (faker.Random.Bool())
+            {
+               activity[DataverseAttributes.RegardingObjectId] =
+                  new EntityReference(DataverseEntities.Account.Name, accountId);
+            }
+            else
+            {
+               activity[DataverseAttributes.RegardingObjectId] =
+                  new EntityReference(
+                     DataverseEntities.Contact.Name,
+                     faker.PickRandom(contactIds)
+                  );
+            }
+
+            var callerId = availableUserIds.Count > 0
+               ? faker.PickRandom(availableUserIds)
+               : (Guid?)null;
+
+            if (callerId.HasValue)
+            {
+               activity[DataverseAttributes.CreatedBy] = new EntityReference(
+                  DataverseEntities.SystemUser.Name,
+                  callerId.Value
+               );
+            }
+
+            await provider.CreateAsync(activity, ct, callerId);
+         }
+
+         return activityCount;
       }
    }
 }
