@@ -42,7 +42,7 @@ namespace dvmig.Tests
 
       [Fact]
       public async Task
-         ValidateTargetEnvironmentAsync_ReturnsFalse_WhenSourceDataSchemaMissing()
+         ValidateTarget_ReturnsFalse_WhenSourceDataSchemaMissing()
       {
          _targetMock.Setup(
             t => t.GetEntityMetadataAsync(

@@ -24,5 +24,15 @@ dotnet_sort_system_usings_first = true
 dotnet_separate_import_directive_groups = false
 dotnet_diagnostic.IDE0005.severity = warning
 
+# Braces
+csharp_prefer_braces = false:warning
+
+# Indentation
+csharp_indent_block_contents = true
+csharp_indent_braces = false
+csharp_indent_case_contents = true
+csharp_indent_switch_labels = true
+csharp_indent_labels = one_less_than_current
+
 # IDE0305: Simplify collection initialization
 dotnet_style_prefer_collection_expression = never

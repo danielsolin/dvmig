@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -14,6 +15,76 @@ namespace dvmig.Core.Shared
       {
          Source,
          Target
+      }
+
+      public class DataverseEntity
+      {
+         public string Name { get; }
+         public bool IsSystemEntity { get; }
+         public bool IsActivityEntity { get; }
+
+         public DataverseEntity(
+            string name,
+            bool isSystemEntity,
+            bool isActivityEntity
+         )
+         {
+            Name = name;
+            IsSystemEntity = isSystemEntity;
+            IsActivityEntity = isActivityEntity;
+         }
+      }
+
+      /// <summary>
+      /// Logical names for common Dataverse entities.
+      /// </summary>
+      public static class DataverseEntities
+      {
+         public static readonly DataverseEntity SystemUser =
+            new DataverseEntity("systemuser", true, false);
+
+         public static readonly DataverseEntity ActivityParty =
+            new DataverseEntity("activityparty", true, false);
+
+         public static readonly DataverseEntity Account =
+            new DataverseEntity("account", false, false);
+
+         public static readonly DataverseEntity Contact =
+            new DataverseEntity("contact", false, false);
+
+         public static readonly DataverseEntity Task =
+            new DataverseEntity("task", false, true);
+
+         public static readonly DataverseEntity PhoneCall =
+            new DataverseEntity("phonecall", false, true);
+
+         public static readonly DataverseEntity Appointment =
+            new DataverseEntity("appointment", false, true);
+
+         public static readonly DataverseEntity Email =
+            new DataverseEntity("email", false, true);
+
+         /// <summary>
+         /// Returns all entities defined in this class as a list, 
+         /// sorted by system/activity status and then by name.
+         /// </summary>
+         public static List<DataverseEntity> ToList()
+         {
+            return typeof(DataverseEntities)
+               .GetFields(
+                  BindingFlags.Public |
+                  BindingFlags.Static |
+                  BindingFlags.FlattenHierarchy
+               )
+               .Where(f => f.FieldType == typeof(DataverseEntity))
+               .Select(f => (DataverseEntity?)f.GetValue(null))
+               .Where(e => e != null)
+               .Select(e => e!)
+               .OrderBy(e => e.IsSystemEntity)
+               .ThenBy(e => e.IsActivityEntity)
+               .ThenBy(e => e.Name)
+               .ToList();
+         }
       }
 
       /// <summary>
@@ -44,34 +115,6 @@ namespace dvmig.Core.Shared
          public const string ErrorMessage = "dm_errormessage";
          public const string Timestamp = "dm_timestamp";
          public const string NotAvailable = "N/A";
-      }
-
-      /// <summary>
-      /// Logical names for common Dataverse entities.
-      /// </summary>
-      public static class DataverseEntities
-      {
-         public const string SystemUser = "systemuser";
-         public const string ActivityParty = "activityparty";
-         public const string Account = "account";
-         public const string Contact = "contact";
-         public const string Task = "task";
-         public const string PhoneCall = "phonecall";
-         public const string Appointment = "appointment";
-         public const string Email = "email";
-
-         public static IList<string> ToList()
-         {
-            return typeof(DataverseEntities)
-               .GetFields(
-                  BindingFlags.Public |
-                  BindingFlags.Static |
-                  BindingFlags.FlattenHierarchy
-               )
-               .Where(f => f.IsLiteral && !f.IsInitOnly)
-               .Select(f => f.GetValue(null)?.ToString() ?? string.Empty)
-               .ToList();
-         }
       }
 
       /// <summary>
@@ -131,7 +174,7 @@ namespace dvmig.Core.Shared
       /// Attributes that should not be copied from source to target.
       /// </summary>
       public static readonly HashSet<string> ForbiddenAttributes =
-         new HashSet<string>(System.StringComparer.OrdinalIgnoreCase)
+         new HashSet<string>(StringComparer.OrdinalIgnoreCase)
          {
             DataverseAttributes.CreatedOn,
             DataverseAttributes.ModifiedOn,
@@ -150,7 +193,7 @@ namespace dvmig.Core.Shared
       /// Attributes that represent references to SystemUser records.
       /// </summary>
       public static readonly HashSet<string> UserAttributes =
-         new HashSet<string>(System.StringComparer.OrdinalIgnoreCase)
+         new HashSet<string>(StringComparer.OrdinalIgnoreCase)
          {
             DataverseAttributes.OwnerId,
             DataverseAttributes.CreatedBy,
@@ -171,9 +214,11 @@ namespace dvmig.Core.Shared
          public const string DoesNotExist = "does not exist";
          public const string ForeignKeyConflict =
             "conflicted with the foreign key constraint";
-         public const string ConstraintConflict = "conflicted with a constraint";
+         public const string ConstraintConflict =
+            "conflicted with a constraint";
          public const string CannotBeModified = "cannot be modified";
-         public const string CannotBeSetOnCreation = "cannot be set on creation";
+         public const string CannotBeSetOnCreation =
+            "cannot be set on creation";
          public const string OutsideValidRange = "outside the valid range";
          public const string TooManyRequests = "too many requests";
          public const string CombinedExecutionTime = "combined execution time";
@@ -234,17 +279,12 @@ namespace dvmig.Core.Shared
                1
             };
 
-         public static readonly IReadOnlyList<string>
-            RecommendedEntities =
-               new[]
-               {
-                  "account",
-                  "contact",
-                  "task",
-                  "phonecall",
-                  "email",
-                  "appointment"
-               };
+         public static IReadOnlyList<string> RecommendedEntities =>
+            DataverseEntities.ToList()
+               .Where(e => !e.IsSystemEntity)
+               .Select(e => e.Name)
+               .ToList()
+               .AsReadOnly();
       }
 
       /// <summary>

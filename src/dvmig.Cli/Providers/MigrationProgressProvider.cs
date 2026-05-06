@@ -4,8 +4,8 @@ using Spectre.Console;
 namespace dvmig.Cli.Providers
 {
    /// <summary>
-   /// Provides a bridge between the core migration progress and the Spectre.Console UI,
-   /// handling rate calculations and markup formatting.
+   /// Provides a bridge between the core migration progress and the 
+   /// Spectre.Console UI, handling rate calculations and markup formatting.
    /// </summary>
    public class MigrationProgressProvider
    {
@@ -22,7 +22,8 @@ namespace dvmig.Cli.Providers
       private DateTime _lastUpdate = DateTime.MinValue;
 
       /// <summary>
-      /// Initializes a new instance of the <see cref="MigrationProgressProvider"/> class.
+      /// Initializes a new instance of the 
+      /// <see cref="MigrationProgressProvider"/> class.
       /// </summary>
       public MigrationProgressProvider(
          ProgressTask task,

@@ -44,7 +44,7 @@ namespace dvmig.Tests
          _resolver.AddManualMapping(sourceId, targetId);
 
          var sourceRef = new EntityReference(
-            SystemConstants.DataverseEntities.SystemUser,
+            SystemConstants.DataverseEntities.SystemUser.Name,
             sourceId
          );
 
@@ -54,7 +54,7 @@ namespace dvmig.Tests
          Assert.Equal(targetId, result.Id);
 
          Assert.Equal(
-            SystemConstants.DataverseEntities.SystemUser,
+            SystemConstants.DataverseEntities.SystemUser.Name,
             result.LogicalName
          );
       }
@@ -65,13 +65,13 @@ namespace dvmig.Tests
          var sourceId = Guid.NewGuid();
 
          var sourceRef = new EntityReference(
-            SystemConstants.DataverseEntities.SystemUser,
+            SystemConstants.DataverseEntities.SystemUser.Name,
             sourceId
          );
 
          _sourceMock.Setup(
             s => s.RetrieveAsync(
-               SystemConstants.DataverseEntities.SystemUser,
+               SystemConstants.DataverseEntities.SystemUser.Name,
                sourceId,
                It.IsAny<string[]>(),
                It.IsAny<CancellationToken>()
@@ -90,12 +90,12 @@ namespace dvmig.Tests
          var targetId = Guid.NewGuid();
 
          var sourceRef = new EntityReference(
-            SystemConstants.DataverseEntities.SystemUser,
+            SystemConstants.DataverseEntities.SystemUser.Name,
             sourceId
          );
 
          var sourceEntity = new Entity(
-            SystemConstants.DataverseEntities.SystemUser,
+            SystemConstants.DataverseEntities.SystemUser.Name,
             sourceId
          );
 
@@ -104,7 +104,7 @@ namespace dvmig.Tests
          ] = "test@example.com";
 
          var targetEntity = new Entity(
-            SystemConstants.DataverseEntities.SystemUser,
+            SystemConstants.DataverseEntities.SystemUser.Name,
             targetId
          );
 
@@ -112,7 +112,7 @@ namespace dvmig.Tests
 
          _sourceMock.Setup(
             s => s.RetrieveAsync(
-               SystemConstants.DataverseEntities.SystemUser,
+               SystemConstants.DataverseEntities.SystemUser.Name,
                sourceId,
                It.IsAny<string[]>(),
                It.IsAny<CancellationToken>()
@@ -145,12 +145,12 @@ namespace dvmig.Tests
          var targetId = Guid.NewGuid();
 
          var sourceRef = new EntityReference(
-            SystemConstants.DataverseEntities.SystemUser,
+            SystemConstants.DataverseEntities.SystemUser.Name,
             sourceId
          );
 
          var sourceEntity = new Entity(
-            SystemConstants.DataverseEntities.SystemUser,
+            SystemConstants.DataverseEntities.SystemUser.Name,
             sourceId
          );
 
@@ -160,7 +160,10 @@ namespace dvmig.Tests
          var targetCollection = new EntityCollection(
             new[]
             {
-               new Entity(SystemConstants.DataverseEntities.SystemUser, targetId)
+               new Entity(
+                  SystemConstants.DataverseEntities.SystemUser.Name,
+                  targetId
+               )
             }
          );
 
@@ -168,7 +171,7 @@ namespace dvmig.Tests
 
          _sourceMock.Setup(
             s => s.RetrieveAsync(
-               SystemConstants.DataverseEntities.SystemUser,
+               SystemConstants.DataverseEntities.SystemUser.Name,
                sourceId,
                It.IsAny<string[]>(),
                It.IsAny<CancellationToken>()
@@ -214,7 +217,7 @@ namespace dvmig.Tests
          var targetUserId = Guid.NewGuid();
 
          var sourceUser = new Entity(
-            SystemConstants.DataverseEntities.SystemUser,
+            SystemConstants.DataverseEntities.SystemUser.Name,
             sourceUserId
          );
 
@@ -237,7 +240,7 @@ namespace dvmig.Tests
          ).ReturnsAsync(sourceCollection);
 
          var targetUser = new Entity(
-            SystemConstants.DataverseEntities.SystemUser,
+            SystemConstants.DataverseEntities.SystemUser.Name,
             targetUserId
          );
 
@@ -272,7 +275,7 @@ namespace dvmig.Tests
          var sourceUserId = Guid.NewGuid();
 
          var sourceUser = new Entity(
-            SystemConstants.DataverseEntities.SystemUser,
+            SystemConstants.DataverseEntities.SystemUser.Name,
             sourceUserId
          );
 
@@ -311,13 +314,13 @@ namespace dvmig.Tests
       }
 
       [Fact]
-      public async Task GetMappingSummaryAsync_ReturnsUnmapped_WhenResolutionFails()
+      public async Task GetMappingSummary_ReturnsUnmapped_WhenResolutionFails()
       {
          // Arrange
          var sourceUserId = Guid.NewGuid();
 
          var sourceUser = new Entity(
-            SystemConstants.DataverseEntities.SystemUser,
+            SystemConstants.DataverseEntities.SystemUser.Name,
             sourceUserId
          );
 

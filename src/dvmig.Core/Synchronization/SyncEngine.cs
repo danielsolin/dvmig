@@ -1,11 +1,13 @@
 using System.Text.RegularExpressions;
+
 using dvmig.Core.Interfaces;
 using dvmig.Core.Shared;
 using Microsoft.Crm.Sdk.Messages;
 using Microsoft.Xrm.Sdk;
-using Microsoft.Xrm.Sdk.Messages;
 using Microsoft.Xrm.Sdk.Query;
 using static dvmig.Core.Shared.SystemConstants;
+using static dvmig.Core.Shared.SystemConstants.DataverseAttributes;
+using static dvmig.Core.Shared.SystemConstants.ErrorKeywords;
 
 using CT = System.Threading.CancellationToken;
 
@@ -197,13 +199,11 @@ namespace dvmig.Core.Synchronization
             );
 
             if (!success)
-            {
                await LogFailureToTargetAsync(
                   entity,
                   failureMessage ?? "Sync failed.",
                   ct
                );
-            }
 
             recordProgress?.Report(success);
          }
@@ -239,7 +239,10 @@ namespace dvmig.Core.Synchronization
 
          var recordKey = EntityHelper.GetRecordKey(entity);
 
-         if (!_syncStateService.TryEnterRecordScope(recordKey, MaxRecursionDepth))
+         if (!_syncStateService.TryEnterRecordScope(
+            recordKey,
+            MaxRecursionDepth
+         ))
             return (false, "Max recursion depth reached.");
 
          try
@@ -285,22 +288,24 @@ namespace dvmig.Core.Synchronization
          if (options.PreserveAuditData)
          {
             var sourceCreator = entity.GetAttributeValue<EntityReference>(
-               SystemConstants.DataverseAttributes.CreatedBy
+               DataverseAttributes.CreatedBy
             );
 
             if (sourceCreator != null)
-               creatorId = (await _userResolver.MapUserAsync(sourceCreator, ct))?
-                  .Id;
+            {
+               var user = await _userResolver.MapUserAsync(sourceCreator, ct);
+               creatorId = user?.Id;
+            }
 
             var sourceModifier = entity.GetAttributeValue<EntityReference>(
-               SystemConstants.DataverseAttributes.ModifiedBy
+               DataverseAttributes.ModifiedBy
             );
 
             if (sourceModifier != null)
-               modifiedById = (await _userResolver.MapUserAsync(
-                  sourceModifier,
-                  ct
-               ))?.Id;
+            {
+               var user = await _userResolver.MapUserAsync(sourceModifier, ct);
+               modifiedById = user?.Id;
+            }
 
             creatorId ??= modifiedById;
             modifiedById ??= creatorId;
@@ -407,14 +412,14 @@ namespace dvmig.Core.Synchronization
          var msg = ex.Message.ToLower();
 
          bool isDuplicate =
-            msg.Contains(SystemConstants.ErrorKeywords.AlreadyExists) ||
-            msg.Contains(SystemConstants.ErrorKeywords.DuplicateCurrency) ||
-            msg.Contains(SystemConstants.ErrorKeywords.DuplicateKey);
+            msg.Contains(ErrorKeywords.AlreadyExists) ||
+            msg.Contains(ErrorKeywords.DuplicateCurrency) ||
+            msg.Contains(ErrorKeywords.DuplicateKey);
 
          if (isDuplicate)
             return await HandleDuplicateAsync(entity, modifiedById, ct);
 
-         if (msg.Contains(SystemConstants.ErrorKeywords.InvalidStatusCode))
+         if (msg.Contains(ErrorKeywords.InvalidStatusCode))
          {
             var success = await HandleStatusTransitionAsync(
                entity,
@@ -427,11 +432,14 @@ namespace dvmig.Core.Synchronization
             if (success)
                return (true, string.Empty);
 
-            return (false, FormatFailureMessage("Status transition failed", ex));
+            return (
+               false,
+               FormatFailureMessage("Status transition failed", ex)
+            );
          }
 
-         if (msg.Contains(SystemConstants.ErrorKeywords.DoesNotExist) ||
-             msg.Contains(SystemConstants.ErrorKeywords.ForeignKeyConflict))
+         if (msg.Contains(ErrorKeywords.DoesNotExist) ||
+             msg.Contains(ErrorKeywords.ForeignKeyConflict))
          {
             var success = await ResolveDependencyAsync(
                ex,
@@ -452,9 +460,9 @@ namespace dvmig.Core.Synchronization
             );
          }
 
-         if (msg.Contains(SystemConstants.ErrorKeywords.CannotBeModified) ||
-             msg.Contains(SystemConstants.ErrorKeywords.CannotBeSetOnCreation) ||
-             msg.Contains(SystemConstants.ErrorKeywords.OutsideValidRange))
+         if (msg.Contains(ErrorKeywords.CannotBeModified) ||
+             msg.Contains(ErrorKeywords.CannotBeSetOnCreation) ||
+             msg.Contains(ErrorKeywords.OutsideValidRange))
          {
             var success = await StripAttributeAndRetryAsync(
                ex,
@@ -469,7 +477,10 @@ namespace dvmig.Core.Synchronization
             if (success)
                return (true, string.Empty);
 
-            return (false, FormatFailureMessage("Attribute stripping failed", ex));
+            return (
+               false,
+               FormatFailureMessage("Attribute stripping failed", ex)
+            );
          }
 
          _logger.Error(
@@ -538,25 +549,25 @@ namespace dvmig.Core.Synchronization
       )
       {
          var stateValue = entity.Contains(
-            SystemConstants.DataverseAttributes.StateCode
+            DataverseAttributes.StateCode
          )
-            ? entity[SystemConstants.DataverseAttributes.StateCode]
+            ? entity[DataverseAttributes.StateCode]
             : null;
 
          var statusValue = entity.Contains(
-            SystemConstants.DataverseAttributes.StatusCode
+            DataverseAttributes.StatusCode
          )
-            ? entity[SystemConstants.DataverseAttributes.StatusCode]
+            ? entity[DataverseAttributes.StatusCode]
             : null;
 
-         entity.Attributes.Remove(SystemConstants.DataverseAttributes.StateCode);
-         entity.Attributes.Remove(SystemConstants.DataverseAttributes.StatusCode);
+         entity.Attributes.Remove(DataverseAttributes.StateCode);
+         entity.Attributes.Remove(DataverseAttributes.StatusCode);
 
          sourceEntity.Attributes.Remove(
-            SystemConstants.DataverseAttributes.StateCode
+            DataverseAttributes.StateCode
          );
          sourceEntity.Attributes.Remove(
-            SystemConstants.DataverseAttributes.StatusCode
+            DataverseAttributes.StatusCode
          );
 
          var (success, _) = await SyncRecordAsync(sourceEntity, options, ct);
@@ -583,7 +594,8 @@ namespace dvmig.Core.Synchronization
             catch (Exception ex)
             {
                _logger.Warning(
-                  "SetState failed for {Key}:{Id}: {Msg}. Trying fallback Update.",
+                  "SetState failed for {Key}:{Id}: {Msg}. " +
+                  "Trying fallback Update.",
                   entity.LogicalName,
                   entity.Id,
                   ex.Message
@@ -594,11 +606,11 @@ namespace dvmig.Core.Synchronization
                   var fallback = new Entity(entity.LogicalName, entity.Id);
 
                   if (stateValue != null)
-                     fallback[SystemConstants.DataverseAttributes.StateCode] =
+                     fallback[DataverseAttributes.StateCode] =
                         stateValue;
 
                   if (statusValue != null)
-                     fallback[SystemConstants.DataverseAttributes.StatusCode] =
+                     fallback[DataverseAttributes.StatusCode] =
                         statusValue;
 
                   await _target.UpdateAsync(fallback, ct, callerId);
@@ -623,7 +635,7 @@ namespace dvmig.Core.Synchronization
          CT ct = default
       )
       {
-         if (ex.Message.Contains(SystemConstants.ErrorKeywords.ForeignKeyConflict))
+         if (ex.Message.Contains(ErrorKeywords.ForeignKeyConflict))
          {
             var match = Regex.Match(ex.Message, @"column '(\w+)'");
 
@@ -649,7 +661,8 @@ namespace dvmig.Core.Synchronization
             return false;
          }
 
-         var pattern = @"(?:Entity )?'?(\w+)'? [Ww]ith Id\s*=\s*([a-fA-F0-9-]+)";
+         var pattern = @"(?:Entity )?'?(\w+)'? [Ww]ith " +
+            @"Id\s*=\s*([a-fA-F0-9-]+)";
          var m = Regex.Match(ex.Message, pattern, RegexOptions.IgnoreCase);
 
          if (!m.Success)
@@ -715,7 +728,11 @@ namespace dvmig.Core.Synchronization
             var (success, _) = await SyncRecordAsync(record, options, ct);
 
             if (success)
-               return (await SyncRecordAsync(sourceParent, options, ct)).Success;
+            {
+               var res = await SyncRecordAsync(sourceParent, options, ct);
+
+               return res.Success;
+            }
          }
 
          if (options.StripMissingDependencies)
@@ -785,16 +802,13 @@ namespace dvmig.Core.Synchronization
                entity.Attributes.Remove(attr);
                sourceEntity.Attributes.Remove(attr);
 
-               return (await SyncRecordAsync(sourceEntity, options, ct)).Success;
+               var res = await SyncRecordAsync(sourceEntity, options, ct);
+
+               return res.Success;
             }
          }
 
          return false;
-      }
-
-      public string FormatFailureMessage(string context, Exception ex)
-      {
-         return $"{context}: {ex.GetType().Name}: {ex.Message}";
       }
 
       private OptionSetValue? ToOptionSetValue(object? value)
@@ -802,7 +816,9 @@ namespace dvmig.Core.Synchronization
          if (value == null)
             return null;
 
-         return value is OptionSetValue osv ? osv : new OptionSetValue((int)value);
+         return value is OptionSetValue osv
+            ? osv
+            : new OptionSetValue((int)value);
       }
 
       #endregion
@@ -821,12 +837,15 @@ namespace dvmig.Core.Synchronization
          if (options.PreserveAuditData)
          {
             var sourceCreator = entity.GetAttributeValue<EntityReference>(
-               SystemConstants.DataverseAttributes.CreatedBy
+               DataverseAttributes.CreatedBy
             );
 
             if (sourceCreator != null)
-               callerId = (await _userResolver.MapUserAsync(sourceCreator, ct))?
-                  .Id;
+            {
+               var user = await _userResolver.MapUserAsync(sourceCreator, ct);
+
+               callerId = user?.Id;
+            }
          }
 
          try
@@ -839,7 +858,7 @@ namespace dvmig.Core.Synchronization
          }
          catch (Exception ex)
          {
-            if (ex.Message.Contains(SystemConstants.ErrorKeywords.AlreadyExists))
+            if (ex.Message.Contains(ErrorKeywords.AlreadyExists))
                return (true, string.Empty);
 
             return (false, FormatFailureMessage("AssociateAsync", ex));
@@ -1111,7 +1130,8 @@ namespace dvmig.Core.Synchronization
   <entity name='{entityName}'>
     <attribute name='{primaryId}' />
     <filter type='and'>
-      <condition attribute='{sourceEntityId}' operator='eq' value='{entityId}' />
+      <condition attribute='{sourceEntityId}' operator='eq' 
+                 value='{entityId}' />
       <condition attribute='{logicalNameAttr}' operator='eq' 
                  value='{logicalName.ToLowerInvariant()}' />
     </filter>
@@ -1188,6 +1208,13 @@ namespace dvmig.Core.Synchronization
             _target,
             ct
          );
+      }
+
+      private string FormatFailureMessage(string context, Exception ex)
+      {
+         var baseEx = ex.GetBaseException();
+
+         return $"[{context}] {baseEx.Message}";
       }
 
       #endregion

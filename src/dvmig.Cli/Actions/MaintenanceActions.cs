@@ -1,3 +1,4 @@
+using System.Linq;
 using dvmig.Core.Interfaces;
 using dvmig.Core.Shared;
 using dvmig.Core.Synchronization;
@@ -249,7 +250,7 @@ namespace dvmig.Cli.Actions
                .AddChoices(
                   new[]
                   {
-                     "All Recommended Entities (Account, Contact, Activities)",
+                     "All Recommended Entities",
                      "Select Specific Entities"
                   }
                )
@@ -273,11 +274,19 @@ namespace dvmig.Cli.Actions
          }
          else
          {
+            var list = SyncSettings.RecommendedEntities
+               .Select(e => char.ToUpper(e[0]) + e.Substring(1))
+               .ToList();
+
+            var entityNames = list.Count > 1
+               ? string.Join(", ", list.Take(list.Count - 1)) +
+                 " and " + list.Last()
+               : list.FirstOrDefault() ?? string.Empty;
+
             AnsiConsole.MarkupLine(
                $"{SystemConstants.UiMarkup.BoldRed}CRITICAL WARNING:[/] This " +
-               "operation will delete [bold]EVERY SINGLE[/] Account, " +
-               "Contact, Task, Phone Call, and Email record from the " +
-               $"{envName} environment."
+               "operation will delete [bold]EVERY SINGLE[/] " +
+               $"{entityNames} record from the {envName} environment."
             );
          }
 

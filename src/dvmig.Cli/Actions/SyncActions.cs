@@ -242,7 +242,10 @@ namespace dvmig.Cli.Actions
                         continue;
                      }
 
-                     var initialProcessed = (int)Math.Min(totalCount, targetCount);
+                     var initialProcessed = (int)Math.Min(
+                        totalCount,
+                        targetCount
+                     );
 
                      var task = ctx.AddTask(
                         "Initializing...",

@@ -3,8 +3,8 @@ using System.Collections.Concurrent;
 namespace dvmig.Core.Interfaces
 {
    /// <summary>
-   /// Manages state during the synchronization process, such as recursion tracking, 
-   /// synced record IDs, and dependency tracking.
+   /// Manages state during the synchronization process, such as recursion 
+   /// tracking, synced record IDs, and dependency tracking.
    /// </summary>
    public interface ISyncStateService
    {

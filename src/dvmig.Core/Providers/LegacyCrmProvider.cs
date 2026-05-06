@@ -185,7 +185,10 @@ namespace dvmig.Core.Providers
       )
       {
          await ExecuteWithRetryAsync(
-            async (token) => await Task.Run(() => _client.Delete(entityLogicalName, id), token),
+            async (token) => await Task.Run(
+               () => _client.Delete(entityLogicalName, id),
+               token
+            ),
             ct
          );
       }
@@ -217,7 +220,10 @@ namespace dvmig.Core.Providers
       )
       {
          return await ExecuteWithRetryAsync(
-            async (token) => await Task.Run(() => _client.RetrieveMultiple(query), token),
+            async (token) => await Task.Run(
+               () => _client.RetrieveMultiple(query),
+               token
+            ),
             ct
          );
       }

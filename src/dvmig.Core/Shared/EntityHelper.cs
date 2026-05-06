@@ -39,7 +39,8 @@ namespace dvmig.Core.Shared
       }
 
       /// <summary>
-      /// Determines whether an exception represents a transient Dataverse error.
+      /// Determines whether an exception represents a transient Dataverse 
+      /// error.
       /// </summary>
       /// <param name="ex">The exception to check.</param>
       /// <returns>True if the error is transient; otherwise, false.</returns>
@@ -62,7 +63,8 @@ namespace dvmig.Core.Shared
          if (isTransient)
             return true;
 
-         return ex.InnerException != null && IsTransientError(ex.InnerException);
+         return ex.InnerException != null &&
+            IsTransientError(ex.InnerException);
       }
    }
 }

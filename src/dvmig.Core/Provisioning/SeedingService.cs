@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.Linq;
 using Bogus;
 using dvmig.Core.Interfaces;
 using Microsoft.Xrm.Sdk;
@@ -35,17 +37,15 @@ namespace dvmig.Core.Provisioning
 
          var faker = new Faker();
 
-         var activityTypes = new[]
-         {
-            DataverseEntities.Task,
-            DataverseEntities.PhoneCall,
-            DataverseEntities.Email
-         };
+         var activityTypes = DataverseEntities.ToList()
+            .Where(e => e.IsActivityEntity)
+            .Select(e => e.Name)
+            .ToArray();
 
          for (int i = 0; i < recordCount; i++)
          {
             // 1. Create Account
-            var account = new Entity(DataverseEntities.Account);
+            var account = new Entity(DataverseEntities.Account.Name);
             account[DataverseAttributes.Name] =
                faker.Company.CompanyName();
             account[DataverseAttributes.Telephone1] =
@@ -60,7 +60,7 @@ namespace dvmig.Core.Provisioning
             for (int j = 0; j < contactCount; j++)
             {
                var contact = new Entity(
-                  DataverseEntities.Contact
+                  DataverseEntities.Contact.Name
                );
 
                contact[DataverseAttributes.FirstName] =
@@ -72,7 +72,7 @@ namespace dvmig.Core.Provisioning
 
                contact[DataverseAttributes.ParentCustomerId] =
                   new EntityReference(
-                     DataverseEntities.Account,
+                     DataverseEntities.Account.Name,
                      accountId
                   );
 
@@ -84,13 +84,13 @@ namespace dvmig.Core.Provisioning
             // Set Primary Contact on Account
             var primaryContactId = faker.PickRandom(contactsInAccount);
             var accountUpdate = new Entity(
-               DataverseEntities.Account,
+               DataverseEntities.Account.Name,
                accountId
             );
 
             accountUpdate[DataverseAttributes.PrimaryContactId] =
                new EntityReference(
-                  DataverseEntities.Contact,
+                  DataverseEntities.Contact.Name,
                   primaryContactId
                );
 
@@ -119,14 +119,14 @@ namespace dvmig.Core.Provisioning
                if (faker.Random.Bool())
                {
                   activity[regardingAttr] = new EntityReference(
-                     DataverseEntities.Account,
+                     DataverseEntities.Account.Name,
                      accountId
                   );
                }
                else
                {
                   activity[regardingAttr] = new EntityReference(
-                     DataverseEntities.Contact,
+                     DataverseEntities.Contact.Name,
                      faker.PickRandom(contactsInAccount)
                   );
                }

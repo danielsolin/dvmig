@@ -67,7 +67,7 @@ namespace dvmig.Tests
                It.Is<Entity>(
                   e =>
                      e.LogicalName ==
-                        SystemConstants.DataverseEntities.Account
+                        SystemConstants.DataverseEntities.Account.Name
                ),
                It.IsAny<CancellationToken>(),
                It.IsAny<Guid?>()

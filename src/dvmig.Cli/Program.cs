@@ -28,12 +28,12 @@ namespace dvmig.Cli
 
       static async Task Main(string[] args)
       {
-         Init(args);
-         InitConsole();
+         InitDI();
+         InitConsole(args);
          await HandleMenuActions();
       }
 
-      private static void Init(string[] args)
+      private static void InitDI()
       {
          var services = new ServiceCollection();
 
@@ -57,15 +57,15 @@ namespace dvmig.Cli
          services.AddTransient<MaintenanceActions>();
 
          _serviceProvider = services.BuildServiceProvider();
+      }
 
+      private static void InitConsole(string[] args)
+      {
          _developerMode =
             args.Contains(SystemConstants.CliSettings.DevShort) ||
             args.Contains(SystemConstants.CliSettings.DevLong) ||
             args.Contains(SystemConstants.CliSettings.DevFull);
-      }
 
-      private static void InitConsole()
-      {
          Console.OutputEncoding = Encoding.UTF8;
 
          Console.CancelKeyPress += (s, e) =>

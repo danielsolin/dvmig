@@ -95,7 +95,7 @@ namespace dvmig.Core.Synchronization
             else if (value is EntityCollection collection &&
                      collection.Entities.Count > 0 &&
                      collection.Entities[0].LogicalName ==
-                        SystemConstants.DataverseEntities.ActivityParty)
+                        SystemConstants.DataverseEntities.ActivityParty.Name)
             {
                value = await PrepareActivityPartyCollectionAsync(
                   collection,
@@ -131,7 +131,7 @@ namespace dvmig.Core.Synchronization
          foreach (var party in collection.Entities)
          {
             var targetParty = new Entity(
-               SystemConstants.DataverseEntities.ActivityParty
+               SystemConstants.DataverseEntities.ActivityParty.Name
             );
             bool skipParty = false;
 
@@ -155,7 +155,7 @@ namespace dvmig.Core.Synchronization
                    partyValue is EntityReference pr)
                {
                   if (pr.LogicalName ==
-                         SystemConstants.DataverseEntities.SystemUser)
+                         SystemConstants.DataverseEntities.SystemUser.Name)
                   {
                      partyValue = await userResolver.MapUserAsync(pr, ct);
 

@@ -43,7 +43,7 @@ namespace dvmig.Core.Synchronization
       public void AddManualMapping(Guid sourceUserId, Guid targetUserId)
       {
          _mappingCache[sourceUserId] = new EntityReference(
-            DataverseEntities.SystemUser,
+            DataverseEntities.SystemUser.Name,
             targetUserId
          );
 
@@ -68,7 +68,7 @@ namespace dvmig.Core.Synchronization
       {
          _logger.Information("Proactively mapping active source users...");
 
-         var query = new QueryExpression(DataverseEntities.SystemUser)
+         var query = new QueryExpression(DataverseEntities.SystemUser.Name)
          {
             ColumnSet = new ColumnSet(
                DataverseAttributes.InternalEmailAddress,
@@ -117,7 +117,7 @@ namespace dvmig.Core.Synchronization
          _logger.Debug("Attempting to map source user {Id}", sourceUser.Id);
 
          var sourceUserData = await _source.RetrieveAsync(
-            DataverseEntities.SystemUser,
+            DataverseEntities.SystemUser.Name,
             sourceUser.Id,
             new[]
             {
@@ -264,7 +264,7 @@ namespace dvmig.Core.Synchronization
             CancellationToken ct
          )
       {
-         var query = new QueryByAttribute(DataverseEntities.SystemUser)
+         var query = new QueryByAttribute(DataverseEntities.SystemUser.Name)
          {
             ColumnSet = new ColumnSet(
                DataverseAttributes.SystemUserId,
