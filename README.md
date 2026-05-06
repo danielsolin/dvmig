@@ -49,20 +49,6 @@ You can run the application directly using the .NET CLI from the root directory 
 dotnet run --project src/dvmig.Cli
 ```
 
-### Developer / Maintenance Mode
-
-To access advanced data management and maintenance menus (e.g., component installation, data wiping, or generating sample data), run the application with the Developer Mode flag:
-
-```powershell
-dotnet run --project src/dvmig.Cli -- --dev
-# OR
-dotnet run --project src/dvmig.Cli -- -dev
-# OR
-dotnet run --project src/dvmig.Cli -- --developer-mode
-```
-
-*(Note: The `--` separates arguments for `dotnet run` from arguments passed to the `dvmig` application itself).*
-
 ### Application Menus
 
 Once launched, you will be greeted by the interactive TUI. The main menus include:
@@ -72,12 +58,12 @@ Once launched, you will be greeted by the interactive TUI. The main menus includ
    - **Sync Selected:** Allows you to manually pick which entities to synchronize.
    - **Re-sync:** Ignores local state tracking and forces a fresh synchronization for chosen entities.
 
-2. **Maintenance (🛠️)** *(Requires Developer Mode)*
+2. **Maintenance (🛠️)**
    - **Install DVMig Components:** Installs required custom entities (`dm_sourcedata`, `dm_migrationfailure`) and the `DMPlugin` on the target environment. **(Must be run before first sync)**.
    - **Uninstall DVMig Components:** Removes all deployed structural components from the target.
    - **View Recorded Migration Failures:** Read the failure logs stored in the target environment.
 
-3. **Data Management (🧪)** *(Requires Developer Mode)*
+3. **Data Management (🧪)**
    - **Generate Sample Data:** Seeds the source environment with mock data for testing.
    - **Wipe Data (Source/Target):** Dangerously purges data from the respective environments. Use with extreme caution.
 
