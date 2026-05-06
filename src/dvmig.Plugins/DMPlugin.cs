@@ -1,7 +1,8 @@
 using System;
-using dvmig.Core.Shared;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Query;
+
+using static dvmig.Core.Shared.SystemConstants;
 
 namespace dvmig.Plugins
 {
@@ -11,9 +12,6 @@ namespace dvmig.Plugins
    /// </summary>
    public class DMPlugin : IPlugin
    {
-      /// <summary>
-      /// Main entry point for the plugin execution.
-      /// </summary>
       public void Execute(IServiceProvider serviceProvider)
       {
          var context = (IPluginExecutionContext)serviceProvider
@@ -28,10 +26,10 @@ namespace dvmig.Plugins
          // Run as SYSTEM (null) to ensure we can always read dm_sourcedata
          var service = factory.CreateOrganizationService(null);
 
-         if (context.Depth > 2)
+         if(context.Depth > 2)
             return;
 
-         if (!context.InputParameters.Contains("Target") ||
+         if(!context.InputParameters.Contains("Target") ||
              !(context.InputParameters["Target"] is Entity entity))
             return;
 
@@ -44,7 +42,7 @@ namespace dvmig.Plugins
                entity
             );
          }
-         catch (Exception ex)
+         catch(Exception ex)
          {
             tracingService.Trace("DMPlugin error: {0}", ex.ToString());
          }
@@ -72,7 +70,7 @@ namespace dvmig.Plugins
             entity.LogicalName
          );
 
-         if (sourceData == null)
+         if(sourceData == null)
          {
             tracingService.Trace(
                "No source data found for {0}:{1}. Skipping timestamps.",
@@ -85,9 +83,9 @@ namespace dvmig.Plugins
 
          tracingService.Trace("Applying timestamps from source data...");
 
-         if (messageName == "create")
+         if(messageName == "create")
             ApplyCreateTimestamps(entity, sourceData, tracingService);
-         else if (messageName == "update")
+         else if(messageName == "update")
             ApplyUpdateTimestamps(entity, sourceData, tracingService);
       }
 
@@ -97,12 +95,12 @@ namespace dvmig.Plugins
          string logicalName
       )
       {
-         var entityName = SystemConstants.SourceData.EntityLogicalName;
-         var primaryId = SystemConstants.SourceData.PrimaryId;
-         var createdOnAttr = SystemConstants.SourceData.CreatedOn;
-         var modifiedOnAttr = SystemConstants.SourceData.ModifiedOn;
-         var sourceEntityId = SystemConstants.SourceData.EntityId;
-         var logicalNameAttr = SystemConstants.SourceData.EntityLogicalNameAttr;
+         var entityName = SourceData.EntityLogicalName;
+         var primaryId = SourceData.PrimaryId;
+         var createdOnAttr = SourceData.CreatedOn;
+         var modifiedOnAttr = SourceData.ModifiedOn;
+         var sourceEntityId = SourceData.EntityId;
+         var logicalNameAttr = SourceData.EntityLogicalNameAttr;
 
          var fetchXml =
             $@"<fetch version='1.0' output-format='xml-platform'
@@ -134,27 +132,26 @@ namespace dvmig.Plugins
          ITracingService tracingService
       )
       {
-         if (sourceData.Contains(SystemConstants.SourceData.CreatedOn))
+         if(sourceData.Contains(SourceData.CreatedOn))
          {
-            var createdDate = sourceData[SystemConstants.SourceData.CreatedOn];
+            var createdDate = sourceData[SourceData.CreatedOn];
 
             tracingService.Trace("Setting CreatedOn to {0}", createdDate);
 
-            entity[SystemConstants.DataverseAttributes.CreatedOn] = createdDate;
-
-            entity[SystemConstants.DataverseAttributes.OverriddenCreatedOn] =
+            entity[DataverseAttributes.CreatedOn] = createdDate;
+            entity[DataverseAttributes.OverriddenCreatedOn] =
                createdDate;
          }
 
-         if (sourceData.Contains(SystemConstants.SourceData.ModifiedOn))
+         if(sourceData.Contains(SourceData.ModifiedOn))
          {
             tracingService.Trace(
                "Setting ModifiedOn to {0}",
-               sourceData[SystemConstants.SourceData.ModifiedOn]
+               sourceData[SourceData.ModifiedOn]
             );
 
-            entity[SystemConstants.DataverseAttributes.ModifiedOn] =
-               sourceData[SystemConstants.SourceData.ModifiedOn];
+            entity[DataverseAttributes.ModifiedOn] =
+               sourceData[SourceData.ModifiedOn];
          }
       }
 
@@ -164,15 +161,15 @@ namespace dvmig.Plugins
          ITracingService tracingService
       )
       {
-         if (sourceData.Contains(SystemConstants.SourceData.ModifiedOn))
+         if(sourceData.Contains(SourceData.ModifiedOn))
          {
             tracingService.Trace(
                "Setting ModifiedOn to {0}",
-               sourceData[SystemConstants.SourceData.ModifiedOn]
+               sourceData[SourceData.ModifiedOn]
             );
 
-            entity[SystemConstants.DataverseAttributes.ModifiedOn] =
-               sourceData[SystemConstants.SourceData.ModifiedOn];
+            entity[DataverseAttributes.ModifiedOn] =
+               sourceData[SourceData.ModifiedOn];
          }
       }
    }
