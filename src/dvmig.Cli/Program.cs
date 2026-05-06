@@ -75,7 +75,7 @@ namespace dvmig.Cli
 
             var now = DateTime.Now;
 
-            if (now - _lastCtrlC < TimeSpan.FromSeconds(1))
+            if(now - _lastCtrlC < TimeSpan.FromSeconds(1))
                Environment.Exit(0);
 
             _lastCtrlC = now;
@@ -85,7 +85,6 @@ namespace dvmig.Cli
       }
 
       private static SelectionPrompt<MenuItem> GetMenu(
-         bool developerMode,
          SyncActions syncActions,
          MaintenanceActions maintenanceActions,
          Action onExit
@@ -105,7 +104,7 @@ namespace dvmig.Cli
             new MenuItem(
                $"Sync Recommended",
                ct => syncActions.HandleRecommendedSyncAsync(ct, false)
-            ),            
+            ),
             new MenuItem(
                $"Sync Selected {SystemConstants.UiMarkup.Grey}" +
                "(pick entities)[/]",
@@ -130,9 +129,7 @@ namespace dvmig.Cli
             syncGroup
          );
 
-         if (developerMode)
-         {
-            var maintenanceGroup = new List<MenuItem>
+         var maintenanceGroup = new List<MenuItem>
             {
                new MenuItem(
                   $"Install DVMig Components {SystemConstants.UiMarkup.Grey}"
@@ -150,16 +147,15 @@ namespace dvmig.Cli
                ),
             };
 
-            prompt.AddChoiceGroup(
-               new MenuItem(
-                  $"🛠️ {SystemConstants.UiMarkup.BoldCyan}Maintenance[/]",
-                  null
-               ),
-               maintenanceGroup
-            );
+         prompt.AddChoiceGroup(
+            new MenuItem(
+               $"🛠️ {SystemConstants.UiMarkup.BoldCyan}Maintenance[/]",
+               null
+            ),
+            maintenanceGroup
+         );
 
-            var dataGroup = new List<MenuItem>
-            {
+         var dataGroup = new List<MenuItem> {
                new MenuItem(
                   $"Generate Sample Data {SystemConstants.UiMarkup.Grey}" +
                   "(Source)[/]",
@@ -177,15 +173,14 @@ namespace dvmig.Cli
                )
             };
 
-            prompt.AddChoiceGroup(
-               new MenuItem(
-                  $"🧪 {SystemConstants.UiMarkup.BoldMagenta}"
-                  + "Data Management[/]",
-                  null
-               ),
-               dataGroup
-            );
-         }
+         prompt.AddChoiceGroup(
+            new MenuItem(
+               $"🧪 {SystemConstants.UiMarkup.BoldMagenta}"
+               + "Data Management[/]",
+               null
+            ),
+            dataGroup
+         );
 
          prompt.AddChoices(
             new[]
@@ -209,7 +204,7 @@ namespace dvmig.Cli
       {
          CliUI.WriteHeader();
 
-         if (_serviceProvider == null)
+         if(_serviceProvider == null)
          {
             CliUI.WriteError("Service provider is not initialized.");
             return;
@@ -221,10 +216,9 @@ namespace dvmig.Cli
 
          bool exit = false;
 
-         while (!exit)
+         while(!exit)
          {
             var prompt = GetMenu(
-               _developerMode,
                syncActions,
                maintenanceActions,
                () => exit = true
@@ -236,17 +230,17 @@ namespace dvmig.Cli
             {
                choice = AnsiConsole.Prompt(prompt);
             }
-            catch (Exception)
+            catch(Exception)
             {
                // Handles cases where the prompt is interrupted (e.g., Ctrl+C),
                // preventing a crash and allowing the user to stay in the app.
-               if (!AnsiConsole.Confirm("Back (Y) or Quit (N)?", true))
+               if(!AnsiConsole.Confirm("Back (Y) or Quit (N)?", true))
                   exit = true;
 
                continue;
             }
 
-            if (choice.Action != null)
+            if(choice.Action != null)
             {
                _currentActionCts = new CancellationTokenSource();
 
@@ -254,17 +248,17 @@ namespace dvmig.Cli
                {
                   await choice.Action(_currentActionCts.Token);
                }
-               catch (OperationCanceledException)
+               catch(OperationCanceledException)
                {
                   AnsiConsole.MarkupLine(
                      $"\n{SystemConstants.UiMarkup.Yellow}"
                      + "Operation interrupted.[/]"
                   );
 
-                  if (!AnsiConsole.Confirm("Back (Y) or Quit (N)?", true))
+                  if(!AnsiConsole.Confirm("Back (Y) or Quit (N)?", true))
                      exit = true;
                }
-               catch (Exception ex)
+               catch(Exception ex)
                {
                   CliUI.WriteError($"An unexpected error occurred: "
                      + $"{ex.Message}");
@@ -276,7 +270,7 @@ namespace dvmig.Cli
                }
             }
 
-            if (!exit)
+            if(!exit)
             {
                CliUI.Pause();
                CliUI.WriteHeader();
