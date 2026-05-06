@@ -44,7 +44,7 @@ namespace dvmig.Cli.Actions
          IDataverseProvider? Source,
          IDataverseProvider? Target,
          ISyncEngine? Engine,
-         IUserResolver? UserResolver
+         IUserService? UserResolver
       )> SetupSyncEngineAsync()
       {
          var source = await ConnectionManager.ConnectAsync(
@@ -76,7 +76,7 @@ namespace dvmig.Cli.Actions
             await HandleInstallAsync(target);
          }
 
-         var userResolver = new UserResolver(source, target, Logger);
+         var userResolver = new UserService(Logger, source, target);
          var syncStateService = new SyncStateService();
 
          // We create a fresh EntityService for this sync run that's bound 

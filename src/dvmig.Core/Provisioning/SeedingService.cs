@@ -1,8 +1,7 @@
-using System.Collections.Generic;
-using System.Linq;
 using Bogus;
 using dvmig.Core.Interfaces;
 using Microsoft.Xrm.Sdk;
+using Microsoft.Xrm.Sdk.Query;
 using static dvmig.Core.Shared.SystemConstants;
 
 namespace dvmig.Core.Provisioning
@@ -14,14 +13,17 @@ namespace dvmig.Core.Provisioning
    public class SeedingService : ISeedingService
    {
       private readonly ILogger _logger;
+      private readonly IUserService _userService;
 
       /// <summary>
       /// Initializes a new instance of the <see cref="SeedingService"/> class.
       /// </summary>
       /// <param name="logger">The logger instance.</param>
-      public SeedingService(ILogger logger)
+      /// <param name="userService">The user service instance.</param>
+      public SeedingService(ILogger logger, IUserService userService)
       {
          _logger = logger;
+         _userService = userService;
       }
 
       /// <inheritdoc />
@@ -36,6 +38,10 @@ namespace dvmig.Core.Provisioning
          );
 
          var faker = new Faker();
+         var availableUserIds = await _userService.GetRealActiveUsersAsync(
+            provider,
+            ct
+         );
 
          var activityTypes = DataverseEntities.ToList()
             .Where(e => e.IsActivityEntity)
@@ -51,7 +57,33 @@ namespace dvmig.Core.Provisioning
             account[DataverseAttributes.Telephone1] =
                faker.Phone.PhoneNumber();
 
-            var accountId = await provider.CreateAsync(account, ct);
+            // Randomize audit fields
+            var createdDate = faker.Date.Past(2);
+            var modifiedDate = faker.Date.Between(
+               createdDate,
+               DateTime.UtcNow
+            );
+
+            account[DataverseAttributes.OverriddenCreatedOn] = createdDate;
+            account[DataverseAttributes.ModifiedOn] = modifiedDate;
+
+            var accountCallerId = availableUserIds.Count > 0
+               ? faker.PickRandom(availableUserIds)
+               : (Guid?)null;
+
+            if (accountCallerId.HasValue)
+            {
+               account[DataverseAttributes.CreatedBy] = new EntityReference(
+                  DataverseEntities.SystemUser.Name,
+                  accountCallerId.Value
+               );
+            }
+
+            var accountId = await provider.CreateAsync(
+               account,
+               ct,
+               accountCallerId
+            );
 
             // 2. Create 2-7 Contacts per Account
             var contactsInAccount = new List<Guid>();
@@ -76,7 +108,39 @@ namespace dvmig.Core.Provisioning
                      accountId
                   );
 
-               var contactId = await provider.CreateAsync(contact, ct);
+               // Randomize audit fields
+               var contactCreatedDate = faker.Date.Between(
+                  createdDate,
+                  DateTime.UtcNow
+               );
+
+               var contactModifiedDate = faker.Date.Between(
+                  contactCreatedDate,
+                  DateTime.UtcNow
+               );
+
+               contact[DataverseAttributes.OverriddenCreatedOn] =
+                  contactCreatedDate;
+
+               contact[DataverseAttributes.ModifiedOn] = contactModifiedDate;
+
+               var contactCallerId = availableUserIds.Count > 0
+                  ? faker.PickRandom(availableUserIds)
+                  : (Guid?)null;
+
+               if (contactCallerId.HasValue)
+               {
+                  contact[DataverseAttributes.CreatedBy] = new EntityReference(
+                     DataverseEntities.SystemUser.Name,
+                     contactCallerId.Value
+                  );
+               }
+
+               var contactId = await provider.CreateAsync(
+                  contact,
+                  ct,
+                  contactCallerId
+               );
 
                contactsInAccount.Add(contactId);
             }
@@ -94,7 +158,14 @@ namespace dvmig.Core.Provisioning
                   primaryContactId
                );
 
-            await provider.UpdateAsync(accountUpdate, ct);
+            // Update modified date on account update
+            accountUpdate[DataverseAttributes.ModifiedOn] = DateTime.UtcNow;
+
+            await provider.UpdateAsync(
+               accountUpdate,
+               ct,
+               accountCallerId
+            );
 
             // 3. Create 5-12 Activities per Account
             int activityCount = faker.Random.Int(5, 12);
@@ -110,6 +181,22 @@ namespace dvmig.Core.Provisioning
                   faker.Lorem.Paragraph();
                activity[DataverseAttributes.ScheduledEnd] =
                   faker.Date.Future();
+
+               // Randomize audit fields
+               var activityCreatedDate = faker.Date.Between(
+                  createdDate,
+                  DateTime.UtcNow
+               );
+
+               var activityModifiedDate = faker.Date.Between(
+                  activityCreatedDate,
+                  DateTime.UtcNow
+               );
+
+               activity[DataverseAttributes.OverriddenCreatedOn] =
+                  activityCreatedDate;
+
+               activity[DataverseAttributes.ModifiedOn] = activityModifiedDate;
 
                // Randomly relate to Account or a random Contact 
                // within that Account
@@ -131,7 +218,24 @@ namespace dvmig.Core.Provisioning
                   );
                }
 
-               await provider.CreateAsync(activity, ct);
+               var activityCallerId = availableUserIds.Count > 0
+                  ? faker.PickRandom(availableUserIds)
+                  : (Guid?)null;
+
+               if (activityCallerId.HasValue)
+               {
+                  activity[DataverseAttributes.CreatedBy] =
+                     new EntityReference(
+                        DataverseEntities.SystemUser.Name,
+                        activityCallerId.Value
+                     );
+               }
+
+               await provider.CreateAsync(
+                  activity,
+                  ct,
+                  activityCallerId
+               );
             }
 
             _logger.Information(

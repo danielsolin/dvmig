@@ -44,6 +44,7 @@ namespace dvmig.Cli
          services.AddSingleton<ISyncStateService, SyncStateService>();
 
          // Provisioning & Metadata
+         services.AddTransient<IUserService, UserService>();
          services.AddTransient<ISeedingService, SeedingService>();
          services.AddTransient<IWipeDataService, WipeDataService>();
          services.AddTransient<IEntityService, EntityService>();
@@ -102,23 +103,21 @@ namespace dvmig.Cli
          var syncGroup = new List<MenuItem>
          {
             new MenuItem(
-               $"Sync Recommended {SystemConstants.UiMarkup.Grey}" +
-               "(Accounts, Contacts, Activities)[/]",
+               $"Sync Recommended",
                ct => syncActions.HandleRecommendedSyncAsync(ct, false)
-            ),
-            new MenuItem(
-               $"Re-sync Recommended {SystemConstants.UiMarkup.Grey}" +
-               "(Force update all records)[/]",
-               ct => syncActions.HandleRecommendedSyncAsync(ct, true)
-            ),
+            ),            
             new MenuItem(
                $"Sync Selected {SystemConstants.UiMarkup.Grey}" +
                "(pick entities)[/]",
                ct => syncActions.HandleSelectedSyncAsync(ct, false)
             ),
             new MenuItem(
+               $"Re-sync Recommended",
+               ct => syncActions.HandleRecommendedSyncAsync(ct, true)
+            ),
+            new MenuItem(
                $"Re-sync Selected {SystemConstants.UiMarkup.Grey}" +
-               "(Force update pick entities)[/]",
+               "(pick entities)[/]",
                ct => syncActions.HandleSelectedSyncAsync(ct, true)
             )
          };

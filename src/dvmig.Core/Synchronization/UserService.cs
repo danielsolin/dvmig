@@ -10,10 +10,10 @@ namespace dvmig.Core.Synchronization
    /// Resolves user references from a source Dataverse environment to a 
    /// target environment.
    /// </summary>
-   public class UserResolver : IUserResolver
+   public class UserService : IUserService
    {
-      private readonly IDataverseProvider _source;
-      private readonly IDataverseProvider _target;
+      private readonly IDataverseProvider? _source;
+      private readonly IDataverseProvider? _target;
       private readonly ILogger _logger;
 
       private readonly ConcurrentDictionary<Guid, EntityReference>
@@ -23,20 +23,20 @@ namespace dvmig.Core.Synchronization
          _summaries = new ConcurrentDictionary<Guid, UserMappingSummary>();
 
       /// <summary>
-      /// Initializes a new instance of the <see cref="UserResolver"/> class.
+      /// Initializes a new instance of the <see cref="UserService"/> class.
       /// </summary>
-      /// <param name="source">The source Dataverse provider.</param>
-      /// <param name="target">The target Dataverse provider.</param>
       /// <param name="logger">The logger instance.</param>
-      public UserResolver(
-         IDataverseProvider source,
-         IDataverseProvider target,
-         ILogger logger
+      /// <param name="source">Optional source Dataverse provider.</param>
+      /// <param name="target">Optional target Dataverse provider.</param>
+      public UserService(
+         ILogger logger,
+         IDataverseProvider? source = null,
+         IDataverseProvider? target = null
       )
       {
+         _logger = logger;
          _source = source;
          _target = target;
-         _logger = logger;
       }
 
       /// <inheritdoc />
@@ -57,6 +57,77 @@ namespace dvmig.Core.Synchronization
       }
 
       /// <inheritdoc />
+      public async Task<List<Guid>> GetRealActiveUsersAsync(
+         IDataverseProvider provider,
+         CancellationToken ct = default
+      )
+      {
+         try
+         {
+            var query = new QueryExpression(DataverseEntities.SystemUser.Name)
+            {
+               ColumnSet = new ColumnSet(
+                  DataverseAttributes.SystemUserId,
+                  DataverseAttributes.FullName
+               )
+            };
+
+            query.Criteria.AddCondition(
+               DataverseAttributes.IsDisabled,
+               ConditionOperator.Equal,
+               false
+            );
+
+            // accessmode = 0 (Read-Write/Human)
+            query.Criteria.AddCondition(
+               DataverseAttributes.AccessMode,
+               ConditionOperator.Equal,
+               0
+            );
+
+            var results = await provider.RetrieveMultipleAsync(query, ct);
+
+            var users = results.Entities
+               .Select(e => new
+               {
+                  Id = e.Id,
+                  Name = e.GetAttributeValue<string>(
+                     DataverseAttributes.FullName
+                  ) ?? "Unknown"
+               })
+               .ToList();
+
+            if (users.Count > 0)
+            {
+               var names = string.Join(", ", users.Select(u => u.Name));
+
+               _logger.Information(
+                  $"Found {users.Count} users for randomization: {names}"
+               );
+            }
+            else
+            {
+               _logger.Warning(
+                  "No active Read-Write users found for randomization. " +
+                  "Creations will use the default caller."
+               );
+            }
+
+            return users.Select(u => u.Id).ToList();
+         }
+         catch (Exception ex)
+         {
+            _logger.Warning(
+               ex,
+               "Failed to retrieve available users for randomization. " +
+               "Defaulting to execution user."
+            );
+
+            return new List<Guid>();
+         }
+      }
+
+      /// <inheritdoc />
       public void ClearCache()
       {
          _mappingCache.Clear();
@@ -66,6 +137,13 @@ namespace dvmig.Core.Synchronization
       /// <inheritdoc />
       public async Task MapAllSourceUsersAsync(CancellationToken ct = default)
       {
+         if (_source == null)
+         {
+            throw new InvalidOperationException(
+               "Source provider must be set to map all source users."
+            );
+         }
+
          _logger.Information("Proactively mapping active source users...");
 
          var query = new QueryExpression(DataverseEntities.SystemUser.Name)
@@ -113,6 +191,13 @@ namespace dvmig.Core.Synchronization
 
          if (_mappingCache.TryGetValue(sourceUser.Id, out var targetRef))
             return targetRef;
+
+         if (_source == null)
+         {
+            throw new InvalidOperationException(
+               "Source provider must be set to map a user."
+            );
+         }
 
          _logger.Debug("Attempting to map source user {Id}", sourceUser.Id);
 
@@ -264,6 +349,13 @@ namespace dvmig.Core.Synchronization
             CancellationToken ct
          )
       {
+         if (_target == null)
+         {
+            throw new InvalidOperationException(
+               "Target provider must be set to find target users."
+            );
+         }
+
          var query = new QueryByAttribute(DataverseEntities.SystemUser.Name)
          {
             ColumnSet = new ColumnSet(

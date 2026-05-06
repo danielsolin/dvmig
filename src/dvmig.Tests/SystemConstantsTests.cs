@@ -47,15 +47,19 @@ namespace dvmig.Tests
          // Act
          var entities = SystemConstants.SyncSettings.RecommendedEntities;
 
-         // Assert order: Base entities first, then Activities
+         // Assert order: Base entities (non-system, non-activity) first, 
+         // then Activities (non-system, activity)
+         // Alphabetical within those groups.
          Assert.Equal("account", entities[0]);
          Assert.Equal("contact", entities[1]);
          
          // Activities should follow (alphabetical among activities)
-         Assert.Contains("appointment", entities.Skip(2));
-         Assert.Contains("email", entities.Skip(2));
-         Assert.Contains("phonecall", entities.Skip(2));
-         Assert.Contains("task", entities.Skip(2));
+         Assert.Equal("appointment", entities[2]);
+         Assert.Equal("email", entities[3]);
+         Assert.Equal("phonecall", entities[4]);
+         Assert.Equal("task", entities[5]);
+
+         Assert.Equal(6, entities.Count);
       }
    }
 }

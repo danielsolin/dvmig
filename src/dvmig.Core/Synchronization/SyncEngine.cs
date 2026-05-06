@@ -22,7 +22,7 @@ namespace dvmig.Core.Synchronization
    {
       private readonly IDataverseProvider _source;
       private readonly IDataverseProvider _target;
-      private readonly IUserResolver _userResolver;
+      private readonly IUserService _userResolver;
       private readonly ILogger _logger;
       private readonly IEntityService _entityService;
       private readonly ISyncStateService _syncStateService;
@@ -36,7 +36,7 @@ namespace dvmig.Core.Synchronization
       public SyncEngine(
          IDataverseProvider source,
          IDataverseProvider target,
-         IUserResolver userResolver,
+         IUserService userResolver,
          ILogger logger,
          IEntityService entityService,
          ISyncStateService syncStateService

@@ -12,7 +12,7 @@ namespace dvmig.Tests
       private readonly Mock<IDataverseProvider> _sourceMock;
       private readonly Mock<IDataverseProvider> _targetMock;
       private readonly Mock<ILogger> _loggerMock;
-      private readonly UserResolver _resolver;
+      private readonly UserService _resolver;
 
       public UserResolverTests()
       {
@@ -20,10 +20,10 @@ namespace dvmig.Tests
          _targetMock = new Mock<IDataverseProvider>();
          _loggerMock = new Mock<ILogger>();
 
-         _resolver = new UserResolver(
+         _resolver = new UserService(
+            _loggerMock.Object,
             _sourceMock.Object,
-            _targetMock.Object,
-            _loggerMock.Object
+            _targetMock.Object
          );
       }
 

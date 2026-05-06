@@ -9,6 +9,7 @@ namespace dvmig.Tests
    public class ProvisioningTests
    {
       private readonly Mock<ILogger> _loggerMock;
+      private readonly Mock<IUserService> _userServiceMock;
       private readonly Mock<IDataverseProvider> _targetMock;
       private readonly PluginService _pluginService;
       private readonly SeedingService _seedingService;
@@ -16,11 +17,20 @@ namespace dvmig.Tests
       public ProvisioningTests()
       {
          _loggerMock = new Mock<ILogger>();
+         _userServiceMock = new Mock<IUserService>();
          _targetMock = new Mock<IDataverseProvider>();
          _pluginService = new PluginService(_loggerMock.Object);
 
+         _userServiceMock.Setup(
+            u => u.GetRealActiveUsersAsync(
+               It.IsAny<IDataverseProvider>(),
+               It.IsAny<CancellationToken>()
+            )
+         ).ReturnsAsync(new List<Guid>());
+
          _seedingService = new SeedingService(
-            _loggerMock.Object
+            _loggerMock.Object,
+            _userServiceMock.Object
          );
       }
 

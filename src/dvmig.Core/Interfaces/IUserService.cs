@@ -18,7 +18,7 @@ namespace dvmig.Core.Interfaces
    /// Defines the contract for a service that resolves user references from 
    /// a source environment to the corresponding users in a target environment.
    /// </summary>
-   public interface IUserResolver
+   public interface IUserService
    {
       /// <summary>
       /// Asynchronously resolves a source user reference to its equivalent 
@@ -58,6 +58,17 @@ namespace dvmig.Core.Interfaces
       /// </summary>
       /// <param name="ct">A cancellation token.</param>
       Task MapAllSourceUsersAsync(CancellationToken ct = default);
+
+      /// <summary>
+      /// Retrieves a list of active, human users from the specified provider.
+      /// </summary>
+      /// <param name="provider">The Dataverse provider to query.</param>
+      /// <param name="ct">A cancellation token.</param>
+      /// <returns>A list of user IDs.</returns>
+      Task<List<Guid>> GetRealActiveUsersAsync(
+         IDataverseProvider provider,
+         CancellationToken ct = default
+      );
 
       /// <summary>
       /// Clears the user mapping cache.

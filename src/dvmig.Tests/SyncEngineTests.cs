@@ -13,7 +13,7 @@ namespace dvmig.Tests
    {
       private readonly Mock<IDataverseProvider> _sourceMock;
       private readonly Mock<IDataverseProvider> _targetMock;
-      private readonly Mock<IUserResolver> _userResolverMock;
+      private readonly Mock<IUserService> _userResolverMock;
       private readonly Mock<ILogger> _loggerMock;
       private readonly SyncEngine _engine;
 
@@ -21,7 +21,7 @@ namespace dvmig.Tests
       {
          _sourceMock = new Mock<IDataverseProvider>();
          _targetMock = new Mock<IDataverseProvider>();
-         _userResolverMock = new Mock<IUserResolver>();
+         _userResolverMock = new Mock<IUserService>();
          _loggerMock = new Mock<ILogger>();
 
          _targetMock.Setup(

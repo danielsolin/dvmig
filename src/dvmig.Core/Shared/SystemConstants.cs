@@ -64,6 +64,64 @@ namespace dvmig.Core.Shared
          public static readonly DataverseEntity Email =
             new DataverseEntity("email", false, true);
 
+         public static readonly DataverseEntity Lead =
+            new DataverseEntity("lead", true, false);
+
+         public static readonly DataverseEntity Opportunity =
+            new DataverseEntity("opportunity", true, false);
+
+         public static readonly DataverseEntity Quote =
+            new DataverseEntity("quote", true, false);
+
+         public static readonly DataverseEntity Order =
+            new DataverseEntity("salesorder", true, false);
+
+         public static readonly DataverseEntity Invoice =
+            new DataverseEntity("invoice", true, false);
+
+         public static readonly DataverseEntity Product =
+            new DataverseEntity("product", true, false);
+
+         public static readonly DataverseEntity PriceLevel =
+            new DataverseEntity("pricelevel", true, false);
+
+         public static readonly DataverseEntity Category =
+            new DataverseEntity("category", true, false);
+
+         public static readonly DataverseEntity Case =
+            new DataverseEntity("incident", true, false);
+
+         public static readonly DataverseEntity Entitlement =
+            new DataverseEntity("entitlement", true, false);
+
+         public static readonly DataverseEntity Solution =
+            new DataverseEntity("solution", true, false);
+
+         public static readonly DataverseEntity KnowledgeArticle =
+            new DataverseEntity("knowledgearticle", true, false);
+
+         public static readonly DataverseEntity Campaign =
+            new DataverseEntity("campaign", true, false);
+
+         public static readonly DataverseEntity CampaignActivity =
+            new DataverseEntity("campaignactivity", true, true);
+
+         public static readonly DataverseEntity MarketingList =
+            new DataverseEntity("list", true, false);
+
+         public static readonly DataverseEntity EmailTemplate =
+            new DataverseEntity("template", true, false);
+
+         public static readonly DataverseEntity Team =
+            new DataverseEntity("team", true, false);
+
+         public static readonly DataverseEntity Role =
+            new DataverseEntity("role", true, false);
+
+         public static readonly DataverseEntity BusinessUnit =
+            new DataverseEntity("businessunit", true, false);
+
+
          /// <summary>
          /// Returns all entities defined in this class as a list, 
          /// sorted by system/activity status and then by name.

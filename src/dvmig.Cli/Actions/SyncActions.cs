@@ -107,7 +107,7 @@ namespace dvmig.Cli.Actions
       }
 
       private async Task<bool> PrepareUserMappingsAsync(
-         IUserResolver userResolver,
+         IUserService userResolver,
          CancellationToken ct
       )
       {

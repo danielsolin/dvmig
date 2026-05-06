@@ -41,7 +41,7 @@ namespace dvmig.Core.Synchronization
          Entity sourceEntity,
          EntityMetadata metadata,
          SyncOptions options,
-         IUserResolver userResolver,
+         IUserService userResolver,
          ConcurrentDictionary<string, Guid> idMappingCache,
          CancellationToken ct = default
       )
@@ -118,7 +118,7 @@ namespace dvmig.Core.Synchronization
       private async Task<EntityCollection> PrepareActivityPartyCollectionAsync(
          EntityCollection collection,
          Entity sourceEntity,
-         IUserResolver userResolver,
+         IUserService userResolver,
          ConcurrentDictionary<string, Guid> idMappingCache,
          CancellationToken ct
       )

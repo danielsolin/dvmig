@@ -23,7 +23,7 @@ namespace dvmig.Core.Interfaces
          Entity sourceEntity,
          EntityMetadata metadata,
          SyncOptions options,
-         IUserResolver userResolver,
+         IUserService userResolver,
          ConcurrentDictionary<string, Guid> idMappingCache,
          CancellationToken ct = default
       );
