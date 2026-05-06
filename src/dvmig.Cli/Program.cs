@@ -19,7 +19,6 @@ namespace dvmig.Cli
       private static IServiceProvider? _serviceProvider;
       private static CancellationTokenSource? _currentActionCts;
       private static DateTime _lastCtrlC = DateTime.MinValue;
-      private static bool _developerMode;
 
       private record MenuItem(
          string Label,
@@ -62,11 +61,6 @@ namespace dvmig.Cli
 
       private static void InitConsole(string[] args)
       {
-         _developerMode =
-            args.Contains(SystemConstants.CliSettings.DevShort) ||
-            args.Contains(SystemConstants.CliSettings.DevLong) ||
-            args.Contains(SystemConstants.CliSettings.DevFull);
-
          Console.OutputEncoding = Encoding.UTF8;
 
          Console.CancelKeyPress += (s, e) =>

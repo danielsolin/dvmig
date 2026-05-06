@@ -310,18 +310,6 @@ namespace dvmig.Core.Shared
       }
 
       /// <summary>
-      /// Constants for CLI arguments and environment settings.
-      /// </summary>
-      public static class CliSettings
-      {
-         public const string DevShort = "-dev";
-         public const string DevLong = "--dev";
-         public const string DevFull = "--developer-mode";
-         public const string AuthAd = "AuthType=AD";
-         public const string AuthIfd = "AuthType=IFD";
-      }
-
-      /// <summary>
       /// Settings related to data synchronization.
       /// </summary>
       public static class SyncSettings
