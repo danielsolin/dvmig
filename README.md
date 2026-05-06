@@ -31,11 +31,7 @@ cd dvmig
 dotnet build
 ```
 
-Alternatively, to publish a minimal, single-file executable, you can run the provided deployment script:
 
-```powershell
-./publish-minimal.ps1
-```
 
 ## Configuration
 
