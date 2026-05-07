@@ -21,13 +21,13 @@ namespace dvmig.Core.Settings
             return string.Empty;
 
          var parts = connectionString.Split(
-            ';',
+            new[] { ';' },
             StringSplitOptions.RemoveEmptyEntries
          );
 
          var maskedParts = parts.Select(p =>
          {
-            var kv = p.Split('=', 2);
+            var kv = p.Split(new[] { '=' }, 2);
 
             if (kv.Length != 2)
                return p;
@@ -38,9 +38,9 @@ namespace dvmig.Core.Settings
             var comp = StringComparison.OrdinalIgnoreCase;
 
             bool isSensitive =
-               key.Contains(SystemConstants.MaskingKeywords.Password, comp) ||
-               key.Contains(SystemConstants.MaskingKeywords.Secret, comp) ||
-               key.Contains(SystemConstants.MaskingKeywords.Token, comp);
+               key.IndexOf(SystemConstants.MaskingKeywords.Password, comp) >= 0 ||
+               key.IndexOf(SystemConstants.MaskingKeywords.Secret, comp) >= 0 ||
+               key.IndexOf(SystemConstants.MaskingKeywords.Token, comp) >= 0;
 
             if (isSensitive)
                return $"{key}=********";

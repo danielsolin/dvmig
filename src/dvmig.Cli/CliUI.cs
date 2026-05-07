@@ -1,3 +1,5 @@
+using System.Runtime.InteropServices;
+
 using dvmig.Core.Interfaces;
 using dvmig.Core.Shared;
 
@@ -69,7 +71,8 @@ namespace dvmig.Cli
          AnsiConsole.Clear();
          AnsiConsole.Write(new FigletText("DVMIG").Color(Color.Blue));
          AnsiConsole.MarkupLine(
-            "[bold]Dataverse Migrator - Technical UI[/]"
+            "[bold]Dataverse Migrator " +
+            $"({RuntimeInformation.FrameworkDescription})[/]"
          );
 
          AnsiConsole.WriteLine();

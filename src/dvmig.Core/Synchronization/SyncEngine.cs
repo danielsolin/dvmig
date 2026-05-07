@@ -5,6 +5,7 @@ using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Query;
 
 using dvmig.Core.Interfaces;
+using dvmig.Core.Providers;
 using dvmig.Core.Shared;
 using static dvmig.Core.Shared.SystemConstants;
 using CT = System.Threading.CancellationToken;
@@ -161,6 +162,30 @@ namespace dvmig.Core.Synchronization
             CancellationToken = ct
          };
 
+#if NET48
+         using(var semaphore = new SemaphoreSlim(parallelOptions.MaxDegreeOfParallelism))
+         {
+            var tasks = entitiesToSync.Select(async entity =>
+            {
+               await semaphore.WaitAsync(ct);
+               try
+               {
+                  await SyncRecordAndReportAsync(
+                     entity,
+                     options,
+                     recordProgress,
+                     ct
+                  );
+               }
+               finally
+               {
+                  semaphore.Release();
+               }
+            });
+
+            await Task.WhenAll(tasks);
+         }
+#else
          await Parallel.ForEachAsync(
             entitiesToSync,
             parallelOptions,
@@ -174,6 +199,7 @@ namespace dvmig.Core.Synchronization
                );
             }
          );
+#endif
       }
 
       #endregion

@@ -133,58 +133,5 @@ namespace dvmig.Core.Interfaces
          CancellationToken ct = default,
          Guid? callerId = null
       );
-
-      /// <summary>
-      /// Gets the primary ID attribute name for a specific entity.
-      /// </summary>
-      public async Task<string?> GetPrimaryIdAttributeAsync(
-         string entityLogicalName,
-         CancellationToken ct = default
-      )
-      {
-         var metadata = await GetEntityMetadataAsync(entityLogicalName, ct);
-
-         return metadata?.PrimaryIdAttribute;
-      }
-
-      /// <summary>
-      /// Gets the total record count for a specific entity type.
-      /// </summary>
-      /// <param name="entityName">The logical name of the entity.</param>
-      /// <param name="ct">A cancellation token.</param>
-      /// <returns>The total number of records.</returns>
-      public async Task<long> GetRecordCountAsync(
-         string entityName,
-         CancellationToken ct = default
-      )
-      {
-         var metadata = await GetEntityMetadataAsync(entityName, ct);
-
-         var primaryId = metadata?.PrimaryIdAttribute ??
-            $"{entityName}id";
-
-         var fetchXml = $@"
-            <fetch aggregate='true'>
-              <entity name='{entityName}'>
-                <attribute name='{primaryId}' alias='count' aggregate='count' />
-              </entity>
-            </fetch>";
-
-         var result = await RetrieveMultipleAsync(
-            new Microsoft.Xrm.Sdk.Query.FetchExpression(fetchXml),
-            ct
-         );
-
-         if (result.Entities.Count > 0 &&
-             result.Entities[0].Contains("count"))
-         {
-            var entity = result.Entities[0];
-            var aliasedValue = (AliasedValue)entity["count"];
-
-            return Convert.ToInt64(aliasedValue.Value);
-         }
-
-         return 0;
-      }
    }
 }

@@ -66,10 +66,15 @@ namespace dvmig.Core.Provisioning
 
          _logger.Information("Deploying plugin assembly...");
 
+#if NET48
+         // ReadAllBytesAsync is not available in .NET Framework 4.8
+         var assemblyBytes = await Task.Run(() => File.ReadAllBytes(assemblyPath), ct);
+#else
          var assemblyBytes = await File.ReadAllBytesAsync(
             assemblyPath,
             ct
          );
+#endif
 
          var assembly = new Entity(
             SystemConstants.PluginRegistration.AssemblyEntity

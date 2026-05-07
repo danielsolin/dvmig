@@ -1,4 +1,3 @@
-using System.Runtime.Versioning;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -9,9 +8,8 @@ namespace dvmig.Core.Settings
 {
    /// <summary>
    /// Implementation of the settings service using local file storage and 
-   /// DPAPI for encryption.
+   /// DPAPI for encryption (on Windows).
    /// </summary>
-   [SupportedOSPlatform("windows")]
    public class SettingsService : ISettingsService
    {
       private readonly string _filePath;
@@ -25,16 +23,35 @@ namespace dvmig.Core.Settings
       /// </summary>
       public SettingsService()
       {
-         var appData = Environment.GetFolderPath(
-            Environment.SpecialFolder.ApplicationData
-         );
+         string folder;
 
-         var folder = Path.Combine(
-            appData,
-            SystemConstants.AppConstants.AppName
-         );
+#if NET48
+         bool isWindows = true; // .NET Framework 4.8 is Windows-only
+#else
+         bool isWindows = OperatingSystem.IsWindows();
+#endif
 
-         if (!Directory.Exists(folder))
+         if(isWindows)
+         {
+            folder = Path.Combine(
+               Environment.GetFolderPath(
+                  Environment.SpecialFolder.ApplicationData
+               ),
+               SystemConstants.AppConstants.AppName
+            );
+         }
+         else
+         {
+            // Use hidden folder in home directory for Linux/macOS
+            folder = Path.Combine(
+               Environment.GetFolderPath(
+                  Environment.SpecialFolder.UserProfile
+               ),
+               "." + SystemConstants.AppConstants.AppName
+            );
+         }
+
+         if(!Directory.Exists(folder))
             Directory.CreateDirectory(folder);
 
          _filePath = Path.Combine(
@@ -46,7 +63,7 @@ namespace dvmig.Core.Settings
       /// <inheritdoc />
       public UserSettings LoadSettings()
       {
-         if (!File.Exists(_filePath))
+         if(!File.Exists(_filePath))
             return new UserSettings();
 
          try
@@ -55,7 +72,7 @@ namespace dvmig.Core.Settings
             var settings = JsonSerializer.Deserialize<UserSettings>(json) ??
                new UserSettings();
 
-            if (settings.RememberConnections)
+            if(settings.RememberConnections)
             {
                settings.SourceConnectionString =
                   Decrypt(settings.SourceConnectionString);
@@ -88,7 +105,7 @@ namespace dvmig.Core.Settings
                AutoConnect = settings.AutoConnect
             };
 
-            if (settings.RememberConnections)
+            if(settings.RememberConnections)
             {
                settingsCopy.SourceConnectionString =
                   Encrypt(settings.SourceConnectionString);
@@ -108,12 +125,22 @@ namespace dvmig.Core.Settings
       }
 
       /// <summary>
-      /// Encrypts the specified text using DPAPI.
+      /// Encrypts the specified text.
       /// </summary>
       private string Encrypt(string text)
       {
-         if (string.IsNullOrEmpty(text))
+         if(string.IsNullOrEmpty(text))
             return string.Empty;
+
+#if NET48
+         bool isWindows = true;
+#else
+         bool isWindows = OperatingSystem.IsWindows();
+#endif
+
+         // DPAPI is only available on Windows
+         if(!isWindows)
+            return text;
 
          try
          {
@@ -128,17 +155,27 @@ namespace dvmig.Core.Settings
          }
          catch
          {
-            return string.Empty;
+            return text;
          }
       }
 
       /// <summary>
-      /// Decrypts the specified base64 string using DPAPI.
+      /// Decrypts the specified base64 string.
       /// </summary>
       private string Decrypt(string base64)
       {
-         if (string.IsNullOrEmpty(base64))
+         if(string.IsNullOrEmpty(base64))
             return string.Empty;
+
+#if NET48
+         bool isWindows = true;
+#else
+         bool isWindows = OperatingSystem.IsWindows();
+#endif
+
+         // DPAPI is only available on Windows
+         if(!isWindows)
+            return base64;
 
          try
          {
@@ -155,7 +192,7 @@ namespace dvmig.Core.Settings
 
                return Encoding.UTF8.GetString(decrypted);
             }
-            catch (CryptographicException)
+            catch(CryptographicException)
             {
                // Fallback: try Jules' "no-entropy" format just in case
                var decrypted = ProtectedData.Unprotect(
@@ -169,7 +206,7 @@ namespace dvmig.Core.Settings
          }
          catch
          {
-            return string.Empty;
+            return base64;
          }
       }
    }

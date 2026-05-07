@@ -1,4 +1,5 @@
 using dvmig.Core.Interfaces;
+using dvmig.Core.Providers;
 using dvmig.Core.Shared;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Messages;
@@ -75,8 +76,10 @@ namespace dvmig.Core.Provisioning
 
          var lockObject = new object();
          var deletedForThisEntity = 0L;
+         var consecutiveFailures = 0;
+         const int MaxConsecutiveFailures = 3;
 
-         while (true)
+         while (consecutiveFailures < MaxConsecutiveFailures)
          {
             var query = new QueryExpression(logicalName)
             {
@@ -101,35 +104,103 @@ namespace dvmig.Core.Provisioning
                CancellationToken = ct
             };
 
+            var deletedInThisIteration = 0L;
+
+#if NET48
+            // Task-based alternative for .NET Framework 4.8
+            using(var semaphore = new SemaphoreSlim(parallelOptions.MaxDegreeOfParallelism))
+            {
+               var tasks = chunks.Select(async chunk =>
+               {
+                  await semaphore.WaitAsync(ct);
+                  try
+                  {
+                     var successfulCount = await DeleteRecordBatchWithCountAsync(
+                        provider,
+                        chunk,
+                        ct
+                     );
+
+                     lock(lockObject)
+                     {
+                        deletedForThisEntity += successfulCount;
+                        deletedInThisIteration += successfulCount;
+
+                        progress?.Report(
+                           Math.Max(
+                              0,
+                              initialTotal -
+                              (alreadyDeletedTotal + deletedForThisEntity)
+                           )
+                        );
+                     }
+                  }
+                  finally
+                  {
+                     semaphore.Release();
+                  }
+               });
+
+               await Task.WhenAll(tasks);
+            }
+#else
             await Parallel.ForEachAsync(
                chunks,
                parallelOptions,
                async (chunk, token) =>
                {
-                  await DeleteRecordBatchAsync(provider, chunk, token);
+                  var successfulCount = await DeleteRecordBatchWithCountAsync(
+                     provider,
+                     chunk,
+                     token
+                  );
 
                   lock (lockObject)
                   {
-                     deletedForThisEntity += chunk.Count;
+                     deletedForThisEntity += successfulCount;
+                     deletedInThisIteration += successfulCount;
 
                      progress?.Report(
                         Math.Max(
                            0,
-                           (
-                              initialTotal -
-                              (alreadyDeletedTotal + deletedForThisEntity)
-                           )
+                           initialTotal -
+                           (alreadyDeletedTotal + deletedForThisEntity)
                         )
                      );
                   }
                }
             );
+#endif
+
+            // If we didn't manage to delete anything in this whole iteration 
+            // of 1000 records, something is wrong (likely constraints).
+            if (deletedInThisIteration == 0)
+            {
+               consecutiveFailures++;
+               
+               if (consecutiveFailures < MaxConsecutiveFailures)
+                  _logger.Warning(
+                     $"Could not delete any records for {logicalName} " +
+                     "in this batch. It might be due to dependencies. " +
+                     $"Retry {consecutiveFailures}/{MaxConsecutiveFailures}..."
+                  );
+            }
+            else
+               consecutiveFailures = 0; // Reset on success
          }
+
+         if (consecutiveFailures >= MaxConsecutiveFailures)
+            _logger.Error(
+               $"Skipping remaining records for {logicalName} after " +
+               $"{MaxConsecutiveFailures} failed attempts. " +
+               "This is usually caused by circular dependencies or " +
+               "mandatory relationships."
+            );
 
          return deletedForThisEntity;
       }
 
-      private async Task DeleteRecordBatchAsync(
+      private async Task<long> DeleteRecordBatchWithCountAsync(
          IDataverseProvider provider,
          List<Entity> chunk,
          CancellationToken ct
@@ -140,7 +211,7 @@ namespace dvmig.Core.Provisioning
             Settings = new ExecuteMultipleSettings
             {
                ContinueOnError = true,
-               ReturnResponses = false
+               ReturnResponses = true // We need responses to count successes
             },
             Requests = new OrganizationRequestCollection()
          };
@@ -151,7 +222,11 @@ namespace dvmig.Core.Provisioning
                Target = entity.ToEntityReference()
             });
 
-         await provider.ExecuteAsync(multipleRequest, ct);
+         var response = (ExecuteMultipleResponse)await provider
+            .ExecuteAsync(multipleRequest, ct);
+
+         // Count records that didn't return an error
+         return response.Responses.Count(r => r.Fault == null);
       }
    }
 }

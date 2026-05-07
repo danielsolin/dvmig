@@ -1,4 +1,3 @@
-using System.Runtime.Versioning;
 using System.Text;
 
 using dvmig.Cli.Actions;
@@ -13,7 +12,6 @@ using Spectre.Console;
 
 namespace dvmig.Cli
 {
-   [SupportedOSPlatform("windows")]
    class Program
    {
       private static IServiceProvider? _serviceProvider;

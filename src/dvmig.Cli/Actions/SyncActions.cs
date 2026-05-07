@@ -1,5 +1,6 @@
 using dvmig.Cli.Providers;
 using dvmig.Core.Interfaces;
+using dvmig.Core.Providers;
 using dvmig.Core.Synchronization;
 using Spectre.Console;
 using static dvmig.Core.Shared.SystemConstants;
