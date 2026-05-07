@@ -53,7 +53,7 @@ namespace dvmig.Core.Synchronization
 
          foreach (var attribute in sourceEntity.Attributes)
          {
-            if (IsForbiddenAttribute(attribute.Key))
+            if (ForbiddenAttributes.Contains(attribute.Key))
                continue;
 
             var attrMetadata = metadata.Attributes?
@@ -68,7 +68,7 @@ namespace dvmig.Core.Synchronization
 
             if (value is EntityReference er)
             {
-               if (IsUserAttribute(attribute.Key))
+               if (UserAttributes.Contains(attribute.Key))
                {
                   value = await userResolver.MapUserAsync(er, ct);
 
@@ -223,18 +223,6 @@ namespace dvmig.Core.Synchronization
          var results = await target.RetrieveMultipleAsync(query, ct);
 
          return results.Entities.FirstOrDefault()?.Id;
-      }
-
-      /// <inheritdoc />
-      public bool IsForbiddenAttribute(string attributeName)
-      {
-         return SystemConstants.ForbiddenAttributes.Contains(attributeName);
-      }
-
-      /// <inheritdoc />
-      public bool IsUserAttribute(string attributeName)
-      {
-         return SystemConstants.UserAttributes.Contains(attributeName);
       }
 
       /// <inheritdoc />

@@ -1,7 +1,4 @@
-using System;
-using System.Linq;
 using System.Reflection;
-using System.Collections.Generic;
 
 namespace dvmig.Core.Shared
 {
@@ -17,22 +14,15 @@ namespace dvmig.Core.Shared
          Target
       }
 
-      public class DataverseEntity
+      public class DataverseEntity(
+         string name,
+         bool isSystemEntity,
+         bool isActivityEntity
+      )
       {
-         public string Name { get; }
-         public bool IsSystemEntity { get; }
-         public bool IsActivityEntity { get; }
-
-         public DataverseEntity(
-            string name,
-            bool isSystemEntity,
-            bool isActivityEntity
-         )
-         {
-            Name = name;
-            IsSystemEntity = isSystemEntity;
-            IsActivityEntity = isActivityEntity;
-         }
+         public string Name { get; } = name;
+         public bool IsSystemEntity { get; } = isSystemEntity;
+         public bool IsActivityEntity { get; } = isActivityEntity;
       }
 
       /// <summary>
@@ -40,87 +30,77 @@ namespace dvmig.Core.Shared
       /// </summary>
       public static class DataverseEntities
       {
-         public static readonly DataverseEntity SystemUser =
-            new DataverseEntity("systemuser", true, false);
-
-         public static readonly DataverseEntity ActivityParty =
-            new DataverseEntity("activityparty", true, false);
-
          public static readonly DataverseEntity Account =
-            new DataverseEntity("account", false, false);
+            new("account", false, false);
 
          public static readonly DataverseEntity Contact =
-            new DataverseEntity("contact", false, false);
+            new("contact", false, false);
 
          public static readonly DataverseEntity Task =
-            new DataverseEntity("task", false, true);
+            new("task", false, true);
 
          public static readonly DataverseEntity PhoneCall =
-            new DataverseEntity("phonecall", false, true);
+            new("phonecall", false, true);
 
          public static readonly DataverseEntity Appointment =
-            new DataverseEntity("appointment", false, true);
+            new("appointment", false, true);
 
          public static readonly DataverseEntity Email =
-            new DataverseEntity("email", false, true);
-
-         public static readonly DataverseEntity Lead =
-            new DataverseEntity("lead", true, false);
-
-         public static readonly DataverseEntity Opportunity =
-            new DataverseEntity("opportunity", true, false);
-
-         public static readonly DataverseEntity Quote =
-            new DataverseEntity("quote", true, false);
-
-         public static readonly DataverseEntity Order =
-            new DataverseEntity("salesorder", true, false);
-
-         public static readonly DataverseEntity Invoice =
-            new DataverseEntity("invoice", true, false);
-
-         public static readonly DataverseEntity Product =
-            new DataverseEntity("product", true, false);
-
-         public static readonly DataverseEntity PriceLevel =
-            new DataverseEntity("pricelevel", true, false);
-
-         public static readonly DataverseEntity Category =
-            new DataverseEntity("category", true, false);
-
-         public static readonly DataverseEntity Case =
-            new DataverseEntity("incident", true, false);
-
-         public static readonly DataverseEntity Entitlement =
-            new DataverseEntity("entitlement", true, false);
-
-         public static readonly DataverseEntity Solution =
-            new DataverseEntity("solution", true, false);
-
-         public static readonly DataverseEntity KnowledgeArticle =
-            new DataverseEntity("knowledgearticle", true, false);
-
-         public static readonly DataverseEntity Campaign =
-            new DataverseEntity("campaign", true, false);
-
-         public static readonly DataverseEntity CampaignActivity =
-            new DataverseEntity("campaignactivity", true, true);
-
-         public static readonly DataverseEntity MarketingList =
-            new DataverseEntity("list", true, false);
+            new("email", false, true);
 
          public static readonly DataverseEntity EmailTemplate =
-            new DataverseEntity("template", true, false);
+            new("template", false, false);
 
-         public static readonly DataverseEntity Team =
-            new DataverseEntity("team", true, false);
+         public static readonly DataverseEntity Fax =
+            new("fax", false, false);
 
-         public static readonly DataverseEntity Role =
-            new DataverseEntity("role", true, false);
+         public static readonly DataverseEntity Lead =
+            new("lead", true, false);
 
-         public static readonly DataverseEntity BusinessUnit =
-            new DataverseEntity("businessunit", true, false);
+         public static readonly DataverseEntity Opportunity =
+            new("opportunity", true, false);
 
+         public static readonly DataverseEntity Quote =
+            new("quote", true, false);
+
+         public static readonly DataverseEntity Order =
+            new("salesorder", true, false);
+
+         public static readonly DataverseEntity Invoice =
+            new("invoice", true, false);
+
+         public static readonly DataverseEntity Product =
+            new("product", true, false);
+
+         public static readonly DataverseEntity Category =
+            new("category", true, false);
+
+         public static readonly DataverseEntity Case =
+            new("incident", true, false);
+
+         public static readonly DataverseEntity Queue =
+            new("queue", false, false);
+
+         public static readonly DataverseEntity Entitlement =
+            new("entitlement", true, false);
+
+         public static readonly DataverseEntity Campaign =
+            new("campaign", true, false);
+
+         public static readonly DataverseEntity CampaignActivity =
+            new("campaignactivity", true, true);
+
+         public static readonly DataverseEntity MarketingList =
+            new("list", true, false);
+
+         public static readonly DataverseEntity PriceLevel =
+            new("pricelevel", true, false);
+
+         public static readonly DataverseEntity SystemUser =
+            new("systemuser", true, false);
+
+         public static readonly DataverseEntity ActivityParty =
+            new("activityparty", true, false);
 
          /// <summary>
          /// Returns all entities defined in this class as a list, 
@@ -232,7 +212,7 @@ namespace dvmig.Core.Shared
       /// Attributes that should not be copied from source to target.
       /// </summary>
       public static readonly HashSet<string> ForbiddenAttributes =
-         new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+         new(StringComparer.OrdinalIgnoreCase)
          {
             DataverseAttributes.CreatedOn,
             DataverseAttributes.ModifiedOn,
@@ -251,7 +231,7 @@ namespace dvmig.Core.Shared
       /// Attributes that represent references to SystemUser records.
       /// </summary>
       public static readonly HashSet<string> UserAttributes =
-         new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+         new(StringComparer.OrdinalIgnoreCase)
          {
             DataverseAttributes.OwnerId,
             DataverseAttributes.CreatedBy,

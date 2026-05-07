@@ -1,14 +1,12 @@
 using System.Text.RegularExpressions;
 
-using dvmig.Core.Interfaces;
-using dvmig.Core.Shared;
 using Microsoft.Crm.Sdk.Messages;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Query;
-using static dvmig.Core.Shared.SystemConstants;
-using static dvmig.Core.Shared.SystemConstants.DataverseAttributes;
-using static dvmig.Core.Shared.SystemConstants.ErrorKeywords;
 
+using dvmig.Core.Interfaces;
+using dvmig.Core.Shared;
+using static dvmig.Core.Shared.SystemConstants;
 using CT = System.Threading.CancellationToken;
 
 namespace dvmig.Core.Synchronization

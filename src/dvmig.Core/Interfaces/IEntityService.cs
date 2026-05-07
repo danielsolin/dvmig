@@ -38,16 +38,6 @@ namespace dvmig.Core.Interfaces
       );
 
       /// <summary>
-      /// Checks if an attribute is forbidden for create/update operations.
-      /// </summary>
-      bool IsForbiddenAttribute(string attributeName);
-
-      /// <summary>
-      /// Checks if an attribute is a user-reference attribute.
-      /// </summary>
-      bool IsUserAttribute(string attributeName);
-
-      /// <summary>
       /// Retrieves all record IDs for a specific entity from a provider.
       /// </summary>
       Task<HashSet<Guid>> GetAllIdsAsync(
