@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -25,11 +26,8 @@ namespace dvmig.Core.Settings
       {
          string folder;
 
-#if NET48
-         bool isWindows = true; // .NET Framework 4.8 is Windows-only
-#else
-         bool isWindows = OperatingSystem.IsWindows();
-#endif
+         bool isWindows =
+            RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
 
          if(isWindows)
          {
@@ -132,11 +130,8 @@ namespace dvmig.Core.Settings
          if(string.IsNullOrEmpty(text))
             return string.Empty;
 
-#if NET48
-         bool isWindows = true;
-#else
-         bool isWindows = OperatingSystem.IsWindows();
-#endif
+         bool isWindows =
+            RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
 
          // DPAPI is only available on Windows
          if(!isWindows)
@@ -167,11 +162,8 @@ namespace dvmig.Core.Settings
          if(string.IsNullOrEmpty(base64))
             return string.Empty;
 
-#if NET48
-         bool isWindows = true;
-#else
-         bool isWindows = OperatingSystem.IsWindows();
-#endif
+         bool isWindows =
+            RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
 
          // DPAPI is only available on Windows
          if(!isWindows)

@@ -49,13 +49,13 @@ namespace dvmig.Core.Shared
             new("email", false, true);
 
          public static readonly DataverseEntity EmailTemplate =
-            new("template", false, false);
+            new("template", true, false);
 
          public static readonly DataverseEntity Fax =
-            new("fax", false, false);
+            new("fax", true, true);
 
-         public static readonly DataverseEntity Lead =
-            new("lead", true, false);
+         public static readonly DataverseEntity Queue =
+            new("queue", true, false);
 
          public static readonly DataverseEntity Opportunity =
             new("opportunity", true, false);
@@ -77,9 +77,6 @@ namespace dvmig.Core.Shared
 
          public static readonly DataverseEntity Case =
             new("incident", true, false);
-
-         public static readonly DataverseEntity Queue =
-            new("queue", false, false);
 
          public static readonly DataverseEntity Entitlement =
             new("entitlement", true, false);

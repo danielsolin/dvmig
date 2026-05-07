@@ -106,22 +106,26 @@ namespace dvmig.Core.Provisioning
 
             var deletedInThisIteration = 0L;
 
-#if NET48
-            // Task-based alternative for .NET Framework 4.8
-            using(var semaphore = new SemaphoreSlim(parallelOptions.MaxDegreeOfParallelism))
+            using (
+               var semaphore = new SemaphoreSlim(
+                  parallelOptions.MaxDegreeOfParallelism
+               )
+            )
             {
                var tasks = chunks.Select(async chunk =>
                {
                   await semaphore.WaitAsync(ct);
+
                   try
                   {
-                     var successfulCount = await DeleteRecordBatchWithCountAsync(
-                        provider,
-                        chunk,
-                        ct
-                     );
+                     var successfulCount =
+                        await DeleteRecordBatchWithCountAsync(
+                           provider,
+                           chunk,
+                           ct
+                        );
 
-                     lock(lockObject)
+                     lock (lockObject)
                      {
                         deletedForThisEntity += successfulCount;
                         deletedInThisIteration += successfulCount;
@@ -130,7 +134,7 @@ namespace dvmig.Core.Provisioning
                            Math.Max(
                               0,
                               initialTotal -
-                              (alreadyDeletedTotal + deletedForThisEntity)
+                                 (alreadyDeletedTotal + deletedForThisEntity)
                            )
                         );
                      }
@@ -143,34 +147,6 @@ namespace dvmig.Core.Provisioning
 
                await Task.WhenAll(tasks);
             }
-#else
-            await Parallel.ForEachAsync(
-               chunks,
-               parallelOptions,
-               async (chunk, token) =>
-               {
-                  var successfulCount = await DeleteRecordBatchWithCountAsync(
-                     provider,
-                     chunk,
-                     token
-                  );
-
-                  lock (lockObject)
-                  {
-                     deletedForThisEntity += successfulCount;
-                     deletedInThisIteration += successfulCount;
-
-                     progress?.Report(
-                        Math.Max(
-                           0,
-                           initialTotal -
-                           (alreadyDeletedTotal + deletedForThisEntity)
-                        )
-                     );
-                  }
-               }
-            );
-#endif
 
             // If we didn't manage to delete anything in this whole iteration 
             // of 1000 records, something is wrong (likely constraints).

@@ -162,12 +162,16 @@ namespace dvmig.Core.Synchronization
             CancellationToken = ct
          };
 
-#if NET48
-         using(var semaphore = new SemaphoreSlim(parallelOptions.MaxDegreeOfParallelism))
+         using (
+            var semaphore = new SemaphoreSlim(
+               parallelOptions.MaxDegreeOfParallelism
+            )
+         )
          {
             var tasks = entitiesToSync.Select(async entity =>
             {
                await semaphore.WaitAsync(ct);
+
                try
                {
                   await SyncRecordAndReportAsync(
@@ -185,21 +189,6 @@ namespace dvmig.Core.Synchronization
 
             await Task.WhenAll(tasks);
          }
-#else
-         await Parallel.ForEachAsync(
-            entitiesToSync,
-            parallelOptions,
-            async (entity, token) =>
-            {
-               await SyncRecordAndReportAsync(
-                  entity,
-                  options,
-                  recordProgress,
-                  token
-               );
-            }
-         );
-#endif
       }
 
       #endregion

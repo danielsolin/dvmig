@@ -1,9 +1,8 @@
-#if NET48
 namespace System.Runtime.CompilerServices
 {
    /// <summary>
-   /// Polyfill for record support in .NET Framework 4.8.
+   /// Polyfill for record support in .NET Standard 2.0 and other legacy 
+   /// frameworks.
    /// </summary>
    internal static class IsExternalInit { }
 }
-#endif
