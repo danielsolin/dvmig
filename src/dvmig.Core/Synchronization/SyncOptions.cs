@@ -29,5 +29,19 @@ namespace dvmig.Core.Synchronization
       /// all records, bypassing the local state check.
       /// </summary>
       public bool ForceResync { get; set; } = false;
+
+      /// <summary>
+      /// Creates a copy of the current options with ForceResync set to true.
+      /// </summary>
+      public SyncOptions CloneWithForceResync()
+      {
+         return new SyncOptions
+         {
+            PreserveAuditData = PreserveAuditData,
+            StripMissingDependencies = StripMissingDependencies,
+            MaxDegreeOfParallelism = MaxDegreeOfParallelism,
+            ForceResync = true
+         };
+      }
    }
 }

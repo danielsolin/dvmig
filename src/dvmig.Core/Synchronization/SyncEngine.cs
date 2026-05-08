@@ -576,14 +576,16 @@ namespace dvmig.Core.Synchronization
          entity.Attributes.Remove(DataverseAttributes.StateCode);
          entity.Attributes.Remove(DataverseAttributes.StatusCode);
 
-         sourceEntity.Attributes.Remove(
-            DataverseAttributes.StateCode
-         );
-         sourceEntity.Attributes.Remove(
-            DataverseAttributes.StatusCode
-         );
+         var sourceRetry = EntityHelper.Clone(sourceEntity);
 
-         var (success, _) = await SyncRecordAsync(sourceEntity, options, ct);
+         sourceRetry.Attributes.Remove(DataverseAttributes.StateCode);
+         sourceRetry.Attributes.Remove(DataverseAttributes.StatusCode);
+
+         var (success, _) = await SyncRecordAsync(
+            sourceRetry,
+            options.CloneWithForceResync(),
+            ct
+         );
 
          if (success && (stateValue != null || statusValue != null))
          {
@@ -742,7 +744,11 @@ namespace dvmig.Core.Synchronization
 
             if (success)
             {
-               var res = await SyncRecordAsync(sourceParent, options, ct);
+               var res = await SyncRecordAsync(
+                  sourceParent,
+                  options.CloneWithForceResync(),
+                  ct
+               );
 
                return res.Success;
             }
@@ -787,9 +793,15 @@ namespace dvmig.Core.Synchronization
          );
 
          parent.Attributes.Remove(attr);
-         sourceParent.Attributes.Remove(attr);
+         
+         var sourceRetry = EntityHelper.Clone(sourceParent);
+         sourceRetry.Attributes.Remove(attr);
 
-         return (await SyncRecordAsync(sourceParent, options, ct)).Success;
+         return (await SyncRecordAsync(
+            sourceRetry,
+            options.CloneWithForceResync(),
+            ct
+         )).Success;
       }
 
       private async Task<bool> StripAttributeAndRetryAsync(
@@ -813,9 +825,15 @@ namespace dvmig.Core.Synchronization
                _logger.Warning("Stripping problematic attribute '{0}'", attr);
 
                entity.Attributes.Remove(attr);
-               sourceEntity.Attributes.Remove(attr);
+               
+               var sourceRetry = EntityHelper.Clone(sourceEntity);
+               sourceRetry.Attributes.Remove(attr);
 
-               var res = await SyncRecordAsync(sourceEntity, options, ct);
+               var res = await SyncRecordAsync(
+                  sourceRetry,
+                  options.CloneWithForceResync(),
+                  ct
+               );
 
                return res.Success;
             }

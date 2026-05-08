@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 
+using dvmig.Cli.Actions;
 using dvmig.Core.Interfaces;
 using dvmig.Core.Shared;
 
@@ -12,6 +13,16 @@ namespace dvmig.Cli
    /// </summary>
    public static class CliUI
    {
+      /// <summary>
+      /// Represents an item in the main menu.
+      /// </summary>
+      /// <param name="Label">The display label.</param>
+      /// <param name="Action">The action to execute.</param>
+      public record MenuItem(
+         string Label,
+         Func<CancellationToken, Task>? Action
+      );
+
       /// <summary>
       /// Runs an asynchronous task with a spinning status indicator and 
       /// provides a progress reporter that logs to the console.
@@ -108,6 +119,127 @@ namespace dvmig.Cli
          );
 
          Console.ReadKey(true);
+      }
+
+      public static bool Confirm(string message, bool defaultValue = true)
+      {
+         return AnsiConsole.Confirm(message, defaultValue);
+      }
+
+      public static MenuItem PromptMainMenu(
+         SyncActions syncActions,
+         MaintenanceActions maintenanceActions,
+         Action onExit
+      )
+      {
+         var prompt = new SelectionPrompt<MenuItem>()
+            .Title("What would you like to do?")
+            .PageSize(15)
+            .UseConverter(m => m.Label)
+            .HighlightStyle(new Style
+            {
+               Foreground = Color.MediumOrchid
+            });
+
+         var syncGroup = new List<MenuItem>
+         {
+            new(
+               $"Sync Recommended",
+               ct => syncActions.HandleRecommendedSyncAsync(ct, false)
+            ),
+            new(
+               $"Sync Selected {SystemConstants.UiMarkup.Grey}" +
+               "(pick entities)[/]",
+               ct => syncActions.HandleSelectedSyncAsync(ct, false)
+            ),
+            new(
+               $"Re-sync Recommended",
+               ct => syncActions.HandleRecommendedSyncAsync(ct, true)
+            ),
+            new(
+               $"Re-sync Selected {SystemConstants.UiMarkup.Grey}" +
+               "(pick entities)[/]",
+               ct => syncActions.HandleSelectedSyncAsync(ct, true)
+            )
+         };
+
+         prompt.AddChoiceGroup(
+            new MenuItem(
+               $"🚀 {SystemConstants.UiMarkup.BoldGreen}Synchronization[/]",
+               null
+            ),
+            syncGroup
+         );
+
+         var maintenanceGroup = new List<MenuItem>
+            {
+               new(
+                  $"Install DVMig Components {SystemConstants.UiMarkup.Grey}"
+                  + "(Target)[/]",
+                  maintenanceActions.HandleInstallMenuAsync
+               ),
+               new(
+                  $"Uninstall DVMig Components {SystemConstants.UiMarkup.Grey}"
+                  + "(Target)[/]",
+                  maintenanceActions.HandleTargetComponentsCleanupAsync
+               ),
+               new(
+                  "View Recorded Migration Failures",
+                  maintenanceActions.HandleViewFailuresAsync
+               ),
+            };
+
+         prompt.AddChoiceGroup(
+            new MenuItem(
+               $"🛠️ {SystemConstants.UiMarkup.BoldCyan}Maintenance[/]",
+               null
+            ),
+            maintenanceGroup
+         );
+
+         var dataGroup = new List<MenuItem> {
+               new(
+                  $"Generate Sample Data {SystemConstants.UiMarkup.Grey}" +
+                  "(Source)[/]",
+                  maintenanceActions.HandleSeedingAsync
+               ),
+               new(
+                  $"Wipe Data on Source {SystemConstants.UiMarkup.Grey}" +
+                  "(Caution!)[/]",
+                  maintenanceActions.HandleSourceDataCleanupAsync
+               ),
+               new(
+                  $"Wipe Data on Target {SystemConstants.UiMarkup.Grey}" +
+                  "(Caution!)[/]",
+                  maintenanceActions.HandleTargetDataCleanupAsync
+               )
+            };
+
+         prompt.AddChoiceGroup(
+            new MenuItem(
+               $"🧪 {SystemConstants.UiMarkup.BoldMagenta}"
+               + "Data Management[/]",
+               null
+            ),
+            dataGroup
+         );
+
+         prompt.AddChoices(
+            new[]
+            {
+               new MenuItem(
+                  "Exit",
+                  (ct) =>
+                  {
+                     onExit();
+
+                     return Task.CompletedTask;
+                  }
+               )
+            }
+         );
+
+         return AnsiConsole.Prompt(prompt);
       }
 
       public static async Task<List<string>?> SelectEntitiesAsync(

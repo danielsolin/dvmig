@@ -39,6 +39,21 @@ namespace dvmig.Core.Shared
       }
 
       /// <summary>
+      /// Creates a shallow clone of an entity, copying its attributes.
+      /// </summary>
+      /// <param name="entity">The entity to clone.</param>
+      /// <returns>A new entity instance with the same ID and attributes.</returns>
+      public static Entity Clone(Entity entity)
+      {
+         var clone = new Entity(entity.LogicalName, entity.Id);
+
+         foreach (var attr in entity.Attributes)
+            clone[attr.Key] = attr.Value;
+
+         return clone;
+      }
+
+      /// <summary>
       /// Determines whether an exception represents a transient Dataverse 
       /// error.
       /// </summary>

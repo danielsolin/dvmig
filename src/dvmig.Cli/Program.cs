@@ -1,4 +1,5 @@
 using System.Text;
+using Microsoft.Extensions.DependencyInjection;
 
 using dvmig.Cli.Actions;
 using dvmig.Core.Interfaces;
@@ -6,9 +7,6 @@ using dvmig.Core.Provisioning;
 using dvmig.Core.Settings;
 using dvmig.Core.Shared;
 using dvmig.Core.Synchronization;
-using Microsoft.Extensions.DependencyInjection;
-
-using Spectre.Console;
 
 namespace dvmig.Cli
 {
@@ -17,11 +15,6 @@ namespace dvmig.Cli
       private static IServiceProvider? _serviceProvider;
       private static CancellationTokenSource? _currentActionCts;
       private static DateTime _lastCtrlC = DateTime.MinValue;
-
-      private record MenuItem(
-         string Label,
-         Func<CancellationToken, Task>? Action
-      );
 
       static async Task Main(string[] args)
       {
@@ -76,122 +69,6 @@ namespace dvmig.Cli
          };
       }
 
-      private static SelectionPrompt<MenuItem> GetMenu(
-         SyncActions syncActions,
-         MaintenanceActions maintenanceActions,
-         Action onExit
-      )
-      {
-         var prompt = new SelectionPrompt<MenuItem>()
-            .Title("What would you like to do?")
-            .PageSize(15)
-            .UseConverter(m => m.Label)
-            .HighlightStyle(new Style
-            {
-               Foreground = Color.MediumOrchid
-            });
-
-         var syncGroup = new List<MenuItem>
-         {
-            new MenuItem(
-               $"Sync Recommended",
-               ct => syncActions.HandleRecommendedSyncAsync(ct, false)
-            ),
-            new MenuItem(
-               $"Sync Selected {SystemConstants.UiMarkup.Grey}" +
-               "(pick entities)[/]",
-               ct => syncActions.HandleSelectedSyncAsync(ct, false)
-            ),
-            new MenuItem(
-               $"Re-sync Recommended",
-               ct => syncActions.HandleRecommendedSyncAsync(ct, true)
-            ),
-            new MenuItem(
-               $"Re-sync Selected {SystemConstants.UiMarkup.Grey}" +
-               "(pick entities)[/]",
-               ct => syncActions.HandleSelectedSyncAsync(ct, true)
-            )
-         };
-
-         prompt.AddChoiceGroup(
-            new MenuItem(
-               $"🚀 {SystemConstants.UiMarkup.BoldGreen}Synchronization[/]",
-               null
-            ),
-            syncGroup
-         );
-
-         var maintenanceGroup = new List<MenuItem>
-            {
-               new MenuItem(
-                  $"Install DVMig Components {SystemConstants.UiMarkup.Grey}"
-                  + "(Target)[/]",
-                  maintenanceActions.HandleInstallMenuAsync
-               ),
-               new MenuItem(
-                  $"Uninstall DVMig Components {SystemConstants.UiMarkup.Grey}"
-                  + "(Target)[/]",
-                  maintenanceActions.HandleTargetComponentsCleanupAsync
-               ),
-               new MenuItem(
-                  "View Recorded Migration Failures",
-                  maintenanceActions.HandleViewFailuresAsync
-               ),
-            };
-
-         prompt.AddChoiceGroup(
-            new MenuItem(
-               $"🛠️ {SystemConstants.UiMarkup.BoldCyan}Maintenance[/]",
-               null
-            ),
-            maintenanceGroup
-         );
-
-         var dataGroup = new List<MenuItem> {
-               new MenuItem(
-                  $"Generate Sample Data {SystemConstants.UiMarkup.Grey}" +
-                  "(Source)[/]",
-                  maintenanceActions.HandleSeedingAsync
-               ),
-               new MenuItem(
-                  $"Wipe Data on Source {SystemConstants.UiMarkup.Grey}" +
-                  "(Caution!)[/]",
-                  maintenanceActions.HandleSourceDataCleanupAsync
-               ),
-               new MenuItem(
-                  $"Wipe Data on Target {SystemConstants.UiMarkup.Grey}" +
-                  "(Caution!)[/]",
-                  maintenanceActions.HandleTargetDataCleanupAsync
-               )
-            };
-
-         prompt.AddChoiceGroup(
-            new MenuItem(
-               $"🧪 {SystemConstants.UiMarkup.BoldMagenta}"
-               + "Data Management[/]",
-               null
-            ),
-            dataGroup
-         );
-
-         prompt.AddChoices(
-            new[]
-            {
-               new MenuItem(
-                  "Exit",
-                  (ct) =>
-                  {
-                     onExit();
-
-                     return Task.CompletedTask;
-                  }
-               )
-            }
-         );
-
-         return prompt;
-      }
-
       private static async Task HandleMenuActions()
       {
          CliUI.WriteHeader();
@@ -211,23 +88,21 @@ namespace dvmig.Cli
 
          while (!exit)
          {
-            var prompt = GetMenu(
-               syncActions,
-               maintenanceActions,
-               () => exit = true
-            );
-
-            MenuItem choice;
+            CliUI.MenuItem choice;
 
             try
             {
-               choice = AnsiConsole.Prompt(prompt);
+               choice = CliUI.PromptMainMenu(
+                  syncActions,
+                  maintenanceActions,
+                  () => exit = true
+               );
             }
             catch(Exception)
             {
                // Handles cases where the prompt is interrupted (e.g., Ctrl+C),
                // preventing a crash and allowing the user to stay in the app.
-               if (!AnsiConsole.Confirm("Back (Y) or Quit (N)?", true))
+               if (!CliUI.Confirm("Back (Y) or Quit (N)?", true))
                   exit = true;
 
                continue;
@@ -243,12 +118,9 @@ namespace dvmig.Cli
                }
                catch(OperationCanceledException)
                {
-                  AnsiConsole.MarkupLine(
-                     $"\n{SystemConstants.UiMarkup.Yellow}"
-                     + "Operation interrupted.[/]"
-                  );
+                  CliUI.WriteWarning("\nOperation interrupted.");
 
-                  if (!AnsiConsole.Confirm("Back (Y) or Quit (N)?", true))
+                  if (!CliUI.Confirm("Back (Y) or Quit (N)?", true))
                      exit = true;
                }
                catch(Exception ex)
@@ -272,4 +144,3 @@ namespace dvmig.Cli
       }
    }
 }
-
