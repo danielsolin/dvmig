@@ -368,6 +368,19 @@ namespace dvmig.Core.Shared
       }
 
       /// <summary>
+      /// Constants related to Dataverse connections.
+      /// </summary>
+      public static class Connection
+      {
+         public const string UnknownEnvironment = "Unknown Environment";
+         public const string Url = "Url";
+         public const string ServiceUri = "ServiceUri";
+         public const string Server = "Server";
+         public const string Https = "https://";
+         public const string Http = "http://";
+      }
+
+      /// <summary>
       /// Application-wide constants for configuration, batch sizes, 
       /// and file names.
       /// </summary>

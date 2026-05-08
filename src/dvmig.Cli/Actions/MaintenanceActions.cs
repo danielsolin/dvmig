@@ -91,11 +91,15 @@ namespace dvmig.Cli.Actions
             return;
          }
 
-         var table = new Table();
-         table.AddColumn("Entity");
-         table.AddColumn("Source ID");
-         table.AddColumn("Timestamp (UTC)");
-         table.AddColumn("Error Message");
+         var table = new Table()
+            .Border(TableBorder.Rounded)
+            .BorderColor(Color.Red)
+            .Title("[bold red]Migration Failures[/]");
+
+         table.AddColumn("[bold]Entity[/]");
+         table.AddColumn("[bold]Source ID[/]");
+         table.AddColumn("[bold]Timestamp (UTC)[/]");
+         table.AddColumn("[bold]Error Message[/]");
 
          foreach (var failure in failures)
          {
@@ -283,21 +287,37 @@ namespace dvmig.Cli.Actions
                  " and " + list.Last()
                : list.FirstOrDefault() ?? string.Empty;
 
-            AnsiConsole.MarkupLine(
+            var warningTable = new Table()
+               .Border(TableBorder.None)
+               .HideHeaders()
+               .AddColumn("Icon")
+               .AddColumn("Message");
+
+            warningTable.AddRow(
+               "[bold red]![/]",
                $"{SystemConstants.UiMarkup.BoldRed}CRITICAL WARNING:[/] This " +
                "operation will delete [bold]EVERY SINGLE[/] " +
                $"{entityNames} record from the {envName} environment."
             );
-         }
 
-         AnsiConsole.MarkupLine(
-            $"{SystemConstants.UiMarkup.Red}This is NOT restricted to test " +
-            "data. Real data will be destroyed.[/]"
-         );
-         AnsiConsole.MarkupLine(
-            $"{SystemConstants.UiMarkup.Red}This action is permanent and " +
-            "irreversible.[/]"
-         );
+            warningTable.AddRow(
+               "[bold red]![/]",
+               $"{SystemConstants.UiMarkup.Red}This is NOT restricted to " +
+               "test data. Real data will be destroyed.[/]"
+            );
+
+            warningTable.AddRow(
+               "[bold red]![/]",
+               $"{SystemConstants.UiMarkup.Red}This action is permanent and " +
+               "irreversible.[/]"
+            );
+
+            AnsiConsole.Write(
+               new Panel(warningTable)
+                  .Header("[bold red] DANGER [/]")
+                  .BorderColor(Color.Red)
+            );
+         }
 
          var wipeText = SystemConstants.UiMarkup.WipeDataConfirmation;
          var prompt =

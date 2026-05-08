@@ -3,6 +3,7 @@ using dvmig.Core.Providers;
 using dvmig.Core.Shared;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Messages;
+using Microsoft.Xrm.Sdk.Metadata;
 using Microsoft.Xrm.Sdk.Query;
 
 namespace dvmig.Core.Provisioning
@@ -36,6 +37,13 @@ namespace dvmig.Core.Provisioning
          var targetEntities = entities ??
             SystemConstants.SyncSettings.RecommendedEntities.ToList();
 
+         _logger.Information("Pass 1/2: Disassociating records...");
+
+         foreach (var logicalName in targetEntities)
+            await DisassociateEntityRecordsAsync(provider, logicalName, ct);
+
+         _logger.Information("Pass 2/2: Deleting records...");
+
          // Reverse to handle potential simple dependencies 
          // (e.g., delete contacts before accounts if needed)
          targetEntities.Reverse();
@@ -61,6 +69,125 @@ namespace dvmig.Core.Provisioning
          }
 
          _logger.Information("Cleanup complete.");
+      }
+
+      private async Task DisassociateEntityRecordsAsync(
+         IDataverseProvider provider,
+         string logicalName,
+         CancellationToken ct
+      )
+      {
+         var nullableLookups = await GetNullableLookupAttributesAsync(
+            provider,
+            logicalName,
+            ct
+         );
+
+         if (nullableLookups.Count == 0)
+            return;
+
+         _logger.Information($"Disassociating {logicalName}...");
+
+         while (true)
+         {
+            var query = new QueryExpression(logicalName)
+            {
+               ColumnSet = new ColumnSet(nullableLookups.ToArray()),
+               TopCount = 1000
+            };
+
+            var filter = new FilterExpression(LogicalOperator.Or);
+
+            foreach (var attr in nullableLookups)
+               filter.AddCondition(attr, ConditionOperator.NotNull);
+
+            query.Criteria = filter;
+
+            var results = await provider.RetrieveMultipleAsync(query, ct);
+
+            if (results.Entities.Count == 0)
+               break;
+
+            var chunks = results.Entities
+               .Select((e, i) => new { Entity = e, Index = i })
+               .GroupBy(x => x.Index / 100)
+               .Select(g => g.Select(x => x.Entity).ToList())
+               .ToList();
+
+            var parallelOptions = new ParallelOptions
+            {
+               MaxDegreeOfParallelism = 10,
+               CancellationToken = ct
+            };
+
+            using (
+               var semaphore = new SemaphoreSlim(
+                  parallelOptions.MaxDegreeOfParallelism
+               )
+            )
+            {
+               var tasks = chunks.Select(async chunk =>
+               {
+                  await semaphore.WaitAsync(ct);
+
+                  try
+                  {
+                     var multipleRequest = new ExecuteMultipleRequest
+                     {
+                        Settings = new ExecuteMultipleSettings
+                        {
+                           ContinueOnError = true,
+                           ReturnResponses = false
+                        },
+                        Requests = new OrganizationRequestCollection()
+                     };
+
+                     foreach (var entity in chunk)
+                     {
+                        var updateEntity = new Entity(logicalName, entity.Id);
+
+                        foreach (var attr in nullableLookups)
+                           if (entity.Contains(attr))
+                              updateEntity[attr] = null;
+
+                        multipleRequest.Requests.Add(
+                           new UpdateRequest { Target = updateEntity }
+                        );
+                     }
+
+                     await provider.ExecuteAsync(multipleRequest, ct);
+                  }
+                  finally
+                  {
+                     semaphore.Release();
+                  }
+               });
+
+               await Task.WhenAll(tasks);
+            }
+         }
+      }
+
+      private async Task<List<string>> GetNullableLookupAttributesAsync(
+         IDataverseProvider provider,
+         string logicalName,
+         CancellationToken ct
+      )
+      {
+         var metadata = await provider.GetEntityMetadataAsync(logicalName, ct);
+
+         if (metadata == null || metadata.Attributes == null)
+            return new List<string>();
+
+         return metadata.Attributes
+            .Where(a =>
+               (a.AttributeType == AttributeTypeCode.Lookup ||
+                a.AttributeType == AttributeTypeCode.Customer) &&
+               a.IsValidForUpdate == true &&
+               a.RequiredLevel?.Value == AttributeRequiredLevel.None
+            )
+            .Select(a => a.LogicalName)
+            .ToList();
       }
 
       private async Task<long> WipeEntityRecordsAsync(

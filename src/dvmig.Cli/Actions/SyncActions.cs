@@ -80,12 +80,28 @@ namespace dvmig.Cli.Actions
          var recommendedEntities = SyncSettings.RecommendedEntities.ToList();
 
          var title = forceResync ? "Re-sync" : "Sync";
-         AnsiConsole.MarkupLine(
-            $"{UiMarkup.BoldCyan}Recommended {title} Order:[/]"
+         
+         var table = new Table()
+            .Border(TableBorder.Rounded)
+            .BorderColor(Color.Cyan1)
+            .AddColumn(new TableColumn("[bold]Seq[/]").Centered())
+            .AddColumn(new TableColumn("[bold]Entity[/]"));
+
+         for (int i = 0; i < recommendedEntities.Count; i++)
+         {
+            table.AddRow(
+               (i + 1).ToString(), 
+               $"[yellow]{recommendedEntities[i]}[/]"
+            );
+         }
+
+         AnsiConsole.Write(
+            new Panel(table)
+               .Header($"[bold cyan] {title} Plan [/]")
+               .Expand()
          );
 
-         foreach (var entity in recommendedEntities)
-            AnsiConsole.MarkupLine($" - {entity}");
+         AnsiConsole.WriteLine();
 
          if (!AnsiConsole.Confirm($"Proceed with this {title} plan?", true))
          {
@@ -112,9 +128,12 @@ namespace dvmig.Cli.Actions
          CancellationToken ct
       )
       {
-         AnsiConsole.MarkupLine(
-            $"\n{UiMarkup.BoldCyan}Phase: User Mapping Verification[/]"
+         AnsiConsole.Write(
+            new Rule($"[bold cyan]Phase: User Mapping Verification[/]")
+               .Justify(Justify.Left)
          );
+
+         AnsiConsole.WriteLine();
 
          await CliUI.RunStatusAsync(
             "Mapping source users to target environment...",
@@ -136,9 +155,10 @@ namespace dvmig.Cli.Actions
 
          var table = new Table()
             .Border(TableBorder.Rounded)
-            .AddColumn("Source User")
-            .AddColumn("Target User")
-            .AddColumn("Status");
+            .BorderColor(Color.Blue)
+            .AddColumn("[bold]Source User[/]")
+            .AddColumn("[bold]Target User[/]")
+            .AddColumn(new TableColumn("[bold]Status[/]").Centered());
 
          foreach (var mapping in humanMappings)
          {

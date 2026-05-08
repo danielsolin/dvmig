@@ -1,7 +1,6 @@
 using dvmig.Core.Interfaces;
 using dvmig.Core.Providers;
 using dvmig.Core.Settings;
-using dvmig.Core.Shared;
 
 using Microsoft.Crm.Sdk.Messages;
 
@@ -33,7 +32,7 @@ namespace dvmig.Cli
          if (_activeConnections.TryGetValue(direction, out var existing))
          {
             var msg =
-               $"An active connection to {SystemConstants.UiMarkup.Green}" +
+               $"An active connection to {UiMarkup.Green}" +
                $"{label}[/] already exists. Reuse it?";
 
             var reuse = AnsiConsole.Confirm(msg, true);
@@ -57,8 +56,8 @@ namespace dvmig.Cli
             var preview = StringMasker.MaskConnectionString(storedConn);
 
             var confirmMsg =
-               $"Use {SystemConstants.UiMarkup.Green}stored[/] {label} " +
-               $"connection string?\n{SystemConstants.UiMarkup.Grey}" +
+               $"Use {UiMarkup.Green}stored[/] {label} " +
+               $"connection string?\n{UiMarkup.Red}" +
                $"({preview})[/]";
 
             var useStored = AnsiConsole.Confirm(confirmMsg, true);
@@ -66,20 +65,20 @@ namespace dvmig.Cli
             connStr = useStored
                ? storedConn
                : AnsiConsole.Ask<string>(
-                  $"Enter {SystemConstants.UiMarkup.BoldBlue}{label}[/] " +
+                  $"Enter {UiMarkup.BoldBlue}{label}[/] " +
                   "Connection String:"
                );
          }
          else
          {
             connStr = AnsiConsole.Ask<string>(
-               $"Enter {SystemConstants.UiMarkup.BoldBlue}{label}[/] " +
+               $"Enter {UiMarkup.BoldBlue}{label}[/] " +
                "Connection String:"
             );
          }
 
          var isLegacy = AnsiConsole.Confirm(
-            $"Is {SystemConstants.UiMarkup.BoldBlue}{label}[/] Legacy CRM " +
+            $"Is {UiMarkup.BoldBlue}{label}[/] Legacy CRM " +
             "(OnPrem)?",
             false
          );
@@ -101,7 +100,7 @@ namespace dvmig.Cli
                catch (Exception ex)
                {
                   AnsiConsole.MarkupLine(
-                     $"{SystemConstants.UiMarkup.Red}×[/] Failed to " +
+                     $"{UiMarkup.Red}×[/] Failed to " +
                      $"connect to {label}: {ex.Message}"
                   );
 
@@ -134,7 +133,7 @@ namespace dvmig.Cli
                   _settingsService.SaveSettings(settings);
 
                   AnsiConsole.MarkupLine(
-                     $"{SystemConstants.UiMarkup.Grey}Settings saved.[/]"
+                     $"{UiMarkup.Grey}Settings saved.[/]"
                   );
                }
             }

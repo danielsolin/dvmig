@@ -1,4 +1,4 @@
-using dvmig.Core.Shared;
+using static dvmig.Core.Shared.SystemConstants;
 
 namespace dvmig.Core.Settings
 {
@@ -25,30 +25,34 @@ namespace dvmig.Core.Settings
             StringSplitOptions.RemoveEmptyEntries
          );
 
-         var maskedParts = parts.Select(p =>
+         foreach (var part in parts)
          {
-            var kv = p.Split(new[] { '=' }, 2);
+            var kv = part.Split(new[] { '=' }, 2);
 
             if (kv.Length != 2)
-               return p;
+               continue;
 
             var key = kv[0].Trim();
             var val = kv[1].Trim();
 
             var comp = StringComparison.OrdinalIgnoreCase;
 
-            bool isSensitive =
-               key.IndexOf(SystemConstants.MaskingKeywords.Password, comp) >= 0 ||
-               key.IndexOf(SystemConstants.MaskingKeywords.Secret, comp) >= 0 ||
-               key.IndexOf(SystemConstants.MaskingKeywords.Token, comp) >= 0;
+            if (string.Equals(key, Connection.Url, comp) ||
+                string.Equals(key, Connection.ServiceUri, comp) ||
+                string.Equals(key, Connection.Server, comp))
+            {
+               var url = val;
 
-            if (isSensitive)
-               return $"{key}=********";
+               if (url.StartsWith(Connection.Https, comp))
+                  url = url.Substring(8);
+               else if (url.StartsWith(Connection.Http, comp))
+                  url = url.Substring(7);
 
-            return p;
-         });
+               return url.TrimEnd('/');
+            }
+         }
 
-         return string.Join("; ", maskedParts);
+         return Connection.UnknownEnvironment;
       }
    }
 }
