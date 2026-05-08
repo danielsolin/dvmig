@@ -27,7 +27,7 @@ namespace dvmig.Core.Synchronization
       private readonly ISyncStateService _syncStateService;
 
       private bool? _isSourceDataSupported;
-      private const int MaxRecursionDepth = 3;
+      private const int MaxRecursionDepth = 5;
 
       /// <summary>
       /// Initializes a new instance of the <see cref="SyncEngine"/> class.
@@ -315,10 +315,10 @@ namespace dvmig.Core.Synchronization
             );
 
             if (sourceModifier != null)
-            {
-               var user = await _userResolver.MapUserAsync(sourceModifier, ct);
-               modifiedById = user?.Id;
-            }
+               modifiedById = (await _userResolver.MapUserAsync(
+                  sourceModifier,
+                  ct
+               ))?.Id;
 
             creatorId ??= modifiedById;
             modifiedById ??= creatorId;
@@ -908,22 +908,35 @@ namespace dvmig.Core.Synchronization
       {
          try
          {
-            await _target.CreateAsync(preparedEntity, ct, creatorId);
-
-            _logger.Information(
-               "Created {Key}:{Id}",
-               preparedEntity.LogicalName,
-               preparedEntity.Id
-            );
-
-            if (modifiedById.HasValue && modifiedById != creatorId)
+            if (_syncStateService.IsSynced(preparedEntity.Id))
             {
-               var updateEntity = new Entity(
+               await _target.UpdateAsync(preparedEntity, ct, modifiedById);
+
+               _logger.Information(
+                  "Updated (Sync-Completion) {Key}:{Id}",
+                  preparedEntity.LogicalName,
+                  preparedEntity.Id
+               );
+            }
+            else
+            {
+               await _target.CreateAsync(preparedEntity, ct, creatorId);
+
+               _logger.Information(
+                  "Created {Key}:{Id}",
                   preparedEntity.LogicalName,
                   preparedEntity.Id
                );
 
-               await _target.UpdateAsync(updateEntity, ct, modifiedById);
+               if (modifiedById.HasValue && modifiedById != creatorId)
+               {
+                  var updateEntity = new Entity(
+                     preparedEntity.LogicalName,
+                     preparedEntity.Id
+                  );
+
+                  await _target.UpdateAsync(updateEntity, ct, modifiedById);
+               }
             }
 
             return (true, string.Empty);
