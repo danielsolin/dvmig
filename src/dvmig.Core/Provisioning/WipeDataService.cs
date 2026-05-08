@@ -329,6 +329,7 @@ namespace dvmig.Core.Provisioning
             .ExecuteAsync(multipleRequest, ct);
 
          // Count records that didn't return an error
+         
          return response.Responses.Count(r => r.Fault == null);
       }
    }

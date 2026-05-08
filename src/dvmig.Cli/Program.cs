@@ -67,7 +67,7 @@ namespace dvmig.Cli
 
             var now = DateTime.Now;
 
-            if(now - _lastCtrlC < TimeSpan.FromSeconds(1))
+            if (now - _lastCtrlC < TimeSpan.FromSeconds(1))
                Environment.Exit(0);
 
             _lastCtrlC = now;
@@ -196,9 +196,10 @@ namespace dvmig.Cli
       {
          CliUI.WriteHeader();
 
-         if(_serviceProvider == null)
+         if (_serviceProvider == null)
          {
             CliUI.WriteError("Service provider is not initialized.");
+            
             return;
          }
 
@@ -208,7 +209,7 @@ namespace dvmig.Cli
 
          bool exit = false;
 
-         while(!exit)
+         while (!exit)
          {
             var prompt = GetMenu(
                syncActions,
@@ -226,13 +227,13 @@ namespace dvmig.Cli
             {
                // Handles cases where the prompt is interrupted (e.g., Ctrl+C),
                // preventing a crash and allowing the user to stay in the app.
-               if(!AnsiConsole.Confirm("Back (Y) or Quit (N)?", true))
+               if (!AnsiConsole.Confirm("Back (Y) or Quit (N)?", true))
                   exit = true;
 
                continue;
             }
 
-            if(choice.Action != null)
+            if (choice.Action != null)
             {
                _currentActionCts = new CancellationTokenSource();
 
@@ -247,7 +248,7 @@ namespace dvmig.Cli
                      + "Operation interrupted.[/]"
                   );
 
-                  if(!AnsiConsole.Confirm("Back (Y) or Quit (N)?", true))
+                  if (!AnsiConsole.Confirm("Back (Y) or Quit (N)?", true))
                      exit = true;
                }
                catch(Exception ex)
@@ -262,7 +263,7 @@ namespace dvmig.Cli
                }
             }
 
-            if(!exit)
+            if (!exit)
             {
                CliUI.Pause();
                CliUI.WriteHeader();
@@ -271,3 +272,4 @@ namespace dvmig.Cli
       }
    }
 }
+

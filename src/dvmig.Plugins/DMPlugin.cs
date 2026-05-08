@@ -36,10 +36,10 @@ namespace dvmig.Plugins
          // Run as SYSTEM (null) to ensure we can always read dm_sourcedata
          var service = factory.CreateOrganizationService(null);
 
-         if(context.Depth > 2)
+         if (context.Depth > 2)
             return;
 
-         if(!context.InputParameters.Contains("Target") ||
+         if (!context.InputParameters.Contains("Target") ||
              !(context.InputParameters["Target"] is Entity entity))
             return;
 
@@ -80,7 +80,7 @@ namespace dvmig.Plugins
             entity.LogicalName
          );
 
-         if(sourceData == null)
+         if (sourceData == null)
          {
             tracingService.Trace(
                "No source data found for {0}:{1}. Skipping timestamps.",
@@ -93,9 +93,9 @@ namespace dvmig.Plugins
 
          tracingService.Trace("Applying timestamps from source data...");
 
-         if(messageName == "create")
+         if (messageName == "create")
             ApplyCreateTimestamps(entity, sourceData, tracingService);
-         else if(messageName == "update")
+         else if (messageName == "update")
             ApplyUpdateTimestamps(entity, sourceData, tracingService);
       }
 
@@ -142,7 +142,7 @@ namespace dvmig.Plugins
          ITracingService tracingService
       )
       {
-         if(sourceData.Contains(SourceDataCreatedOn))
+         if (sourceData.Contains(SourceDataCreatedOn))
          {
             var createdDate = sourceData[SourceDataCreatedOn];
 
@@ -153,7 +153,7 @@ namespace dvmig.Plugins
                createdDate;
          }
 
-         if(sourceData.Contains(SourceDataModifiedOn))
+         if (sourceData.Contains(SourceDataModifiedOn))
          {
             tracingService.Trace(
                "Setting ModifiedOn to {0}",
@@ -171,7 +171,7 @@ namespace dvmig.Plugins
          ITracingService tracingService
       )
       {
-         if(sourceData.Contains(SourceDataModifiedOn))
+         if (sourceData.Contains(SourceDataModifiedOn))
          {
             tracingService.Trace(
                "Setting ModifiedOn to {0}",
@@ -184,3 +184,4 @@ namespace dvmig.Plugins
       }
    }
 }
+
