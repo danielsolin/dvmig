@@ -31,11 +31,10 @@ namespace dvmig.Cli
 
          if (_activeConnections.TryGetValue(direction, out var existing))
          {
-            var msg =
-               $"An active connection to {UiMarkup.Green}" +
-               $"{label}[/] already exists. Reuse it?";
-
-            var reuse = AnsiConsole.Confirm(msg, true);
+            var reuse = AnsiConsole.Confirm(
+               $"Reuse active connection to {UiMarkup.Green}{label}[/]?",
+               true
+            );
 
             if (reuse)
                return existing;
@@ -44,30 +43,35 @@ namespace dvmig.Cli
          }
 
          var settings = _settingsService.LoadSettings();
-
          string? storedConn = direction == ConnectionDirection.Source
             ? settings.SourceConnectionString
             : settings.TargetConnectionString;
 
-         string connStr;
+         string connStr = storedConn;
+         bool isLegacy = false;
 
          if (!string.IsNullOrEmpty(storedConn))
          {
             var preview = StringMasker.MaskConnectionString(storedConn);
+            var useStored = AnsiConsole.Confirm(
+               $"Use {UiMarkup.Green}stored[/] {label} connection " +
+               $"?\n{UiMarkup.Grey}({preview})[/]",
+               true
+            );
 
-            var confirmMsg =
-               $"Use {UiMarkup.Green}stored[/] {label} " +
-               $"connection string?\n{UiMarkup.Red}" +
-               $"({preview})[/]";
-
-            var useStored = AnsiConsole.Confirm(confirmMsg, true);
-
-            connStr = useStored
-               ? storedConn
-               : AnsiConsole.Ask<string>(
+            if (!useStored)
+            {
+               connStr = AnsiConsole.Ask<string>(
                   $"Enter {UiMarkup.BoldBlue}{label}[/] " +
                   "Connection String:"
                );
+
+               isLegacy = AnsiConsole.Confirm(
+                  $"Is {UiMarkup.BoldBlue}{label}[/] Legacy CRM " +
+                  "(OnPrem)?",
+                  false
+               );
+            }
          }
          else
          {
@@ -75,13 +79,13 @@ namespace dvmig.Cli
                $"Enter {UiMarkup.BoldBlue}{label}[/] " +
                "Connection String:"
             );
-         }
 
-         var isLegacy = AnsiConsole.Confirm(
-            $"Is {UiMarkup.BoldBlue}{label}[/] Legacy CRM " +
-            "(OnPrem)?",
-            false
-         );
+            isLegacy = AnsiConsole.Confirm(
+               $"Is {UiMarkup.BoldBlue}{label}[/] Legacy CRM " +
+               "(OnPrem)?",
+               false
+            );
+         }
 
          IDataverseProvider? provider = await CliUI.RunStatusAsync(
             $"Connecting to {label}...",
@@ -113,15 +117,22 @@ namespace dvmig.Cli
          {
             _activeConnections[direction] = provider;
 
-            CliUI.WriteSuccess($"Connected to {label}");
+            // Extract organization URL for a cleaner success message
+            var displayInfo = connStr.Contains("://")
+               ? connStr.Split("://")[1].Split(";")[0].Split("/")[0]
+               : label;
+
+            AnsiConsole.MarkupLine(
+               $"{UiMarkup.BoldGreen}✓[/] {label} Connected: " +
+               $"{UiMarkup.Grey}{displayInfo}[/]"
+            );
 
             if (connStr != storedConn)
             {
-               var savePrompt =
-                  $"Save this {label} connection string " +
-                  "for future use?";
-
-               if (AnsiConsole.Confirm(savePrompt, true))
+               if (AnsiConsole.Confirm(
+                  $"Save this {label} connection string?",
+                  true
+               ))
                {
                   settings.RememberConnections = true;
 
@@ -131,10 +142,6 @@ namespace dvmig.Cli
                      settings.TargetConnectionString = connStr;
 
                   _settingsService.SaveSettings(settings);
-
-                  AnsiConsole.MarkupLine(
-                     $"{UiMarkup.Grey}Settings saved.[/]"
-                  );
                }
             }
          }

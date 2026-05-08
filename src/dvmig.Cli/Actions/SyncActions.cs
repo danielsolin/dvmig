@@ -52,7 +52,12 @@ namespace dvmig.Cli.Actions
             return;
          }
 
-         if (!await PrepareUserMappingsAsync(userResolver, ct))
+         if (!await ShowSyncPlanAsync(
+            userResolver,
+            selectedEntities,
+            forceResync,
+            ct
+         ))
             return;
 
          await ExecuteSyncWorkflowAsync(
@@ -79,38 +84,12 @@ namespace dvmig.Cli.Actions
 
          var recommendedEntities = SyncSettings.RecommendedEntities.ToList();
 
-         var title = forceResync ? "Re-sync" : "Sync";
-         
-         var table = new Table()
-            .Border(TableBorder.Rounded)
-            .BorderColor(Color.Cyan1)
-            .AddColumn(new TableColumn("[bold]Seq[/]").Centered())
-            .AddColumn(new TableColumn("[bold]Entity[/]"));
-
-         for (int i = 0; i < recommendedEntities.Count; i++)
-         {
-            table.AddRow(
-               (i + 1).ToString(), 
-               $"[yellow]{recommendedEntities[i]}[/]"
-            );
-         }
-
-         AnsiConsole.Write(
-            new Panel(table)
-               .Header($"[bold cyan] {title} Plan [/]")
-               .Expand()
-         );
-
-         AnsiConsole.WriteLine();
-
-         if (!AnsiConsole.Confirm($"Proceed with this {title} plan?", true))
-         {
-            CliUI.WriteWarning($"Recommended {title} cancelled.");
-
-            return;
-         }
-
-         if (!await PrepareUserMappingsAsync(userResolver, ct))
+         if (!await ShowSyncPlanAsync(
+            userResolver,
+            recommendedEntities,
+            forceResync,
+            ct
+         ))
             return;
 
          await ExecuteSyncWorkflowAsync(
@@ -123,18 +102,13 @@ namespace dvmig.Cli.Actions
          );
       }
 
-      private async Task<bool> PrepareUserMappingsAsync(
+      private async Task<bool> ShowSyncPlanAsync(
          IUserService userResolver,
+         List<string> entities,
+         bool forceResync,
          CancellationToken ct
       )
       {
-         AnsiConsole.Write(
-            new Rule($"[bold cyan]Phase: User Mapping Verification[/]")
-               .Justify(Justify.Left)
-         );
-
-         AnsiConsole.WriteLine();
-
          await CliUI.RunStatusAsync(
             "Mapping source users to target environment...",
             Logger,
@@ -142,36 +116,64 @@ namespace dvmig.Cli.Actions
          );
 
          var mappings = await userResolver.GetMappingSummaryAsync(ct);
-
-         if (!mappings.Any())
-         {
-            CliUI.WriteWarning("No active users found to map.");
-
-            return true;
-         }
-
          var humanMappings = mappings.Where(m => m.IsHuman).ToList();
          var systemCount = mappings.Count - humanMappings.Count;
 
-         var table = new Table()
-            .Border(TableBorder.Rounded)
-            .BorderColor(Color.Blue)
-            .AddColumn("[bold]Source User[/]")
-            .AddColumn("[bold]Target User[/]")
-            .AddColumn(new TableColumn("[bold]Status[/]").Centered());
+         var title = forceResync ? "Re-sync" : "Sync";
 
-         foreach (var mapping in humanMappings)
+         var entityTable = new Table()
+            .Border(TableBorder.Minimal)
+            .AddColumn(new TableColumn($"{UiMarkup.BoldCyan}Seq[/]").Centered())
+            .AddColumn(new TableColumn($"{UiMarkup.BoldCyan}Entity[/]"));
+
+         for (int i = 0; i < entities.Count; i++)
          {
-            var statusColor = mapping.Status == "Mapped" ? "green" : "yellow";
-
-            table.AddRow(
-               mapping.SourceName,
-               mapping.TargetName,
-               $"[{statusColor}]{mapping.Status}[/]"
+            entityTable.AddRow(
+               (i + 1).ToString(),
+               $"{UiMarkup.Yellow}{entities[i]}[/]"
             );
          }
 
-         AnsiConsole.Write(table);
+         var userTable = new Table()
+            .Border(TableBorder.Minimal)
+            .AddColumn($"{UiMarkup.BoldCyan}Source User[/]")
+            .AddColumn($"{UiMarkup.BoldCyan}Target User[/]")
+            .AddColumn(
+               new TableColumn($"{UiMarkup.BoldCyan}Status[/]").Centered()
+            );
+
+         if (!humanMappings.Any())
+         {
+            userTable.AddRow(
+               new Markup($"{UiMarkup.Grey}No human users found.[/]"),
+               Text.Empty,
+               Text.Empty
+            );
+         }
+         else
+         {
+            foreach (var mapping in humanMappings)
+            {
+               var statusColor = mapping.Status == "Mapped" ? "green" : "yellow";
+
+               userTable.AddRow(
+                  mapping.SourceName,
+                  mapping.TargetName,
+                  $"[{statusColor}]{mapping.Status}[/]"
+               );
+            }
+         }
+
+         var columns = new Columns(
+            new Panel(entityTable).Header("Entities").Expand(),
+            new Panel(userTable).Header("User Mappings").Expand()
+         );
+
+         AnsiConsole.Write(
+            new Panel(columns)
+               .Header($"[bold cyan] {title} Plan [/]")
+               .Expand()
+         );
 
          if (systemCount > 0)
          {
@@ -183,12 +185,9 @@ namespace dvmig.Cli.Actions
 
          AnsiConsole.WriteLine();
 
-         if (!AnsiConsole.Confirm(
-            "Accept these user mappings and proceed with migration?",
-            true
-         ))
+         if (!AnsiConsole.Confirm($"Proceed with this {title} plan?", true))
          {
-            CliUI.WriteWarning("Migration cancelled by user.");
+            CliUI.WriteWarning($"{title} cancelled.");
 
             return false;
          }

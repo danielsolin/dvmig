@@ -324,11 +324,14 @@ namespace dvmig.Core.Synchronization
             }
          }
 
-         _logger.Warning(
-            "Could not map source user {FullName} ({Id})",
-            sourceFullName,
-            sourceUserId
-         );
+         if (isHuman)
+         {
+            _logger.Warning(
+               "Could not map source user {FullName} ({Id})",
+               sourceFullName,
+               sourceUserId
+            );
+         }
 
          _summaries[sourceUserId] = new UserMappingSummary(
             sourceFullName,

@@ -76,6 +76,32 @@ namespace dvmig.Cli.Actions
             await HandleInstallAsync(target);
          }
 
+         // Clear connection noise and show clean summary
+         CliUI.WriteHeader();
+
+         var sourceUrl = GetProviderUrl(source);
+         var targetUrl = GetProviderUrl(target);
+
+         AnsiConsole.Write(
+            new Panel(
+               new Grid()
+                  .AddColumn(new GridColumn().NoWrap())
+                  .AddColumn(new GridColumn().PadLeft(2))
+                  .AddRow(
+                     $"{UiMarkup.BoldGreen}Source:[/]", 
+                     $"{UiMarkup.Grey}{sourceUrl}[/]"
+                  )
+                  .AddRow(
+                     $"{UiMarkup.BoldGreen}Target:[/]", 
+                     $"{UiMarkup.Grey}{targetUrl}[/]"
+                  )
+            )
+            .Header($"{UiMarkup.BoldCyan} Environments [/]")
+            .Expand()
+         );
+
+         AnsiConsole.WriteLine();
+
          var userResolver = new UserService(Logger, source, target);
          var syncStateService = new SyncStateService();
 
@@ -93,6 +119,15 @@ namespace dvmig.Cli.Actions
          );
 
          return (source, target, engine, userResolver);
+      }
+
+      private string GetProviderUrl(IDataverseProvider provider)
+      {
+         var conn = provider.ConnectionString;
+
+         return conn.Contains("://")
+            ? conn.Split("://")[1].Split(";")[0].Split("/")[0]
+            : "Connected";
       }
       /// <summary>
       /// Handles the installation of dvmig components on the 

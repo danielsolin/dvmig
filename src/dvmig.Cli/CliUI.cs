@@ -41,10 +41,21 @@ namespace dvmig.Cli
             {
                var progress = new Progress<string>(msg =>
                {
-                  AnsiConsole.MarkupLine(
-                     $"{SystemConstants.UiMarkup.Grey}" +
-                     $"[[{DateTime.Now:HH:mm:ss}]][/] {msg}"
-                  );
+                  bool isPersistent =
+                     msg.StartsWith(SystemConstants.UiMarkup.Yellow) ||
+                     msg.StartsWith(SystemConstants.UiMarkup.Red);
+
+                  if (isPersistent)
+                  {
+                     AnsiConsole.MarkupLine(
+                        $"{SystemConstants.UiMarkup.Grey}" +
+                        $"[[{DateTime.Now:HH:mm:ss}]][/] {msg}"
+                     );
+                  }
+                  else
+                  {
+                     ctx.Status(msg);
+                  }
                });
 
                logger.AttachProgress(progress);
