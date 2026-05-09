@@ -1,5 +1,4 @@
 using dvmig.Core.Settings;
-using dvmig.Core.Shared;
 
 namespace dvmig.Tests
 {
@@ -7,19 +6,15 @@ namespace dvmig.Tests
    {
       [Theory]
       [InlineData(
-         "AuthType=OAuth;Url=https://contoso.crm.dynamics.com;AppId=123", 
-         "contoso.crm.dynamics.com"
+         "AuthType=OAuth;Url=https://contoso.crm.dynamics.com;AppId=123",
+         "AuthType=OAuth;Url=https://contoso.crm.dynamics.com;AppId=123"
       )]
       [InlineData(
-         "ServiceUri=https://test.crm4.dynamics.com/;Token=abc", 
-         "test.crm4.dynamics.com"
+         "ServiceUri=https://test.crm4.dynamics.com/;Token=abc",
+         "ServiceUri=https://test.crm4.dynamics.com/;Token=********"
       )]
-      [InlineData(
-         "Server=http://myserver/org;User=admin", 
-         "myserver/org"
-      )]
-      public void MaskConnectionString_ReturnsOnlyUrlWithoutProtocol(
-         string input, 
+      public void MaskConnectionString_ReturnsMaskedString(
+         string input,
          string expected
       )
       {
@@ -31,17 +26,16 @@ namespace dvmig.Tests
       }
 
       [Fact]
-      public void MaskConnectionString_ReturnsUnknown_WhenNoUrlFound()
+      public void MaskConnectionString_ReturnsOriginal_WhenNoSensitiveData()
       {
          // Arrange
-         var input = "NoUrlHere=True";
-         var expected = SystemConstants.Connection.UnknownEnvironment;
+         var input = "Server=http://myserver/org;User=admin";
 
          // Act
          var result = StringMasker.MaskConnectionString(input);
 
          // Assert
-         Assert.Equal(expected, result);
+         Assert.Equal(input, result);
       }
    }
 }
