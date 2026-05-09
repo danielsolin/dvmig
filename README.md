@@ -16,8 +16,9 @@ Dataverse and Dynamics 365 environments. The solution consists of:
 
 - **High-Fidelity Migration:** Preserves essential metadata and relationships.
 - **Audit Preservation:** Uses an auto-deployed plugin to ensure presevation
-  of the `CreatedOn` and `ModifiedOn` fields. The `CreatedBy` and `ModifiedBy`
-  fields are preserved by impersonation in `dvmig.Core`.
+  of the `CreatedOn` and `ModifiedOn` fields. `CreatedBy` and `ModifiedBy`
+  are preserved by auto-mapped impersonation (users are mapped between source
+  and target environments by either full name or email).
 - **Robust Synchronization:** Built with resilience in mind using `Polly` for 
   handling transient errors and automatic retry strategies.
 - **Interactive TUI:** Powered by `Spectre.Console` for easy orchestration.
