@@ -18,6 +18,7 @@ namespace dvmig.Cli.Actions
       protected readonly ISchemaService SchemaService;
       protected readonly ILogger Logger;
       protected readonly IEntityService EntityService;
+      protected readonly ISettingsService SettingsService;
 
       protected BaseActions(
          ConnectionManager connectionManager,
@@ -25,7 +26,8 @@ namespace dvmig.Cli.Actions
          IValidationService validator,
          ISchemaService schemaService,
          ILogger logger,
-         IEntityService entityService
+         IEntityService entityService,
+         ISettingsService settingsService
       )
       {
          ConnectionManager = connectionManager;
@@ -34,6 +36,7 @@ namespace dvmig.Cli.Actions
          SchemaService = schemaService;
          Logger = logger;
          EntityService = entityService;
+         SettingsService = settingsService;
       }
 
       /// <summary>
@@ -102,7 +105,13 @@ namespace dvmig.Cli.Actions
 
          AnsiConsole.WriteLine();
 
-         var userResolver = new UserService(Logger, source, target);
+         if (ConnectionManager.UserResolver == null)
+         {
+            ConnectionManager.UserResolver = new UserService(Logger, source, target);
+            ConnectionManager.UserMappingsCached = false;
+         }
+
+         var userResolver = ConnectionManager.UserResolver;
          var syncStateService = new SyncStateService();
 
          // We create a fresh EntityService for this sync run that's bound 

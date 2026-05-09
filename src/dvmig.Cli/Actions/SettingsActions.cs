@@ -45,8 +45,6 @@ namespace dvmig.Cli.Actions
                .AddChoices(
                   new[]
                   {
-                     $"{"Language".t()}: " + 
-                     $"{GetCurrentLanguageName(settings.Language)}",
                      $"{"Source Connection String".t()}: " + 
                      $"{StringMasker.GetEnvironmentUrl(
                         settings.SourceConnectionString)}",
@@ -57,6 +55,9 @@ namespace dvmig.Cli.Actions
                      $"{(settings.RememberConnections ? "Yes".t() : "No".t())}",
                      $"{"Auto Connect".t()}: " + 
                      $"{(settings.AutoConnect ? "Yes".t() : "No".t())}",
+                     $"{"Max Threads".t()}: {settings.MaxParallelism}",
+                     $"{"Language".t()}: " +
+                     $"{GetCurrentLanguageName(settings.Language)}",
                      "Back".t()
                   }
                );
@@ -84,6 +85,10 @@ namespace dvmig.Cli.Actions
                   settings, 
                   SystemConstants.ConnectionDirection.Target
                );
+            }
+            else if (choice.StartsWith("Max Threads".t()))
+            {
+               await HandleMaxParallelismChangeAsync(settings);
             }
             else if (choice.StartsWith("Remember Connections".t()))
             {
@@ -128,6 +133,31 @@ namespace dvmig.Cli.Actions
             _settingsService.SaveSettings(settings);
             LocalizationService.Initialize(newLanguage);
             
+            AnsiConsole.MarkupLine(
+               $"{SystemConstants.UiMarkup.Green}" + 
+               $"{"Settings updated.".t()}[/]"
+            );
+
+            await Task.Delay(1000);
+         }
+      }
+
+      private async Task HandleMaxParallelismChangeAsync(UserSettings settings)
+      {
+         var maxThreads = AnsiConsole.Prompt(
+            new SelectionPrompt<int>()
+               .Title(
+                  $"Select {SystemConstants.UiMarkup.Green}Max Parallelism[/]"
+                  + $" ({"Threads".t()}):"
+               )
+               .AddChoices(SystemConstants.SyncSettings.ParallelismOptions)
+         );
+
+         if (settings.MaxParallelism != maxThreads)
+         {
+            settings.MaxParallelism = maxThreads;
+            _settingsService.SaveSettings(settings);
+
             AnsiConsole.MarkupLine(
                $"{SystemConstants.UiMarkup.Green}" + 
                $"{"Settings updated.".t()}[/]"

@@ -101,7 +101,8 @@ namespace dvmig.Core.Settings
             {
                RememberConnections = settings.RememberConnections,
                AutoConnect = settings.AutoConnect,
-               Language = settings.Language
+               Language = settings.Language,
+               MaxParallelism = settings.MaxParallelism
             };
 
             if (settings.RememberConnections)

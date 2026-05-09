@@ -1,33 +1,31 @@
 using dvmig.Cli.Providers;
 using dvmig.Core.Interfaces;
 using dvmig.Core.Providers;
+using dvmig.Core.Shared;
 using dvmig.Core.Synchronization;
 using Spectre.Console;
 using static dvmig.Core.Shared.SystemConstants;
 
 namespace dvmig.Cli.Actions
 {
-   public class SyncActions : BaseActions
-   {
-      public SyncActions(
-         ConnectionManager connectionManager,
-         IPluginService pluginService,
-         IValidationService validator,
-         ISchemaService schemaService,
-         ILogger logger,
-         IEntityService entityService
+   public class SyncActions(
+      ConnectionManager connectionManager,
+      IPluginService pluginService,
+      IValidationService validator,
+      ISchemaService schemaService,
+      ILogger logger,
+      IEntityService entityService,
+      ISettingsService settingsService
+      ) : BaseActions(
+         connectionManager,
+         pluginService,
+         validator,
+         schemaService,
+         logger,
+         entityService,
+         settingsService
       )
-         : base(
-            connectionManager,
-            pluginService,
-            validator,
-            schemaService,
-            logger,
-            entityService
-         )
-      {
-      }
-
+   {
       public async Task HandleSelectedSyncAsync(
          CancellationToken ct,
          bool forceResync = false
@@ -47,7 +45,7 @@ namespace dvmig.Cli.Actions
 
          if (selectedEntities == null || selectedEntities.Count == 0)
          {
-            CliUI.WriteWarning("No entities selected.");
+            CliUI.WriteWarning("No entities selected.".t());
 
             return;
          }
@@ -109,22 +107,30 @@ namespace dvmig.Cli.Actions
          CancellationToken ct
       )
       {
-         await CliUI.RunStatusAsync(
-            "Mapping source users to target environment...",
-            Logger,
-            async () => await userResolver.MapAllSourceUsersAsync(ct)
-         );
+         if (!ConnectionManager.UserMappingsCached)
+         {
+            await CliUI.RunStatusAsync(
+               "Mapping source users to target environment...".t(),
+               Logger,
+               async () => await userResolver.MapAllSourceUsersAsync(ct)
+            );
+            ConnectionManager.UserMappingsCached = true;
+         }
 
          var mappings = await userResolver.GetMappingSummaryAsync(ct);
          var humanMappings = mappings.Where(m => m.IsHuman).ToList();
          var systemCount = mappings.Count - humanMappings.Count;
 
-         var title = forceResync ? "Re-sync" : "Sync";
+         var title = forceResync ? "Re-sync".t() : "Sync".t();
 
          var entityTable = new Table()
             .Border(TableBorder.Minimal)
-            .AddColumn(new TableColumn($"{UiMarkup.BoldCyan}Seq[/]").Centered())
-            .AddColumn(new TableColumn($"{UiMarkup.BoldCyan}Entity[/]"));
+            .AddColumn(
+               new TableColumn($"{UiMarkup.BoldCyan}{"Seq".t()}[/]").Centered()
+            )
+            .AddColumn(
+               new TableColumn($"{UiMarkup.BoldCyan}{"Entity".t()}[/]")
+            );
 
          for (int i = 0; i < entities.Count; i++)
          {
@@ -136,16 +142,16 @@ namespace dvmig.Cli.Actions
 
          var userTable = new Table()
             .Border(TableBorder.Minimal)
-            .AddColumn($"{UiMarkup.BoldCyan}Source User[/]")
-            .AddColumn($"{UiMarkup.BoldCyan}Target User[/]")
+            .AddColumn($"{UiMarkup.BoldCyan}{"Source User".t()}[/]")
+            .AddColumn($"{UiMarkup.BoldCyan}{"Target User".t()}[/]")
             .AddColumn(
-               new TableColumn($"{UiMarkup.BoldCyan}Status[/]").Centered()
+               new TableColumn($"{UiMarkup.BoldCyan}{"Status".t()}[/]").Centered()
             );
 
          if (!humanMappings.Any())
          {
             userTable.AddRow(
-               new Markup($"{UiMarkup.Grey}No human users found.[/]"),
+               new Markup($"{UiMarkup.Grey}{"No human users found.".t()}[/]"),
                Text.Empty,
                Text.Empty
             );
@@ -159,35 +165,34 @@ namespace dvmig.Cli.Actions
                userTable.AddRow(
                   mapping.SourceName,
                   mapping.TargetName,
-                  $"[{statusColor}]{mapping.Status}[/]"
+                  $"[{statusColor}]{mapping.Status.t()}[/]"
                );
             }
          }
 
          var columns = new Columns(
-            new Panel(entityTable).Header("Entities").Expand(),
-            new Panel(userTable).Header("User Mappings").Expand()
+            new Panel(entityTable).Header($"[bold]{"Entities".t()}[/]").Expand(),
+            new Panel(userTable).Header($"[bold]{"User Mappings".t()}[/]").Expand()
          );
 
          AnsiConsole.Write(
             new Panel(columns)
-               .Header($"[bold cyan] {title} Plan [/]")
+               .Header($"[bold cyan] {title} {"Plan".t()} [/]")
                .Expand()
          );
 
          if (systemCount > 0)
          {
             AnsiConsole.MarkupLine(
-               $"{UiMarkup.Grey}Note: {systemCount} system accounts mapped " +
-               "automatically and hidden from this view.[/]"
+               $"{UiMarkup.Grey}{"Note: {0} system accounts mapped automatically and hidden from this view.".t(systemCount)}[/]"
             );
          }
 
          AnsiConsole.WriteLine();
 
-         if (!AnsiConsole.Confirm($"Proceed with this {title} plan?", true))
+         if (!AnsiConsole.Confirm($"{"Proceed with this {0} plan?".t(title)}", true))
          {
-            CliUI.WriteWarning($"{title} cancelled.");
+            CliUI.WriteWarning($"{"{0} cancelled.".t(title)}");
 
             return false;
          }
@@ -204,14 +209,7 @@ namespace dvmig.Cli.Actions
          CancellationToken ct
       )
       {
-         var maxThreads = AnsiConsole.Prompt(
-            new SelectionPrompt<int>()
-               .Title(
-                  $"Select {UiMarkup.Green}Max Parallelism[/]"
-                  + " (Threads):"
-               )
-               .AddChoices(SyncSettings.ParallelismOptions)
-         );
+         var maxThreads = SettingsService.LoadSettings().MaxParallelism;
 
          await AnsiConsole.Progress()
             .Columns(
@@ -231,7 +229,9 @@ namespace dvmig.Cli.Actions
                   {
                      var logicalName = rawLogicalName.ToLowerInvariant();
 
-                     var actionTitle = forceResync ? "Re-syncing" : "Migrating";
+                     var actionTitle = forceResync 
+                        ? "Re-syncing".t() 
+                        : "Migrating".t();
                      var displayName = char.ToUpper(logicalName[0]) +
                         logicalName.Substring(1);
 
@@ -255,8 +255,7 @@ namespace dvmig.Cli.Actions
                      if (totalCount == 0)
                      {
                         AnsiConsole.MarkupLine(
-                           $"{UiMarkup.Grey}No records found for " +
-                           $"{logicalName}.[/]"
+                           $"{UiMarkup.Grey}{"No records found for {0}.".t(logicalName)}[/]"
                         );
 
                         continue;
@@ -268,7 +267,7 @@ namespace dvmig.Cli.Actions
                      );
 
                      var task = ctx.AddTask(
-                        "Initializing...",
+                        "Initializing...".t(),
                         true,
                         totalCount
                      );
@@ -329,7 +328,7 @@ namespace dvmig.Cli.Actions
                         var baseEx = ex.GetBaseException();
 
                         CliUI.WriteError(
-                           $"Sync aborted for {logicalName}: " +
+                           $"{"Sync aborted for {0}:".t(logicalName)} " +
                            $"{baseEx.Message}"
                         );
                      }
@@ -342,8 +341,10 @@ namespace dvmig.Cli.Actions
                }
             );
 
-         var actionName = forceResync ? "Re-sync" : "Migration";
-         CliUI.WriteSuccess($"{actionName} Finished!");
+         var actionName = forceResync ? "Re-sync".t() : "Migration".t();
+         CliUI.WriteSuccess($"{"{0} Finished!".t(actionName)}");
+
+         CliUI.Pause();
       }
    }
 }

@@ -21,14 +21,16 @@ namespace dvmig.Cli.Actions
          IValidationService validator,
          ISchemaService schemaService,
          IEntityService entityService,
-         ILogger logger
+         ILogger logger,
+         ISettingsService settingsService
       ) : base(
          connectionManager,
          pluginService,
          validator,
          schemaService,
          logger,
-         entityService
+         entityService,
+         settingsService
       )
       {
          _seedingService = seedingService;

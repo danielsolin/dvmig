@@ -33,5 +33,10 @@ namespace dvmig.Core.Settings
       /// Gets or sets the preferred language code (e.g., "en", "sv").
       /// </summary>
       public string Language { get; set; } = "en";
+
+      /// <summary>
+      /// Gets or sets the maximum number of parallel sync threads.
+      /// </summary>
+      public int MaxParallelism { get; set; } = 10;
    }
 }

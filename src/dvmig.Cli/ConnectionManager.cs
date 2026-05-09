@@ -17,6 +17,9 @@ namespace dvmig.Cli
       private readonly Dictionary<ConnectionDirection, IDataverseProvider>
          _activeConnections = new();
 
+      public bool UserMappingsCached { get; set; } = false;
+      public IUserService? UserResolver { get; set; }
+
       public ConnectionManager(ISettingsService settingsService)
       {
          _settingsService = settingsService;
