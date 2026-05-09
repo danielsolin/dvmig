@@ -62,8 +62,7 @@ namespace dvmig.Cli
          {
             var preview = StringMasker.MaskConnectionString(storedConn);
             var useStored = AnsiConsole.Confirm(
-               $"Use {UiMarkup.Green}stored[/] {label} connection " +
-               $"?\n{UiMarkup.Grey}({preview})[/]",
+               $"Use {UiMarkup.Green}stored[/] {label} connection?",
                true
             );
 
