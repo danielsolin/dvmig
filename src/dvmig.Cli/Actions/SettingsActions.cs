@@ -12,19 +12,13 @@ namespace dvmig.Cli.Actions
    /// <summary>
    /// Handles application settings management from the CLI.
    /// </summary>
-   public class SettingsActions
+   public class SettingsActions(
+      ISettingsService settingsService,
+      ConnectionManager connectionManager
+   )
    {
-      private readonly ISettingsService _settingsService;
-      private readonly ConnectionManager _connectionManager;
-
-      public SettingsActions(
-         ISettingsService settingsService,
-         ConnectionManager connectionManager
-      )
-      {
-         _settingsService = settingsService;
-         _connectionManager = connectionManager;
-      }
+      private readonly ISettingsService _settingsService = settingsService;
+      private readonly ConnectionManager _connectionManager = connectionManager;
 
       private enum SettingChoice
       {
@@ -116,7 +110,7 @@ namespace dvmig.Cli.Actions
          }
       }
 
-      private string GetCurrentLanguageName(string code)
+      private static string GetCurrentLanguageName(string code)
       {
          return code.ToLowerInvariant() switch
          {
@@ -189,7 +183,7 @@ namespace dvmig.Cli.Actions
             ? "Source".t() 
             : "Target".t();
          
-         var current = direction == SystemConstants.ConnectionDirection.Source 
+         var current = direction == SystemConstants.ConnectionDirection.Source
             ? settings.SourceConnectionString 
             : settings.TargetConnectionString;
 
@@ -299,9 +293,6 @@ namespace dvmig.Cli.Actions
 
             CliUI.WriteSuccess("Connection successful!".t());
             await Task.Delay(1500);
-         }
-         else
-         {
          }
       }
    }
