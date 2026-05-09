@@ -100,7 +100,8 @@ namespace dvmig.Core.Settings
             var settingsCopy = new UserSettings
             {
                RememberConnections = settings.RememberConnections,
-               AutoConnect = settings.AutoConnect
+               AutoConnect = settings.AutoConnect,
+               Language = settings.Language
             };
 
             if (settings.RememberConnections)

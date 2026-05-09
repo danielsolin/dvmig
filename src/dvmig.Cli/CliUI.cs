@@ -126,7 +126,7 @@ namespace dvmig.Cli
          AnsiConsole.WriteLine();
          AnsiConsole.MarkupLine(
             $"{SystemConstants.UiMarkup.Grey}" +
-            "Press any key to return to menu...[/]"
+            "Press any key to return to menu...".t() + "[/]"
          );
 
          Console.ReadKey(true);
@@ -144,7 +144,7 @@ namespace dvmig.Cli
       )
       {
          var prompt = new SelectionPrompt<MenuItem>()
-            .Title("What would you like to do?")
+            .Title("What would you like to do?".t())
             .PageSize(15)
             .UseConverter(m => m.Label)
             .HighlightStyle(new Style
@@ -176,7 +176,8 @@ namespace dvmig.Cli
 
          prompt.AddChoiceGroup(
             new MenuItem(
-               $"🚀 {SystemConstants.UiMarkup.BoldGreen}Synchronization[/]",
+               $"🚀 {SystemConstants.UiMarkup.BoldGreen}" + 
+               "Synchronization".t() + "[/]",
                null
             ),
             syncGroup
@@ -202,7 +203,8 @@ namespace dvmig.Cli
 
          prompt.AddChoiceGroup(
             new MenuItem(
-               $"🛠️ {SystemConstants.UiMarkup.BoldCyan}Maintenance[/]",
+               $"🛠️ {SystemConstants.UiMarkup.BoldCyan}" + 
+               "Maintenance".t() + "[/]",
                null
             ),
             maintenanceGroup
@@ -228,8 +230,8 @@ namespace dvmig.Cli
 
          prompt.AddChoiceGroup(
             new MenuItem(
-               $"🧪 {SystemConstants.UiMarkup.BoldMagenta}"
-               + "Data Management[/]",
+               $"🧪 {SystemConstants.UiMarkup.BoldMagenta}" +
+               "Data Management".t() + "[/]",
                null
             ),
             dataGroup
@@ -239,7 +241,7 @@ namespace dvmig.Cli
             new[]
             {
                new MenuItem(
-                  "Exit",
+                  "Exit".t(),
                   (ct) =>
                   {
                      onExit();
@@ -259,7 +261,7 @@ namespace dvmig.Cli
       )
       {
          var entities = await RunStatusAsync(
-            "Fetching entity metadata...",
+            "Fetching entity metadata...".t(),
             async () =>
             {
                try

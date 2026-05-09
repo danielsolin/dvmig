@@ -28,5 +28,10 @@ namespace dvmig.Core.Settings
       /// connection on startup.
       /// </summary>
       public bool AutoConnect { get; set; }
+
+      /// <summary>
+      /// Gets or sets the preferred language code (e.g., "en", "sv").
+      /// </summary>
+      public string Language { get; set; } = "en";
    }
 }

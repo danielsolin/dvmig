@@ -18,12 +18,21 @@ namespace dvmig.Cli
 
       static async Task Main(string[] args)
       {
-         InitDI();
-         InitConsole(args);
+         InitializeDependencyInjection();
+         InitializeLocalization();
+         InitializeConsole(args);
+
          await HandleMenuActions();
       }
 
-      private static void InitDI()
+      private static void InitializeLocalization()
+      {
+         var settingsService = _serviceProvider?.GetService<ISettingsService>();
+         var settings = settingsService?.LoadSettings();
+         LocalizationService.Initialize(settings?.Language ?? "en");
+      }
+
+      private static void InitializeDependencyInjection()
       {
          var services = new ServiceCollection();
 
@@ -50,7 +59,7 @@ namespace dvmig.Cli
          _serviceProvider = services.BuildServiceProvider();
       }
 
-      private static void InitConsole(string[] args)
+      private static void InitializeConsole(string[] args)
       {
          Console.OutputEncoding = Encoding.UTF8;
 
