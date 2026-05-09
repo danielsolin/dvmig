@@ -152,7 +152,7 @@ namespace dvmig.Cli
          Action onExit
       )
       {
-         var prompt = new SelectionPrompt<MenuItem>()
+         var mainPrompt = new SelectionPrompt<MenuItem>()
             .Title("What would you like to do?".t())
             .PageSize(15)
             .UseConverter(m => m.Label)
@@ -164,26 +164,62 @@ namespace dvmig.Cli
          var syncGroup = new List<MenuItem>
          {
             new(
-               $"Sync Recommended",
+               "Sync Recommended".t(),
                ct => syncActions.HandleRecommendedSyncAsync(ct, false)
             ),
             new(
-               $"Sync Selected {SystemConstants.UiMarkup.Grey}" +
-               "(pick entities)[/]",
+               $"{"Sync Selected".t()} {SystemConstants.UiMarkup.Grey}" +
+               $"({"pick entities".t()})[/]",
                ct => syncActions.HandleSelectedSyncAsync(ct, false)
             ),
             new(
-               $"Re-sync Recommended",
+               "Re-sync Recommended".t(),
                ct => syncActions.HandleRecommendedSyncAsync(ct, true)
             ),
             new(
-               $"Re-sync Selected {SystemConstants.UiMarkup.Grey}" +
-               "(pick entities)[/]",
+               $"{"Re-sync Selected".t()} {SystemConstants.UiMarkup.Grey}" +
+               $"({"pick entities".t()})[/]",
                ct => syncActions.HandleSelectedSyncAsync(ct, true)
             )
          };
+         
+         var maintenanceGroup = new List<MenuItem>
+            {
+               new(
+                  $"{"Install DVMig Components".t()} " +
+                  $"{SystemConstants.UiMarkup.Grey}({"Target".t()})[/]",
+                  maintenanceActions.HandleInstallMenuAsync
+               ),
+               new(
+                  $"{"Uninstall DVMig Components".t()} " +
+                  $"{SystemConstants.UiMarkup.Grey}({"Target".t()})[/]",
+                  maintenanceActions.HandleTargetComponentsCleanupAsync
+               ),
+               new(
+                  "View Recorded Migration Failures".t(),
+                  maintenanceActions.HandleViewFailuresAsync
+               ),
+            };
 
-         prompt.AddChoiceGroup(
+         var dataGroup = new List<MenuItem> {
+               new(
+                  $"{"Generate Sample Data".t()} " +
+                  $"{SystemConstants.UiMarkup.Grey}({"Source".t()})[/]",
+                  maintenanceActions.HandleSeedingAsync
+               ),
+               new(
+                  $"{"Wipe Data on Source".t()} " +
+                  $"{SystemConstants.UiMarkup.Grey}({"Caution!".t()})[/]",
+                  maintenanceActions.HandleSourceDataCleanupAsync
+               ),
+               new(
+                  $"{"Wipe Data on Target".t()} " +
+                  $"{SystemConstants.UiMarkup.Grey}({"Caution!".t()})[/]",
+                  maintenanceActions.HandleTargetDataCleanupAsync
+               )
+            };
+
+         mainPrompt.AddChoiceGroup(
             new MenuItem(
                $"🚀 {SystemConstants.UiMarkup.BoldGreen}" + 
                "Synchronization".t() + "[/]",
@@ -192,25 +228,7 @@ namespace dvmig.Cli
             syncGroup
          );
 
-         var maintenanceGroup = new List<MenuItem>
-            {
-               new(
-                  $"Install DVMig Components {SystemConstants.UiMarkup.Grey}"
-                  + "(Target)[/]",
-                  maintenanceActions.HandleInstallMenuAsync
-               ),
-               new(
-                  $"Uninstall DVMig Components {SystemConstants.UiMarkup.Grey}"
-                  + "(Target)[/]",
-                  maintenanceActions.HandleTargetComponentsCleanupAsync
-               ),
-               new(
-                  "View Recorded Migration Failures",
-                  maintenanceActions.HandleViewFailuresAsync
-               ),
-            };
-
-         prompt.AddChoiceGroup(
+         mainPrompt.AddChoiceGroup(
             new MenuItem(
                $"🛠️ {SystemConstants.UiMarkup.BoldCyan}" + 
                "Maintenance".t() + "[/]",
@@ -219,25 +237,7 @@ namespace dvmig.Cli
             maintenanceGroup
          );
 
-         var dataGroup = new List<MenuItem> {
-               new(
-                  $"Generate Sample Data {SystemConstants.UiMarkup.Grey}" +
-                  "(Source)[/]",
-                  maintenanceActions.HandleSeedingAsync
-               ),
-               new(
-                  $"Wipe Data on Source {SystemConstants.UiMarkup.Grey}" +
-                  "(Caution!)[/]",
-                  maintenanceActions.HandleSourceDataCleanupAsync
-               ),
-               new(
-                  $"Wipe Data on Target {SystemConstants.UiMarkup.Grey}" +
-                  "(Caution!)[/]",
-                  maintenanceActions.HandleTargetDataCleanupAsync
-               )
-            };
-
-         prompt.AddChoiceGroup(
+         mainPrompt.AddChoiceGroup(
             new MenuItem(
                $"🧪 {SystemConstants.UiMarkup.BoldMagenta}" +
                "Data Management".t() + "[/]",
@@ -246,7 +246,7 @@ namespace dvmig.Cli
             dataGroup
          );
 
-         prompt.AddChoices(
+         mainPrompt.AddChoices(
             new[]
             {
                new MenuItem(
@@ -265,7 +265,7 @@ namespace dvmig.Cli
             }
          );
 
-         return AnsiConsole.Prompt(prompt);
+         return AnsiConsole.Prompt(mainPrompt);
       }
 
       public static async Task<List<string>?> SelectEntitiesAsync(
