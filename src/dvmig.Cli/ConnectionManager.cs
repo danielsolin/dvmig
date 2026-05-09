@@ -22,6 +22,14 @@ namespace dvmig.Cli
          _settingsService = settingsService;
       }
 
+      public void AddActiveConnection(
+         ConnectionDirection direction, 
+         IDataverseProvider provider
+      )
+      {
+         _activeConnections[direction] = provider;
+      }
+
       public async Task<IDataverseProvider?> ConnectAsync(
          ConnectionDirection direction,
          string? label = null

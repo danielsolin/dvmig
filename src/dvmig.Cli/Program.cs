@@ -55,6 +55,7 @@ namespace dvmig.Cli
          // CLI Actions
          services.AddTransient<SyncActions>();
          services.AddTransient<MaintenanceActions>();
+         services.AddTransient<SettingsActions>();
 
          _serviceProvider = services.BuildServiceProvider();
       }
@@ -92,6 +93,8 @@ namespace dvmig.Cli
          var syncActions = _serviceProvider.GetRequiredService<SyncActions>();
          var maintenanceActions = _serviceProvider
             .GetRequiredService<MaintenanceActions>();
+         var settingsActions = _serviceProvider
+            .GetRequiredService<SettingsActions>();
 
          bool exit = false;
 
@@ -104,6 +107,7 @@ namespace dvmig.Cli
                choice = CliUI.PromptMainMenu(
                   syncActions,
                   maintenanceActions,
+                  settingsActions,
                   () => exit = true
                );
             }
@@ -146,7 +150,6 @@ namespace dvmig.Cli
 
             if (!exit)
             {
-               CliUI.Pause();
                CliUI.WriteHeader();
             }
          }

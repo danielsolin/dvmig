@@ -24,6 +24,7 @@ namespace dvmig.Core.Shared
          if (_currentLanguage == "en")
          {
             _translations.Clear();
+
             return;
          }
 
@@ -49,9 +50,11 @@ namespace dvmig.Core.Shared
       private static void LoadTranslations()
       {
          var assembly = Assembly.GetExecutingAssembly();
-         var resourceName = $"dvmig.Core.Resources.lang-{_currentLanguage}.json";
+         var resourceName = 
+            $"dvmig.Core.Resources.lang-{_currentLanguage}.json";
 
          using var stream = assembly.GetManifestResourceStream(resourceName);
+
          if (stream == null)
             return;
 
@@ -59,8 +62,10 @@ namespace dvmig.Core.Shared
          {
             using var reader = new StreamReader(stream);
             var json = reader.ReadToEnd();
-            _translations = JsonSerializer.Deserialize<Dictionary<string, string>>(
-               json) ?? new Dictionary<string, string>();
+
+            _translations = 
+               JsonSerializer.Deserialize<Dictionary<string, string>>(json) ??
+               new Dictionary<string, string>();
          }
          catch
          {

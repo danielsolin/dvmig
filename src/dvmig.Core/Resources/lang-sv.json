@@ -29,5 +29,12 @@
   "Yes": "Ja",
   "No": "Nej",
   "Settings updated.": "Inställningarna har uppdaterats.",
-  "Enter new {0} Connection String:": "Ange ny anslutningssträng för {0}:"
+  "Edit {0} Connection String": "Redigera anslutningssträng för {0}",
+  "Current (masked)": "Nuvarande (maskerad)",
+  "Connection String:": "Anslutningssträng:",
+  "Test Connection": "Testa anslutning",
+  "Testing connection...": "Testar anslutning...",
+  "Connection successful!": "Anslutningen lyckades!",
+  "Connection failed: {0}": "Anslutningen misslyckades: {0}",
+  "Is this a Legacy CRM (OnPrem) environment?": "Är detta en Legacy CRM (OnPrem)-miljö?"
 }

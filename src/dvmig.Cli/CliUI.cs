@@ -140,6 +140,7 @@ namespace dvmig.Cli
       public static MenuItem PromptMainMenu(
          SyncActions syncActions,
          MaintenanceActions maintenanceActions,
+         SettingsActions settingsActions,
          Action onExit
       )
       {
@@ -240,6 +241,10 @@ namespace dvmig.Cli
          prompt.AddChoices(
             new[]
             {
+               new MenuItem(
+                  "Settings".t(),
+                  settingsActions.HandleSettingsMenuAsync
+               ),
                new MenuItem(
                   "Exit".t(),
                   (ct) =>
