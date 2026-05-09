@@ -34,6 +34,11 @@ jobs:
 
       - name: Package Artifacts
         run: |
+          # Copy plugin to all output directories
+          cp publish/plugin/dvmig.Plugins.dll publish/win-x64/
+          cp publish/plugin/dvmig.Plugins.dll publish/linux-x64/
+          cp publish/plugin/dvmig.Plugins.dll publish/osx-x64/
+
           # Package Windows
           cd publish/win-x64
           zip -r ../../dvmig-win-x64.zip .
