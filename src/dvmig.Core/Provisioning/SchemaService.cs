@@ -104,7 +104,7 @@ namespace dvmig.Core.Provisioning
 
             await target.ExecuteAsync(entityReq, ct);
             await Task.Delay(
-               SystemConstants.AppConstants.MetadataPropagationDelayMs,
+               100,
                ct
             ); // Wait for propagation
 
@@ -196,7 +196,7 @@ namespace dvmig.Core.Provisioning
 
             await target.ExecuteAsync(entityReq, ct);
             await Task.Delay(
-               SystemConstants.AppConstants.MetadataPropagationDelayMs,
+               100,
                ct
             );
 
@@ -306,7 +306,7 @@ namespace dvmig.Core.Provisioning
          };
 
          await target.ExecuteAsync(req, ct);
-         await Task.Delay(2000, ct); // Gap for consistency
+         await Task.Delay(10, ct); // Gap for consistency
       }
 
       /// <inheritdoc />
