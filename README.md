@@ -1,22 +1,19 @@
 # dvmig (Dataverse Migrator)
 
-`dvmig` is a specialized tool for high-fidelity data migration between 
-Dataverse and Dynamics 365 environments. The solution consists of:
+Tool for data migration between Dataverse / Dynamics 365 environments.
 
-- `src/dvmig.Cli`: A .NET 9.0 CLI application built with `Spectre.Console` 
-  that orchestrates user interactions, configuration, and migration tasks.
-- `src/dvmig.Core`: A .NET Standard 2.0 library handling the migration 
-  engine, Dataverse connectivity (`IDataverseProvider`), resilient 
-  synchronization logic (`Polly`), local state tracking, and schema validation.
-- `src/dvmig.Plugins`: A Class Library containing a Dataverse plugin 
-  (`DMPlugin`) deployed to the target environment to preserve audit fields.
-- `src/dvmig.Tests`: A unit testing project using `xUnit`, `Moq`, and `Bogus`.
+- `src/dvmig.Cli`: .NET 9.0 CLI application built with `Spectre.Console`.
+- `src/dvmig.Core`: .NET Standard 2.0 library containing the migration logic.
+- `src/dvmig.Plugins`: Dataverse plugin for preserving audit fields.
+- `src/dvmig.Tests`: Unit test project using `xUnit`, `Moq`, and `Bogus`.
 
 ## Features
 
 - **High-Fidelity Migration:** Preserves essential metadata and relationships.
-- **Audit Preservation:** Uses `DMPlugin` to ensure source environment audit 
-  fields (`CreatedOn`, `ModifiedOn`, `CreatedBy`, `ModifiedBy`) are preserved.
+- **Audit Preservation:** Uses an auto-deployed plugin to ensure presevation
+  of the `CreatedOn` and `ModifiedOn` fields. `CreatedBy` and `ModifiedBy`
+  are preserved by auto-mapped impersonation (users are mapped between source
+  and target environments by either full name or email).
 - **Robust Synchronization:** Built with resilience in mind using `Polly` for 
   handling transient errors and automatic retry strategies.
 - **Interactive TUI:** Powered by `Spectre.Console` for easy orchestration.
@@ -69,13 +66,3 @@ Once launched, you will be greeted by the interactive TUI:
 3. **Data Management (🧪)**
    - **Generate Sample Data:** Seeds the source with mock data.
    - **Wipe Data (Source/Target):** Purges data from environments.
-
-## Architecture
-
-- **`src/dvmig.Cli`**: The entry point. Handles TUI, dependency injection 
-  setup, and user input orchestration.
-- **`src/dvmig.Core`**: The engine room. Contains `SyncEngine`, providers, 
-  retry policies, and domain logic.
-- **`src/dvmig.Plugins`**: Contains `DMPlugin`. Intercepts `Create`/`Update` 
-  events to manipulate audit data.
-- **`src/dvmig.Tests`**: The xUnit test suite.
