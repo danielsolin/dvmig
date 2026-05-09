@@ -1,0 +1,60 @@
+name: dvmig CD
+
+on:
+  push:
+    tags:
+      - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
+  workflow_dispatch: # Allow manual triggering for testing
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Needed for creating releases
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Build Plugin
+        run: dotnet build src/dvmig.Plugins/dvmig.Plugins.csproj --configuration Release --output ./publish/plugin
+
+      - name: Publish CLI - Windows
+        run: dotnet publish src/dvmig.Cli/dvmig.Cli.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o ./publish/win-x64
+
+      - name: Publish CLI - Linux
+        run: dotnet publish src/dvmig.Cli/dvmig.Cli.csproj -c Release -r linux-x64 --self-contained true -p:PublishSingleFile=true -o ./publish/linux-x64
+
+      - name: Publish CLI - macOS
+        run: dotnet publish src/dvmig.Cli/dvmig.Cli.csproj -c Release -r osx-x64 --self-contained true -p:PublishSingleFile=true -o ./publish/osx-x64
+
+      - name: Package Artifacts
+        run: |
+          # Package Windows
+          cd publish/win-x64
+          zip -r ../../dvmig-win-x64.zip .
+          cd ../..
+
+          # Package Linux
+          cd publish/linux-x64
+          tar -czvf ../../dvmig-linux-x64.tar.gz .
+          cd ../..
+
+          # Package macOS
+          cd publish/osx-x64
+          tar -czvf ../../dvmig-osx-x64.tar.gz .
+          cd ../..
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: true
+          files: |
+            dvmig-win-x64.zip
+            dvmig-linux-x64.tar.gz
+            dvmig-osx-x64.tar.gz
+            publish/plugin/dvmig.Plugins.dll
