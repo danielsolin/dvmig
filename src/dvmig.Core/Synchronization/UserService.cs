@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using dvmig.Core.Interfaces;
+using dvmig.Core.Shared;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Query;
 using static dvmig.Core.Shared.SystemConstants;
@@ -144,7 +145,7 @@ namespace dvmig.Core.Synchronization
             );
          }
 
-         _logger.Information("Proactively mapping active source users...");
+         _logger.Information("Mapping users...".t());
 
          var query = new QueryExpression(DataverseEntities.SystemUser.Name)
          {
