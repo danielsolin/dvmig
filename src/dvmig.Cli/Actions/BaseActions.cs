@@ -89,11 +89,11 @@ namespace dvmig.Cli.Actions
                   .AddColumn(new GridColumn().PadLeft(2))
                   .AddRow(
                      $"{UiMarkup.BoldGreen}Source:[/]", 
-                     $"{UiMarkup.Grey}{sourceUrl}[/]"
+                     $"{UiMarkup.BoldYellow}{sourceUrl}[/]"
                   )
                   .AddRow(
                      $"{UiMarkup.BoldGreen}Target:[/]", 
-                     $"{UiMarkup.Grey}{targetUrl}[/]"
+                     $"{UiMarkup.BoldYellow}{targetUrl}[/]"
                   )
             )
             .Header($"{UiMarkup.BoldCyan} Environments [/]")
