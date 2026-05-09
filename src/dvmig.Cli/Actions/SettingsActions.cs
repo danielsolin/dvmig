@@ -26,6 +26,17 @@ namespace dvmig.Cli.Actions
          _connectionManager = connectionManager;
       }
 
+      private enum SettingChoice
+      {
+         SourceConn,
+         TargetConn,
+         RememberConn,
+         AutoConnect,
+         MaxThreads,
+         Language,
+         Back
+      }
+
       /// <summary>
       /// Displays the settings menu and handles user interaction.
       /// </summary>
@@ -39,66 +50,68 @@ namespace dvmig.Cli.Actions
 
             var settings = _settingsService.LoadSettings();
 
-            var prompt = new SelectionPrompt<string>()
+            var prompt = new SelectionPrompt<SettingChoice>()
                .Title("Settings".t())
                .PageSize(10)
-               .AddChoices(
-                  new[]
-                  {
+               .UseConverter(c => c switch
+               {
+                  SettingChoice.SourceConn =>
                      $"{"Source Connection String".t()}: " + 
                      $"{StringMasker.GetEnvironmentUrl(
                         settings.SourceConnectionString)}",
+                  SettingChoice.TargetConn =>
                      $"{"Target Connection String".t()}: " + 
                      $"{StringMasker.GetEnvironmentUrl(
                         settings.TargetConnectionString)}",
+                  SettingChoice.RememberConn =>
                      $"{"Remember Connections".t()}: " + 
                      $"{(settings.RememberConnections ? "Yes".t() : "No".t())}",
+                  SettingChoice.AutoConnect =>
                      $"{"Auto Connect".t()}: " + 
                      $"{(settings.AutoConnect ? "Yes".t() : "No".t())}",
+                  SettingChoice.MaxThreads =>
                      $"{"Max Threads".t()}: {settings.MaxParallelism}",
+                  SettingChoice.Language =>
                      $"{"Language".t()}: " +
                      $"{GetCurrentLanguageName(settings.Language)}",
-                     "Back".t()
-                  }
-               );
+                  SettingChoice.Back => "Back".t(),
+                  _ => throw new ArgumentOutOfRangeException()
+               })
+               .AddChoices(Enum.GetValues<SettingChoice>());
 
             var choice = AnsiConsole.Prompt(prompt);
 
-            if (choice == "Back".t())
+            switch (choice)
             {
-               back = true;
-            }
-            else if (choice.StartsWith("Language".t()))
-            {
-               await HandleLanguageChangeAsync(settings);
-            }
-            else if (choice.StartsWith("Source Connection String".t()))
-            {
-               await HandleConnectionStringChange(
-                  settings, 
-                  SystemConstants.ConnectionDirection.Source
-               );
-            }
-            else if (choice.StartsWith("Target Connection String".t()))
-            {
-               await HandleConnectionStringChange(
-                  settings, 
-                  SystemConstants.ConnectionDirection.Target
-               );
-            }
-            else if (choice.StartsWith("Max Threads".t()))
-            {
-               await HandleMaxParallelismChangeAsync(settings);
-            }
-            else if (choice.StartsWith("Remember Connections".t()))
-            {
-               settings.RememberConnections = !settings.RememberConnections;
-               _settingsService.SaveSettings(settings);
-            }
-            else if (choice.StartsWith("Auto Connect".t()))
-            {
-               settings.AutoConnect = !settings.AutoConnect;
-               _settingsService.SaveSettings(settings);
+               case SettingChoice.Back:
+                  back = true;
+                  break;
+               case SettingChoice.Language:
+                  await HandleLanguageChangeAsync(settings);
+                  break;
+               case SettingChoice.SourceConn:
+                  await HandleConnectionStringChange(
+                     settings, 
+                     SystemConstants.ConnectionDirection.Source
+                  );
+                  break;
+               case SettingChoice.TargetConn:
+                  await HandleConnectionStringChange(
+                     settings, 
+                     SystemConstants.ConnectionDirection.Target
+                  );
+                  break;
+               case SettingChoice.MaxThreads:
+                  await HandleMaxParallelismChangeAsync(settings);
+                  break;
+               case SettingChoice.RememberConn:
+                  settings.RememberConnections = !settings.RememberConnections;
+                  _settingsService.SaveSettings(settings);
+                  break;
+               case SettingChoice.AutoConnect:
+                  settings.AutoConnect = !settings.AutoConnect;
+                  _settingsService.SaveSettings(settings);
+                  break;
             }
          }
       }
