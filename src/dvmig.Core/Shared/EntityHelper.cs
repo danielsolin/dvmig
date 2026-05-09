@@ -1,5 +1,7 @@
 using Microsoft.Xrm.Sdk;
 
+using static dvmig.Core.Shared.SystemConstants;
+
 namespace dvmig.Core.Shared
 {
    /// <summary>
@@ -59,7 +61,7 @@ namespace dvmig.Core.Shared
       /// </summary>
       /// <param name="ex">The exception to check.</param>
       /// <returns>True if the error is transient; otherwise, false.</returns>
-      public static bool IsTransientError(System.Exception ex)
+      public static bool IsTransientError(Exception ex)
       {
          if (ex == null)
             return false;
@@ -67,13 +69,13 @@ namespace dvmig.Core.Shared
          var msg = ex.Message.ToLower();
 
          bool isTransient =
-            msg.Contains(SystemConstants.ErrorCodes.ServiceProtectionLimit) ||
-            msg.Contains(SystemConstants.ErrorCodes.ConnectionTimeout) ||
-            msg.Contains(SystemConstants.ErrorKeywords.TooManyRequests) ||
-            msg.Contains("exceeded the limit") ||
-            msg.Contains(SystemConstants.ErrorKeywords.CombinedExecutionTime) ||
-            msg.Contains(SystemConstants.ErrorKeywords.GenericSqlError) ||
-            msg.Contains(SystemConstants.ErrorKeywords.Timeout);
+            msg.Contains(ErrorCodes.ServiceProtectionLimit) ||
+            msg.Contains(ErrorCodes.ConnectionTimeout) ||
+            msg.Contains(ErrorKeywords.TooManyRequests) ||
+            msg.Contains(ErrorKeywords.ExceededLimit) ||
+            msg.Contains(ErrorKeywords.CombinedExecutionTime) ||
+            msg.Contains(ErrorKeywords.GenericSqlError) ||
+            msg.Contains(ErrorKeywords.Timeout);
 
          if (isTransient)
             return true;

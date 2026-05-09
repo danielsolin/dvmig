@@ -256,6 +256,7 @@ namespace dvmig.Core.Shared
             "cannot be set on creation";
          public const string OutsideValidRange = "outside the valid range";
          public const string TooManyRequests = "too many requests";
+         public const string ExceededLimit = "exceeded the limit";
          public const string CombinedExecutionTime = "combined execution time";
          public const string GenericSqlError = "generic sql error";
          public const string Timeout = "timeout";
