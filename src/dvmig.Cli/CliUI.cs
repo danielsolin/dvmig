@@ -1,3 +1,4 @@
+using System.Reflection;
 using System.Runtime.InteropServices;
 
 using dvmig.Cli.Actions;
@@ -92,9 +93,16 @@ namespace dvmig.Cli
       {
          AnsiConsole.Clear();
          AnsiConsole.Write(new FigletText("DVMIG").Color(Color.Blue));
+
+         var version = Assembly.GetExecutingAssembly()
+            .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?
+            .InformationalVersion ?? "Unknown";
+
+         if (version.Contains('+'))
+            version = version[..version.IndexOf('+')];
+
          AnsiConsole.MarkupLine(
-            "[bold]Dataverse Migrator " +
-            $"({RuntimeInformation.FrameworkDescription})[/]"
+            $"[bold]Dataverse Migrator (v{version})[/]"
          );
 
          AnsiConsole.WriteLine();

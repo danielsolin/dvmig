@@ -52,7 +52,7 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          draft: true
+          draft: false
           files: |
             dvmig-win-x64.zip
             dvmig-linux-x64.tar.gz
