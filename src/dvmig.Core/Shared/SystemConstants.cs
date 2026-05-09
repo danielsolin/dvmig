@@ -295,12 +295,11 @@ namespace dvmig.Core.Shared
          public static readonly int[] ParallelismOptions =
             new[]
             {
+               1,
+               5,
                10,
-               20,
-               30,
-               40,
-               50,
-               1
+               15,
+               20
             };
 
          public static IReadOnlyList<string> RecommendedEntities =>
