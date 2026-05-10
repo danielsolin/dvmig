@@ -72,6 +72,7 @@ namespace dvmig.Cli.Actions
                "to enable this feature.[/]"
             );
 
+            CliUI.Pause();
             return;
          }
 
@@ -90,6 +91,7 @@ namespace dvmig.Cli.Actions
                "No migration failures recorded in Target environment."
             );
 
+            CliUI.Pause();
             return;
          }
 
@@ -131,6 +133,8 @@ namespace dvmig.Cli.Actions
 
             CliUI.WriteSuccess("Failure log cleared.");
          }
+
+         CliUI.Pause();
       }
 
       public async Task HandleSeedingAsync(CancellationToken ct)
@@ -172,6 +176,7 @@ namespace dvmig.Cli.Actions
             return;
 
          await HandleInstallAsync(provider);
+         CliUI.Pause();
       }
 
       public async Task HandleTargetComponentsCleanupAsync(CancellationToken ct)
@@ -207,7 +212,8 @@ namespace dvmig.Cli.Actions
                   await SchemaService.DropSchemaAsync(provider, ct);
 
                   Logger.Information("Environment cleanup completed.");
-               }
+               },
+               lineByLine: true
             );
 
             CliUI.WriteSuccess("Uninstallation Finished!");
@@ -224,6 +230,8 @@ namespace dvmig.Cli.Actions
                "Cleanup failed. " + baseEx.Message
             );
          }
+
+         CliUI.Pause();
       }
 
       public async Task HandleSourceDataCleanupAsync(CancellationToken ct)

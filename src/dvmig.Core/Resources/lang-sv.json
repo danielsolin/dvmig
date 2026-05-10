@@ -73,7 +73,7 @@
    "Threads": "Trådar",
    "Re-syncing": "Synkroniserar om",
    "Migrating": "Migrerar",
-   "No records found for {0}.": "Inga poster hittades för {0}.",
+   "No records found for {0}.": "Inga poster hittades for {0}.",
    "Initializing...": "Initierar...",
    "Sync aborted for {0}:": "Synkronisering avbröts för {0}:",
    "{0} Finished!": "{0} färdigställd!"

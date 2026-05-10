@@ -30,10 +30,12 @@ namespace dvmig.Cli
       /// <param name="statusMessage">The message to display.</param>
       /// <param name="action">The asynchronous action to execute.</param>
       /// <param name="logger">The logger instance.</param>
+      /// <param name="lineByLine">Whether to print steps line-by-line.</param>
       public static async Task RunStatusAsync(
          string statusMessage,
          ILogger logger,
-         Func<Task> action
+         Func<Task> action,
+         bool lineByLine = false
       )
       {
          await AnsiConsole.Status()
@@ -41,7 +43,7 @@ namespace dvmig.Cli
             {
                var progress = new Progress<string>(msg =>
                {
-                  bool isPersistent =
+                  bool isPersistent = lineByLine ||
                      msg.StartsWith(SystemConstants.UiMarkup.Yellow) ||
                      msg.StartsWith(SystemConstants.UiMarkup.Red);
 
