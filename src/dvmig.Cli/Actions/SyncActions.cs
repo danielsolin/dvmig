@@ -145,10 +145,11 @@ namespace dvmig.Cli.Actions
             .AddColumn($"{UiMarkup.BoldCyan}{"Source User".t()}[/]")
             .AddColumn($"{UiMarkup.BoldCyan}{"Target User".t()}[/]")
             .AddColumn(
-               new TableColumn($"{UiMarkup.BoldCyan}{"Status".t()}[/]").Centered()
+               new TableColumn($"{UiMarkup.BoldCyan}{"Status".t()}[/]")
+                  .Centered()
             );
 
-         if (!humanMappings.Any())
+         if (humanMappings.Count == 0)
          {
             userTable.AddRow(
                new Markup($"{UiMarkup.Grey}{"No human users found.".t()}[/]"),
@@ -160,7 +161,8 @@ namespace dvmig.Cli.Actions
          {
             foreach (var mapping in humanMappings)
             {
-               var statusColor = mapping.Status == "Mapped" ? "green" : "yellow";
+               var statusColor = mapping.Status ==
+                  "Mapped" ? "green" : "yellow";
 
                userTable.AddRow(
                   mapping.SourceName,
@@ -171,8 +173,10 @@ namespace dvmig.Cli.Actions
          }
 
          var columns = new Columns(
-            new Panel(entityTable).Header($"[bold]{"Entities".t()}[/]").Expand(),
-            new Panel(userTable).Header($"[bold]{"User Mappings".t()}[/]").Expand()
+            new Panel(entityTable)
+               .Header($"[bold]{"Entities".t()}[/]").Expand(),
+            new Panel(userTable)
+               .Header($"[bold]{"User Mappings".t()}[/]").Expand()
          );
 
          AnsiConsole.Write(
@@ -184,13 +188,18 @@ namespace dvmig.Cli.Actions
          if (systemCount > 0)
          {
             AnsiConsole.MarkupLine(
-               $"{UiMarkup.Grey}{"Note: {0} system accounts mapped automatically and hidden from this view.".t(systemCount)}[/]"
+               $"{UiMarkup.Grey}" +
+               $"{"Note: {0} system accounts mapped automatically and " +
+               "hidden from this view.".t(systemCount)}[/]"
             );
          }
 
          AnsiConsole.WriteLine();
 
-         if (!AnsiConsole.Confirm($"{"Proceed with this {0} plan?".t(title)}", true))
+         if (!AnsiConsole.Confirm(
+                  $"{"Proceed with this {0} plan?".t(title)}", true
+               )
+            )
          {
             CliUI.WriteWarning($"{"{0} cancelled.".t(title)}");
 
@@ -255,7 +264,8 @@ namespace dvmig.Cli.Actions
                      if (totalCount == 0)
                      {
                         AnsiConsole.MarkupLine(
-                           $"{UiMarkup.Grey}{"No records found for {0}.".t(logicalName)}[/]"
+                           $"{UiMarkup.Grey}" +
+                           $"{"No records found for {0}.".t(logicalName)}[/]"
                         );
 
                         continue;
