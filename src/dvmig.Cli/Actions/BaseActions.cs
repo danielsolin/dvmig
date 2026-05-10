@@ -1,5 +1,4 @@
 using dvmig.Core.Interfaces;
-using dvmig.Core.Shared;
 using dvmig.Core.Synchronization;
 using Spectre.Console;
 using static dvmig.Core.Shared.SystemConstants;
@@ -72,7 +71,7 @@ namespace dvmig.Cli.Actions
          if (!isReady)
          {
             AnsiConsole.MarkupLine(
-               $"{SystemConstants.UiMarkup.Yellow}Target environment is " +
+               $"{UiMarkup.Yellow}Target environment is " +
                "not prepared. Installing required dvmig components...[/]"
             );
 
