@@ -153,7 +153,8 @@ namespace dvmig.Cli.Actions
                {
                   await SchemaService.CreateSchemaAsync(target);
                   await PluginService.DeployPluginAsync(target, null);
-               }
+               },
+               lineByLine: true
             );
 
             CliUI.WriteSuccess("Installation Finished!");
