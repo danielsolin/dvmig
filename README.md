@@ -20,9 +20,9 @@ Tool for data migration between Dataverse / Dynamics 365 environments.
 - **Error Logging:** Detailed error/warning/info logging to file.
 
 ## Synchronizaion Process
-The diagram below visualizes the synchronization process implemented in dvmig.Core.
-It handles preservation of audit fields, resolves dependencies, and excutes in
-parallell (using SemaphoreSlim to comply with .NET Standard 2.0).
+The diagram below visualizes the synchronization process implemented in
+dvmig.Core. It handles preservation of audit fields, resolves dependencies, and
+excutes in parallell (using SemaphoreSlim to comply with .NET Standard 2.0).
 
 ```mermaid
 sequenceDiagram
