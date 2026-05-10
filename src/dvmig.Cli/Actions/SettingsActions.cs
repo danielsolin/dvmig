@@ -31,6 +31,19 @@ namespace dvmig.Cli.Actions
          Back
       }
 
+      private enum ConnectionSettingChoice
+      {
+         EditConn,
+         TestConn,
+         Back
+      }
+
+      private enum LanguageChoice
+      {
+         English,
+         Swedish
+      }
+
       /// <summary>
       /// Displays the settings menu and handles user interaction.
       /// </summary>
@@ -121,18 +134,18 @@ namespace dvmig.Cli.Actions
 
       private async Task HandleLanguageChangeAsync(UserSettings settings)
       {
-         var prompt = new SelectionPrompt<string>()
+         var prompt = new SelectionPrompt<LanguageChoice>()
             .Title("Select Language".t())
-            .AddChoices(
-               new[]
-               {
-                  "English".t(),
-                  "Swedish".t()
-               }
-            );
+            .UseConverter(c => c switch
+            {
+               LanguageChoice.English => "English".t(),
+               LanguageChoice.Swedish => "Swedish".t(),
+               _ => throw new ArgumentOutOfRangeException()
+            })
+            .AddChoices(Enum.GetValues<LanguageChoice>());
 
          var choice = AnsiConsole.Prompt(prompt);
-         var newLanguage = choice == "Swedish".t() ? "sv" : "en";
+         var newLanguage = choice == LanguageChoice.Swedish ? "sv" : "en";
 
          if (settings.Language != newLanguage)
          {
@@ -199,52 +212,53 @@ namespace dvmig.Cli.Actions
 
             AnsiConsole.WriteLine();
 
-            var prompt = new SelectionPrompt<string>()
-               .AddChoices(
-                  new[]
-                  {
+            var prompt = new SelectionPrompt<ConnectionSettingChoice>()
+               .UseConverter(c => c switch
+               {
+                  ConnectionSettingChoice.EditConn =>
                      $"{"Connection String:".t()} " + 
                      $"{StringMasker.GetEnvironmentUrl(current)}",
-                     "Test Connection".t(),
-                     "Back".t()
-                  }
-               );
+                  ConnectionSettingChoice.TestConn => "Test Connection".t(),
+                  ConnectionSettingChoice.Back => "Back".t(),
+                  _ => throw new ArgumentOutOfRangeException()
+               })
+               .AddChoices(Enum.GetValues<ConnectionSettingChoice>());
 
             var choice = AnsiConsole.Prompt(prompt);
 
-            if (choice == "Back".t())
+            switch (choice)
             {
-               back = true;
-            }
-            else if (choice.StartsWith("Connection String:".t()))
-            {
-               var newConn = AnsiConsole.Prompt(
-                  new TextPrompt<string>("Connection String:".t())
-                     .DefaultValue(current)
-                     .HideDefaultValue()
-               );
-
-               if (!string.IsNullOrWhiteSpace(newConn) && newConn != current)
-               {
-                  if (direction == SystemConstants.ConnectionDirection.Source)
-                     settings.SourceConnectionString = newConn;
-                  else
-                     settings.TargetConnectionString = newConn;
-
-                  _settingsService.SaveSettings(settings);
-                  current = newConn;
-
-                  AnsiConsole.MarkupLine(
-                     $"{SystemConstants.UiMarkup.Green}" + 
-                     $"{"Settings updated.".t()}[/]"
+               case ConnectionSettingChoice.Back:
+                  back = true;
+                  break;
+               case ConnectionSettingChoice.EditConn:
+                  var newConn = AnsiConsole.Prompt(
+                     new TextPrompt<string>("Connection String:".t())
+                        .DefaultValue(current)
+                        .HideDefaultValue()
                   );
-                  
-                  await Task.Delay(1000);
-               }
-            }
-            else if (choice == "Test Connection".t())
-            {
-               await HandleTestConnectionAsync(current, direction);
+
+                  if (!string.IsNullOrWhiteSpace(newConn) && newConn != current)
+                  {
+                     if (direction == SystemConstants.ConnectionDirection.Source)
+                        settings.SourceConnectionString = newConn;
+                     else
+                        settings.TargetConnectionString = newConn;
+
+                     _settingsService.SaveSettings(settings);
+                     current = newConn;
+
+                     AnsiConsole.MarkupLine(
+                        $"{SystemConstants.UiMarkup.Green}" + 
+                        $"{"Settings updated.".t()}[/]"
+                     );
+                     
+                     await Task.Delay(1000);
+                  }
+                  break;
+               case ConnectionSettingChoice.TestConn:
+                  await HandleTestConnectionAsync(current, direction);
+                  break;
             }
          }
       }
