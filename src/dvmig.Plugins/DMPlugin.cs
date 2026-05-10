@@ -5,7 +5,7 @@ using Microsoft.Xrm.Sdk.Query;
 namespace dvmig.Plugins
 {
    /// <summary>
-   /// Data Migration Plugin responsible for preserving source environment
+   /// Plugin responsible for preserving source environment
    /// audit timestamps during the migration.
    /// </summary>
    public class DMPlugin : IPlugin
