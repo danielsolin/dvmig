@@ -129,14 +129,6 @@ namespace dvmig.Cli.Actions
          return (source, target, engine, userResolver);
       }
 
-      private string GetProviderUrl(IDataverseProvider provider)
-      {
-         var conn = provider.ConnectionString;
-
-         return conn.Contains("://")
-            ? conn.Split("://")[1].Split(";")[0].Split("/")[0]
-            : "Connected";
-      }
       /// <summary>
       /// Handles the installation of dvmig components on the 
       /// target environment.
@@ -169,6 +161,15 @@ namespace dvmig.Cli.Actions
                $"Installation failed: {baseEx.Message}"
             );
          }
+      }
+
+      private static string GetProviderUrl(IDataverseProvider provider)
+      {
+         var conn = provider.ConnectionString;
+
+         return conn.Contains("://")
+            ? conn.Split("://")[1].Split(";")[0].Split("/")[0]
+            : "Connected";
       }
    }
 }
