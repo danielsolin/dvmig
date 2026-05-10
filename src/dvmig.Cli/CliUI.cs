@@ -1,5 +1,4 @@
 using System.Reflection;
-using System.Runtime.InteropServices;
 
 using dvmig.Cli.Actions;
 using dvmig.Core.Interfaces;
@@ -152,120 +151,156 @@ namespace dvmig.Cli
          Action onExit
       )
       {
-         var mainPrompt = new SelectionPrompt<MenuItem>()
-            .Title("What would you like to do?".t())
-            .PageSize(15)
-            .UseConverter(m => m.Label)
-            .HighlightStyle(new Style
-            {
-               Foreground = Color.MediumOrchid
-            });
-
-         var syncGroup = new List<MenuItem>
+         var sections = new List<(string Header, List<MenuItem> Items)>
          {
-            new(
-               "Sync Recommended".t(),
-               ct => syncActions.HandleRecommendedSyncAsync(ct, false)
-            ),
-            new(
-               $"{"Sync Selected".t()} {SystemConstants.UiMarkup.Grey}" +
-               $"({"pick entities".t()})[/]",
-               ct => syncActions.HandleSelectedSyncAsync(ct, false)
-            ),
-            new(
-               "Re-sync Recommended".t(),
-               ct => syncActions.HandleRecommendedSyncAsync(ct, true)
-            ),
-            new(
-               $"{"Re-sync Selected".t()} {SystemConstants.UiMarkup.Grey}" +
-               $"({"pick entities".t()})[/]",
-               ct => syncActions.HandleSelectedSyncAsync(ct, true)
-            )
-         };
-         
-         var maintenanceGroup = new List<MenuItem>
-            {
-               new(
-                  $"{"Install DVMig Components".t()} " +
-                  $"{SystemConstants.UiMarkup.Grey}({"Target".t()})[/]",
-                  maintenanceActions.HandleInstallMenuAsync
-               ),
-               new(
-                  $"{"Uninstall DVMig Components".t()} " +
-                  $"{SystemConstants.UiMarkup.Grey}({"Target".t()})[/]",
-                  maintenanceActions.HandleTargetComponentsCleanupAsync
-               ),
-               new(
-                  "View Recorded Migration Failures".t(),
-                  maintenanceActions.HandleViewFailuresAsync
-               ),
-            };
-
-         var dataGroup = new List<MenuItem> {
-               new(
-                  $"{"Generate Sample Data".t()} " +
-                  $"{SystemConstants.UiMarkup.Grey}({"Source".t()})[/]",
-                  maintenanceActions.HandleSeedingAsync
-               ),
-               new(
-                  $"{"Wipe Data on Source".t()} " +
-                  $"{SystemConstants.UiMarkup.Grey}({"Caution!".t()})[/]",
-                  maintenanceActions.HandleSourceDataCleanupAsync
-               ),
-               new(
-                  $"{"Wipe Data on Target".t()} " +
-                  $"{SystemConstants.UiMarkup.Grey}({"Caution!".t()})[/]",
-                  maintenanceActions.HandleTargetDataCleanupAsync
-               )
-            };
-
-         mainPrompt.AddChoiceGroup(
-            new MenuItem(
-               $"🚀 {SystemConstants.UiMarkup.BoldGreen}" + 
+            (
+               $"🚀 {SystemConstants.UiMarkup.BoldGreen}" +
                "Synchronization".t() + "[/]",
-               null
+               new List<MenuItem>
+               {
+                  new(
+                     "Sync Recommended".t(),
+                     ct => syncActions.HandleRecommendedSyncAsync(ct, false)
+                  ),
+                  new(
+                     $"{"Sync Selected".t()} {SystemConstants.UiMarkup.Grey}" +
+                     $"({"pick entities".t()})[/]",
+                     ct => syncActions.HandleSelectedSyncAsync(ct, false)
+                  ),
+                  new(
+                     "Re-sync Recommended".t(),
+                     ct => syncActions.HandleRecommendedSyncAsync(ct, true)
+                  ),
+                  new(
+                     $"{"Re-sync Selected".t()} {SystemConstants.UiMarkup.Grey}" +
+                     $"({"pick entities".t()})[/]",
+                     ct => syncActions.HandleSelectedSyncAsync(ct, true)
+                  )
+               }
             ),
-            syncGroup
-         );
-
-         mainPrompt.AddChoiceGroup(
-            new MenuItem(
-               $"🛠️ {SystemConstants.UiMarkup.BoldCyan}" + 
+            (
+               $"🛠️ {SystemConstants.UiMarkup.BoldCyan}" +
                "Maintenance".t() + "[/]",
-               null
+               new List<MenuItem>
+               {
+                  new(
+                     $"{"Install DVMig Components".t()} " +
+                     $"{SystemConstants.UiMarkup.Grey}({"Target".t()})[/]",
+                     maintenanceActions.HandleInstallMenuAsync
+                  ),
+                  new(
+                     $"{"Uninstall DVMig Components".t()} " +
+                     $"{SystemConstants.UiMarkup.Grey}({"Target".t()})[/]",
+                     maintenanceActions.HandleTargetComponentsCleanupAsync
+                  ),
+                  new(
+                     "View Recorded Migration Failures".t(),
+                     maintenanceActions.HandleViewFailuresAsync
+                  ),
+               }
             ),
-            maintenanceGroup
-         );
-
-         mainPrompt.AddChoiceGroup(
-            new MenuItem(
+            (
                $"🧪 {SystemConstants.UiMarkup.BoldMagenta}" +
                "Data Management".t() + "[/]",
-               null
+               new List<MenuItem>
+               {
+                  new(
+                     $"{"Generate Sample Data".t()} " +
+                     $"{SystemConstants.UiMarkup.Grey}({"Source".t()})[/]",
+                     maintenanceActions.HandleSeedingAsync
+                  ),
+                  new(
+                     $"{"Wipe Data on Source".t()} " +
+                     $"{SystemConstants.UiMarkup.Grey}({"Caution!".t()})[/]",
+                     maintenanceActions.HandleSourceDataCleanupAsync
+                  ),
+                  new(
+                     $"{"Wipe Data on Target".t()} " +
+                     $"{SystemConstants.UiMarkup.Grey}({"Caution!".t()})[/]",
+                     maintenanceActions.HandleTargetDataCleanupAsync
+                  )
+               }
             ),
-            dataGroup
-         );
+            (
+               string.Empty,
+               new List<MenuItem>
+               {
+                  new(
+                     "Settings".t(),
+                     settingsActions.HandleSettingsMenuAsync
+                  ),
+                  new(
+                     "Exit".t(),
+                     ct =>
+                     {
+                        onExit();
 
-         mainPrompt.AddChoices(
-            new[]
+                        return Task.CompletedTask;
+                     }
+                  )
+               }
+            )
+         };
+
+         var flatItems = sections.SelectMany(s => s.Items).ToList();
+         int selectedIndex = 0;
+
+         return AnsiConsole.Live(new Table())
+            .Start(ctx =>
             {
-               new MenuItem(
-                  "Settings".t(),
-                  settingsActions.HandleSettingsMenuAsync
-               ),
-               new MenuItem(
-                  "Exit".t(),
-                  (ct) =>
+               while (true)
+               {
+                  var table = new Table()
+                     .Border(TableBorder.Rounded)
+                     .AddColumn(
+                        new TableColumn(
+                           $"[bold white]{"What would you like to do?".t()}[/]"
+                        ).LeftAligned()
+                     );
+
+                  table.Expand = false;
+
+                  foreach (var section in sections)
                   {
-                     onExit();
+                     // Fixed-length string instead of Rule to prevent full-
+                     // width expansion.
+                     if (sections.IndexOf(section) > 0)
+                        table.AddRow(
+                           "[grey]─────────────────────────────────────────[/]"
+                        );
 
-                     return Task.CompletedTask;
+                     var content = new Grid().AddColumn();
+
+                     if (!string.IsNullOrEmpty(section.Header))
+                        content.AddRow($"[bold]{section.Header}[/]");
+
+                     foreach (var item in section.Items)
+                     {
+                        int itemIndex = flatItems.IndexOf(item);
+                        bool isSelected = itemIndex == selectedIndex;
+
+                        var prefix = isSelected ? "> " : "  ";
+                        var style = isSelected ? "bold springgreen1" : "white";
+
+                        content.AddRow($"[{style}]{prefix}{item.Label}[/]");
+                     }
+
+                     table.AddRow(content);
                   }
-               )
-            }
-         );
 
-         return AnsiConsole.Prompt(mainPrompt);
+                  ctx.UpdateTarget(table);
+
+                  var key = Console.ReadKey(true);
+
+                  if (key.Key == ConsoleKey.UpArrow)
+                     selectedIndex = (selectedIndex - 1 + flatItems.Count) %
+                        flatItems.Count;
+                  else if (key.Key == ConsoleKey.DownArrow)
+                     selectedIndex = (selectedIndex + 1) % flatItems.Count;
+                  else if (key.Key == ConsoleKey.Enter)
+                     return flatItems[selectedIndex];
+               }
+            });
       }
 
       public static async Task<List<string>?> SelectEntitiesAsync(
