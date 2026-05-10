@@ -14,13 +14,62 @@ Tool for data migration between Dataverse / Dynamics 365 environments.
   of the `CreatedOn` and `ModifiedOn` fields. `CreatedBy` and `ModifiedBy`
   are preserved by auto-mapped impersonation (users are mapped between source
   and target environments by either full name or email).
-- **Robust Synchronization:** Built with resilience in mind using `Polly` for 
+- **Synchronization:** Built with resilience in mind using `Polly` for 
   handling transient errors and automatic retry strategies.
 - **Interactive TUI:** Powered by `Spectre.Console` for easy orchestration.
-- **Resilient State Tracking:** Locally tracks successfully migrated records 
-  to support resuming interrupted synchronizations.
-- **Error Logging:** Logs detailed failures in the target environment via 
-  the `dm_migrationfailure` custom entity.
+- **Error Logging:** Detailed error/warning/info logging to file.
+
+## Synchronizaion Process
+The diagram below visualizes the synchronization process implemented in dvmig.Core.
+It handles preservation of audit fields, resolves dependencies, and excutes in
+parallell (using SemaphoreSlim to comply with .NET Standard 2.0).
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant SE as SyncEngine
+    participant ES as IEntityService
+    participant UR as IUserService
+    participant DP as Target Provider
+    participant SS as ISyncStateService
+
+    SE->>ES: GetMetadataAsync(entity.LogicalName)
+    ES-->>SE: EntityMetadata
+
+    alt IsIntersect == true (N:N Relationship)
+        SE->>SE: SyncIntersectEntityAsync(entity)
+        Note right of SE: Associates records directly via AssociateRequest
+    else Standard Entity
+        SE->>ES: PrepareEntityForTargetAsync(entity, metadata, options...)
+        ES-->>SE: Prepared Target Entity
+
+        opt PreserveAuditData == true
+            SE->>UR: MapUserAsync(CreatedBy)
+            UR-->>SE: mappedCreatorId
+            SE->>UR: MapUserAsync(ModifiedBy)
+            UR-->>SE: mappedModifiedById
+            SE->>SE: PreserveAuditDataIfRequestedAsync(entity)
+            Note right of SE: Creates temporary 'dm_sourcedata' record on Target
+        end
+
+        SE->>SE: CreateWithFixStrategyAsync(preparedEntity)
+        Note right of SE: Attempts Create/Update.<br/>Catches errors (Duplicates, Missing Dependencies, etc.)<br/>and executes fallback strategies.
+        
+        alt Creation/Update Failed
+            SE-->>SE: Return (false, FailureMessage)
+        else Creation/Update Succeeded
+            SE->>SE: CompleteSuccessfulSyncAsync()
+            SE->>SS: MarkAsSynced(sourceId)
+            SE->>SS: Update IdMappingCache(recordKey, targetId)
+            
+            opt PreserveAuditData == true
+                SE->>DP: DeleteSourceDataRecordAsync(dm_sourcedata)
+                Note right of DP: Cleans up temp audit tracking record
+            end
+            SE-->>SE: Return (true, string.Empty)
+        end
+    end
+```
 
 ## Prerequisites
 
