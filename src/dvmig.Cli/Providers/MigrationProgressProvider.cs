@@ -87,7 +87,8 @@ namespace dvmig.Cli.Providers
             _task.Value = currentProcessed;
 
             var swElapsed = _sw.Elapsed.TotalSeconds;
-            var recsPerSec = currentProcessed / (swElapsed > 0 ? swElapsed : 1);
+            var recsPerSec =
+               currentProcessed / (swElapsed > 0 ? swElapsed : 1);
 
             UpdateDescription(recsPerSec);
          }
@@ -116,12 +117,14 @@ namespace dvmig.Cli.Providers
          string displayName
       )
       {
-         var titleMarkup = $"{SystemConstants.UiMarkup.BoldRed}{actionTitle} " +
+         var titleMarkup = $"{SystemConstants.UiMarkup.BoldRed}" +
+            $"{actionTitle} " +
             $"{displayName}[/]";
 
          var rateInfo = r > 0 ? $" - {r:F1} r/s" : "";
          var desc = $"{titleMarkup} ({p}/{t}) " +
-            $"[[{SystemConstants.UiMarkup.Green}{maxThreads}t{rateInfo}[/]]] ";
+            $"[[{SystemConstants.UiMarkup.Green}" +
+            $"{maxThreads}t{rateInfo}[/]]] ";
 
          if (f > 0)
             desc += $"{SystemConstants.UiMarkup.Red}({f} failed)[/]";

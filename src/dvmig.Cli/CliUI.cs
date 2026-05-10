@@ -165,7 +165,8 @@ namespace dvmig.Cli
                      ct => syncActions.HandleRecommendedSyncAsync(ct, false)
                   ),
                   new(
-                     $"{"Sync Selected".t()} {SystemConstants.UiMarkup.Grey}" +
+                     $"{"Sync Selected".t()} " +
+                     $"{SystemConstants.UiMarkup.Grey}" +
                      $"({"pick entities".t()})[/]",
                      ct => syncActions.HandleSelectedSyncAsync(ct, false)
                   ),
@@ -174,7 +175,8 @@ namespace dvmig.Cli
                      ct => syncActions.HandleRecommendedSyncAsync(ct, true)
                   ),
                   new(
-                     $"{"Re-sync Selected".t()} {SystemConstants.UiMarkup.Grey}" +
+                     $"{"Re-sync Selected".t()} " +
+                     $"{SystemConstants.UiMarkup.Grey}" +
                      $"({"pick entities".t()})[/]",
                      ct => syncActions.HandleSelectedSyncAsync(ct, true)
                   )

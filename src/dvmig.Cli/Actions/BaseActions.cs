@@ -1,5 +1,4 @@
 using dvmig.Core.Interfaces;
-using dvmig.Core.Shared;
 using dvmig.Core.Synchronization;
 using Spectre.Console;
 using static dvmig.Core.Shared.SystemConstants;
@@ -72,7 +71,7 @@ namespace dvmig.Cli.Actions
          if (!isReady)
          {
             AnsiConsole.MarkupLine(
-               $"{SystemConstants.UiMarkup.Yellow}Target environment is " +
+               $"{UiMarkup.Yellow}Target environment is " +
                "not prepared. Installing required dvmig components...[/]"
             );
 
@@ -130,14 +129,6 @@ namespace dvmig.Cli.Actions
          return (source, target, engine, userResolver);
       }
 
-      private string GetProviderUrl(IDataverseProvider provider)
-      {
-         var conn = provider.ConnectionString;
-
-         return conn.Contains("://")
-            ? conn.Split("://")[1].Split(";")[0].Split("/")[0]
-            : "Connected";
-      }
       /// <summary>
       /// Handles the installation of dvmig components on the 
       /// target environment.
@@ -170,6 +161,15 @@ namespace dvmig.Cli.Actions
                $"Installation failed: {baseEx.Message}"
             );
          }
+      }
+
+      private static string GetProviderUrl(IDataverseProvider provider)
+      {
+         var conn = provider.ConnectionString;
+
+         return conn.Contains("://")
+            ? conn.Split("://")[1].Split(";")[0].Split("/")[0]
+            : "Connected";
       }
    }
 }
