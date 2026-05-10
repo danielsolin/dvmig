@@ -1,6 +1,4 @@
-using System.Linq;
 using dvmig.Core.Interfaces;
-using dvmig.Core.Shared;
 using dvmig.Core.Synchronization;
 using Microsoft.Crm.Sdk.Messages;
 using Spectre.Console;
@@ -8,22 +6,17 @@ using static dvmig.Core.Shared.SystemConstants;
 
 namespace dvmig.Cli.Actions
 {
-   public class MaintenanceActions : BaseActions
-   {
-      private readonly ISeedingService _seedingService;
-      private readonly IWipeDataService _wipeDataService;
-
-      public MaintenanceActions(
-         ConnectionManager connectionManager,
-         ISeedingService seedingService,
-         IWipeDataService wipeDataService,
-         IPluginService pluginService,
-         IValidationService validator,
-         ISchemaService schemaService,
-         IEntityService entityService,
-         ILogger logger,
-         ISettingsService settingsService
-      ) : base(
+   public class MaintenanceActions(
+      ConnectionManager connectionManager,
+      ISeedingService seedingService,
+      IWipeDataService wipeDataService,
+      IPluginService pluginService,
+      IValidationService validator,
+      ISchemaService schemaService,
+      IEntityService entityService,
+      ILogger logger,
+      ISettingsService settingsService
+      ) : BaseActions(
          connectionManager,
          pluginService,
          validator,
@@ -32,10 +25,9 @@ namespace dvmig.Cli.Actions
          entityService,
          settingsService
       )
-      {
-         _seedingService = seedingService;
-         _wipeDataService = wipeDataService;
-      }
+   {
+      private readonly ISeedingService _seedingService = seedingService;
+      private readonly IWipeDataService _wipeDataService = wipeDataService;
 
       public async Task HandleViewFailuresAsync(CancellationToken ct)
       {
@@ -67,7 +59,7 @@ namespace dvmig.Cli.Actions
             );
 
             AnsiConsole.MarkupLine(
-               $"{SystemConstants.UiMarkup.Grey}" +
+               $"{UiMarkup.Grey}" +
                "Please use 'Install/Update dvmig Components' " +
                "to enable this feature.[/]"
             );
@@ -147,7 +139,7 @@ namespace dvmig.Cli.Actions
             return;
 
          var prompt =
-            $"How many {SystemConstants.UiMarkup.BoldBlue}Accounts[/] " +
+            $"How many {UiMarkup.BoldBlue}Accounts[/] " +
             "(with related Contacts and Activities) would you like " +
             "to generate?";
 
@@ -166,7 +158,7 @@ namespace dvmig.Cli.Actions
          CliUI.WriteSuccess("Seeding Finished!");
       }
 
-      public async Task HandleInstallMenuAsync(CancellationToken ct)
+      public async Task HandleInstallComponentsAsync(CancellationToken ct)
       {
          var provider = await ConnectionManager.ConnectAsync(
             ConnectionDirection.Target
@@ -179,7 +171,7 @@ namespace dvmig.Cli.Actions
          CliUI.Pause();
       }
 
-      public async Task HandleTargetComponentsCleanupAsync(CancellationToken ct)
+      public async Task HandleUninstallComponentsAsync(CancellationToken ct)
       {
          var provider = await ConnectionManager.ConnectAsync(
             ConnectionDirection.Target
@@ -189,7 +181,7 @@ namespace dvmig.Cli.Actions
             return;
 
          var promptMsg =
-            $"{SystemConstants.UiMarkup.Red}Are you sure you want " +
+            $"{UiMarkup.Red}Are you sure you want " +
             "to remove all dvmig system components (schema and plugins) " +
             "from this environment?[/]";
 
@@ -305,20 +297,20 @@ namespace dvmig.Cli.Actions
 
             warningTable.AddRow(
                "[bold red]![/]",
-               $"{SystemConstants.UiMarkup.BoldRed}CRITICAL WARNING:[/] This " +
+               $"{UiMarkup.BoldRed}CRITICAL WARNING:[/] This " +
                "operation will delete [bold]EVERY SINGLE[/] " +
                $"{entityNames} record from the {envName} environment."
             );
 
             warningTable.AddRow(
                "[bold red]![/]",
-               $"{SystemConstants.UiMarkup.Red}This is NOT restricted to " +
+               $"{UiMarkup.Red}This is NOT restricted to " +
                "test data. Real data will be destroyed.[/]"
             );
 
             warningTable.AddRow(
                "[bold red]![/]",
-               $"{SystemConstants.UiMarkup.Red}This action is permanent and " +
+               $"{UiMarkup.Red}This action is permanent and " +
                "irreversible.[/]"
             );
 
@@ -329,14 +321,14 @@ namespace dvmig.Cli.Actions
             );
          }
 
-         var wipeText = SystemConstants.UiMarkup.WipeDataConfirmation;
+         var wipeText = UiMarkup.WipeDataConfirmation;
          var prompt =
-            $"Type {SystemConstants.UiMarkup.BoldRed}{wipeText}[/] " +
+            $"Type {UiMarkup.BoldRed}{wipeText}[/] " +
             "to confirm:";
 
          var confirmation = AnsiConsole.Ask<string>(prompt);
 
-         if (confirmation != SystemConstants.UiMarkup.WipeDataConfirmation)
+         if (confirmation != UiMarkup.WipeDataConfirmation)
          {
             CliUI.WriteWarning("Wipe cancelled.");
 
@@ -400,7 +392,7 @@ namespace dvmig.Cli.Actions
                         );
                      }
 
-                     await Task.Delay(500, ct);
+                     await Task.Delay(1000, ct);
                   }
 
                   await cleanupTask;
@@ -408,6 +400,7 @@ namespace dvmig.Cli.Actions
             );
 
          CliUI.WriteSuccess($"Data Wipe Finished for {envName}!");
+         CliUI.Pause();
       }
    }
 }
