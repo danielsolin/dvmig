@@ -188,12 +188,12 @@ namespace dvmig.Cli
                   new(
                      $"{"Install DVMig Components".t()} " +
                      $"{SystemConstants.UiMarkup.Grey}({"Target".t()})[/]",
-                     maintenanceActions.HandleInstallMenuAsync
+                     maintenanceActions.HandleInstallComponentsAsync
                   ),
                   new(
                      $"{"Uninstall DVMig Components".t()} " +
                      $"{SystemConstants.UiMarkup.Grey}({"Target".t()})[/]",
-                     maintenanceActions.HandleTargetComponentsCleanupAsync
+                     maintenanceActions.HandleUninstallComponentsAsync
                   ),
                   new(
                      "View Recorded Migration Failures".t(),
