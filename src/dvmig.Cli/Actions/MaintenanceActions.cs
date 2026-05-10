@@ -228,15 +228,15 @@ namespace dvmig.Cli.Actions
 
       public async Task HandleSourceDataCleanupAsync(CancellationToken ct)
       {
-         await HandleDataCleanupInternalAsync(ConnectionDirection.Source, ct);
+         await HandleDataCleanupAsync(ConnectionDirection.Source, ct);
       }
 
       public async Task HandleTargetDataCleanupAsync(CancellationToken ct)
       {
-         await HandleDataCleanupInternalAsync(ConnectionDirection.Target, ct);
+         await HandleDataCleanupAsync(ConnectionDirection.Target, ct);
       }
 
-      private async Task HandleDataCleanupInternalAsync(
+      private async Task HandleDataCleanupAsync(
          ConnectionDirection direction,
          CancellationToken ct
       )
