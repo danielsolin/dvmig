@@ -27,8 +27,11 @@ namespace dvmig.Cli
 
       private static void InitializeLocalization()
       {
-         var settingsService = _serviceProvider?.GetService<ISettingsService>();
+         var settingsService =
+            _serviceProvider?.GetService<ISettingsService>();
+
          var settings = settingsService?.LoadSettings();
+
          LocalizationService.Initialize(settings?.Language ?? "en");
       }
 
