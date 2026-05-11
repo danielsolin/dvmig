@@ -20,8 +20,11 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dvmig.Cli", "src\dvmig.Cli\dvmig.Cli.csproj", "{84068BB0-6BB6-4008-A090-06CADACC9926}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "util", "util", "{94804B61-2505-4157-81E1-91A0876C25A6}"
+	ProjectSection(SolutionItems) = preProject
+		util\rr.bat = util\rr.bat
+	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FileConcatenator", "util\FileConcatenator.csproj", "{B0E1F772-BBE3-EABE-FF96-A4F7A601E9BB}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FileConcatenator", "util\FileConcatenator\FileConcatenator.csproj", "{B0E1F772-BBE3-EABE-FF96-A4F7A601E9BB}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "assets", "assets", "{FDFDD111-A8C1-4727-BDA7-AA01B3B0DCDF}"
 EndProject
