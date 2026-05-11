@@ -30,6 +30,8 @@
   handling transient errors and automatic retry strategies.
 - **Interactive TUI:** Powered by `Spectre.Console`.
 - **Error Logging:** Detailed error/warning/info logging to file.
+- **Settings:** Settings and connections strings are stored in a user-specific
+- settings.json for persistence across sessions. Connection strings are encrypted.
 
 ## Architecture
 
@@ -47,7 +49,7 @@
 
 Clone the repository and build the solution:
 
-```powershell
+```console
 # Clone the repository
 git clone https://github.com/danielsolin/dvmig.git
 cd dvmig
@@ -59,18 +61,29 @@ dotnet build
 
 ## Usage
 
-You can run the application directly using the .NET CLI from the root 
-directory:
+Start the CLI/TUI from the root directory like so:
 
-```powershell
+```console
 dotnet run --project src/dvmig.Cli
 ```
 
+When running the app for the first time, start by selecting "Configuration"
+at the main menu to set connection strings for Source and Target environments.
+
+Example:
+
+```code
+# Will open a login window in your default browser:
+AuthType=OAuth;Url=https://<your-instance>.crm.dynamics.com;
+RedirectUri=http://localhost/;LoginPrompt=Auto;
+```
+
+You can also test the connection strings here to make sure they work.
+
 ## Synchronizaion Process
-The diagram below visualizes the synchronization process implemented in
-dvmig.Core. It handles preservation of audit fields, resolves dependencies,
-and excutes in parallell (using SemaphoreSlim to comply with .NET Standard
-2.0).
+This diagram visualizes the synchronization process used in dvmig.Core. It
+handles preservation of audit fields, resolves dependencies, and excutes in
+parallell (using SemaphoreSlim to comply with .NET Standard 2.0).
 
 ```mermaid
 sequenceDiagram
