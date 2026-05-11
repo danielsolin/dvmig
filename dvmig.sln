@@ -21,6 +21,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dvmig.Cli", "src\dvmig.Cli\
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "util", "util", "{94804B61-2505-4157-81E1-91A0876C25A6}"
 	ProjectSection(SolutionItems) = preProject
+		util\gpu.bat = util\gpu.bat
 		util\rr.bat = util\rr.bat
 	EndProjectSection
 EndProject
