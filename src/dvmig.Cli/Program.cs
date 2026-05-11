@@ -93,9 +93,12 @@ namespace dvmig.Cli
             return;
          }
 
-         var syncActions = _serviceProvider.GetRequiredService<SyncActions>();
+         var syncActions = _serviceProvider
+            .GetRequiredService<SyncActions>();
+
          var maintenanceActions = _serviceProvider
             .GetRequiredService<MaintenanceActions>();
+
          var settingsActions = _serviceProvider
             .GetRequiredService<SettingsActions>();
 
