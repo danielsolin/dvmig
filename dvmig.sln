@@ -23,6 +23,13 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "util", "util", "{94804B61-2
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FileConcatenator", "util\FileConcatenator.csproj", "{B0E1F772-BBE3-EABE-FF96-A4F7A601E9BB}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "assets", "assets", "{FDFDD111-A8C1-4727-BDA7-AA01B3B0DCDF}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "img", "img", "{FFB22E47-7AE0-4499-8EBC-1CD79A6B3715}"
+	ProjectSection(SolutionItems) = preProject
+		assets\img\main-menu.png = assets\img\main-menu.png
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -103,6 +110,7 @@ Global
 		{8C1412DA-A620-493E-952A-01994121A45A} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{84068BB0-6BB6-4008-A090-06CADACC9926} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{B0E1F772-BBE3-EABE-FF96-A4F7A601E9BB} = {94804B61-2505-4157-81E1-91A0876C25A6}
+		{FFB22E47-7AE0-4499-8EBC-1CD79A6B3715} = {FDFDD111-A8C1-4727-BDA7-AA01B3B0DCDF}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {2C92B17F-9B1D-4E92-8F8A-A41C858C7440}

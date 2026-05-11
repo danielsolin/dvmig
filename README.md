@@ -1,13 +1,25 @@
 # dvmig (Dataverse Migrator)
 
-Tool for data migration between Dataverse / Dynamics 365 environments.
+![dvmig main menu](assets/img/main-menu.png)
 
-- `src/dvmig.Cli`: .NET 9.0 CLI application built with `Spectre.Console`.
-- `src/dvmig.Core`: .NET Standard 2.0 library containing the migration logic.
-- `src/dvmig.Plugins`: Dataverse plugin for preserving audit fields.
-- `src/dvmig.Tests`: Unit test project using `xUnit`, `Moq`, and `Bogus`.
+### Features
 
-## Features
+1. **Synchronization (🚀)**
+   - **Sync Recommended:** Synchronizes a curated list of entities.
+   - **Sync Selected:** Allows manual entity selection.
+   - **Re-sync:** Ignores sync state and forces an update of all records.
+
+2. **Maintenance (🛠️)**
+   - **Install DVMig Components:** Installs custom entities and plugin.
+   - **Uninstall DVMig Components:** Removes plugin and entities.
+   - **View Recorded Migration Failures:** Lists failure logs.
+
+3. **Data Management (🧪)**
+   - **Generate Sample Data:** Seeds the source environment with mock
+     data.
+   - **Wipe Data (Source/Target):** Purges data from environments.
+
+## Highlights
 
 - **High-Fidelity Migration:** Preserves essential metadata and relationships.
 - **Audit Preservation:** Uses an auto-deployed plugin to ensure presevation
@@ -18,6 +30,13 @@ Tool for data migration between Dataverse / Dynamics 365 environments.
   handling transient errors and automatic retry strategies.
 - **Interactive TUI:** Powered by `Spectre.Console` for easy orchestration.
 - **Error Logging:** Detailed error/warning/info logging to file.
+
+## Architecture
+
+- `src/dvmig.Cli`: .NET 9.0 CLI application built with `Spectre.Console`.
+- `src/dvmig.Core`: .NET Standard 2.0 library containing the migration logic.
+- `src/dvmig.Plugins`: Dataverse plugin for preserving audit fields.
+- `src/dvmig.Tests`: Unit test project using `xUnit`, `Moq`, and `Bogus`.
 
 ## Synchronizaion Process
 The diagram below visualizes the synchronization process implemented in
@@ -82,10 +101,11 @@ Clone the repository and build the solution:
 
 ```powershell
 # Clone the repository
-git clone <repository_url>
+git clone https://github.com/danielsolin/dvmig.git
 cd dvmig
 
 # Build the solution
+dotnet restore
 dotnet build
 ```
 
@@ -97,21 +117,3 @@ directory:
 ```powershell
 dotnet run --project src/dvmig.Cli
 ```
-
-### Application Menus
-
-Once launched, you will be greeted by the interactive TUI:
-
-1. **Synchronization (🚀)**
-   - **Sync Recommended:** Synchronizes a curated list of entities.
-   - **Sync Selected:** Allows manual entity selection.
-   - **Re-sync:** Ignores sync state and forces an update of all records.
-
-2. **Maintenance (🛠️)**
-   - **Install DVMig Components:** Installs custom entities and plugin.
-   - **Uninstall DVMig Components:** Removes plugin and entities.
-   - **View Recorded Migration Failures:** Reads failure logs.
-
-3. **Data Management (🧪)**
-   - **Generate Sample Data:** Seeds the source with mock data.
-   - **Wipe Data (Source/Target):** Purges data from environments.
