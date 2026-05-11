@@ -4,17 +4,17 @@
 
 ### Features
 
-1. **Synchronization (🚀)**
+**Synchronization (🚀)**
    - **Sync Recommended:** Synchronizes a curated list of entities.
    - **Sync Selected:** Allows manual entity selection.
    - **Re-sync:** Ignores sync state and forces an update of all records.
 
-2. **Maintenance (🛠️)**
+**Maintenance (🛠️)**
    - **Install dvmig Components:** Installs custom entities and plugin.
    - **Uninstall dvmig Components:** Removes plugin and entities.
    - **View Recorded Migration Failures:** Lists failure logs.
 
-3. **Data Management (🧪)**
+**Data Management (🧪)**
    - **Generate Sample Data:** Seeds the source environment with mock
      data.
    - **Wipe Data (Source/Target):** Purges data from environments.
