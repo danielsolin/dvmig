@@ -85,9 +85,23 @@ namespace dvmig.Cli
          Func<Task<T>> action
       )
       {
-
          return await AnsiConsole.Status()
-            .StartAsync(statusMessage, async ctx => await action());
+            .StartAsync(statusMessage, async ctx => 
+            {
+               try
+               {
+                  return await action();
+               }
+               catch (Exception ex)
+               {
+                  AnsiConsole.WriteLine();
+                  WriteError(
+                     $"Status task failed: {ex.GetBaseException().Message}"
+                  );
+
+                  return default!;
+               }
+            });
       }
 
       public static void WriteHeader()
