@@ -245,6 +245,18 @@ namespace dvmig.Cli.Actions
                      else
                         settings.TargetConnectionString = newConn;
 
+                     if (!settings.RememberConnections)
+                     {
+                        if (AnsiConsole.Confirm(
+                           "Enable 'Remember Connections' to save this string" +
+                           " to disk?".t(),
+                           true
+                        ))
+                        {
+                           settings.RememberConnections = true;
+                        }
+                     }
+
                      _settingsService.SaveSettings(settings);
                      current = newConn;
 
@@ -269,44 +281,84 @@ namespace dvmig.Cli.Actions
       )
       {
          if (string.IsNullOrWhiteSpace(connStr))
+         {
+            CliUI.WriteError("Connection string is empty.".t());
+            await Task.Delay(1000);
+
             return;
+         }
+
+         if (_connectionManager == null)
+         {
+            CliUI.WriteError("CRITICAL: _connectionManager is null!");
+            CliUI.Pause();
+
+            return;
+         }
 
          bool isLegacy = AnsiConsole.Confirm(
             "Is this a Legacy CRM (OnPrem) environment?".t(),
             false
          );
 
-         IDataverseProvider? provider = await CliUI.RunStatusAsync(
-            "Testing connection...".t(),
-            async () =>
+         IDataverseProvider? provider = null;
+         Exception? caughtException = null;
+
+         // We run the connection logic OUTSIDE the RunStatusAsync first
+         // to see if it's the spinner itself causing the vanishing.
+         await AnsiConsole.Status().StartAsync("Testing connection...".t(),
+            async ctx =>
             {
                try
                {
-                  IDataverseProvider p = isLegacy
+                  provider = isLegacy
                      ? new LegacyCrmProvider(connStr)
                      : new DataverseProvider(connStr);
 
-                  await p.ExecuteAsync(new WhoAmIRequest(), default);
-
-                  return p;
+                  await provider.ExecuteAsync(new WhoAmIRequest(), default);
                }
                catch (Exception ex)
                {
-                  CliUI.WriteError(
-                     "Connection failed: {0}".t(ex.GetBaseException().Message)
-                  );
-
-                  return null;
+                  caughtException = ex;
+                  provider = null;
                }
-            }
-         );
+            });
+
+         if (caughtException != null)
+         {
+            AnsiConsole.WriteLine();
+            CliUI.WriteError(
+               "Connection failed: {0}".t(
+                  caughtException.GetBaseException().Message
+               )
+            );
+            
+            CliUI.Pause();
+
+            return;
+         }
 
          if (provider != null)
          {
-            _connectionManager.AddActiveConnection(direction, provider);
+            try
+            {
+               _connectionManager.AddActiveConnection(direction, provider);
 
-            CliUI.WriteSuccess("Connection successful!".t());
-            await Task.Delay(1500);
+               CliUI.WriteSuccess("Connection successful!".t());
+               await Task.Delay(1500);
+            }
+            catch (Exception ex)
+            {
+               CliUI.WriteError($"Failed to register connection: {ex.Message}");
+               CliUI.Pause();
+            }
+         }
+         else
+         {
+            CliUI.WriteError(
+               "Unknown error: Provider is null but no exception was caught."
+            );
+            CliUI.Pause();
          }
       }
    }
