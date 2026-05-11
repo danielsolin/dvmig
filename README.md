@@ -1,4 +1,4 @@
-# dvmig (Dataverse Migrator)
+# dvmig Main Menu
 
 ![dvmig main menu](assets/img/main-menu.png)
 
@@ -10,8 +10,8 @@
    - **Re-sync:** Ignores sync state and forces an update of all records.
 
 2. **Maintenance (🛠️)**
-   - **Install DVMig Components:** Installs custom entities and plugin.
-   - **Uninstall DVMig Components:** Removes plugin and entities.
+   - **Install dvmig Components:** Installs custom entities and plugin.
+   - **Uninstall dvmig Components:** Removes plugin and entities.
    - **View Recorded Migration Failures:** Lists failure logs.
 
 3. **Data Management (🧪)**
@@ -21,14 +21,14 @@
 
 ## Highlights
 
-- **High-Fidelity Migration:** Preserves essential metadata and relationships.
+- **Data Integrity:** Preserves essential metadata and relationships.
 - **Audit Preservation:** Uses an auto-deployed plugin to ensure presevation
   of the `CreatedOn` and `ModifiedOn` fields. `CreatedBy` and `ModifiedBy`
   are preserved by auto-mapped impersonation (users are mapped between source
   and target environments by either full name or email).
 - **Synchronization:** Built with resilience in mind using `Polly` for 
   handling transient errors and automatic retry strategies.
-- **Interactive TUI:** Powered by `Spectre.Console` for easy orchestration.
+- **Interactive TUI:** Powered by `Spectre.Console`.
 - **Error Logging:** Detailed error/warning/info logging to file.
 
 ## Architecture
@@ -38,10 +38,38 @@
 - `src/dvmig.Plugins`: Dataverse plugin for preserving audit fields.
 - `src/dvmig.Tests`: Unit test project using `xUnit`, `Moq`, and `Bogus`.
 
+## Prerequisites
+
+- [.NET 9.0 SDK](https://dotnet.microsoft.com/download/dotnet/9.0)
+- Source and Target Dataverse/Dynamics 365 environments.
+
+## Installation / Building
+
+Clone the repository and build the solution:
+
+```powershell
+# Clone the repository
+git clone https://github.com/danielsolin/dvmig.git
+cd dvmig
+
+# Build the solution
+dotnet restore
+dotnet build
+```
+
+## Usage
+
+You can run the application directly using the .NET CLI from the root 
+directory:
+
+```powershell
+dotnet run --project src/dvmig.Cli
+```
+
 ## Synchronizaion Process
 The diagram below visualizes the synchronization process implemented in
-dvmig.Core. It handles preservation of audit fields, resolves dependencies, and
-excutes in parallell (using SemaphoreSlim to comply with .NET Standard 2.0).
+dvmig.Core. It handles preservation of audit fields, resolves dependencies,
+and excutes in parallell (using SemaphoreSlim to comply with .NET Standard 2.0).
 
 ```mermaid
 sequenceDiagram
@@ -88,32 +116,4 @@ sequenceDiagram
             SE-->>SE: Return (true, string.Empty)
         end
     end
-```
-
-## Prerequisites
-
-- [.NET 9.0 SDK](https://dotnet.microsoft.com/download/dotnet/9.0)
-- Source and Target Dataverse/Dynamics 365 environments.
-
-## Installation / Building
-
-Clone the repository and build the solution:
-
-```powershell
-# Clone the repository
-git clone https://github.com/danielsolin/dvmig.git
-cd dvmig
-
-# Build the solution
-dotnet restore
-dotnet build
-```
-
-## Usage
-
-You can run the application directly using the .NET CLI from the root 
-directory:
-
-```powershell
-dotnet run --project src/dvmig.Cli
 ```
