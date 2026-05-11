@@ -70,7 +70,7 @@ dotnet run --project src/dvmig.Cli
 When running the app for the first time, start by selecting "Configuration"
 at the main menu to set connection strings for Source and Target environments.
 
-Example:
+Example connection string:
 
 ```code
 # Will open a login window in your default browser:
