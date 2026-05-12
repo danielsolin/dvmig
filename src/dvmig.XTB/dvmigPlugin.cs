@@ -337,10 +337,11 @@ namespace dvmig.XTB
                   _serviceProvider.GetRequiredService<ILogger>();
                var userService =
                   _serviceProvider.GetRequiredService<IUserService>();
-               var entityService =
-                  new EntityService(logger, _targetProvider);
                var syncStateService =
                   _serviceProvider.GetRequiredService<ISyncStateService>();
+
+               var entityService =
+                  new EntityService(logger, _targetProvider);
 
                var syncEngine = new SyncEngine(
                   _sourceProvider,
