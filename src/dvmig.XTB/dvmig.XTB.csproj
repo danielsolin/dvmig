@@ -2,6 +2,8 @@
 
   <PropertyGroup>
     <TargetFramework>net48</TargetFramework>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
     <UseWindowsForms>true</UseWindowsForms>
@@ -12,7 +14,8 @@
   <ItemGroup>
     <PackageReference Include="MscrmTools.Xrm.Connection" Version="1.2025.9.64" />
     <PackageReference Include="XrmToolBoxPackage" Version="1.2025.10.74" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.1" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.2" />
   </ItemGroup>
 
   <ItemGroup>
@@ -20,7 +23,7 @@
   </ItemGroup>
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="if not exist &quot;$(TargetDir)Plugins&quot; mkdir &quot;$(TargetDir)Plugins&quot;&#xD;&#xA;copy /Y &quot;$(TargetDir)$(TargetName).dll&quot; &quot;$(TargetDir)Plugins&quot;" />
+    <Exec Command="if not exist &quot;$(TargetDir)Plugins&quot; mkdir &quot;$(TargetDir)Plugins&quot;&#xD;&#xA;copy /Y &quot;$(TargetDir)*.dll&quot; &quot;$(TargetDir)Plugins&quot;" />
   </Target>
 
 </Project>
