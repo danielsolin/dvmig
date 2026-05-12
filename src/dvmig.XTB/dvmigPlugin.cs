@@ -4,9 +4,6 @@ using System.ComponentModel.Composition;
 using System.Collections.Specialized;
 using System.Windows.Forms;
 using System.Drawing;
-using System.Linq;
-using System.Reflection;
-using System.IO;
 
 using Microsoft.Xrm.Sdk;
 using Microsoft.Extensions.DependencyInjection;
@@ -50,8 +47,7 @@ namespace dvmig.XTB
       private IServiceProvider? _serviceProvider;
       private IDataverseProvider? _sourceProvider;
       private IDataverseProvider? _targetProvider;
-      private List<Microsoft.Xrm.Sdk.Metadata.EntityMetadata> _allEntities = 
-         new List<Microsoft.Xrm.Sdk.Metadata.EntityMetadata>();
+      private List<EntityMetadata> _allEntities = new();
 
       // UI Components
       private Label _lblTarget;
@@ -234,11 +230,6 @@ namespace dvmig.XTB
       {
          base.UpdateConnection(newService, detail, actionName, parameter);
 
-         // XrmToolBox calls UpdateConnection for every connection update.
-         // We only want to set the Target from the main connection selection.
-         if (actionName == "AdditionalOrganization")
-            return;
-
          _targetProvider = new Providers.XrmToolBoxDataProvider(
             newService,
             detail.ConnectionName
@@ -366,7 +357,8 @@ namespace dvmig.XTB
          foreach (EntityItem item in _clbEntities.CheckedItems)
             selectedLogicalNames.Add(item.Metadata.LogicalName);
 
-         if (_sourceProvider == null || _targetProvider == null || _serviceProvider == null)
+         if (_sourceProvider == null || _targetProvider == null
+               || _serviceProvider == null)
             return;
 
          _btnSync.Enabled = false;
@@ -378,29 +370,14 @@ namespace dvmig.XTB
             Message = "Running synchronization...",
             Work = (worker, args) =>
             {
-               var logger = _serviceProvider.GetRequiredService<ILogger>();
-               var validator = _serviceProvider.GetRequiredService<IValidationService>();
-               var schemaService = _serviceProvider.GetRequiredService<ISchemaService>();
-               var pluginService = _serviceProvider.GetRequiredService<IPluginService>();
-               var syncStateService = _serviceProvider.GetRequiredService<ISyncStateService>();
-
-               // 1. Validate Target
-               logger.Information("Validating target environment...");
-               if (!validator.ValidateTargetEnvironmentAsync(_targetProvider).GetAwaiter().GetResult())
-               {
-                  logger.Information("Target environment not prepared. Installing components...");
-                  
-                  // Find plugin path relative to current assembly
-                  var pluginDir = Path.GetDirectoryName(typeof(MainControl).Assembly.Location);
-                  var pluginPath = Path.Combine(pluginDir ?? "", "dvmig.Plugins.dll");
-
-                  schemaService.CreateSchemaAsync(_targetProvider).GetAwaiter().GetResult();
-                  pluginService.DeployPluginAsync(_targetProvider, pluginPath).GetAwaiter().GetResult();
-               }
-
-               // 2. Initialize bound services
-               var userService = new UserService(logger, _sourceProvider, _targetProvider);
-               var entityService = new EntityService(logger, _targetProvider);
+               var logger =
+                  _serviceProvider.GetRequiredService<ILogger>();
+               var userService =
+                  _serviceProvider.GetRequiredService<IUserService>();
+               var entityService =
+                  _serviceProvider.GetRequiredService<IEntityService>();
+               var syncStateService =
+                  _serviceProvider.GetRequiredService<ISyncStateService>();
 
                var syncEngine = new SyncEngine(
                   _sourceProvider,
@@ -422,7 +399,10 @@ namespace dvmig.XTB
                // Run Async and wait for it
                foreach (var entityLogicalName in selectedLogicalNames)
                {
-                  logger.Information($"Starting sync for {entityLogicalName}...");
+                  logger.Information(
+                     $"Starting sync for {entityLogicalName}..."
+                  );
+
                   syncEngine.SyncAsync(
                      entityLogicalName, 
                      options
@@ -436,7 +416,10 @@ namespace dvmig.XTB
 
                if (args.Error != null)
                {
-                  _rtbLogs.AppendText($"\n[ERROR] Synchronization failed: {args.Error.Message}\n");
+                  _rtbLogs.AppendText(
+                     $"\n[ERROR] Synchronization failed: " +
+                     $"{args.Error.Message}\n");
+
                   MessageBox.Show(
                      $"Sync failed: {args.Error.Message}",
                      "Error",
@@ -446,8 +429,16 @@ namespace dvmig.XTB
                }
                else
                {
-                  _rtbLogs.AppendText("\n[SUCCESS] Synchronization complete!\n");
-                  MessageBox.Show("Synchronization completed successfully.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                  _rtbLogs.AppendText(
+                     "\n[SUCCESS] Synchronization complete!\n"
+                  );
+
+                  MessageBox.Show(
+                     "Synchronization completed successfully.",
+                     "Success",
+                     MessageBoxButtons.OK,
+                     MessageBoxIcon.Information
+                  );
                }
                
                _rtbLogs.ScrollToCaret();
