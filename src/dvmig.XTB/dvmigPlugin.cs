@@ -6,6 +6,7 @@ using System.Windows.Forms;
 using System.Drawing;
 
 using Microsoft.Xrm.Sdk;
+using Microsoft.Xrm.Sdk.Metadata;
 using Microsoft.Extensions.DependencyInjection;
 using McTools.Xrm.Connection;
 
@@ -18,11 +19,9 @@ using dvmig.Core.Synchronization;
 using dvmig.XTB.Settings;
 using dvmig.XTB.Shared;
 
-using Label = System.Windows.Forms.Label;
-using Microsoft.Xrm.Sdk.Metadata;
-
 namespace dvmig.XTB
 {
+   #region DvmigPlugin
    [Export(typeof(IXrmToolBoxPlugin))]
    [ExportMetadata("Name", "Dataverse Migration (dvmig)")]
    [ExportMetadata("SmallImageBase64", null)]
@@ -41,6 +40,7 @@ namespace dvmig.XTB
          return new MainControl();
       }
    }
+   #endregion
 
    public class MainControl : MultipleConnectionsPluginControlBase
    {
@@ -49,9 +49,6 @@ namespace dvmig.XTB
       private IDataverseProvider? _targetProvider;
       private List<EntityMetadata> _allEntities = new();
 
-      // UI Components
-      private Label _lblTarget = null!;
-      private Label _lblSource = null!;
       private Button _btnSelectTarget = null!;
       private Button _btnSync = null!;
       private CheckedListBox _clbEntities = null!;
@@ -110,7 +107,6 @@ namespace dvmig.XTB
 
       private void InitializeUI()
       {
-         // Top Panel (Connection Info)
          var topPanel = new TableLayoutPanel
          {
             Dock = DockStyle.Top,
@@ -119,23 +115,8 @@ namespace dvmig.XTB
             RowCount = 2,
             Padding = new Padding(10)
          };
-         topPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 70));
-         topPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 30));
-
-         _lblSource = new Label
-         {
-            Text = "Source: Not Connected",
-            AutoSize = true,
-            Font = new Font(FontFamily.GenericSansSerif, 9, FontStyle.Bold)
-         };
-
-         _lblTarget = new Label
-         {
-            Text = "Target: Not Connected",
-            AutoSize = true,
-            ForeColor = Color.DarkRed,
-            Margin = new Padding(0, 5, 0, 0)
-         };
+         topPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 80));
+         topPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20));
 
          _btnSelectTarget = new Button
          {
@@ -153,22 +134,9 @@ namespace dvmig.XTB
          };
          _btnSync.Click += RunSync_Click;
 
-         topPanel.Controls.Add(_lblSource, 0, 0);
          topPanel.Controls.Add(_btnSelectTarget, 1, 0);
-         topPanel.Controls.Add(_lblTarget, 0, 1);
          topPanel.Controls.Add(_btnSync, 1, 1);
 
-         // Main Content (Split)
-         _mainSplit = new SplitContainer
-         {
-            Dock = DockStyle.Fill,
-            Orientation = Orientation.Vertical,
-            SplitterDistance = 350
-         };
-
-         // Left Panel (Entities)
-         var leftPanel = new Panel { Dock = DockStyle.Fill };
-         
          _txtSearch = new TextBox
          {
             Dock = DockStyle.Top,
@@ -201,10 +169,6 @@ namespace dvmig.XTB
             IntegralHeight = false
          };
 
-         leftPanel.Controls.Add(_clbEntities);
-         leftPanel.Controls.Add(_txtSearch);
-
-         // Right Panel (Logs)
          _rtbLogs = new RichTextBox
          {
             Dock = DockStyle.Fill,
@@ -214,6 +178,15 @@ namespace dvmig.XTB
             Font = new Font("Consolas", 9)
          };
 
+         var leftPanel = new Panel { Dock = DockStyle.Fill };
+         leftPanel.Controls.Add(_clbEntities);
+         leftPanel.Controls.Add(_txtSearch);
+
+         _mainSplit = new SplitContainer
+         {
+            Dock = DockStyle.Fill,
+            Orientation = Orientation.Vertical
+         };
          _mainSplit.Panel1.Controls.Add(leftPanel);
          _mainSplit.Panel2.Controls.Add(_rtbLogs);
 
@@ -236,8 +209,6 @@ namespace dvmig.XTB
                newService, 
                detail.ConnectionName
             );
-            _lblSource.Text = $"Source: {detail.ConnectionName}";
-            _lblSource.ForeColor = Color.DarkGreen;
             LoadEntities();
          }
          else if (_sourceProvider.ConnectionString != detail.ConnectionName)
@@ -246,8 +217,6 @@ namespace dvmig.XTB
                newService, 
                detail.ConnectionName
             );
-            _lblTarget.Text = $"Target: {detail.ConnectionName}";
-            _lblTarget.ForeColor = Color.DarkBlue;
          }
          
          UpdateSyncButtonState();
