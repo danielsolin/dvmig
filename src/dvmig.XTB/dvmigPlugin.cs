@@ -52,7 +52,7 @@ namespace dvmig.XTB
       // UI Components
       private Label _lblTarget;
       private Label _lblSource;
-      private Button _btnSelectSource;
+      private Button _btnSelectTarget;
       private Button _btnSync;
       private CheckedListBox _clbEntities;
       private TextBox _txtSearch;
@@ -122,27 +122,27 @@ namespace dvmig.XTB
          topPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 70));
          topPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 30));
 
-         _lblTarget = new Label
+         _lblSource = new Label
          {
-            Text = "Target: Not Connected",
+            Text = "Source: Not Connected",
             AutoSize = true,
             Font = new Font(FontFamily.GenericSansSerif, 9, FontStyle.Bold)
          };
 
-         _lblSource = new Label
+         _lblTarget = new Label
          {
-            Text = "Source: Not Connected",
+            Text = "Target: Not Connected",
             AutoSize = true,
             ForeColor = Color.DarkRed,
             Margin = new Padding(0, 5, 0, 0)
          };
 
-         _btnSelectSource = new Button
+         _btnSelectTarget = new Button
          {
-            Text = "Change Source",
+            Text = "Select Target",
             Dock = DockStyle.Fill
          };
-         _btnSelectSource.Click += (s, e) => AddAdditionalOrganization();
+         _btnSelectTarget.Click += (s, e) => AddAdditionalOrganization();
 
          _btnSync = new Button
          {
@@ -153,9 +153,9 @@ namespace dvmig.XTB
          };
          _btnSync.Click += RunSync_Click;
 
-         topPanel.Controls.Add(_lblTarget, 0, 0);
-         topPanel.Controls.Add(_btnSelectSource, 1, 0);
-         topPanel.Controls.Add(_lblSource, 0, 1);
+         topPanel.Controls.Add(_lblSource, 0, 0);
+         topPanel.Controls.Add(_btnSelectTarget, 1, 0);
+         topPanel.Controls.Add(_lblTarget, 0, 1);
          topPanel.Controls.Add(_btnSync, 1, 1);
 
          // Main Content (Split)
@@ -228,16 +228,16 @@ namespace dvmig.XTB
          object parameter
       )
       {
-         base.UpdateConnection(newService, detail, actionName, parameter);
-
-         _targetProvider = new Providers.XrmToolBoxDataProvider(
+         _sourceProvider = new Providers.XrmToolBoxDataProvider(
             newService,
             detail.ConnectionName
          );
+         _lblSource.Text = $"Source: {detail.ConnectionName}";
+         _lblSource.ForeColor = Color.DarkGreen;
 
-         _lblTarget.Text = $"Target: {detail.ConnectionName}";
-         _lblTarget.ForeColor = Color.DarkGreen;
+         base.UpdateConnection(newService, detail, actionName, parameter);
          
+         LoadEntities();
          UpdateSyncButtonState();
       }
 
@@ -245,23 +245,26 @@ namespace dvmig.XTB
          NotifyCollectionChangedEventArgs e
       )
       {
-         if (e.Action == NotifyCollectionChangedAction.Add
-               && e.NewItems != null)
+         if (e.Action == NotifyCollectionChangedAction.Add && e.NewItems != null)
          {
             foreach (ConnectionDetail detail in e.NewItems)
             {
+               if (_sourceProvider != null && _sourceProvider.ConnectionString == detail.ConnectionName)
+               {
+                  continue;
+               }
+
                var service = detail.GetCrmServiceClient();
-               _sourceProvider = new Providers.XrmToolBoxDataProvider(
+               _targetProvider = new Providers.XrmToolBoxDataProvider(
                   service,
                   detail.ConnectionName
                );
 
-               _lblSource.Text = $"Source: {detail.ConnectionName}";
-               _lblSource.ForeColor = Color.DarkBlue;
+               _lblTarget.Text = $"Target: {detail.ConnectionName}";
+               _lblTarget.ForeColor = Color.DarkBlue;
                
-               LoadEntities();
                UpdateSyncButtonState();
-               break;
+               break; 
             }
          }
       }
