@@ -228,16 +228,28 @@ namespace dvmig.XTB
          object parameter
       )
       {
-         _sourceProvider = new Providers.XrmToolBoxDataProvider(
-            newService,
-            detail.ConnectionName
-         );
-         _lblSource.Text = $"Source: {detail.ConnectionName}";
-         _lblSource.ForeColor = Color.DarkGreen;
-
          base.UpdateConnection(newService, detail, actionName, parameter);
+
+         if (_sourceProvider == null)
+         {
+            _sourceProvider = new Providers.XrmToolBoxDataProvider(
+               newService, 
+               detail.ConnectionName
+            );
+            _lblSource.Text = $"Source: {detail.ConnectionName}";
+            _lblSource.ForeColor = Color.DarkGreen;
+            LoadEntities();
+         }
+         else if (_sourceProvider.ConnectionString != detail.ConnectionName)
+         {
+            _targetProvider = new Providers.XrmToolBoxDataProvider(
+               newService, 
+               detail.ConnectionName
+            );
+            _lblTarget.Text = $"Target: {detail.ConnectionName}";
+            _lblTarget.ForeColor = Color.DarkBlue;
+         }
          
-         LoadEntities();
          UpdateSyncButtonState();
       }
 
@@ -245,28 +257,7 @@ namespace dvmig.XTB
          NotifyCollectionChangedEventArgs e
       )
       {
-         if (e.Action == NotifyCollectionChangedAction.Add && e.NewItems != null)
-         {
-            foreach (ConnectionDetail detail in e.NewItems)
-            {
-               if (_sourceProvider != null && _sourceProvider.ConnectionString == detail.ConnectionName)
-               {
-                  continue;
-               }
-
-               var service = detail.GetCrmServiceClient();
-               _targetProvider = new Providers.XrmToolBoxDataProvider(
-                  service,
-                  detail.ConnectionName
-               );
-
-               _lblTarget.Text = $"Target: {detail.ConnectionName}";
-               _lblTarget.ForeColor = Color.DarkBlue;
-               
-               UpdateSyncButtonState();
-               break; 
-            }
-         }
+         // All logic is now in UpdateConnection
       }
 
       private void LoadEntities()
