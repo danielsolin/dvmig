@@ -38,7 +38,9 @@ namespace dvmig.XTB.Shared
 
       public void Debug(string messageTemplate, params object[] propertyValues)
       {
-         System.Diagnostics.Debug.WriteLine($"DEBUG: {Format(messageTemplate, propertyValues)}");
+         System.Diagnostics.Debug.WriteLine(
+            $"DEBUG: {Format(messageTemplate, propertyValues)}"
+         );
       }
 
       public void Information(string message)
@@ -47,7 +49,9 @@ namespace dvmig.XTB.Shared
          _progress?.Report(message);
       }
 
-      public void Information(string messageTemplate, params object[] propertyValues)
+      public void Information(
+         string messageTemplate, params object[] propertyValues
+      )
       {
          var formatted = Format(messageTemplate, propertyValues);
          System.Diagnostics.Debug.WriteLine($"INFO: {formatted}");
@@ -60,17 +64,23 @@ namespace dvmig.XTB.Shared
          _progress?.Report($"[WARN] {message}");
       }
 
-      public void Warning(string messageTemplate, params object[] propertyValues)
+      public void Warning(
+         string messageTemplate, params object[] propertyValues
+      )
       {
          var formatted = Format(messageTemplate, propertyValues);
          System.Diagnostics.Debug.WriteLine($"WARN: {formatted}");
          _progress?.Report($"[WARN] {formatted}");
       }
 
-      public void Warning(Exception ex, string messageTemplate, params object[] propertyValues)
+      public void Warning(
+         Exception ex, string messageTemplate, params object[] propertyValues
+      )
       {
          var formatted = Format(messageTemplate, propertyValues);
-         System.Diagnostics.Debug.WriteLine($"WARN: {formatted}. Exception: {ex}");
+         System.Diagnostics.Debug.WriteLine(
+            $"WARN: {formatted}. Exception: {ex}"
+         );
          _progress?.Report($"[WARN] {formatted}: {ex.Message}");
       }
 
@@ -87,10 +97,16 @@ namespace dvmig.XTB.Shared
          _progress?.Report($"[ERROR] {formatted}");
       }
 
-      public void Error(Exception ex, string messageTemplate, params object[] propertyValues)
+      public void Error(
+         Exception ex,
+         string messageTemplate,
+         params object[] propertyValues
+      )
       {
          var formatted = Format(messageTemplate, propertyValues);
-         System.Diagnostics.Debug.WriteLine($"ERROR: {formatted}. Exception: {ex}");
+         System.Diagnostics.Debug.WriteLine(
+            $"ERROR: {formatted}. Exception: {ex}"
+         );
          _progress?.Report($"[ERROR] {formatted}: {ex.Message}");
       }
 
