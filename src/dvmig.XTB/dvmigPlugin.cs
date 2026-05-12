@@ -47,88 +47,6 @@ namespace dvmig.XTB
 
    public class MainControl : MultipleConnectionsPluginControlBase
    {
-      static MainControl()
-      {
-         AppDomain.CurrentDomain.AssemblyResolve += (sender, args) =>
-         {
-            var requestedName = new AssemblyName(args.Name);
-            
-            // Known assemblies that often need redirection in XrmToolBox
-            string[] assembliesToRedirect = 
-            { 
-               "System.Diagnostics.DiagnosticSource", 
-               "System.Runtime.CompilerServices.Unsafe",
-               "System.Text.Json",
-               "System.Memory",
-               "System.Buffers",
-               "System.Numerics.Vectors",
-               "System.Runtime.InteropServices.RuntimeInformation",
-               "Microsoft.Bcl.AsyncInterfaces",
-               "Microsoft.Extensions.DependencyInjection",
-               "Microsoft.Extensions.DependencyInjection.Abstractions",
-               "Microsoft.Extensions.Logging",
-               "Microsoft.Extensions.Logging.Abstractions",
-               "Microsoft.Extensions.Primitives",
-               "Microsoft.Extensions.Options",
-               "Microsoft.Extensions.Configuration.Abstractions",
-               "Microsoft.Extensions.Caching.Abstractions",
-               "Newtonsoft.Json"
-            };
-
-            var loadedAssemblies = AppDomain.CurrentDomain.GetAssemblies();
-            
-            // 1. Check if already loaded (with version matching or redirection)
-            if (assembliesToRedirect.Contains(requestedName.Name))
-            {
-               var assembly = loadedAssemblies.FirstOrDefault(a => 
-                  a.GetName().Name == requestedName.Name
-               );
-               if (assembly != null) return assembly;
-            }
-
-            foreach (var assembly in loadedAssemblies)
-            {
-               var loadedName = assembly.GetName();
-               if (loadedName.Name == requestedName.Name)
-               {
-                  if (loadedName.Version >= requestedName.Version)
-                  {
-                     return assembly;
-                  }
-               }
-            }
-
-            // 2. Try to load from the plugin's directory
-            var pluginDir = Path.GetDirectoryName(
-               typeof(MainControl).Assembly.Location
-            );
-            if (pluginDir != null)
-            {
-               var assemblyPath = Path.Combine(
-                  pluginDir, 
-                  requestedName.Name + ".dll"
-               );
-               
-               if (File.Exists(assemblyPath))
-               {
-                  var assembly = Assembly.LoadFrom(assemblyPath);
-                  
-                  if (assembliesToRedirect.Contains(requestedName.Name))
-                  {
-                     return assembly;
-                  }
-                  
-                  if (assembly.GetName().Version >= requestedName.Version)
-                  {
-                     return assembly;
-                  }
-               }
-            }
-
-            return null;
-         };
-      }
-
       private IServiceProvider? _serviceProvider;
       private IDataverseProvider? _sourceProvider;
       private IDataverseProvider? _targetProvider;
@@ -316,6 +234,11 @@ namespace dvmig.XTB
       {
          base.UpdateConnection(newService, detail, actionName, parameter);
 
+         // XrmToolBox calls UpdateConnection for every connection update.
+         // We only want to set the Target from the main connection selection.
+         if (actionName == "AdditionalOrganization")
+            return;
+
          _targetProvider = new Providers.XrmToolBoxDataProvider(
             newService,
             detail.ConnectionName
@@ -435,14 +358,13 @@ namespace dvmig.XTB
                MessageBoxButtons.OK,
                MessageBoxIcon.Warning
             );
+
             return;
          }
 
          var selectedLogicalNames = new List<string>();
          foreach (EntityItem item in _clbEntities.CheckedItems)
-         {
             selectedLogicalNames.Add(item.Metadata.LogicalName);
-         }
 
          if (_sourceProvider == null || _targetProvider == null || _serviceProvider == null)
             return;
@@ -457,9 +379,28 @@ namespace dvmig.XTB
             Work = (worker, args) =>
             {
                var logger = _serviceProvider.GetRequiredService<ILogger>();
-               var userService = _serviceProvider.GetRequiredService<IUserService>();
-               var entityService = _serviceProvider.GetRequiredService<IEntityService>();
+               var validator = _serviceProvider.GetRequiredService<IValidationService>();
+               var schemaService = _serviceProvider.GetRequiredService<ISchemaService>();
+               var pluginService = _serviceProvider.GetRequiredService<IPluginService>();
                var syncStateService = _serviceProvider.GetRequiredService<ISyncStateService>();
+
+               // 1. Validate Target
+               logger.Information("Validating target environment...");
+               if (!validator.ValidateTargetEnvironmentAsync(_targetProvider).GetAwaiter().GetResult())
+               {
+                  logger.Information("Target environment not prepared. Installing components...");
+                  
+                  // Find plugin path relative to current assembly
+                  var pluginDir = Path.GetDirectoryName(typeof(MainControl).Assembly.Location);
+                  var pluginPath = Path.Combine(pluginDir ?? "", "dvmig.Plugins.dll");
+
+                  schemaService.CreateSchemaAsync(_targetProvider).GetAwaiter().GetResult();
+                  pluginService.DeployPluginAsync(_targetProvider, pluginPath).GetAwaiter().GetResult();
+               }
+
+               // 2. Initialize bound services
+               var userService = new UserService(logger, _sourceProvider, _targetProvider);
+               var entityService = new EntityService(logger, _targetProvider);
 
                var syncEngine = new SyncEngine(
                   _sourceProvider,
@@ -496,7 +437,12 @@ namespace dvmig.XTB
                if (args.Error != null)
                {
                   _rtbLogs.AppendText($"\n[ERROR] Synchronization failed: {args.Error.Message}\n");
-                  MessageBox.Show($"Sync failed: {args.Error.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                  MessageBox.Show(
+                     $"Sync failed: {args.Error.Message}",
+                     "Error",
+                     MessageBoxButtons.OK,
+                     MessageBoxIcon.Error
+                  );
                }
                else
                {

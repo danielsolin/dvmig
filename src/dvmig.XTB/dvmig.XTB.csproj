@@ -23,7 +23,7 @@
   </ItemGroup>
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="if not exist &quot;$(TargetDir)Plugins&quot; mkdir &quot;$(TargetDir)Plugins&quot;&#xD;&#xA;copy /Y &quot;$(TargetDir)*.dll&quot; &quot;$(TargetDir)Plugins&quot;" />
+    <Exec Command="if not exist &quot;$(TargetDir)Plugins&quot; mkdir &quot;$(TargetDir)Plugins&quot;&#xD;&#xA;copy /Y &quot;$(TargetDir)$(TargetName).dll&quot; &quot;$(TargetDir)Plugins&quot;&#xD;&#xA;copy /Y &quot;$(TargetDir)dvmig.Core.dll&quot; &quot;$(TargetDir)Plugins&quot;&#xD;&#xA;copy /Y &quot;$(TargetDir)dvmig.Plugins.dll&quot; &quot;$(TargetDir)Plugins&quot;" />
   </Target>
 
 </Project>
