@@ -50,14 +50,14 @@ namespace dvmig.XTB
       private List<EntityMetadata> _allEntities = new();
 
       // UI Components
-      private Label _lblTarget;
-      private Label _lblSource;
-      private Button _btnSelectTarget;
-      private Button _btnSync;
-      private CheckedListBox _clbEntities;
-      private TextBox _txtSearch;
-      private RichTextBox _rtbLogs;
-      private SplitContainer _mainSplit;
+      private Label _lblTarget = null!;
+      private Label _lblSource = null!;
+      private Button _btnSelectTarget = null!;
+      private Button _btnSync = null!;
+      private CheckedListBox _clbEntities = null!;
+      private TextBox _txtSearch = null!;
+      private RichTextBox _rtbLogs = null!;
+      private SplitContainer _mainSplit = null!;
 
       public MainControl()
       {
