@@ -23,6 +23,9 @@ namespace dvmig.Core.Synchronization
       private readonly ConcurrentDictionary<Guid, UserMappingSummary>
          _summaries = new ConcurrentDictionary<Guid, UserMappingSummary>();
 
+      /// <inheritdoc />
+      public bool IsMapped { get; private set; } = false;
+
       /// <summary>
       /// Initializes a new instance of the <see cref="UserService"/> class.
       /// </summary>
@@ -138,6 +141,9 @@ namespace dvmig.Core.Synchronization
       /// <inheritdoc />
       public async Task MapAllSourceUsersAsync(CancellationToken ct = default)
       {
+         if (IsMapped)
+            return;
+
          if (_source == null)
          {
             throw new InvalidOperationException(
@@ -169,6 +175,8 @@ namespace dvmig.Core.Synchronization
 
          foreach (var user in results.Entities)
             await MapUserInternalAsync(user, ct);
+
+         IsMapped = true;
       }
 
       /// <inheritdoc />

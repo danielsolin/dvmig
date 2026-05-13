@@ -1,8 +1,8 @@
 # dvmig Main Menu
 
-![dvmig main menu](assets/img/main-menu.png)
+![recommended sync run](assets/img/sync-recommended-run.png)
 
-### Features
+### Main Menu
 
 **Synchronization (🚀)**
    - **Sync Recommended:** Synchronizes a curated list of entities.
@@ -19,17 +19,22 @@
      data.
    - **Wipe Data (Source/Target):** Purges data from environments.
 
+**Settings**
+   - Define connection strings, max threads for parallelism etc.
+
 ## Highlights
 
-- **Data Integrity:** Preserves essential metadata and relationships.
+- **Data Integrity:** Preserves essential metadata and relationships - if an
+  referenced record (like Primary Contact) does not exist on Target environment,
+  it will be automatically created.
 - **Audit Preservation:** Uses an auto-deployed plugin to ensure presevation
   of the `CreatedOn` and `ModifiedOn` fields. `CreatedBy` and `ModifiedBy`
   are preserved by auto-mapped impersonation (users are mapped between source
   and target environments by either full name or email).
-- **Synchronization:** Built with resilience in mind using `Polly` for 
-  handling transient errors and automatic retry strategies.
-- **Interactive TUI:** Powered by `Spectre.Console`.
-- **Error Logging:** Detailed error/warning/info logging to file.
+- **Synchronization:** Built with `Polly` for resiliance, handling transient
+  errors and automatic retry strategies.
+- **Interactive TUI:** Using `Spectre.Console`.
+- **Error Logging:** Detailed error/warning/info logging.
 - **Settings:** Settings and connections strings are stored in a user-specific
 - settings.json for persistence across sessions. Connection strings are encrypted.
 

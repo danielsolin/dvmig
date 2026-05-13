@@ -10,17 +10,13 @@ namespace dvmig.Cli.Actions
       ConnectionManager connectionManager,
       ISeedingService seedingService,
       IWipeDataService wipeDataService,
-      IPluginService pluginService,
-      IValidationService validator,
-      ISchemaService schemaService,
+      IEnvironmentService environmentService,
       IEntityService entityService,
       ILogger logger,
       ISettingsService settingsService
       ) : BaseActions(
          connectionManager,
-         pluginService,
-         validator,
-         schemaService,
+         environmentService,
          logger,
          entityService,
          settingsService
@@ -193,18 +189,10 @@ namespace dvmig.Cli.Actions
             await CliUI.RunStatusAsync(
                "Uninstalling components...",
                Logger,
-               async () =>
-               {
-                  Logger.Information("Cleaning target environment...");
-
-                  await PluginService.RemovePluginAsync(provider, ct);
-
-                  await provider.ExecuteAsync(new PublishAllXmlRequest(), ct);
-
-                  await SchemaService.DropSchemaAsync(provider, ct);
-
-                  Logger.Information("Environment cleanup completed.");
-               },
+               async () => await EnvironmentService.UninstallComponentsAsync(
+                  provider,
+                  ct
+               ),
                lineByLine: true
             );
 

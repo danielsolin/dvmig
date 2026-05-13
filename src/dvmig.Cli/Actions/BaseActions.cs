@@ -12,27 +12,21 @@ namespace dvmig.Cli.Actions
    public abstract class BaseActions
    {
       protected readonly ConnectionManager ConnectionManager;
-      protected readonly IPluginService PluginService;
-      protected readonly IValidationService Validator;
-      protected readonly ISchemaService SchemaService;
+      protected readonly IEnvironmentService EnvironmentService;
       protected readonly ILogger Logger;
       protected readonly IEntityService EntityService;
       protected readonly ISettingsService SettingsService;
 
       protected BaseActions(
          ConnectionManager connectionManager,
-         IPluginService pluginService,
-         IValidationService validator,
-         ISchemaService schemaService,
+         IEnvironmentService environmentService,
          ILogger logger,
          IEntityService entityService,
          ISettingsService settingsService
       )
       {
          ConnectionManager = connectionManager;
-         PluginService = pluginService;
-         Validator = validator;
-         SchemaService = schemaService;
+         EnvironmentService = environmentService;
          Logger = logger;
          EntityService = entityService;
          SettingsService = settingsService;
@@ -63,7 +57,7 @@ namespace dvmig.Cli.Actions
          if (target == null)
             return (null, null, null, null);
 
-         bool isReady = await Validator.ValidateTargetEnvironmentAsync(
+         bool isReady = await EnvironmentService.ValidateTargetEnvironmentAsync(
             target,
             default
          );
@@ -106,8 +100,11 @@ namespace dvmig.Cli.Actions
 
          if (ConnectionManager.UserResolver == null)
          {
-            ConnectionManager.UserResolver = new UserService(Logger, source, target);
-            ConnectionManager.UserMappingsCached = false;
+            ConnectionManager.UserResolver = new UserService(
+               Logger, 
+               source, 
+               target
+            );
          }
 
          var userResolver = ConnectionManager.UserResolver;
@@ -140,11 +137,9 @@ namespace dvmig.Cli.Actions
             await CliUI.RunStatusAsync(
                "Installing components...",
                Logger,
-               async () =>
-               {
-                  await SchemaService.CreateSchemaAsync(target);
-                  await PluginService.DeployPluginAsync(target, null);
-               },
+               async () => await EnvironmentService.InstallComponentsAsync(
+                  target
+               ),
                lineByLine: true
             );
 

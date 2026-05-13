@@ -21,6 +21,12 @@ namespace dvmig.Core.Interfaces
    public interface IUserService
    {
       /// <summary>
+      /// Gets a value indicating whether the initial proactive mapping 
+      /// has been performed.
+      /// </summary>
+      bool IsMapped { get; }
+
+      /// <summary>
       /// Asynchronously resolves a source user reference to its equivalent 
       /// in the target environment.
       /// </summary>

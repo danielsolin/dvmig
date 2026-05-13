@@ -17,17 +17,6 @@ namespace dvmig.Core.Settings
       /// </summary>
       public string TargetConnectionString { get; set; } = string.Empty;
 
-      /// <summary>
-      /// Gets or sets a value indicating whether connection strings 
-      /// should be persisted.
-      /// </summary>
-      public bool RememberConnections { get; set; }
-
-      /// <summary>
-      /// Gets or sets a value indicating whether to automatically attempt 
-      /// connection on startup.
-      /// </summary>
-      public bool AutoConnect { get; set; }
 
       /// <summary>
       /// Gets or sets the preferred language code (e.g., "en", "sv").

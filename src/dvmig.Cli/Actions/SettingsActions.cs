@@ -24,8 +24,6 @@ namespace dvmig.Cli.Actions
       {
          SourceConn,
          TargetConn,
-         RememberConn,
-         AutoConnect,
          MaxThreads,
          Language,
          Back
@@ -59,7 +57,7 @@ namespace dvmig.Cli.Actions
 
             var prompt = new SelectionPrompt<SettingChoice>()
                .Title("Settings".t())
-               .PageSize(10)
+               .PageSize(8)
                .UseConverter(c => c switch
                {
                   SettingChoice.SourceConn =>
@@ -70,12 +68,6 @@ namespace dvmig.Cli.Actions
                      $"{"Target Connection String".t()}: " + 
                      $"{StringMasker.GetEnvironmentUrl(
                         settings.TargetConnectionString)}",
-                  SettingChoice.RememberConn =>
-                     $"{"Remember Connections".t()}: " + 
-                     $"{(settings.RememberConnections ? "Yes".t() : "No".t())}",
-                  SettingChoice.AutoConnect =>
-                     $"{"Auto Connect".t()}: " + 
-                     $"{(settings.AutoConnect ? "Yes".t() : "No".t())}",
                   SettingChoice.MaxThreads =>
                      $"{"Max Threads".t()}: {settings.MaxParallelism}",
                   SettingChoice.Language =>
@@ -110,14 +102,6 @@ namespace dvmig.Cli.Actions
                   break;
                case SettingChoice.MaxThreads:
                   await HandleMaxParallelismChangeAsync(settings);
-                  break;
-               case SettingChoice.RememberConn:
-                  settings.RememberConnections = !settings.RememberConnections;
-                  _settingsService.SaveSettings(settings);
-                  break;
-               case SettingChoice.AutoConnect:
-                  settings.AutoConnect = !settings.AutoConnect;
-                  _settingsService.SaveSettings(settings);
                   break;
             }
          }
@@ -244,18 +228,6 @@ namespace dvmig.Cli.Actions
                         settings.SourceConnectionString = newConn;
                      else
                         settings.TargetConnectionString = newConn;
-
-                     if (!settings.RememberConnections)
-                     {
-                        if (AnsiConsole.Confirm(
-                           "Enable 'Remember Connections' to save this string" +
-                           " to disk?".t(),
-                           true
-                        ))
-                        {
-                           settings.RememberConnections = true;
-                        }
-                     }
 
                      _settingsService.SaveSettings(settings);
                      current = newConn;

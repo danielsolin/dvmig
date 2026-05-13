@@ -51,9 +51,7 @@ namespace dvmig.Cli
          services.AddTransient<IWipeDataService, WipeDataService>();
          services.AddTransient<IEntityService, EntityService>();
 
-         services.AddTransient<IValidationService, ValidationService>();
-         services.AddTransient<ISchemaService, SchemaService>();
-         services.AddTransient<IPluginService, PluginService>();
+         services.AddTransient<IEnvironmentService, EnvironmentService>();
 
          // CLI Actions
          services.AddTransient<SyncActions>();

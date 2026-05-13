@@ -1,10 +1,13 @@
 using System.Collections.Concurrent;
-using dvmig.Core.Interfaces;
-using dvmig.Core.Shared;
+
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Messages;
 using Microsoft.Xrm.Sdk.Metadata;
 using Microsoft.Xrm.Sdk.Query;
+
+using dvmig.Core.Interfaces;
+using dvmig.Core.Shared;
+
 using static dvmig.Core.Shared.SystemConstants;
 
 namespace dvmig.Core.Synchronization
@@ -35,7 +38,6 @@ namespace dvmig.Core.Synchronization
       }
 
       #region IEntityService Implementation (Preparation)
-
       /// <inheritdoc />
       public async Task<Entity> PrepareEntityForTargetAsync(
          Entity sourceEntity,
@@ -95,7 +97,7 @@ namespace dvmig.Core.Synchronization
             else if (value is EntityCollection collection &&
                      collection.Entities.Count > 0 &&
                      collection.Entities[0].LogicalName ==
-                        SystemConstants.DataverseEntities.ActivityParty.Name)
+                        DataverseEntities.ActivityParty.Name)
             {
                value = await PrepareActivityPartyCollectionAsync(
                   collection,
@@ -109,7 +111,7 @@ namespace dvmig.Core.Synchronization
             targetEntity[attribute.Key] = value;
          }
 
-         targetEntity[SystemConstants.DataverseAttributes
+         targetEntity[DataverseAttributes
             .ImportSequenceNumber] = 1;
 
          return targetEntity;
@@ -131,19 +133,19 @@ namespace dvmig.Core.Synchronization
          foreach (var party in collection.Entities)
          {
             var targetParty = new Entity(
-               SystemConstants.DataverseEntities.ActivityParty.Name
+               DataverseEntities.ActivityParty.Name
             );
             bool skipParty = false;
 
             foreach (var partyAttr in party.Attributes)
             {
                bool isPartyId = partyAttr.Key ==
-                  SystemConstants.DataverseAttributes.PartyId;
+                  DataverseAttributes.PartyId;
                bool isTypeMask = partyAttr.Key ==
-                  SystemConstants.DataverseAttributes
+                  DataverseAttributes
                      .ParticipationTypeMask;
                bool isAddress = partyAttr.Key ==
-                  SystemConstants.DataverseAttributes.AddressUsed;
+                  DataverseAttributes.AddressUsed;
 
                if (!isPartyId && !isTypeMask && !isAddress)
                   continue;
@@ -151,11 +153,11 @@ namespace dvmig.Core.Synchronization
                var partyValue = partyAttr.Value;
 
                if (partyAttr.Key ==
-                      SystemConstants.DataverseAttributes.PartyId &&
+                      DataverseAttributes.PartyId &&
                    partyValue is EntityReference pr)
                {
                   if (pr.LogicalName ==
-                         SystemConstants.DataverseEntities.SystemUser.Name)
+                         DataverseEntities.SystemUser.Name)
                   {
                      partyValue = await userResolver.MapUserAsync(pr, ct);
 
@@ -241,11 +243,9 @@ namespace dvmig.Core.Synchronization
 
          return new HashSet<Guid>(results.Entities.Select(e => e.Id));
       }
-
       #endregion
 
       #region IEntityService Implementation (Metadata)
-
       /// <inheritdoc />
       public async Task<EntityMetadata?> GetMetadataAsync(
          string entityLogicalName,
@@ -373,7 +373,6 @@ namespace dvmig.Core.Synchronization
       #endregion
 
       #region IEntityService Implementation (Relationships)
-
       /// <inheritdoc />
       public async Task AssociateAsync(
          IDataverseProvider target,
@@ -393,7 +392,7 @@ namespace dvmig.Core.Synchronization
                entity.LogicalName
             );
 
-            throw new System.InvalidOperationException(
+            throw new InvalidOperationException(
                "Invalid N:N relationship record."
             );
          }
@@ -410,7 +409,6 @@ namespace dvmig.Core.Synchronization
 
          await target.ExecuteAsync(request, ct, callerId);
       }
-
       #endregion
    }
 }

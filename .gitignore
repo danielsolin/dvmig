@@ -21,6 +21,7 @@ Thumbs.db
 
 # Project Specific
 publish-minimal.ps1.local
+util/
 
 # Gemini CLI
 /.gemini/settings.json
