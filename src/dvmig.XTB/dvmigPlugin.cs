@@ -221,13 +221,6 @@ namespace dvmig.XTB
          UpdateSyncButtonState();
       }
 
-      protected override void ConnectionDetailsUpdated(
-         NotifyCollectionChangedEventArgs e
-      )
-      {
-         // All logic is now in UpdateConnection
-      }
-
       private void LoadEntities()
       {
          if (_sourceProvider == null || _serviceProvider == null) return;
@@ -296,11 +289,6 @@ namespace dvmig.XTB
          _clbEntities.EndUpdate();
       }
 
-      private void UpdateSyncButtonState()
-      {
-         _btnSync.Enabled = _sourceProvider != null && _targetProvider != null;
-      }
-
       private void RunSync_Click(object? sender, EventArgs e)
       {
          if (_clbEntities.CheckedItems.Count == 0)
@@ -329,18 +317,42 @@ namespace dvmig.XTB
 
          WorkAsync(new WorkAsyncInfo
          {
-            Message = "Running synchronization...",
+            Message = "Preparing synchronization...",
             Work = (worker, args) =>
             {
                var logger =
                   _serviceProvider.GetRequiredService<ILogger>();
-               var userService =
-                  _serviceProvider.GetRequiredService<IUserService>();
+               var envService =
+                  _serviceProvider.GetRequiredService<IEnvironmentService>();
                var syncStateService =
                   _serviceProvider.GetRequiredService<ISyncStateService>();
 
+               var userService =
+                  new UserService(logger, _sourceProvider, _targetProvider);
                var entityService =
                   new EntityService(logger, _targetProvider);
+
+               // 1. Ensure target is ready
+               logger.Information("Validating target environment...");
+               var isReady = envService
+                  .ValidateTargetEnvironmentAsync(_targetProvider)
+                  .GetAwaiter()
+                  .GetResult();
+
+               if (!isReady)
+               {
+                  logger.Warning(
+                     "Target environment is not initialized. " +
+                     "Installing components..."
+                  );
+
+                  envService
+                     .InstallComponentsAsync(_targetProvider)
+                     .GetAwaiter()
+                     .GetResult();
+
+                  logger.Information("Target environment initialized.");
+               }
 
                var syncEngine = new SyncEngine(
                   _sourceProvider,
@@ -350,6 +362,10 @@ namespace dvmig.XTB
                   entityService,
                   syncStateService
                );
+
+               // 2. Initialize Engine (Maps users etc)
+               logger.Information("Initializing synchronization engine...");
+               syncEngine.InitializeSyncAsync().GetAwaiter().GetResult();
                
                var options = new SyncOptions
                {
@@ -359,7 +375,7 @@ namespace dvmig.XTB
                   StripMissingDependencies = true
                };
 
-               // Run Async and wait for it
+               // 3. Run Sync for selected entities
                foreach (var entityLogicalName in selectedLogicalNames)
                {
                   logger.Information(
@@ -407,6 +423,16 @@ namespace dvmig.XTB
                _rtbLogs.ScrollToCaret();
             }
          });
+      }
+
+      private void UpdateSyncButtonState()
+      {
+         _btnSync.Enabled = _sourceProvider != null && _targetProvider != null;
+      }
+
+      protected override void ConnectionDetailsUpdated(NotifyCollectionChangedEventArgs e)
+      {
+         // Here because an implementation is required.
       }
 
       private class EntityItem
