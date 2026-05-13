@@ -13,6 +13,13 @@ namespace dvmig.Core.Interfaces
       #region Core Sync Operations
 
       /// <summary>
+      /// Performs initial orchestration required for a synchronization 
+      /// session (e.g., proactive user mapping).
+      /// </summary>
+      /// <param name="ct">A cancellation token.</param>
+      Task InitializeSyncAsync(CancellationToken ct = default);
+
+      /// <summary>
       /// Synchronizes all records of a specific entity type from the 
       /// source to the target, handling pagination automatically.
       /// </summary>

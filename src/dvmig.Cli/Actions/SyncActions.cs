@@ -10,17 +10,13 @@ namespace dvmig.Cli.Actions
 {
    public class SyncActions(
       ConnectionManager connectionManager,
-      IPluginService pluginService,
-      IValidationService validator,
-      ISchemaService schemaService,
+      IEnvironmentService environmentService,
       ILogger logger,
       IEntityService entityService,
       ISettingsService settingsService
       ) : BaseActions(
          connectionManager,
-         pluginService,
-         validator,
-         schemaService,
+         environmentService,
          logger,
          entityService,
          settingsService
@@ -51,6 +47,7 @@ namespace dvmig.Cli.Actions
          }
 
          if (!await ShowSyncPlanAsync(
+            engine,
             userResolver,
             selectedEntities,
             forceResync,
@@ -83,6 +80,7 @@ namespace dvmig.Cli.Actions
          var recommendedEntities = SyncSettings.RecommendedEntities.ToList();
 
          if (!await ShowSyncPlanAsync(
+            engine,
             userResolver,
             recommendedEntities,
             forceResync,
@@ -101,21 +99,18 @@ namespace dvmig.Cli.Actions
       }
 
       private async Task<bool> ShowSyncPlanAsync(
+         ISyncEngine engine,
          IUserService userResolver,
          List<string> entities,
          bool forceResync,
          CancellationToken ct
       )
       {
-         if (!ConnectionManager.UserMappingsCached)
-         {
-            await CliUI.RunStatusAsync(
-               "Mapping source users to target environment...".t(),
-               Logger,
-               async () => await userResolver.MapAllSourceUsersAsync(ct)
-            );
-            ConnectionManager.UserMappingsCached = true;
-         }
+         await CliUI.RunStatusAsync(
+            "Preparing synchronization...".t(),
+            Logger,
+            async () => await engine.InitializeSyncAsync(ct)
+         );
 
          var mappings = await userResolver.GetMappingSummaryAsync(ct);
          var humanMappings = mappings.Where(m => m.IsHuman).ToList();

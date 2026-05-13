@@ -18,6 +18,7 @@ using dvmig.Core.Provisioning;
 using dvmig.Core.Synchronization;
 using dvmig.XTB.Settings;
 using dvmig.XTB.Shared;
+using IEnvironmentService = dvmig.Core.Interfaces.IEnvironmentService;
 
 namespace dvmig.XTB
 {
@@ -79,9 +80,7 @@ namespace dvmig.XTB
          services.AddTransient<IUserService, UserService>();
          services.AddTransient<ISeedingService, SeedingService>();
          services.AddTransient<IWipeDataService, WipeDataService>();
-         services.AddTransient<IValidationService, ValidationService>();
-         services.AddTransient<ISchemaService, SchemaService>();
-         services.AddTransient<IPluginService, PluginService>();
+         services.AddTransient<IEnvironmentService, EnvironmentService>();
 
          _serviceProvider = services.BuildServiceProvider();
 

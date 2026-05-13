@@ -10,6 +10,8 @@ using static dvmig.Core.Shared.SystemConstants;
 
 namespace dvmig.Cli
 {
+   // DMSMIX: Why do we have this class? The CLI should not be concerned
+   // with connection management. Please talk to the user about this.
    public class ConnectionManager
    {
       private readonly ISettingsService _settingsService;
@@ -17,7 +19,6 @@ namespace dvmig.Cli
       private readonly Dictionary<ConnectionDirection, IDataverseProvider>
          _activeConnections = new();
 
-      public bool UserMappingsCached { get; set; } = false;
       public IUserService? UserResolver { get; set; }
 
       public ConnectionManager(ISettingsService settingsService)
@@ -144,8 +145,6 @@ namespace dvmig.Cli
                   true
                ))
                {
-                  settings.RememberConnections = true;
-
                   if (direction == ConnectionDirection.Source)
                      settings.SourceConnectionString = connStr;
                   else

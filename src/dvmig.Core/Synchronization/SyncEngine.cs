@@ -52,6 +52,12 @@ namespace dvmig.Core.Synchronization
       #region Entity Sync Orchestration (Batch)
 
       /// <inheritdoc />
+      public async Task InitializeSyncAsync(CT ct = default)
+      {
+         await _userResolver.MapAllSourceUsersAsync(ct);
+      }
+
+      /// <inheritdoc />
       public async Task InitializeEntitySyncAsync(
          string logicalName,
          CT ct = default

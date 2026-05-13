@@ -29,7 +29,7 @@ namespace dvmig.Core.Settings
          bool isWindows =
             RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
 
-         if (isWindows)
+         if(isWindows)
          {
             folder = Path.Combine(
                Environment.GetFolderPath(
@@ -49,7 +49,7 @@ namespace dvmig.Core.Settings
             );
          }
 
-         if (!Directory.Exists(folder))
+         if(!Directory.Exists(folder))
             Directory.CreateDirectory(folder);
 
          _filePath = Path.Combine(
@@ -61,7 +61,7 @@ namespace dvmig.Core.Settings
       /// <inheritdoc />
       public UserSettings LoadSettings()
       {
-         if (!File.Exists(_filePath))
+         if(!File.Exists(_filePath))
             return new UserSettings();
 
          try
@@ -70,19 +70,11 @@ namespace dvmig.Core.Settings
             var settings = JsonSerializer.Deserialize<UserSettings>(json) ??
                new UserSettings();
 
-            if (settings.RememberConnections)
-            {
-               settings.SourceConnectionString =
-                  Decrypt(settings.SourceConnectionString);
+            settings.SourceConnectionString =
+               Decrypt(settings.SourceConnectionString);
 
-               settings.TargetConnectionString =
-                  Decrypt(settings.TargetConnectionString);
-            }
-            else
-            {
-               settings.SourceConnectionString = string.Empty;
-               settings.TargetConnectionString = string.Empty;
-            }
+            settings.TargetConnectionString =
+               Decrypt(settings.TargetConnectionString);
 
             return settings;
          }
@@ -99,20 +91,15 @@ namespace dvmig.Core.Settings
          {
             var settingsCopy = new UserSettings
             {
-               RememberConnections = settings.RememberConnections,
-               AutoConnect = settings.AutoConnect,
                Language = settings.Language,
                MaxParallelism = settings.MaxParallelism
             };
 
-            if (settings.RememberConnections)
-            {
-               settingsCopy.SourceConnectionString =
-                  Encrypt(settings.SourceConnectionString);
+            settingsCopy.SourceConnectionString =
+               Encrypt(settings.SourceConnectionString);
 
-               settingsCopy.TargetConnectionString =
-                  Encrypt(settings.TargetConnectionString);
-            }
+            settingsCopy.TargetConnectionString =
+               Encrypt(settings.TargetConnectionString);
 
             var json = JsonSerializer.Serialize(settingsCopy);
 
@@ -129,14 +116,14 @@ namespace dvmig.Core.Settings
       /// </summary>
       private string Encrypt(string text)
       {
-         if (string.IsNullOrEmpty(text))
+         if(string.IsNullOrEmpty(text))
             return string.Empty;
 
          bool isWindows =
             RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
 
          // DPAPI is only available on Windows
-         if (!isWindows)
+         if(!isWindows)
             return text;
 
          try
@@ -161,14 +148,14 @@ namespace dvmig.Core.Settings
       /// </summary>
       private string Decrypt(string base64)
       {
-         if (string.IsNullOrEmpty(base64))
+         if(string.IsNullOrEmpty(base64))
             return string.Empty;
 
          bool isWindows =
             RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
 
          // DPAPI is only available on Windows
-         if (!isWindows)
+         if(!isWindows)
             return base64;
 
          try

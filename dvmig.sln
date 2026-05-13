@@ -31,6 +31,7 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "img", "img", "{372094D3-05EA-471F-9823-11EB0FA3C206}"
 	ProjectSection(SolutionItems) = preProject
 		assets\img\main-menu.png = assets\img\main-menu.png
+		assets\img\sync-recommended-run.png = assets\img\sync-recommended-run.png
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dvmig.XTB", "src\dvmig.XTB\dvmig.XTB.csproj", "{2EA5673E-C454-436C-895F-7AB2DB5034B1}"
