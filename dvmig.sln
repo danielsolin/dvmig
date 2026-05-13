@@ -24,8 +24,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "util", "util", "{94804B61-2
 		util\rr.bat = util\rr.bat
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FileConcatenator", "util\FileConcatenator\FileConcatenator.csproj", "{B0E1F772-BBE3-EABE-FF96-A4F7A601E9BB}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "assets", "assets", "{C1D08D29-2456-4C29-8306-C5ACF0F84EB2}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "img", "img", "{372094D3-05EA-471F-9823-11EB0FA3C206}"
