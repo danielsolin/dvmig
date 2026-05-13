@@ -393,14 +393,17 @@ namespace dvmig.Core.Synchronization
       {
          var recordKey = EntityHelper.GetRecordKey(sourceEntity);
 
-         _syncStateService.MarkAsSynced(sourceEntity.Id);
+         var newlySynced = _syncStateService.MarkAsSynced(sourceEntity.Id);
          _syncStateService.IdMappingCache[recordKey] = targetEntity.Id;
 
-         _logger.Information(
-            "Synced {Key}:{Id}",
-            sourceEntity.LogicalName,
-            sourceEntity.Id
-         );
+         if (newlySynced)
+         {
+            _logger.Information(
+               "Synced {Key}:{Id}",
+               sourceEntity.LogicalName,
+               sourceEntity.Id
+            );
+         }
 
          if (options.PreserveAuditData)
          {
