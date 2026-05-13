@@ -18,23 +18,18 @@ namespace dvmig.Tests
          string expected
       )
       {
-         // Act
          var result = StringMasker.MaskConnectionString(input);
 
-         // Assert
          Assert.Equal(expected, result);
       }
 
       [Fact]
       public void MaskConnectionString_ReturnsOriginal_WhenNoSensitiveData()
       {
-         // Arrange
          var input = "Server=http://myserver/org;User=admin";
 
-         // Act
          var result = StringMasker.MaskConnectionString(input);
 
-         // Assert
          Assert.Equal(input, result);
       }
    }

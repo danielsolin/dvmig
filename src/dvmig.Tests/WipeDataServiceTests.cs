@@ -1,11 +1,12 @@
-using dvmig.Core.Interfaces;
-using dvmig.Core.Provisioning;
-using dvmig.Core.Shared;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Messages;
 using Microsoft.Xrm.Sdk.Metadata;
 using Microsoft.Xrm.Sdk.Query;
+
 using Moq;
+
+using dvmig.Core.Interfaces;
+using dvmig.Core.Provisioning;
 
 namespace dvmig.Tests
 {
@@ -25,27 +26,28 @@ namespace dvmig.Tests
       [Fact]
       public async Task WipeEntitiesAsync_PerformsTwoPasses()
       {
-         // Arrange
          var entityName = "account";
          var entities = new List<string> { entityName };
 
          var metadata = new EntityMetadata();
 
          _providerMock.Setup(
-            p => p.GetEntityMetadataAsync(entityName, It.IsAny<CancellationToken>())
+            p => p.GetEntityMetadataAsync(
+               entityName,
+               It.IsAny<CancellationToken>()
+            )
          ).ReturnsAsync(metadata);
-         
+
          _providerMock.Setup(
             p => p.RetrieveMultipleAsync(
-               It.IsAny<QueryBase>(), 
+               It.IsAny<QueryBase>(),
                It.IsAny<CancellationToken>()
             )
          ).ReturnsAsync(new EntityCollection());
 
-         // Mock ExecuteAsync for GetRecordCountAsync (RetrieveEntityRequest)
          _providerMock.Setup(
             p => p.ExecuteAsync(
-               It.IsAny<RetrieveEntityRequest>(), 
+               It.IsAny<RetrieveEntityRequest>(),
                It.IsAny<CancellationToken>(),
                It.IsAny<Guid?>()
             )
@@ -54,10 +56,8 @@ namespace dvmig.Tests
             Results = { ["EntityMetadata"] = metadata }
          });
 
-         // Act
          await _service.WipeEntitiesAsync(_providerMock.Object, entities);
 
-         // Assert
          _loggerMock.Verify(
             l => l.Information(It.Is<string>(s => s.Contains("Pass 1/2"))),
             Times.Once

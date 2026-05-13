@@ -1,10 +1,11 @@
-using System.Collections.Concurrent;
-using dvmig.Core.Interfaces;
-using dvmig.Core.Shared;
-using dvmig.Core.Synchronization;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Metadata;
+
 using Moq;
+
+using dvmig.Core.Interfaces;
+using dvmig.Core.Synchronization;
+using static dvmig.Core.Shared.SystemConstants;
 
 namespace dvmig.Tests
 {
@@ -29,7 +30,7 @@ namespace dvmig.Tests
                It.IsAny<string>(),
                It.IsAny<CancellationToken>()
             )
-         ).ReturnsAsync((string logicalName, CancellationToken ct) => 
+         ).ReturnsAsync((string logicalName, CancellationToken ct) =>
             new EntityMetadata { LogicalName = logicalName });
 
          var entityService = new EntityService(
@@ -70,23 +71,44 @@ namespace dvmig.Tests
          contact["lastname"] = "Contact C";
          contact["parentcustomerid"] = new EntityReference("account", accountId);
 
-         _sourceMock.Setup(s => s.RetrieveAsync("contact", contactId, null, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(contact);
-         _sourceMock.Setup(s => s.RetrieveAsync("account", accountId, null, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(account);
+         _sourceMock.Setup(
+            s => s.RetrieveAsync(
+               "contact",
+               contactId,
+               null,
+               It.IsAny<CancellationToken>()
+            )
+         ).ReturnsAsync(contact);
+         _sourceMock.Setup(
+            s => s.RetrieveAsync(
+               "account",
+               accountId,
+               null,
+               It.IsAny<CancellationToken>()
+            )
+         ).ReturnsAsync(account);
 
          bool accountCreated = false;
          bool contactCreated = false;
          bool accountUpdatedWithContact = false;
 
-         _targetMock.Setup(t => t.CreateAsync(It.IsAny<Entity>(), It.IsAny<CancellationToken>(), It.IsAny<Guid?>()))
-            .Returns<Entity, CancellationToken, Guid?>((e, ct, callerId) =>
+         _targetMock.Setup(
+            t => t.CreateAsync(
+               It.IsAny<Entity>(),
+               It.IsAny<CancellationToken>(),
+               It.IsAny<Guid?>()
+            )
+         ).Returns<Entity, CancellationToken, Guid?>(
+            (e, ct, callerId) =>
             {
                if (e.LogicalName == "account")
                {
                   if (e.Contains("primarycontactid") && !contactCreated)
                   {
-                     throw new Exception($"Entity contact With Id = {contactId} {SystemConstants.ErrorKeywords.DoesNotExist}");
+                     throw new Exception(
+                        $"Entity contact With Id = {contactId} " +
+                        $"{ErrorKeywords.DoesNotExist}"
+                     );
                   }
                   accountCreated = true;
                   return Task.FromResult(accountId);
@@ -95,23 +117,34 @@ namespace dvmig.Tests
                {
                   if (e.Contains("parentcustomerid") && !accountCreated)
                   {
-                     throw new Exception($"Entity account With Id = {accountId} {SystemConstants.ErrorKeywords.DoesNotExist}");
+                     throw new Exception(
+                        $"Entity account With Id = {accountId} " +
+                        $"{ErrorKeywords.DoesNotExist}"
+                     );
                   }
                   contactCreated = true;
                   return Task.FromResult(contactId);
                }
                return Task.FromResult(Guid.NewGuid());
-            });
+            }
+         );
 
-         _targetMock.Setup(t => t.UpdateAsync(It.IsAny<Entity>(), It.IsAny<CancellationToken>(), It.IsAny<Guid?>()))
-            .Returns<Entity, CancellationToken, Guid?>((e, ct, callerId) =>
+         _targetMock.Setup(
+            t => t.UpdateAsync(
+               It.IsAny<Entity>(),
+               It.IsAny<CancellationToken>(),
+               It.IsAny<Guid?>()
+            )
+         ).Returns<Entity, CancellationToken, Guid?>(
+            (e, ct, callerId) =>
             {
                if (e.LogicalName == "account" && e.Contains("primarycontactid"))
                {
                   accountUpdatedWithContact = true;
                }
                return Task.CompletedTask;
-            });
+            }
+         );
 
          var options = new SyncOptions { StripMissingDependencies = true };
 
@@ -121,7 +154,10 @@ namespace dvmig.Tests
          // Assert
          Assert.True(accountCreated, "Account should be created");
          Assert.True(contactCreated, "Contact should be created");
-         Assert.True(accountUpdatedWithContact, "Account should be updated with Primary Contact");
+         Assert.True(
+            accountUpdatedWithContact,
+            "Account should be updated with Primary Contact"
+         );
       }
    }
 }
