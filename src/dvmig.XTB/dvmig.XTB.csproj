@@ -20,6 +20,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\dvmig.Core\dvmig.Core.csproj" />
+    <ProjectReference Include="..\dvmig.Plugins\dvmig.Plugins.csproj" />
   </ItemGroup>
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
