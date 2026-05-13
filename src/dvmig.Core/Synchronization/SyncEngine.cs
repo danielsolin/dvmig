@@ -21,7 +21,7 @@ namespace dvmig.Core.Synchronization
    {
       private readonly IDataverseProvider _source;
       private readonly IDataverseProvider _target;
-      private readonly IUserService _userResolver;
+      private readonly IUserService _userService;
       private readonly ILogger _logger;
       private readonly IEntityService _entityService;
       private readonly ISyncStateService _syncStateService;
@@ -35,7 +35,7 @@ namespace dvmig.Core.Synchronization
       public SyncEngine(
          IDataverseProvider source,
          IDataverseProvider target,
-         IUserService userResolver,
+         IUserService userService,
          ILogger logger,
          IEntityService entityService,
          ISyncStateService syncStateService
@@ -43,7 +43,7 @@ namespace dvmig.Core.Synchronization
       {
          _source = source;
          _target = target;
-         _userResolver = userResolver;
+         _userService = userService;
          _logger = logger;
          _entityService = entityService;
          _syncStateService = syncStateService;
@@ -54,7 +54,7 @@ namespace dvmig.Core.Synchronization
       /// <inheritdoc />
       public async Task InitializeSyncAsync(CT ct = default)
       {
-         await _userResolver.MapAllSourceUsersAsync(ct);
+         await _userService.MapAllSourceUsersAsync(ct);
       }
 
       /// <inheritdoc />
@@ -296,7 +296,7 @@ namespace dvmig.Core.Synchronization
             entity,
             metadata,
             options,
-            _userResolver,
+            _userService,
             _syncStateService.IdMappingCache,
             ct
          );
@@ -312,7 +312,7 @@ namespace dvmig.Core.Synchronization
 
             if (sourceCreator != null)
             {
-               var user = await _userResolver.MapUserAsync(sourceCreator, ct);
+               var user = await _userService.MapUserAsync(sourceCreator, ct);
                creatorId = user?.Id;
             }
 
@@ -321,7 +321,7 @@ namespace dvmig.Core.Synchronization
             );
 
             if (sourceModifier != null)
-               modifiedById = (await _userResolver.MapUserAsync(
+               modifiedById = (await _userService.MapUserAsync(
                   sourceModifier,
                   ct
                ))?.Id;
@@ -879,7 +879,7 @@ namespace dvmig.Core.Synchronization
 
             if (sourceCreator != null)
             {
-               var user = await _userResolver.MapUserAsync(sourceCreator, ct);
+               var user = await _userService.MapUserAsync(sourceCreator, ct);
 
                callerId = user?.Id;
             }
