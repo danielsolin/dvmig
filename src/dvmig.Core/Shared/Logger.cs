@@ -1,3 +1,6 @@
+#pragma warning disable IDE0005 // Using directive is unnecessary.
+using System;
+#pragma warning restore IDE0005 // Using directive is unnecessary.
 using System.Text.RegularExpressions;
 using Serilog;
 using SerilogLogger = Serilog.ILogger;
