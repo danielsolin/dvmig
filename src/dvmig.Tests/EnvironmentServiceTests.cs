@@ -25,7 +25,8 @@ namespace dvmig.Tests
       }
 
       [Fact]
-      public async Task ValidateTargetEnvironmentAsync_ReturnsFalse_WhenFailureSchemaMissing()
+      public async Task
+         ValidateTargetEnvironmentAsync_ReturnsFalse_WhenFailureSchemaMissing()
       {
          _targetMock.Setup(
             t => t.GetEntityMetadataAsync(
@@ -42,7 +43,8 @@ namespace dvmig.Tests
       }
 
       [Fact]
-      public async Task ValidateTarget_ReturnsFalse_WhenSourceDataSchemaMissing()
+      public async Task
+         ValidateTarget_ReturnsFalse_WhenSourceDataSchemaMissing()
       {
          _targetMock.Setup(
             t => t.GetEntityMetadataAsync(
@@ -66,7 +68,8 @@ namespace dvmig.Tests
       }
 
       [Fact]
-      public async Task ValidateTargetEnvironmentAsync_ReturnsTrue_WhenAllComponentsPresent()
+      public async Task
+         ValidateTargetEnvironmentAsync_ReturnsTrue_WhenAllComponentsPresent()
       {
          _targetMock.Setup(
             t => t.GetEntityMetadataAsync(

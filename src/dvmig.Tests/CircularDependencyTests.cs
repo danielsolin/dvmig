@@ -57,7 +57,8 @@ namespace dvmig.Tests
       }
 
       [Fact]
-      public async Task SyncRecordAsync_ShouldHandleCircularDependency_AndPopulateAllFields()
+      public async Task
+         SyncRecordAsync_ShouldHandleCircularDependency_AndPopulateAllFields()
       {
          // Arrange
          var accountId = Guid.NewGuid();
