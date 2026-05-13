@@ -1,9 +1,11 @@
-using dvmig.Core.Interfaces;
-using dvmig.Core.Shared;
-using dvmig.Core.Synchronization;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Query;
+
 using Moq;
+
+using dvmig.Core.Interfaces;
+using dvmig.Core.Synchronization;
+using static dvmig.Core.Shared.SystemConstants;
 
 namespace dvmig.Tests
 {
@@ -44,7 +46,7 @@ namespace dvmig.Tests
          _resolver.AddManualMapping(sourceId, targetId);
 
          var sourceRef = new EntityReference(
-            SystemConstants.DataverseEntities.SystemUser.Name,
+            DataverseEntities.SystemUser.Name,
             sourceId
          );
 
@@ -54,7 +56,7 @@ namespace dvmig.Tests
          Assert.Equal(targetId, result.Id);
 
          Assert.Equal(
-            SystemConstants.DataverseEntities.SystemUser.Name,
+            DataverseEntities.SystemUser.Name,
             result.LogicalName
          );
       }
@@ -65,13 +67,13 @@ namespace dvmig.Tests
          var sourceId = Guid.NewGuid();
 
          var sourceRef = new EntityReference(
-            SystemConstants.DataverseEntities.SystemUser.Name,
+            DataverseEntities.SystemUser.Name,
             sourceId
          );
 
          _sourceMock.Setup(
             s => s.RetrieveAsync(
-               SystemConstants.DataverseEntities.SystemUser.Name,
+               DataverseEntities.SystemUser.Name,
                sourceId,
                It.IsAny<string[]>(),
                It.IsAny<CancellationToken>()
@@ -90,21 +92,21 @@ namespace dvmig.Tests
          var targetId = Guid.NewGuid();
 
          var sourceRef = new EntityReference(
-            SystemConstants.DataverseEntities.SystemUser.Name,
+            DataverseEntities.SystemUser.Name,
             sourceId
          );
 
          var sourceEntity = new Entity(
-            SystemConstants.DataverseEntities.SystemUser.Name,
+            DataverseEntities.SystemUser.Name,
             sourceId
          );
 
          sourceEntity[
-            SystemConstants.DataverseAttributes.InternalEmailAddress
+            DataverseAttributes.InternalEmailAddress
          ] = "test@example.com";
 
          var targetEntity = new Entity(
-            SystemConstants.DataverseEntities.SystemUser.Name,
+            DataverseEntities.SystemUser.Name,
             targetId
          );
 
@@ -112,7 +114,7 @@ namespace dvmig.Tests
 
          _sourceMock.Setup(
             s => s.RetrieveAsync(
-               SystemConstants.DataverseEntities.SystemUser.Name,
+               DataverseEntities.SystemUser.Name,
                sourceId,
                It.IsAny<string[]>(),
                It.IsAny<CancellationToken>()
@@ -124,7 +126,7 @@ namespace dvmig.Tests
                It.Is<QueryByAttribute>(
                   q =>
                      q.Attributes.Contains(
-                        SystemConstants.DataverseAttributes.InternalEmailAddress
+                        DataverseAttributes.InternalEmailAddress
                      ) &&
                      q.Values.Contains("test@example.com")
                ),
@@ -145,23 +147,23 @@ namespace dvmig.Tests
          var targetId = Guid.NewGuid();
 
          var sourceRef = new EntityReference(
-            SystemConstants.DataverseEntities.SystemUser.Name,
+            DataverseEntities.SystemUser.Name,
             sourceId
          );
 
          var sourceEntity = new Entity(
-            SystemConstants.DataverseEntities.SystemUser.Name,
+            DataverseEntities.SystemUser.Name,
             sourceId
          );
 
-         sourceEntity[SystemConstants.DataverseAttributes.DomainName] =
+         sourceEntity[DataverseAttributes.DomainName] =
             "domain\\user";
 
          var targetCollection = new EntityCollection(
             new[]
             {
                new Entity(
-                  SystemConstants.DataverseEntities.SystemUser.Name,
+                  DataverseEntities.SystemUser.Name,
                   targetId
                )
             }
@@ -171,7 +173,7 @@ namespace dvmig.Tests
 
          _sourceMock.Setup(
             s => s.RetrieveAsync(
-               SystemConstants.DataverseEntities.SystemUser.Name,
+               DataverseEntities.SystemUser.Name,
                sourceId,
                It.IsAny<string[]>(),
                It.IsAny<CancellationToken>()
@@ -183,7 +185,7 @@ namespace dvmig.Tests
                It.Is<QueryByAttribute>(
                   q =>
                      q.Attributes.Contains(
-                        SystemConstants.DataverseAttributes.InternalEmailAddress
+                        DataverseAttributes.InternalEmailAddress
                      )
                ),
                It.IsAny<CancellationToken>()
@@ -195,7 +197,7 @@ namespace dvmig.Tests
                It.Is<QueryByAttribute>(
                   q =>
                      q.Attributes.Contains(
-                        SystemConstants.DataverseAttributes.DomainName
+                        DataverseAttributes.DomainName
                      ) &&
                      q.Values.Contains("domain\\user")
                ),
@@ -212,23 +214,22 @@ namespace dvmig.Tests
       [Fact]
       public async Task MapAllSourceUsersAsync_MapsActiveUsers()
       {
-         // Arrange
          var sourceUserId = Guid.NewGuid();
          var targetUserId = Guid.NewGuid();
 
          var sourceUser = new Entity(
-            SystemConstants.DataverseEntities.SystemUser.Name,
+            DataverseEntities.SystemUser.Name,
             sourceUserId
          );
 
-         sourceUser[SystemConstants.DataverseAttributes.FullName] =
+         sourceUser[DataverseAttributes.FullName] =
             "Source User";
 
-         sourceUser[SystemConstants.DataverseAttributes.InternalEmailAddress] =
+         sourceUser[DataverseAttributes.InternalEmailAddress] =
             "test@example.com";
 
-         sourceUser[SystemConstants.DataverseAttributes.AccessMode] =
-            new OptionSetValue(0); // Read-Write (Human)
+         sourceUser[DataverseAttributes.AccessMode] =
+            new OptionSetValue(0);
 
          var sourceCollection = new EntityCollection(new[] { sourceUser });
 
@@ -240,11 +241,11 @@ namespace dvmig.Tests
          ).ReturnsAsync(sourceCollection);
 
          var targetUser = new Entity(
-            SystemConstants.DataverseEntities.SystemUser.Name,
+            DataverseEntities.SystemUser.Name,
             targetUserId
          );
 
-         targetUser[SystemConstants.DataverseAttributes.FullName] =
+         targetUser[DataverseAttributes.FullName] =
             "Target User";
 
          var targetCollection = new EntityCollection(new[] { targetUser });
@@ -256,10 +257,8 @@ namespace dvmig.Tests
             )
          ).ReturnsAsync(targetCollection);
 
-         // Act
          await _resolver.MapAllSourceUsersAsync();
 
-         // Assert
          var summaries = await _resolver.GetMappingSummaryAsync();
          Assert.Single(summaries);
          Assert.Equal("Source User", summaries[0].SourceName);
@@ -271,22 +270,21 @@ namespace dvmig.Tests
       [Fact]
       public async Task MapAllSourceUsersAsync_IdentifiesSystemUsers()
       {
-         // Arrange
          var sourceUserId = Guid.NewGuid();
 
          var sourceUser = new Entity(
-            SystemConstants.DataverseEntities.SystemUser.Name,
+            DataverseEntities.SystemUser.Name,
             sourceUserId
          );
 
-         sourceUser[SystemConstants.DataverseAttributes.FullName] =
+         sourceUser[DataverseAttributes.FullName] =
             "# Agent 365";
 
-         sourceUser[SystemConstants.DataverseAttributes.InternalEmailAddress] =
+         sourceUser[DataverseAttributes.InternalEmailAddress] =
             "agent@example.com";
 
-         sourceUser[SystemConstants.DataverseAttributes.AccessMode] =
-            new OptionSetValue(3); // Non-interactive
+         sourceUser[DataverseAttributes.AccessMode] =
+            new OptionSetValue(3);
 
          var sourceCollection = new EntityCollection(new[] { sourceUser });
 
@@ -304,10 +302,8 @@ namespace dvmig.Tests
             )
          ).ReturnsAsync(new EntityCollection());
 
-         // Act
          await _resolver.MapAllSourceUsersAsync();
 
-         // Assert
          var summaries = await _resolver.GetMappingSummaryAsync();
          Assert.Single(summaries);
          Assert.False(summaries[0].IsHuman);
@@ -316,15 +312,14 @@ namespace dvmig.Tests
       [Fact]
       public async Task GetMappingSummary_ReturnsUnmapped_WhenResolutionFails()
       {
-         // Arrange
          var sourceUserId = Guid.NewGuid();
 
          var sourceUser = new Entity(
-            SystemConstants.DataverseEntities.SystemUser.Name,
+            DataverseEntities.SystemUser.Name,
             sourceUserId
          );
 
-         sourceUser[SystemConstants.DataverseAttributes.FullName] =
+         sourceUser[DataverseAttributes.FullName] =
             "Lonely User";
 
          var sourceCollection = new EntityCollection(new[] { sourceUser });
@@ -343,10 +338,8 @@ namespace dvmig.Tests
             )
          ).ReturnsAsync(new EntityCollection());
 
-         // Act
          await _resolver.MapAllSourceUsersAsync();
 
-         // Assert
          var summaries = await _resolver.GetMappingSummaryAsync();
          Assert.Single(summaries);
          Assert.Equal("Lonely User", summaries[0].SourceName);

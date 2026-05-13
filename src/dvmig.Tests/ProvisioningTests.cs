@@ -1,10 +1,13 @@
-using dvmig.Core.Interfaces;
-using dvmig.Core.Provisioning;
-using dvmig.Core.Shared;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Metadata;
 using Microsoft.Xrm.Sdk.Query;
+
 using Moq;
+
+using dvmig.Core.Interfaces;
+using dvmig.Core.Provisioning;
+using static dvmig.Core.Shared.SystemConstants;
+
 
 namespace dvmig.Tests
 {
@@ -62,12 +65,11 @@ namespace dvmig.Tests
             )
          ).ReturnsAsync(new EntityCollection());
 
-         // Mock SdkMessage retrieval for Create/Update
          _targetMock.Setup(
             t => t.RetrieveMultipleAsync(
                It.Is<QueryByAttribute>(
-                  q => q.EntityName == 
-                     SystemConstants.PluginRegistration.MessageEntity
+                  q => q.EntityName ==
+                     PluginRegistration.MessageEntity
                ),
                It.IsAny<CancellationToken>()
             )
@@ -84,20 +86,18 @@ namespace dvmig.Tests
             )
          ).ReturnsAsync(Guid.NewGuid());
 
-         try 
+         try
          {
             await service.InstallComponentsAsync(_targetMock.Object);
          }
          catch (FileNotFoundException)
          {
-            // Expected if DLL not present
          }
       }
 
       [Fact]
       public async Task SeedSampleDataAsync_CreatesRecords()
       {
-         // Arrange
          var providerMock = new Mock<IDataverseProvider>();
 
          providerMock.Setup(
@@ -116,16 +116,14 @@ namespace dvmig.Tests
             )
          ).Returns(Task.CompletedTask);
 
-         // Act
          await _seedingService.SeedSampleDataAsync(providerMock.Object, 1);
 
-         // Assert
          providerMock.Verify(
             p => p.CreateAsync(
                It.Is<Entity>(
                   e =>
                      e.LogicalName ==
-                        SystemConstants.DataverseEntities.Account.Name
+                        DataverseEntities.Account.Name
                ),
                It.IsAny<CancellationToken>(),
                It.IsAny<Guid?>()

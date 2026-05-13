@@ -139,10 +139,10 @@ namespace dvmig.XTB
          _txtSearch = new TextBox
          {
             Dock = DockStyle.Top,
+            Text = "Search entities...",
+            ForeColor = Color.Gray
          };
 
-         _txtSearch.Text = "Search entities...";
-         _txtSearch.ForeColor = Color.Gray;
          _txtSearch.GotFocus += (s, e) => 
          {
             if (_txtSearch.Text == "Search entities...")
@@ -151,6 +151,7 @@ namespace dvmig.XTB
                _txtSearch.ForeColor = Color.Black;
             }
          };
+
          _txtSearch.LostFocus += (s, e) =>
          {
             if (string.IsNullOrWhiteSpace(_txtSearch.Text))
@@ -159,6 +160,7 @@ namespace dvmig.XTB
                _txtSearch.ForeColor = Color.Gray;
             }
          };
+
          _txtSearch.TextChanged += (s, e) => FilterEntities();
 
          _clbEntities = new CheckedListBox
@@ -173,8 +175,8 @@ namespace dvmig.XTB
             Dock = DockStyle.Fill,
             ReadOnly = true,
             BackColor = Color.Black,
-            ForeColor = Color.LightGray,
-            Font = new Font("Consolas", 9)
+            ForeColor = Color.LightGreen,
+            Font = new Font("Consolas", 10)
          };
 
          var leftPanel = new Panel { Dock = DockStyle.Fill };
@@ -378,6 +380,8 @@ namespace dvmig.XTB
                // 3. Run Sync for selected entities
                foreach (var entityLogicalName in selectedLogicalNames)
                {
+                  SetWorkingMessage($"Synchronizing {entityLogicalName}...");
+                  
                   logger.Information(
                      $"Starting sync for {entityLogicalName}..."
                   );
