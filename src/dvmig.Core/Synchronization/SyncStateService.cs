@@ -42,9 +42,9 @@ namespace dvmig.Core.Synchronization
       }
 
       /// <inheritdoc />
-      public void MarkAsSynced(Guid id)
+      public bool MarkAsSynced(Guid id)
       {
-         _syncedIds.TryAdd(id, 1);
+         return _syncedIds.TryAdd(id, 1);
       }
 
       /// <inheritdoc />

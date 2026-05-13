@@ -3,7 +3,8 @@
 ### Main Menu
 
 **Synchronization (🚀)**
-   - **Sync Recommended:** Synchronizes a curated list of entities.
+   - **Sync Recommended:** Synchronizes `Account`, `Contact`, `Task`, `Email`,
+     `PhoneCall` and `Appointment`.
    - **Sync Selected:** Allows manual entity selection.
    - **Re-sync:** Ignores sync state and forces an update of all records.
 
@@ -89,48 +90,29 @@ handles preservation of audit fields, resolves dependencies, and excutes in
 parallell (using SemaphoreSlim to comply with .NET Standard 2.0).
 
 ```mermaid
-sequenceDiagram
-    autonumber
-    participant SE as SyncEngine
-    participant ES as IEntityService
-    participant UR as IUserService
-    participant DP as Target Provider
-    participant SS as ISyncStateService
-
-    SE->>ES: GetMetadataAsync(entity.LogicalName)
-    ES-->>SE: EntityMetadata
-
-    alt IsIntersect == true (N:N Relationship)
-        SE->>SE: SyncIntersectEntityAsync(entity)
-        Note right of SE: Associates records directly via AssociateRequest
-    else Standard Entity
-        SE->>ES: PrepareEntityForTargetAsync(entity, metadata, options...)
-        ES-->>SE: Prepared Target Entity
-
-        opt PreserveAuditData == true
-            SE->>UR: MapUserAsync(CreatedBy)
-            UR-->>SE: mappedCreatorId
-            SE->>UR: MapUserAsync(ModifiedBy)
-            UR-->>SE: mappedModifiedById
-            SE->>SE: PreserveAuditDataIfRequestedAsync(entity)
-            Note right of SE: Creates temporary 'dm_sourcedata' record on Target
-        end
-
-        SE->>SE: CreateWithFixStrategyAsync(preparedEntity)
-        Note right of SE: Attempts Create/Update.<br/>Catches errors (Duplicates, Missing Dependencies, etc.)<br/>and executes fallback strategies.
-        
-        alt Creation/Update Failed
-            SE-->>SE: Return (false, FailureMessage)
-        else Creation/Update Succeeded
-            SE->>SE: CompleteSuccessfulSyncAsync()
-            SE->>SS: MarkAsSynced(sourceId)
-            SE->>SS: Update IdMappingCache(recordKey, targetId)
-            
-            opt PreserveAuditData == true
-                SE->>DP: DeleteSourceDataRecordAsync(dm_sourcedata)
-                Note right of DP: Cleans up temp audit tracking record
-            end
-            SE-->>SE: Return (true, string.Empty)
-        end
-    end
+flowchart TD
+    Start(["Start Sync Record"]) --> CheckSynced{"Already Synced?"}
+    
+    CheckSynced -- Yes --> Done(["Finish (Success)"])
+    CheckSynced -- No --> Prepare["Prepare Record for Target<br/>(Strip unmapped fields)"]
+    
+    Prepare --> PreAudit{"Preserve Audit?"}
+    PreAudit -- Yes --> TempData["Create Temp 'Source Data' Record<br/>(Stores original Created/Modified)"] --> AttemptSync
+    PreAudit -- No --> AttemptSync
+    
+    AttemptSync["Attempt Create / Update on Target"] --> SyncResult{"Result?"}
+    
+    %% Success Path
+    SyncResult -- Success --> PostAudit{"Preserve Audit?"}
+    PostAudit -- Yes --> CleanTemp["Delete Temp 'Source Data' Record"] --> MarkSynced
+    PostAudit -- No --> MarkSynced["Mark Record as Synced"] --> Done
+    
+    %% Error Paths
+    SyncResult -- Error --> ErrorType{"Error Type?"}
+    
+    ErrorType -- Duplicate --> UpdateExisting["Update Existing Record"] --> MarkSynced
+    ErrorType -- Missing Dependency --> ResolveDep["Recursively Sync Missing Dependency"] --> AttemptSync
+    ErrorType -- Invalid Status/State --> RemoveState["Remove Status/State & Retry"] --> AttemptSync
+    ErrorType -- Invalid Attribute --> StripAttr["Strip Problematic Attribute & Retry"] --> AttemptSync
+    ErrorType -- Unresolvable --> LogFail["Log Migration Failure"] --> Fail(["Finish (Failed)"])
 ```

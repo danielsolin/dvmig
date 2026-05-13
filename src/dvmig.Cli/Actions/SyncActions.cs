@@ -14,13 +14,13 @@ namespace dvmig.Cli.Actions
       ILogger logger,
       IEntityService entityService,
       ISettingsService settingsService
-      ) : BaseActions(
-         connectionManager,
-         environmentService,
-         logger,
-         entityService,
-         settingsService
-      )
+   ) : BaseActions(
+      connectionManager,
+      environmentService,
+      logger,
+      entityService,
+      settingsService
+   )
    {
       public async Task HandleSelectedSyncAsync(
          CancellationToken ct,
@@ -31,7 +31,7 @@ namespace dvmig.Cli.Actions
             await SetupSyncEngineAsync();
 
          if (source == null || target == null || engine == null ||
-             userResolver == null)
+            userResolver == null)
             return;
 
          var selectedEntities = await CliUI.SelectEntitiesAsync(
@@ -74,7 +74,7 @@ namespace dvmig.Cli.Actions
             await SetupSyncEngineAsync();
 
          if (source == null || target == null || engine == null ||
-             userResolver == null)
+            userResolver == null)
             return;
 
          var recommendedEntities = SyncSettings.RecommendedEntities.ToList();
@@ -121,19 +121,18 @@ namespace dvmig.Cli.Actions
          var entityTable = new Table()
             .Border(TableBorder.Minimal)
             .AddColumn(
-               new TableColumn($"{UiMarkup.BoldCyan}{"Seq".t()}[/]").Centered()
+               new TableColumn($"{UiMarkup.BoldCyan}{"Seq".t()}[/]")
+                  .Centered()
             )
             .AddColumn(
                new TableColumn($"{UiMarkup.BoldCyan}{"Entity".t()}[/]")
             );
 
-         for (int i = 0; i < entities.Count; i++)
-         {
+         for (var i = 0; i < entities.Count; i++)
             entityTable.AddRow(
                (i + 1).ToString(),
                $"{UiMarkup.Yellow}{entities[i]}[/]"
             );
-         }
 
          var userTable = new Table()
             .Border(TableBorder.Minimal)
@@ -145,19 +144,17 @@ namespace dvmig.Cli.Actions
             );
 
          if (humanMappings.Count == 0)
-         {
             userTable.AddRow(
                new Markup($"{UiMarkup.Grey}{"No human users found.".t()}[/]"),
                Text.Empty,
                Text.Empty
             );
-         }
          else
-         {
             foreach (var mapping in humanMappings)
             {
-               var statusColor = mapping.Status ==
-                  "Mapped" ? "green" : "yellow";
+               var statusColor = mapping.Status == "Mapped"
+                  ? "green"
+                  : "yellow";
 
                userTable.AddRow(
                   mapping.SourceName,
@@ -165,7 +162,6 @@ namespace dvmig.Cli.Actions
                   $"[{statusColor}]{mapping.Status.t()}[/]"
                );
             }
-         }
 
          var columns = new Columns(
             new Panel(entityTable)
@@ -181,20 +177,17 @@ namespace dvmig.Cli.Actions
          );
 
          if (systemCount > 0)
-         {
             AnsiConsole.MarkupLine(
                $"{UiMarkup.Grey}" +
                $"{"Note: {0} system accounts mapped automatically and " +
                "hidden from this view.".t(systemCount)}[/]"
             );
-         }
 
          AnsiConsole.WriteLine();
 
          if (!AnsiConsole.Confirm(
-                  $"{"Proceed with this {0} plan?".t(title)}", true
-               )
-            )
+            $"{"Proceed with this {0} plan?".t(title)}", true
+         ))
          {
             CliUI.WriteWarning($"{"{0} cancelled.".t(title)}");
 
@@ -233,8 +226,8 @@ namespace dvmig.Cli.Actions
                   {
                      var logicalName = rawLogicalName.ToLowerInvariant();
 
-                     var actionTitle = forceResync 
-                        ? "Re-syncing".t() 
+                     var actionTitle = forceResync
+                        ? "Re-syncing".t()
                         : "Migrating".t();
                      var displayName = char.ToUpper(logicalName[0]) +
                         logicalName.Substring(1);
@@ -253,8 +246,8 @@ namespace dvmig.Cli.Actions
 
                      await Task.WhenAll(sourceCountTask, targetCountTask);
 
-                     long totalCount = await sourceCountTask;
-                     long targetCount = await targetCountTask;
+                     var totalCount = await sourceCountTask;
+                     var targetCount = await targetCountTask;
 
                      if (totalCount == 0)
                      {
@@ -300,7 +293,7 @@ namespace dvmig.Cli.Actions
                         new Progress<string>(
                            msg =>
                            {
-                              bool isCritical =
+                              var isCritical =
                                  msg.Contains(
                                     UiMarkup.Wait,
                                     StringComparison.Ordinal

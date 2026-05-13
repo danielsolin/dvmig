@@ -1,9 +1,7 @@
 using System.Reflection;
-
 using dvmig.Cli.Actions;
 using dvmig.Core.Interfaces;
 using dvmig.Core.Shared;
-
 using Spectre.Console;
 
 namespace dvmig.Cli
@@ -43,21 +41,17 @@ namespace dvmig.Cli
             {
                var progress = new Progress<string>(msg =>
                {
-                  bool isPersistent = lineByLine ||
+                  var isPersistent = lineByLine ||
                      msg.StartsWith(SystemConstants.UiMarkup.Yellow) ||
                      msg.StartsWith(SystemConstants.UiMarkup.Red);
 
                   if (isPersistent)
-                  {
                      AnsiConsole.MarkupLine(
                         $"{SystemConstants.UiMarkup.Grey}" +
                         $"[[{DateTime.Now:HH:mm:ss}]][/] {msg}"
                      );
-                  }
                   else
-                  {
                      ctx.Status(msg);
-                  }
                });
 
                logger.AttachProgress(progress);
@@ -86,7 +80,7 @@ namespace dvmig.Cli
       )
       {
          return await AnsiConsole.Status()
-            .StartAsync(statusMessage, async ctx => 
+            .StartAsync(statusMessage, async ctx =>
             {
                try
                {
@@ -261,7 +255,7 @@ namespace dvmig.Cli
          };
 
          var flatItems = sections.SelectMany(s => s.Items).ToList();
-         int selectedIndex = 0;
+         var selectedIndex = 0;
 
          return AnsiConsole.Live(new Table())
             .Start(ctx =>
@@ -280,8 +274,6 @@ namespace dvmig.Cli
 
                   foreach (var section in sections)
                   {
-                     // Fixed-length string instead of Rule to prevent full-
-                     // width expansion.
                      if (sections.IndexOf(section) > 0)
                         table.AddRow(
                            "[grey]─────────────────────────────────────────[/]"
@@ -294,13 +286,15 @@ namespace dvmig.Cli
 
                      foreach (var item in section.Items)
                      {
-                        int itemIndex = flatItems.IndexOf(item);
-                        bool isSelected = itemIndex == selectedIndex;
+                        var itemIndex = flatItems.IndexOf(item);
+                        var isSelected = itemIndex == selectedIndex;
 
                         var prefix = isSelected ? "> " : "  ";
                         var style = isSelected ? "bold springgreen1" : "white";
 
-                        content.AddRow($"[{style}]{prefix}{item.Label}[/]");
+                        content.AddRow(
+                           $"[{style}]{prefix}{item.Label}[/]"
+                        );
                      }
 
                      table.AddRow(content);

@@ -14,13 +14,13 @@ namespace dvmig.Cli.Actions
       IEntityService entityService,
       ILogger logger,
       ISettingsService settingsService
-      ) : BaseActions(
-         connectionManager,
-         environmentService,
-         logger,
-         entityService,
-         settingsService
-      )
+   ) : BaseActions(
+      connectionManager,
+      environmentService,
+      logger,
+      entityService,
+      settingsService
+   )
    {
       private readonly ISeedingService _seedingService = seedingService;
       private readonly IWipeDataService _wipeDataService = wipeDataService;
@@ -43,7 +43,7 @@ namespace dvmig.Cli.Actions
             new SyncStateService()
          );
 
-         bool isInitialized = await engine.IsFailureLoggingInitializedAsync(
+         var isInitialized = await engine.IsFailureLoggingInitializedAsync(
             target,
             ct
          );
@@ -94,14 +94,12 @@ namespace dvmig.Cli.Actions
          table.AddColumn("[bold]Error Message[/]");
 
          foreach (var failure in failures)
-         {
             table.AddRow(
                failure.EntityLogicalName,
                failure.SourceId,
                failure.TimestampUtc.ToString("yyyy-MM-dd HH:mm:ss"),
                failure.ErrorMessage
             );
-         }
 
          AnsiConsole.Write(table);
 
@@ -139,7 +137,7 @@ namespace dvmig.Cli.Actions
             "(with related Contacts and Activities) would you like " +
             "to generate?";
 
-         int count = AnsiConsole.Ask<int>(prompt, 100);
+         var count = AnsiConsole.Ask<int>(prompt, 100);
 
          await CliUI.RunStatusAsync(
             "Seeding data...",
@@ -206,9 +204,7 @@ namespace dvmig.Cli.Actions
          {
             var baseEx = ex.GetBaseException();
 
-            CliUI.WriteError(
-               "Cleanup failed. " + baseEx.Message
-            );
+            CliUI.WriteError("Cleanup failed. " + baseEx.Message);
          }
 
          CliUI.Pause();
@@ -242,11 +238,8 @@ namespace dvmig.Cli.Actions
             new SelectionPrompt<string>()
                .Title($"What data do you want to wipe on {envName}?")
                .AddChoices(
-                  new[]
-                  {
-                     "All Recommended Entities",
-                     "Select Specific Entities"
-                  }
+                  "All Recommended Entities",
+                  "Select Specific Entities"
                )
          );
 
