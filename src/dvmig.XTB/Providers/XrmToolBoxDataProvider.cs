@@ -1,4 +1,5 @@
 using System;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -35,6 +36,41 @@ namespace dvmig.XTB.Providers
       {
          _service = service;
          ConnectionString = connectionName;
+      }
+
+      private T ExecuteWithCallerId<T>(Guid? callerId, Func<T> action)
+      {
+         if (!callerId.HasValue || callerId.Value == Guid.Empty)
+         {
+            return action();
+         }
+
+         var callerIdProp = _service.GetType().GetProperty("CallerId");
+         if (callerIdProp != null && callerIdProp.PropertyType == typeof(Guid))
+         {
+            var originalCallerId = (Guid)callerIdProp.GetValue(_service);
+            callerIdProp.SetValue(_service, callerId.Value);
+            
+            try
+            {
+               return action();
+            }
+            finally
+            {
+               callerIdProp.SetValue(_service, originalCallerId);
+            }
+         }
+         
+         return action();
+      }
+
+      private void ExecuteWithCallerId(Guid? callerId, Action action)
+      {
+         ExecuteWithCallerId<object?>(callerId, () =>
+         {
+            action();
+            return null;
+         });
       }
 
       /// <inheritdoc />
@@ -97,10 +133,8 @@ namespace dvmig.XTB.Providers
          Guid? callerId = null
       )
       {
-         // Note: IOrganizationService in XTB might not easily support 
-         // callerId impersonation without creating a new service proxy, 
-         // which is complex in XTB context. For now, we use the base service.
-         return await Task.Run(() => _service.Create(entity), ct);
+         return await Task.Run(() => 
+            ExecuteWithCallerId(callerId, () => _service.Create(entity)), ct);
       }
 
       /// <inheritdoc />
@@ -110,7 +144,8 @@ namespace dvmig.XTB.Providers
          Guid? callerId = null
       )
       {
-         await Task.Run(() => _service.Update(entity), ct);
+         await Task.Run(() => 
+            ExecuteWithCallerId(callerId, () => _service.Update(entity)), ct);
       }
 
       /// <inheritdoc />
@@ -159,7 +194,8 @@ namespace dvmig.XTB.Providers
          Guid? callerId = null
       )
       {
-         return await Task.Run(() => _service.Execute(request), ct);
+         return await Task.Run(() => 
+            ExecuteWithCallerId(callerId, () => _service.Execute(request)), ct);
       }
    }
 }

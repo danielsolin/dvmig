@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.0.31903.59
+# Visual Studio Version 18
+VisualStudioVersion = 18.6.11806.211 stable
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{827E0CD3-B72D-47B6-A68D-7590B98EB39B}"
 EndProject
@@ -18,11 +18,6 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dvmig.Tests", "src\dvmig.Tests\dvmig.Tests.csproj", "{8C1412DA-A620-493E-952A-01994121A45A}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dvmig.Cli", "src\dvmig.Cli\dvmig.Cli.csproj", "{84068BB0-6BB6-4008-A090-06CADACC9926}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "util", "util", "{94804B61-2505-4157-81E1-91A0876C25A6}"
-	ProjectSection(SolutionItems) = preProject
-		util\rr.bat = util\rr.bat
-	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "assets", "assets", "{C1D08D29-2456-4C29-8306-C5ACF0F84EB2}"
 EndProject
