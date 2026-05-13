@@ -1,5 +1,3 @@
-# dvmig Main Menu
-
 ![recommended sync run](assets/img/sync-recommended-run.png)
 
 ### Main Menu
