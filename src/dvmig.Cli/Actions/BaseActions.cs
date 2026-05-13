@@ -57,7 +57,7 @@ namespace dvmig.Cli.Actions
          if (target == null)
             return (null, null, null, null);
 
-         bool isReady = await EnvironmentService.ValidateTargetEnvironmentAsync(
+         var isReady = await EnvironmentService.ValidateTargetEnvironmentAsync(
             target,
             default
          );
@@ -84,11 +84,11 @@ namespace dvmig.Cli.Actions
                   .AddColumn(new GridColumn().NoWrap())
                   .AddColumn(new GridColumn().PadLeft(2))
                   .AddRow(
-                     $"{UiMarkup.BoldGreen}Source:[/]", 
+                     $"{UiMarkup.BoldGreen}Source:[/]",
                      $"{UiMarkup.BoldYellow}{sourceUrl}[/]"
                   )
                   .AddRow(
-                     $"{UiMarkup.BoldGreen}Target:[/]", 
+                     $"{UiMarkup.BoldGreen}Target:[/]",
                      $"{UiMarkup.BoldYellow}{targetUrl}[/]"
                   )
             )
@@ -101,8 +101,8 @@ namespace dvmig.Cli.Actions
          if (ConnectionManager.UserResolver == null)
          {
             ConnectionManager.UserResolver = new UserService(
-               Logger, 
-               source, 
+               Logger,
+               source,
                target
             );
          }
@@ -152,9 +152,7 @@ namespace dvmig.Cli.Actions
          catch (Exception ex)
          {
             var baseEx = ex.GetBaseException();
-            CliUI.WriteError(
-               $"Installation failed: {baseEx.Message}"
-            );
+            CliUI.WriteError($"Installation failed: {baseEx.Message}");
          }
       }
 

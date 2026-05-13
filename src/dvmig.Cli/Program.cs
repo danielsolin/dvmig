@@ -87,7 +87,7 @@ namespace dvmig.Cli
          if (_serviceProvider == null)
          {
             CliUI.WriteError("Service provider is not initialized.");
-            
+
             return;
          }
 
@@ -100,7 +100,7 @@ namespace dvmig.Cli
          var settingsActions = _serviceProvider
             .GetRequiredService<SettingsActions>();
 
-         bool exit = false;
+         var exit = false;
 
          while (!exit)
          {
@@ -115,7 +115,7 @@ namespace dvmig.Cli
                   () => exit = true
                );
             }
-            catch(Exception)
+            catch (Exception)
             {
                // Handles cases where the prompt is interrupted (e.g., Ctrl+C),
                // preventing a crash and allowing the user to stay in the app.
@@ -133,17 +133,18 @@ namespace dvmig.Cli
                {
                   await choice.Action(_currentActionCts.Token);
                }
-               catch(OperationCanceledException)
+               catch (OperationCanceledException)
                {
                   CliUI.WriteWarning("\nOperation interrupted.");
 
                   if (!CliUI.Confirm("Back (Y) or Quit (N)?", true))
                      exit = true;
                }
-               catch(Exception ex)
+               catch (Exception ex)
                {
-                  CliUI.WriteError($"An unexpected error occurred: "
-                     + $"{ex.Message}");
+                  CliUI.WriteError(
+                     "An unexpected error occurred: " + ex.Message
+                  );
                }
                finally
                {
@@ -153,9 +154,7 @@ namespace dvmig.Cli
             }
 
             if (!exit)
-            {
                CliUI.WriteHeader();
-            }
          }
       }
    }

@@ -1,5 +1,4 @@
 using Microsoft.Crm.Sdk.Messages;
-
 using Spectre.Console;
 
 using dvmig.Core.Interfaces;
@@ -47,7 +46,7 @@ namespace dvmig.Cli.Actions
       /// </summary>
       public async Task HandleSettingsMenuAsync(CancellationToken ct)
       {
-         bool back = false;
+         var back = false;
 
          while (!back)
          {
@@ -61,11 +60,11 @@ namespace dvmig.Cli.Actions
                .UseConverter(c => c switch
                {
                   SettingChoice.SourceConn =>
-                     $"{"Source Connection String".t()}: " + 
+                     $"{"Source Connection String".t()}: " +
                      $"{StringMasker.GetEnvironmentUrl(
                         settings.SourceConnectionString)}",
                   SettingChoice.TargetConn =>
-                     $"{"Target Connection String".t()}: " + 
+                     $"{"Target Connection String".t()}: " +
                      $"{StringMasker.GetEnvironmentUrl(
                         settings.TargetConnectionString)}",
                   SettingChoice.MaxThreads =>
@@ -90,13 +89,13 @@ namespace dvmig.Cli.Actions
                   break;
                case SettingChoice.SourceConn:
                   await HandleConnectionStringChange(
-                     settings, 
+                     settings,
                      SystemConstants.ConnectionDirection.Source
                   );
                   break;
                case SettingChoice.TargetConn:
                   await HandleConnectionStringChange(
-                     settings, 
+                     settings,
                      SystemConstants.ConnectionDirection.Target
                   );
                   break;
@@ -136,9 +135,9 @@ namespace dvmig.Cli.Actions
             settings.Language = newLanguage;
             _settingsService.SaveSettings(settings);
             LocalizationService.Initialize(newLanguage);
-            
+
             AnsiConsole.MarkupLine(
-               $"{SystemConstants.UiMarkup.Green}" + 
+               $"{SystemConstants.UiMarkup.Green}" +
                $"{"Settings updated.".t()}[/]"
             );
 
@@ -163,7 +162,7 @@ namespace dvmig.Cli.Actions
             _settingsService.SaveSettings(settings);
 
             AnsiConsole.MarkupLine(
-               $"{SystemConstants.UiMarkup.Green}" + 
+               $"{SystemConstants.UiMarkup.Green}" +
                $"{"Settings updated.".t()}[/]"
             );
 
@@ -172,24 +171,24 @@ namespace dvmig.Cli.Actions
       }
 
       private async Task HandleConnectionStringChange(
-         UserSettings settings, 
+         UserSettings settings,
          SystemConstants.ConnectionDirection direction
       )
       {
-         var label = direction == SystemConstants.ConnectionDirection.Source 
-            ? "Source".t() 
+         var label = direction == SystemConstants.ConnectionDirection.Source
+            ? "Source".t()
             : "Target".t();
-         
+
          var current = direction == SystemConstants.ConnectionDirection.Source
-            ? settings.SourceConnectionString 
+            ? settings.SourceConnectionString
             : settings.TargetConnectionString;
 
-         bool back = false;
+         var back = false;
 
          while (!back)
          {
             CliUI.WriteHeader();
-            
+
             AnsiConsole.MarkupLine(
                $"[bold]{"Edit {0} Connection String".t(label)}[/]"
             );
@@ -200,7 +199,7 @@ namespace dvmig.Cli.Actions
                .UseConverter(c => c switch
                {
                   ConnectionSettingChoice.EditConn =>
-                     $"{"Connection String:".t()} " + 
+                     $"{"Connection String:".t()} " +
                      $"{StringMasker.GetEnvironmentUrl(current)}",
                   ConnectionSettingChoice.TestConn => "Test Connection".t(),
                   ConnectionSettingChoice.Back => "Back".t(),
@@ -224,7 +223,8 @@ namespace dvmig.Cli.Actions
 
                   if (!string.IsNullOrWhiteSpace(newConn) && newConn != current)
                   {
-                     if (direction == SystemConstants.ConnectionDirection.Source)
+                     if (direction ==
+                        SystemConstants.ConnectionDirection.Source)
                         settings.SourceConnectionString = newConn;
                      else
                         settings.TargetConnectionString = newConn;
@@ -233,10 +233,10 @@ namespace dvmig.Cli.Actions
                      current = newConn;
 
                      AnsiConsole.MarkupLine(
-                        $"{SystemConstants.UiMarkup.Green}" + 
+                        $"{SystemConstants.UiMarkup.Green}" +
                         $"{"Settings updated.".t()}[/]"
                      );
-                     
+
                      await Task.Delay(1000);
                   }
                   break;
@@ -248,7 +248,7 @@ namespace dvmig.Cli.Actions
       }
 
       private async Task HandleTestConnectionAsync(
-         string connStr, 
+         string connStr,
          SystemConstants.ConnectionDirection direction
       )
       {
@@ -268,7 +268,7 @@ namespace dvmig.Cli.Actions
             return;
          }
 
-         bool isLegacy = AnsiConsole.Confirm(
+         var isLegacy = AnsiConsole.Confirm(
             "Is this a Legacy CRM (OnPrem) environment?".t(),
             false
          );
@@ -276,9 +276,8 @@ namespace dvmig.Cli.Actions
          IDataverseProvider? provider = null;
          Exception? caughtException = null;
 
-         // We run the connection logic OUTSIDE the RunStatusAsync first
-         // to see if it's the spinner itself causing the vanishing.
-         await AnsiConsole.Status().StartAsync("Testing connection...".t(),
+         await AnsiConsole.Status().StartAsync(
+            "Testing connection...".t(),
             async ctx =>
             {
                try
@@ -294,7 +293,8 @@ namespace dvmig.Cli.Actions
                   caughtException = ex;
                   provider = null;
                }
-            });
+            }
+         );
 
          if (caughtException != null)
          {
@@ -304,7 +304,7 @@ namespace dvmig.Cli.Actions
                   caughtException.GetBaseException().Message
                )
             );
-            
+
             CliUI.Pause();
 
             return;
@@ -321,7 +321,9 @@ namespace dvmig.Cli.Actions
             }
             catch (Exception ex)
             {
-               CliUI.WriteError($"Failed to register connection: {ex.Message}");
+               CliUI.WriteError(
+                  $"Failed to register connection: {ex.Message}"
+               );
                CliUI.Pause();
             }
          }

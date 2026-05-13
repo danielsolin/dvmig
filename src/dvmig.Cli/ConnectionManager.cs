@@ -1,31 +1,24 @@
 using dvmig.Core.Interfaces;
 using dvmig.Core.Providers;
 using dvmig.Core.Settings;
-
 using Microsoft.Crm.Sdk.Messages;
-
 using Spectre.Console;
 
 using static dvmig.Core.Shared.SystemConstants;
 
 namespace dvmig.Cli
 {
-   public class ConnectionManager
+   public class ConnectionManager(ISettingsService settingsService)
    {
-      private readonly ISettingsService _settingsService;
+      private readonly ISettingsService _settingsService = settingsService;
 
       private readonly Dictionary<ConnectionDirection, IDataverseProvider>
          _activeConnections = new();
 
       public IUserService? UserResolver { get; set; }
 
-      public ConnectionManager(ISettingsService settingsService)
-      {
-         _settingsService = settingsService;
-      }
-
       public void AddActiveConnection(
-         ConnectionDirection direction, 
+         ConnectionDirection direction,
          IDataverseProvider provider
       )
       {
@@ -53,12 +46,12 @@ namespace dvmig.Cli
          }
 
          var settings = _settingsService.LoadSettings();
-         string? storedConn = direction == ConnectionDirection.Source
+         var storedConn = direction == ConnectionDirection.Source
             ? settings.SourceConnectionString
             : settings.TargetConnectionString;
 
-         string connStr = storedConn;
-         bool isLegacy = false;
+         var connStr = storedConn;
+         var isLegacy = false;
 
          if (!string.IsNullOrEmpty(storedConn))
          {
@@ -96,7 +89,7 @@ namespace dvmig.Cli
             );
          }
 
-         IDataverseProvider? provider = await CliUI.RunStatusAsync(
+         var provider = await CliUI.RunStatusAsync(
             $"Connecting to {label}...",
             async () =>
             {
@@ -137,7 +130,6 @@ namespace dvmig.Cli
             );
 
             if (connStr != storedConn)
-            {
                if (AnsiConsole.Confirm(
                   $"Save this {label} connection string?",
                   true
@@ -150,7 +142,6 @@ namespace dvmig.Cli
 
                   _settingsService.SaveSettings(settings);
                }
-            }
          }
 
          return provider;

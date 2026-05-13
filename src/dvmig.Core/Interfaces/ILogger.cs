@@ -30,7 +30,10 @@ namespace dvmig.Core.Interfaces
       /// </summary>
       /// <param name="messageTemplate">The message template.</param>
       /// <param name="propertyValues">The values to format.</param>
-      void Information(string messageTemplate, params object[] propertyValues);
+      void Information(
+         string messageTemplate,
+         params object[] propertyValues
+      );
 
       /// <summary>
       /// Logs a warning-level message.
@@ -43,7 +46,10 @@ namespace dvmig.Core.Interfaces
       /// </summary>
       /// <param name="messageTemplate">The message template.</param>
       /// <param name="propertyValues">The values to format.</param>
-      void Warning(string messageTemplate, params object[] propertyValues);
+      void Warning(
+         string messageTemplate,
+         params object[] propertyValues
+      );
 
       /// <summary>
       /// Logs a warning-level message with an exception.
@@ -68,7 +74,10 @@ namespace dvmig.Core.Interfaces
       /// </summary>
       /// <param name="messageTemplate">The message template.</param>
       /// <param name="propertyValues">The values to format.</param>
-      void Error(string messageTemplate, params object[] propertyValues);
+      void Error(
+         string messageTemplate,
+         params object[] propertyValues
+      );
 
       /// <summary>
       /// Logs an error-level message with an exception.
