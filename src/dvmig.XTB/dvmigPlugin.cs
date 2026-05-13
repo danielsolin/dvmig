@@ -15,6 +15,7 @@ using XrmToolBox.Extensibility.Interfaces;
 
 using dvmig.Core.Interfaces;
 using dvmig.Core.Provisioning;
+using dvmig.Core.Providers;
 using dvmig.Core.Synchronization;
 using dvmig.XTB.Settings;
 using dvmig.XTB.Shared;
@@ -52,6 +53,7 @@ namespace dvmig.XTB
 
       private Button _btnSelectTarget = null!;
       private Button _btnSync = null!;
+      private ProgressBar _prgSync = null!;
       private CheckedListBox _clbEntities = null!;
       private TextBox _txtSearch = null!;
       private RichTextBox _rtbLogs = null!;
@@ -89,15 +91,19 @@ namespace dvmig.XTB
          {
             if (_rtbLogs.InvokeRequired)
             {
-               _rtbLogs.Invoke(new Action(() => 
+               _rtbLogs.Invoke(new Action(() =>
                {
-                  _rtbLogs.AppendText($"[{DateTime.Now:HH:mm:ss}] {msg}\n");
+                  _rtbLogs.AppendText(
+                     $"[{DateTime.Now:HH:mm:ss}] {msg}\n"
+                  );
                   _rtbLogs.ScrollToCaret();
                }));
             }
             else
             {
-               _rtbLogs.AppendText($"[{DateTime.Now:HH:mm:ss}] {msg}\n");
+               _rtbLogs.AppendText(
+                  $"[{DateTime.Now:HH:mm:ss}] {msg}\n"
+               );
                _rtbLogs.ScrollToCaret();
             }
          });
@@ -109,9 +115,9 @@ namespace dvmig.XTB
          var topPanel = new TableLayoutPanel
          {
             Dock = DockStyle.Top,
-            Height = 85,
+            Height = 110,
             ColumnCount = 2,
-            RowCount = 2,
+            RowCount = 3,
             Padding = new Padding(10)
          };
          topPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 80));
@@ -133,8 +139,16 @@ namespace dvmig.XTB
          };
          _btnSync.Click += RunSync_Click;
 
+         _prgSync = new ProgressBar
+         {
+            Dock = DockStyle.Fill,
+            Visible = false
+         };
+
          topPanel.Controls.Add(_btnSelectTarget, 1, 0);
          topPanel.Controls.Add(_btnSync, 1, 1);
+         topPanel.Controls.Add(_prgSync, 0, 2);
+         topPanel.SetColumnSpan(_prgSync, 2);
 
          _txtSearch = new TextBox
          {
@@ -143,7 +157,7 @@ namespace dvmig.XTB
             ForeColor = Color.Gray
          };
 
-         _txtSearch.GotFocus += (s, e) => 
+         _txtSearch.GotFocus += (s, e) =>
          {
             if (_txtSearch.Text == "Search entities...")
             {
@@ -207,7 +221,7 @@ namespace dvmig.XTB
          if (_sourceProvider == null)
          {
             _sourceProvider = new Providers.XrmToolBoxDataProvider(
-               newService, 
+               newService,
                detail.ConnectionName
             );
             LoadEntities();
@@ -215,17 +229,18 @@ namespace dvmig.XTB
          else if (_sourceProvider.ConnectionString != detail.ConnectionName)
          {
             _targetProvider = new Providers.XrmToolBoxDataProvider(
-               newService, 
+               newService,
                detail.ConnectionName
             );
          }
-         
+
          UpdateSyncButtonState();
       }
 
       private void LoadEntities()
       {
-         if (_sourceProvider == null || _serviceProvider == null) return;
+         if (_sourceProvider == null || _serviceProvider == null)
+            return;
 
          _clbEntities.Items.Clear();
          _clbEntities.Items.Add("Loading entities...");
@@ -240,9 +255,9 @@ namespace dvmig.XTB
                   _serviceProvider.GetRequiredService<IEntityService>();
 
                args.Result = entityService
-                              .GetMigrationEntitiesAsync(_sourceProvider)
-                              .GetAwaiter()
-                              .GetResult();
+                  .GetMigrationEntitiesAsync(_sourceProvider)
+                  .GetAwaiter()
+                  .GetResult();
             },
             PostWorkCallBack = (args) =>
             {
@@ -264,11 +279,11 @@ namespace dvmig.XTB
             }
          });
       }
-      
+
       private void FilterEntities()
       {
-         var filter = (_txtSearch.Text == "Search entities...") 
-            ? string.Empty 
+         var filter = (_txtSearch.Text == "Search entities...")
+            ? string.Empty
             : _txtSearch.Text.ToLowerInvariant();
 
          _clbEntities.BeginUpdate();
@@ -277,13 +292,13 @@ namespace dvmig.XTB
          foreach (var entity in _allEntities)
          {
             var displayName = entity
-                                 .DisplayName?
-                                 .UserLocalizedLabel?
-                                 .Label ?? entity.LogicalName;
+               .DisplayName?
+               .UserLocalizedLabel?
+               .Label ?? entity.LogicalName;
 
-            if (string.IsNullOrEmpty(filter) || 
-                displayName.ToLowerInvariant().Contains(filter) || 
-                entity.LogicalName.ToLowerInvariant().Contains(filter))
+            if (string.IsNullOrEmpty(filter) ||
+               displayName.ToLowerInvariant().Contains(filter) ||
+               entity.LogicalName.ToLowerInvariant().Contains(filter))
             {
                _clbEntities.Items.Add(new EntityItem(entity));
             }
@@ -310,12 +325,14 @@ namespace dvmig.XTB
             selectedLogicalNames.Add(item.Metadata.LogicalName);
 
          if (_sourceProvider == null || _targetProvider == null
-               || _serviceProvider == null)
+            || _serviceProvider == null)
             return;
 
          _btnSync.Enabled = false;
          _clbEntities.Enabled = false;
          _rtbLogs.Clear();
+         _prgSync.Visible = true;
+         _prgSync.Value = 0;
 
          WorkAsync(new WorkAsyncInfo
          {
@@ -334,7 +351,6 @@ namespace dvmig.XTB
                var entityService =
                   new EntityService(logger, _targetProvider);
 
-               // 1. Ensure target is ready
                logger.Information("Validating target environment...");
                var isReady = envService
                   .ValidateTargetEnvironmentAsync(_targetProvider)
@@ -343,17 +359,11 @@ namespace dvmig.XTB
 
                if (!isReady)
                {
-                  logger.Warning(
-                     "Target environment is not initialized. " +
-                     "Installing components..."
-                  );
-
+                  logger.Warning("Installing components...");
                   envService
                      .InstallComponentsAsync(_targetProvider)
                      .GetAwaiter()
                      .GetResult();
-
-                  logger.Information("Target environment initialized.");
                }
 
                var syncEngine = new SyncEngine(
@@ -365,10 +375,8 @@ namespace dvmig.XTB
                   syncStateService
                );
 
-               // 2. Initialize Engine (Maps users etc)
-               logger.Information("Initializing synchronization engine...");
                syncEngine.InitializeSyncAsync().GetAwaiter().GetResult();
-               
+
                var options = new SyncOptions
                {
                   MaxDegreeOfParallelism = 4,
@@ -377,32 +385,55 @@ namespace dvmig.XTB
                   StripMissingDependencies = true
                };
 
-               // 3. Run Sync for selected entities
+               int totalRecords = 0;
+               foreach (var name in selectedLogicalNames)
+                  totalRecords += (int)_sourceProvider
+                     .GetRecordCountAsync(name)
+                     .GetAwaiter()
+                     .GetResult();
+
+               int processedRecords = 0;
+               var progress = new Progress<bool>(success =>
+               {
+                  processedRecords++;
+                  int percent = totalRecords > 0
+                     ? (int)((double)processedRecords / totalRecords * 100)
+                     : 100;
+
+                  worker.ReportProgress(
+                     Math.Min(percent, 100),
+                     $"Synchronizing... ({processedRecords}/{totalRecords})"
+                  );
+               });
+
                foreach (var entityLogicalName in selectedLogicalNames)
                {
-                  SetWorkingMessage($"Synchronizing {entityLogicalName}...");
-                  
-                  logger.Information(
-                     $"Starting sync for {entityLogicalName}..."
-                  );
-
                   syncEngine.SyncAsync(
-                     entityLogicalName, 
-                     options
+                     entityLogicalName,
+                     options,
+                     null,
+                     progress
                   ).GetAwaiter().GetResult();
                }
             },
+            ProgressChanged = e =>
+            {
+               _prgSync.Value = e.ProgressPercentage;
+               SetWorkingMessage(
+                  e.UserState?.ToString() ?? "Synchronizing..."
+               );
+            },
             PostWorkCallBack = (args) =>
             {
+               _prgSync.Visible = false;
                _clbEntities.Enabled = true;
                UpdateSyncButtonState();
 
                if (args.Error != null)
                {
                   _rtbLogs.AppendText(
-                     $"\n[ERROR] Synchronization failed: " +
-                     $"{args.Error.Message}\n");
-
+                     $"\n[ERROR] Sync failed: {args.Error.Message}\n"
+                  );
                   MessageBox.Show(
                      $"Sync failed: {args.Error.Message}",
                      "Error",
@@ -415,7 +446,6 @@ namespace dvmig.XTB
                   _rtbLogs.AppendText(
                      "\n[SUCCESS] Synchronization complete!\n"
                   );
-
                   MessageBox.Show(
                      "Synchronization completed successfully.",
                      "Success",
@@ -423,7 +453,7 @@ namespace dvmig.XTB
                      MessageBoxIcon.Information
                   );
                }
-               
+
                _rtbLogs.ScrollToCaret();
             }
          });
@@ -431,10 +461,13 @@ namespace dvmig.XTB
 
       private void UpdateSyncButtonState()
       {
-         _btnSync.Enabled = _sourceProvider != null && _targetProvider != null;
+         _btnSync.Enabled = _sourceProvider != null &&
+            _targetProvider != null;
       }
 
-      protected override void ConnectionDetailsUpdated(NotifyCollectionChangedEventArgs e)
+      protected override void ConnectionDetailsUpdated(
+         NotifyCollectionChangedEventArgs e
+      )
       {
          // Here because an implementation is required.
       }
@@ -443,9 +476,10 @@ namespace dvmig.XTB
       {
          public EntityMetadata Metadata { get; }
          public EntityItem(EntityMetadata metadata) => Metadata = metadata;
-         public override string ToString() => 
+         public override string ToString() =>
             $"{Metadata.DisplayName?.UserLocalizedLabel?.Label
                ?? Metadata.LogicalName} ({Metadata.LogicalName})";
       }
    }
 }
+
