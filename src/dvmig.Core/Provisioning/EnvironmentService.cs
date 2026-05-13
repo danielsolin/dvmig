@@ -7,7 +7,7 @@ using Microsoft.Xrm.Sdk.Metadata;
 using Microsoft.Xrm.Sdk.Query;
 
 using dvmig.Core.Interfaces;
-using dvmig.Core.Shared;
+using static dvmig.Core.Shared.SystemConstants;
 
 namespace dvmig.Core.Provisioning
 {
@@ -20,11 +20,9 @@ namespace dvmig.Core.Provisioning
    /// class.
    /// </remarks>
    /// <param name="logger">The logger instance.</param>
-   public class EnvironmentService(ILogger logger) : Interfaces.IEnvironmentService
+   public class EnvironmentService(ILogger logger)
+      : Interfaces.IEnvironmentService
    {
-      //DMSFIX: "magic number" 1033 here. Why? If it is really required it
-      // should be moved to SystemConstants.
-      private const int LanguageCode = 1033;
       private readonly ILogger _logger = logger;
 
       private enum AttributeType
@@ -45,7 +43,7 @@ namespace dvmig.Core.Provisioning
          {
             // 1. Check Failure Log Entity
             var failureMeta = await target.GetEntityMetadataAsync(
-               SystemConstants.MigrationFailure.EntityLogicalName,
+               MigrationFailure.EntityLogicalName,
                ct
             );
 
@@ -54,7 +52,7 @@ namespace dvmig.Core.Provisioning
 
             // 2. Check Source Data Entity
             var sourceDataMeta = await target.GetEntityMetadataAsync(
-               SystemConstants.SourceData.EntityLogicalName,
+               SourceData.EntityLogicalName,
                ct
             );
 
@@ -63,17 +61,17 @@ namespace dvmig.Core.Provisioning
 
             // 3. Check Plugin Assembly
             var assemblyQuery = new QueryByAttribute(
-               SystemConstants.PluginRegistration.AssemblyEntity
+               PluginRegistration.AssemblyEntity
             )
             {
                ColumnSet = new ColumnSet(
-                  SystemConstants.PluginRegistration.AssemblyId
+                  PluginRegistration.AssemblyId
                )
             };
 
             assemblyQuery.AddAttributeValue(
-               SystemConstants.PluginRegistration.AssemblyName,
-               SystemConstants.AppConstants.PluginName
+               PluginRegistration.AssemblyName,
+               AppConstants.PluginName
             );
 
             var assemblies = await target.RetrieveMultipleAsync(
@@ -86,17 +84,17 @@ namespace dvmig.Core.Provisioning
 
             // 4. Check Plugin Type
             var typeQuery = new QueryByAttribute(
-               SystemConstants.PluginRegistration.TypeEntity
+               PluginRegistration.TypeEntity
             )
             {
                ColumnSet = new ColumnSet(
-                  SystemConstants.PluginRegistration.TypeId
+                  PluginRegistration.TypeId
                )
             };
 
             typeQuery.AddAttributeValue(
-               SystemConstants.PluginRegistration.TypeName,
-               $"{SystemConstants.AppConstants.PluginName}.DMPlugin"
+               PluginRegistration.TypeName,
+               $"{AppConstants.PluginName}.DMPlugin"
             );
 
             var types = await target.RetrieveMultipleAsync(typeQuery, ct);
@@ -108,16 +106,16 @@ namespace dvmig.Core.Provisioning
 
             // 5. Check Plugin Steps (Create & Update)
             var stepQuery = new QueryByAttribute(
-               SystemConstants.PluginRegistration.StepEntity
+               PluginRegistration.StepEntity
             )
             {
                ColumnSet = new ColumnSet(
-                  SystemConstants.PluginRegistration.MessageName
+                  PluginRegistration.MessageName
                )
             };
 
             stepQuery.AddAttributeValue(
-               SystemConstants.PluginRegistration.EventHandler,
+               PluginRegistration.EventHandler,
                typeId
             );
 
@@ -125,13 +123,13 @@ namespace dvmig.Core.Provisioning
 
             bool hasCreate = steps?.Entities.Any(e =>
                e.GetAttributeValue<string>(
-                  SystemConstants.PluginRegistration.MessageName
+                  PluginRegistration.MessageName
                )?.Contains("Create") == true
             ) == true;
 
             bool hasUpdate = steps?.Entities.Any(e =>
                e.GetAttributeValue<string>(
-                  SystemConstants.PluginRegistration.MessageName
+                  PluginRegistration.MessageName
                )?.Contains("Update") == true
             ) == true;
 
@@ -182,7 +180,7 @@ namespace dvmig.Core.Provisioning
          // 3. Drop Schema
          await DropEntityIfPresentAsync(
             target,
-            SystemConstants.MigrationFailure.EntityLogicalName,
+            MigrationFailure.EntityLogicalName,
             ct
          );
 
@@ -191,7 +189,7 @@ namespace dvmig.Core.Provisioning
 
          await DropEntityIfPresentAsync(
             target,
-            SystemConstants.SourceData.EntityLogicalName,
+            SourceData.EntityLogicalName,
             ct
          );
 
@@ -208,7 +206,7 @@ namespace dvmig.Core.Provisioning
          CancellationToken ct
       )
       {
-         var entityName = SystemConstants.SourceData.EntityLogicalName;
+         var entityName = SourceData.EntityLogicalName;
          var existingMeta = await target.GetEntityMetadataAsync(
             entityName,
             ct
@@ -229,11 +227,11 @@ namespace dvmig.Core.Provisioning
                   LogicalName = entityName,
                   DisplayName = new Label(
                      "DVMig Source Data",
-                     LanguageCode
+                     AppConstants.LanguageCode
                   ),
                   DisplayCollectionName = new Label(
                      "DVMig Source Data",
-                     LanguageCode
+                     AppConstants.LanguageCode
                   ),
                   OwnershipType = OwnershipTypes.UserOwned,
                   IsActivity = false,
@@ -242,9 +240,9 @@ namespace dvmig.Core.Provisioning
                },
                PrimaryAttribute = new StringAttributeMetadata
                {
-                  SchemaName = SystemConstants.SourceData.Name,
-                  LogicalName = SystemConstants.SourceData.Name,
-                  DisplayName = new Label("Name", LanguageCode),
+                  SchemaName = SourceData.Name,
+                  LogicalName = SourceData.Name,
+                  DisplayName = new Label("Name", AppConstants.LanguageCode),
                   RequiredLevel =
                      new AttributeRequiredLevelManagedProperty(
                         AttributeRequiredLevel.None
@@ -269,7 +267,7 @@ namespace dvmig.Core.Provisioning
             target,
             entityName,
             existingMeta!,
-            SystemConstants.SourceData.EntityId,
+            SourceData.EntityId,
             "Source Entity ID",
             ct
          );
@@ -278,7 +276,7 @@ namespace dvmig.Core.Provisioning
             target,
             entityName,
             existingMeta!,
-            SystemConstants.SourceData.EntityLogicalNameAttr,
+            SourceData.EntityLogicalNameAttr,
             "Source Entity Logical Name",
             ct
          );
@@ -287,7 +285,7 @@ namespace dvmig.Core.Provisioning
             target,
             entityName,
             existingMeta!,
-            SystemConstants.SourceData.CreatedOn,
+            SourceData.CreatedOn,
             "Source Created Date",
             ct,
             AttributeType.DateTime
@@ -297,7 +295,7 @@ namespace dvmig.Core.Provisioning
             target,
             entityName,
             existingMeta!,
-            SystemConstants.SourceData.ModifiedOn,
+            SourceData.ModifiedOn,
             "Source Modified Date",
             ct,
             AttributeType.DateTime
@@ -309,7 +307,7 @@ namespace dvmig.Core.Provisioning
          CancellationToken ct
       )
       {
-         var entityName = SystemConstants.MigrationFailure.EntityLogicalName;
+         var entityName = MigrationFailure.EntityLogicalName;
          var existingMeta = await target.GetEntityMetadataAsync(
             entityName,
             ct
@@ -328,19 +326,22 @@ namespace dvmig.Core.Provisioning
                {
                   SchemaName = entityName,
                   LogicalName = entityName,
-                  DisplayName = new Label("DVMig Failure", LanguageCode),
+                  DisplayName = new Label(
+                     "DVMig Failure",
+                     AppConstants.LanguageCode
+                  ),
                   DisplayCollectionName = new Label(
                      "DVMig Failures",
-                     LanguageCode
+                     AppConstants.LanguageCode
                   ),
                   OwnershipType = OwnershipTypes.UserOwned,
                   IsActivity = false
                },
                PrimaryAttribute = new StringAttributeMetadata
                {
-                  SchemaName = SystemConstants.MigrationFailure.Name,
-                  LogicalName = SystemConstants.MigrationFailure.Name,
-                  DisplayName = new Label("Name", LanguageCode),
+                  SchemaName = MigrationFailure.Name,
+                  LogicalName = MigrationFailure.Name,
+                  DisplayName = new Label("Name", AppConstants.LanguageCode),
                   MaxLength = 100
                }
             };
@@ -361,7 +362,7 @@ namespace dvmig.Core.Provisioning
             target,
             entityName,
             existingMeta!,
-            SystemConstants.MigrationFailure.SourceId,
+            MigrationFailure.SourceId,
             "Source Record ID",
             ct
          );
@@ -370,7 +371,7 @@ namespace dvmig.Core.Provisioning
             target,
             entityName,
             existingMeta!,
-            SystemConstants.MigrationFailure.EntityLogicalNameAttr,
+            MigrationFailure.EntityLogicalNameAttr,
             "Entity Logical Name",
             ct
          );
@@ -379,7 +380,7 @@ namespace dvmig.Core.Provisioning
             target,
             entityName,
             existingMeta!,
-            SystemConstants.MigrationFailure.ErrorMessage,
+            MigrationFailure.ErrorMessage,
             "Error Message",
             ct,
             AttributeType.Memo
@@ -389,7 +390,7 @@ namespace dvmig.Core.Provisioning
             target,
             entityName,
             existingMeta!,
-            SystemConstants.MigrationFailure.Timestamp,
+            MigrationFailure.Timestamp,
             "Failure Timestamp",
             ct,
             AttributeType.DateTime
@@ -423,29 +424,29 @@ namespace dvmig.Core.Provisioning
             {
                SchemaName = schemaName,
                LogicalName = schemaName.ToLower(),
-               DisplayName = new Label(displayName, LanguageCode),
-               MaxLength = SystemConstants.AppConstants
+               DisplayName = new Label(displayName, AppConstants.LanguageCode),
+               MaxLength = AppConstants
                                 .MaxMemoFieldLength
             },
             AttributeType.DateTime => new DateTimeAttributeMetadata
             {
                SchemaName = schemaName,
                LogicalName = schemaName.ToLower(),
-               DisplayName = new Label(displayName, LanguageCode),
+               DisplayName = new Label(displayName, AppConstants.LanguageCode),
                Format = DateTimeFormat.DateAndTime
             },
             AttributeType.Lookup => new LookupAttributeMetadata
             {
                SchemaName = schemaName,
                LogicalName = schemaName.ToLower(),
-               DisplayName = new Label(displayName, LanguageCode),
+               DisplayName = new Label(displayName, AppConstants.LanguageCode),
                Targets = new[] { lookupTarget! }
             },
             _ => new StringAttributeMetadata
             {
                SchemaName = schemaName,
                LogicalName = schemaName.ToLower(),
-               DisplayName = new Label(displayName, LanguageCode),
+               DisplayName = new Label(displayName, AppConstants.LanguageCode),
                MaxLength = 200
             }
          };
@@ -570,7 +571,7 @@ namespace dvmig.Core.Provisioning
          {
             string? entityName = type switch
             {
-               62 => SystemConstants.PluginRegistration.StepEntity,
+               62 => PluginRegistration.StepEntity,
                80 => "appmodule",
                29 => "workflow",
                60 => "systemform",
@@ -584,12 +585,12 @@ namespace dvmig.Core.Provisioning
             var result = await target.RetrieveAsync(
                entityName,
                id,
-               new[] { SystemConstants.DataverseAttributes.Name },
+               new[] { DataverseAttributes.Name },
                ct
             );
 
             return result?.GetAttributeValue<string>(
-               SystemConstants.DataverseAttributes.Name
+               DataverseAttributes.Name
             );
          }
          catch
@@ -614,7 +615,7 @@ namespace dvmig.Core.Provisioning
          {
             assemblyPath = Path.Combine(
                AppDomain.CurrentDomain.BaseDirectory,
-               SystemConstants.AppConstants.PluginAssemblyName
+               AppConstants.PluginAssemblyName
             );
 
             // Fallback for development if not in same folder
@@ -625,11 +626,11 @@ namespace dvmig.Core.Provisioning
                   "..",
                   "..",
                   "..",
-                  SystemConstants.AppConstants.PluginName,
+                  AppConstants.PluginName,
                   "bin",
                   "Debug",
                   "netstandard2.0",
-                  SystemConstants.AppConstants.PluginAssemblyName
+                  AppConstants.PluginAssemblyName
                );
          }
 
@@ -651,34 +652,34 @@ namespace dvmig.Core.Provisioning
          );
 
          var assembly = new Entity(
-            SystemConstants.PluginRegistration.AssemblyEntity
+            PluginRegistration.AssemblyEntity
          );
 
-         assembly[SystemConstants.PluginRegistration.AssemblyName] =
-            SystemConstants.AppConstants.PluginName;
-         assembly[SystemConstants.PluginRegistration.Content] =
+         assembly[PluginRegistration.AssemblyName] =
+            AppConstants.PluginName;
+         assembly[PluginRegistration.Content] =
             Convert.ToBase64String(assemblyBytes);
-         assembly[SystemConstants.PluginRegistration.IsolationMode] =
+         assembly[PluginRegistration.IsolationMode] =
             new OptionSetValue(2); // Sandbox
-         assembly[SystemConstants.PluginRegistration.SourceType] =
+         assembly[PluginRegistration.SourceType] =
             new OptionSetValue(0); // Database
-         assembly[SystemConstants.PluginRegistration.PublicKeyToken] =
+         assembly[PluginRegistration.PublicKeyToken] =
             "397f674bbcd3d607";
-         assembly[SystemConstants.PluginRegistration.Version] = "1.0.0.0";
-         assembly[SystemConstants.PluginRegistration.Culture] = "neutral";
+         assembly[PluginRegistration.Version] = "1.0.0.0";
+         assembly[PluginRegistration.Culture] = "neutral";
 
          var query = new QueryByAttribute(
-            SystemConstants.PluginRegistration.AssemblyEntity
+            PluginRegistration.AssemblyEntity
          )
          {
             ColumnSet = new ColumnSet(
-               SystemConstants.PluginRegistration.AssemblyId
+               PluginRegistration.AssemblyId
             )
          };
 
          query.AddAttributeValue(
-            SystemConstants.PluginRegistration.AssemblyName,
-            SystemConstants.AppConstants.PluginName
+            PluginRegistration.AssemblyName,
+            AppConstants.PluginName
          );
 
          var existing = await target.RetrieveMultipleAsync(query, ct);
@@ -712,23 +713,23 @@ namespace dvmig.Core.Provisioning
          _logger.Information("Registering plugin type and step...");
 
          var pluginTypeName =
-            $"{SystemConstants.AppConstants.PluginName}.DMPlugin";
+            $"{AppConstants.PluginName}.DMPlugin";
 
          var typeQuery = new QueryByAttribute(
-            SystemConstants.PluginRegistration.TypeEntity
+            PluginRegistration.TypeEntity
          )
          {
             ColumnSet = new ColumnSet(
-               SystemConstants.PluginRegistration.TypeId
+               PluginRegistration.TypeId
             )
          };
 
          typeQuery.AddAttributeValue(
-            SystemConstants.PluginRegistration.AssemblyId,
+            PluginRegistration.AssemblyId,
             assemblyId
          );
          typeQuery.AddAttributeValue(
-            SystemConstants.PluginRegistration.TypeName,
+            PluginRegistration.TypeName,
             pluginTypeName
          );
 
@@ -744,18 +745,18 @@ namespace dvmig.Core.Provisioning
          else
          {
             var type = new Entity(
-               SystemConstants.PluginRegistration.TypeEntity
+               PluginRegistration.TypeEntity
             );
 
-            type[SystemConstants.PluginRegistration.AssemblyId] =
+            type[PluginRegistration.AssemblyId] =
                new EntityReference(
-                  SystemConstants.PluginRegistration.AssemblyEntity,
+                  PluginRegistration.AssemblyEntity,
                   assemblyId
                );
-            type[SystemConstants.PluginRegistration.TypeName] = pluginTypeName;
-            type[SystemConstants.PluginRegistration.AssemblyName] =
+            type[PluginRegistration.TypeName] = pluginTypeName;
+            type[PluginRegistration.AssemblyName] =
                pluginTypeName;
-            type[SystemConstants.PluginRegistration.FriendlyName] = "DMPlugin";
+            type[PluginRegistration.FriendlyName] = "DMPlugin";
 
             typeId = await target.CreateAsync(type, ct);
 
@@ -785,16 +786,16 @@ namespace dvmig.Core.Provisioning
       )
       {
          var msgQuery = new QueryByAttribute(
-            SystemConstants.PluginRegistration.MessageEntity
+            PluginRegistration.MessageEntity
          )
          {
             ColumnSet = new ColumnSet(
-               SystemConstants.PluginRegistration.MessageId
+               PluginRegistration.MessageId
             )
          };
 
          msgQuery.AddAttributeValue(
-            SystemConstants.PluginRegistration.MessageName,
+            PluginRegistration.MessageName,
             messageName
          );
 
@@ -806,53 +807,53 @@ namespace dvmig.Core.Provisioning
          var messageId = msgs.Entities.First().Id;
 
          var pluginTypeName =
-            $"{SystemConstants.AppConstants.PluginName}.DMPlugin";
+            $"{AppConstants.PluginName}.DMPlugin";
 
-         var step = new Entity(SystemConstants.PluginRegistration.StepEntity);
+         var step = new Entity(PluginRegistration.StepEntity);
 
-         step[SystemConstants.PluginRegistration.MessageName] =
+         step[PluginRegistration.MessageName] =
             $"{pluginTypeName}: {messageName}";
-         step[SystemConstants.PluginRegistration.Configuration] = "";
-         step[SystemConstants.PluginRegistration.InvocationSource] =
+         step[PluginRegistration.Configuration] = "";
+         step[PluginRegistration.InvocationSource] =
             new OptionSetValue(0); // Internal
-         step[SystemConstants.PluginRegistration.MessageId] =
+         step[PluginRegistration.MessageId] =
             new EntityReference(
-               SystemConstants.PluginRegistration.MessageEntity,
+               PluginRegistration.MessageEntity,
                messageId
             );
-         step[SystemConstants.PluginRegistration.TypeId] =
+         step[PluginRegistration.TypeId] =
             new EntityReference(
-               SystemConstants.PluginRegistration.TypeEntity,
+               PluginRegistration.TypeEntity,
                typeId
             );
-         step[SystemConstants.PluginRegistration.Stage] =
+         step[PluginRegistration.Stage] =
             new OptionSetValue(20); // Pre-Operation
-         step[SystemConstants.PluginRegistration.SupportedDeployment] =
+         step[PluginRegistration.SupportedDeployment] =
             new OptionSetValue(0); // Server
-         step[SystemConstants.PluginRegistration.Rank] = 1;
-         step[SystemConstants.PluginRegistration.Mode] =
+         step[PluginRegistration.Rank] = 1;
+         step[PluginRegistration.Mode] =
             new OptionSetValue(0); // Synchronous
-         step[SystemConstants.PluginRegistration.EventHandler] =
+         step[PluginRegistration.EventHandler] =
             new EntityReference(
-               SystemConstants.PluginRegistration.TypeEntity,
+               PluginRegistration.TypeEntity,
                typeId
             );
 
          var stepQuery = new QueryByAttribute(
-            SystemConstants.PluginRegistration.StepEntity
+            PluginRegistration.StepEntity
          )
          {
             ColumnSet = new ColumnSet(
-               SystemConstants.PluginRegistration.StepId
+               PluginRegistration.StepId
             )
          };
 
          stepQuery.AddAttributeValue(
-            SystemConstants.PluginRegistration.EventHandler,
+            PluginRegistration.EventHandler,
             typeId
          );
          stepQuery.AddAttributeValue(
-            SystemConstants.PluginRegistration.MessageId,
+            PluginRegistration.MessageId,
             messageId
          );
 
@@ -891,17 +892,17 @@ namespace dvmig.Core.Provisioning
          _logger.Information("Searching for plugin assembly to remove...");
 
          var query = new QueryByAttribute(
-            SystemConstants.PluginRegistration.AssemblyEntity
+            PluginRegistration.AssemblyEntity
          )
          {
             ColumnSet = new ColumnSet(
-               SystemConstants.PluginRegistration.AssemblyId
+               PluginRegistration.AssemblyId
             )
          };
 
          query.AddAttributeValue(
-            SystemConstants.PluginRegistration.AssemblyName,
-            SystemConstants.AppConstants.PluginName
+            PluginRegistration.AssemblyName,
+            AppConstants.PluginName
          );
 
          var result = await target.RetrieveMultipleAsync(query, ct);
@@ -916,17 +917,17 @@ namespace dvmig.Core.Provisioning
             );
 
             var typeQuery = new QueryByAttribute(
-               SystemConstants.PluginRegistration.TypeEntity
+               PluginRegistration.TypeEntity
             )
             {
                ColumnSet = new ColumnSet(
-                  SystemConstants.PluginRegistration.TypeId,
-                  SystemConstants.PluginRegistration.TypeName
+                  PluginRegistration.TypeId,
+                  PluginRegistration.TypeName
                )
             };
 
             typeQuery.AddAttributeValue(
-               SystemConstants.PluginRegistration.AssemblyId,
+               PluginRegistration.AssemblyId,
                assemblyId
             );
 
@@ -935,21 +936,21 @@ namespace dvmig.Core.Provisioning
             foreach (var type in types.Entities)
             {
                var typeName = type.GetAttributeValue<string>(
-                  SystemConstants.PluginRegistration.TypeName
+                  PluginRegistration.TypeName
                );
 
                var stepQuery = new QueryByAttribute(
-                  SystemConstants.PluginRegistration.StepEntity
+                  PluginRegistration.StepEntity
                )
                {
                   ColumnSet = new ColumnSet(
-                     SystemConstants.PluginRegistration.StepId,
-                     SystemConstants.PluginRegistration.MessageName
+                     PluginRegistration.StepId,
+                     PluginRegistration.MessageName
                   )
                };
 
                stepQuery.AddAttributeValue(
-                  SystemConstants.PluginRegistration.EventHandler,
+                  PluginRegistration.EventHandler,
                   type.Id
                );
 
@@ -961,7 +962,7 @@ namespace dvmig.Core.Provisioning
                foreach (var step in steps.Entities)
                {
                   var stepName = step.GetAttributeValue<string>(
-                     SystemConstants.PluginRegistration.MessageName
+                     PluginRegistration.MessageName
                   );
 
                   _logger.Information(
@@ -969,7 +970,7 @@ namespace dvmig.Core.Provisioning
                   );
 
                   await target.DeleteAsync(
-                     SystemConstants.PluginRegistration.StepEntity,
+                     PluginRegistration.StepEntity,
                      step.Id,
                      ct
                   );
@@ -978,7 +979,7 @@ namespace dvmig.Core.Provisioning
                _logger.Information($"Deleting plugin type: {typeName}...");
 
                await target.DeleteAsync(
-                  SystemConstants.PluginRegistration.TypeEntity,
+                  PluginRegistration.TypeEntity,
                   type.Id,
                   ct
                );
@@ -987,7 +988,7 @@ namespace dvmig.Core.Provisioning
             _logger.Information("Deleting plugin assembly...");
 
             await target.DeleteAsync(
-               SystemConstants.PluginRegistration.AssemblyEntity,
+               PluginRegistration.AssemblyEntity,
                assemblyId,
                ct
             );

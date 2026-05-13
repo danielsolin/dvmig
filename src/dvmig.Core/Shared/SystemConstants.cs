@@ -386,6 +386,7 @@ namespace dvmig.Core.Shared
       /// </summary>
       public static class AppConstants
       {
+         public const int LanguageCode = 1033;
          public const int DefaultDeletionBatchSize = 5000;
          public const int MetadataPropagationDelayMs = 5000;
          public const int MaxMemoFieldLength = 5000;
