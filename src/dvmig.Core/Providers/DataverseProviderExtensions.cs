@@ -1,8 +1,10 @@
 using System.ServiceModel;
-using dvmig.Core.Interfaces;
-using dvmig.Core.Shared;
+
 using Microsoft.Xrm.Sdk.Messages;
 using Microsoft.Xrm.Sdk.Metadata;
+
+using dvmig.Core.Interfaces;
+using dvmig.Core.Shared;
 
 namespace dvmig.Core.Providers
 {
@@ -71,13 +73,13 @@ namespace dvmig.Core.Providers
          CancellationToken ct = default
       )
       {
-         var request = new Microsoft.Xrm.Sdk.Messages.RetrieveEntityRequest
+         var request = new RetrieveEntityRequest
          {
             LogicalName = entityName,
-            EntityFilters = Microsoft.Xrm.Sdk.Metadata.EntityFilters.Entity
+            EntityFilters = EntityFilters.Entity
          };
 
-         var metaResponse = (Microsoft.Xrm.Sdk.Messages.RetrieveEntityResponse)
+         var metaResponse = (RetrieveEntityResponse)
             await provider.ExecuteAsync(request, ct);
 
          var primaryId = metaResponse.EntityMetadata.PrimaryIdAttribute ??
