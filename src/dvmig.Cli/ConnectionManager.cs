@@ -10,8 +10,6 @@ using static dvmig.Core.Shared.SystemConstants;
 
 namespace dvmig.Cli
 {
-   // DMSMIX: Why do we have this class? The CLI should not be concerned
-   // with connection management. Please talk to the user about this.
    public class ConnectionManager
    {
       private readonly ISettingsService _settingsService;
