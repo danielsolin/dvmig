@@ -85,7 +85,7 @@ namespace dvmig.XTB.Shared
 
          var options = new SyncOptions
          {
-            MaxDegreeOfParallelism = 4,
+            MaxDegreeOfParallelism = 10,
             ForceResync = false,
             PreserveAuditData = true,
             StripMissingDependencies = true
