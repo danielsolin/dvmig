@@ -42,4 +42,3 @@ jobs:
           draft: false
           files: |
             dvmig-win-x64.zip
-            publish/plugin/dvmig.Plugins.dll
