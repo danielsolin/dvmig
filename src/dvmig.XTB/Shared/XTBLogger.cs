@@ -10,12 +10,12 @@ namespace dvmig.XTB.Shared
    /// prevent assembly version conflicts in the XrmToolBox environment.
    /// Logs to Debug output and the provided progress reporter.
    /// </summary>
-   public class XrmToolBoxLogger : ILogger
+   public class XTBLogger : ILogger
    {
       private readonly PluginControlBase _control;
       private IProgress<string>? _progress;
 
-      public XrmToolBoxLogger(PluginControlBase control)
+      public XTBLogger(PluginControlBase control)
       {
          _control = control;
       }

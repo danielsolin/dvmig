@@ -3,17 +3,17 @@ using XrmToolBox.Extensibility;
 using dvmig.Core.Interfaces;
 using dvmig.Core.Settings;
 
-namespace dvmig.XTB.Settings
+namespace dvmig.XTB.Shared
 {
    /// <summary>
    /// Implementation of <see cref="ISettingsService"/> that uses the 
    /// XrmToolBox <see cref="SettingsManager"/>.
    /// </summary>
-   public class XrmToolBoxSettingsService : ISettingsService
+   public class XTBSettingsService : ISettingsService
    {
       private readonly PluginControlBase _control;
 
-      public XrmToolBoxSettingsService(PluginControlBase control)
+      public XTBSettingsService(PluginControlBase control)
       {
          _control = control;
       }
