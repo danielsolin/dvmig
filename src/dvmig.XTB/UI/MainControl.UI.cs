@@ -22,13 +22,18 @@ namespace dvmig.XTB.UI
             var topPanel = new TableLayoutPanel
             {
                 Dock = DockStyle.Top,
-                Height = 150,
+                Height = 170,
                 ColumnCount = 2,
                 RowCount = 4,
                 Padding = new Padding(10)
             };
             topPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 70));
             topPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 30));
+            
+            topPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 35));
+            topPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 35));
+            topPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 35));
+            topPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 30));
 
             _lblSource = new Label
             {

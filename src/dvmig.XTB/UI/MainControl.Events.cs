@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Windows.Forms;
+using System.Threading;
+using System.Threading.Tasks;
 
 using Microsoft.Xrm.Sdk.Metadata;
 using Microsoft.Extensions.DependencyInjection;
@@ -91,34 +93,44 @@ namespace dvmig.XTB.UI
       {
          if (_sourceProvider == null) return;
 
+         _countCts?.Cancel();
+         _countCts = new CancellationTokenSource();
+         var token = _countCts.Token;
+
          var selectedCopy = new List<string>(_selectedEntities);
 
-         WorkAsync(new WorkAsyncInfo
+         Task.Run(async () =>
          {
-            Message = "Counting records...",
-            Work = (worker, args) =>
+            try
             {
                long total = 0;
                foreach (var name in selectedCopy)
                {
-                  total += _sourceProvider.GetRecordCountAsync(name)
-                                    .GetAwaiter()
-                                    .GetResult();
+                  if (token.IsCancellationRequested) return;
+
+                  total += await _sourceProvider.GetRecordCountAsync(name, token);
                }
-               args.Result = total;
-            },
-            PostWorkCallBack = (args) =>
-            {
-               if (args.Error == null && args.Result is long total)
+
+               if (token.IsCancellationRequested) return;
+
+               _lblSelectedEntities.Invoke(new Action(() =>
                {
                   _totalRecordsCount = total;
                   var names = string.Join(", ", _selectedEntities);
                   _lblSelectedEntities.Text = $"Selected " +
                      $"({_selectedEntities.Count}): {names} " +
                      $"| Records: {total:N0}";
-               }
+               }));
             }
-         });
+            catch (OperationCanceledException) { }
+            catch (Exception ex)
+            {
+               _rtbLogs.Invoke(new Action(() =>
+               {
+                  _rtbLogs.AppendText($"Error counting records: {ex.Message}\n");
+               }));
+            }
+         }, token);
       }
 
       private void UpdateSyncButtonState()
@@ -132,6 +144,7 @@ namespace dvmig.XTB.UI
          if(_sourceProvider == null || _serviceProvider == null)
             return;
 
+         _countCts?.Cancel();
          _selectedEntities.Clear();
          _totalRecordsCount = 0;
          UpdateSelectedEntitiesLabel();
@@ -221,6 +234,7 @@ namespace dvmig.XTB.UI
             || _serviceProvider == null)
             return;
 
+         _countCts?.Cancel();
          _btnSync.Enabled = false;
          _clbEntities.Enabled = false;
          _rtbLogs.Clear();

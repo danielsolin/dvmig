@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Drawing;
+using System.Threading;
 
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Metadata;
@@ -23,6 +24,7 @@ namespace dvmig.XTB.UI
         private List<EntityMetadata> _allEntities = new();
         private HashSet<string> _selectedEntities = new();
         private long _totalRecordsCount;
+        private CancellationTokenSource? _countCts;
 
         public MainControl()
         {
