@@ -25,9 +25,17 @@ namespace dvmig.XTB.UI
         private HashSet<string> _selectedEntities = new();
         private long _totalRecordsCount;
         private CancellationTokenSource? _countCts;
+        private bool _isFiltering;
 
         public MainControl()
         {
+           // Optimizations for Dataverse communication in .NET Framework.
+           System.Net.ServicePointManager.DefaultConnectionLimit = 65000;
+           System.Net.ServicePointManager.Expect100Continue = false;
+           System.Net.ServicePointManager.UseNagleAlgorithm = false;
+           System.Net.ServicePointManager.SecurityProtocol |= 
+              System.Net.SecurityProtocolType.Tls12;
+
            InitializeUI(); // UI elements must be initialized first
             _serviceProvider = DIConfigurator.CreateServiceProvider(this, _rtbLogs);
 

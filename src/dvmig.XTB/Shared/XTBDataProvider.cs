@@ -37,37 +37,61 @@ namespace dvmig.XTB.Shared
          ConnectionString = connectionName;
       }
 
-      private T ExecuteWithCallerId<T>(Guid? callerId, Func<T> action)
+      private T ExecuteWithCallerId<T>(Guid? callerId, Func<IOrganizationService, T> action)
       {
          if (!callerId.HasValue || callerId.Value == Guid.Empty)
          {
-            return action();
+            return action(_service);
          }
 
-         var callerIdProp = _service.GetType().GetProperty("CallerId");
-         if (callerIdProp != null && callerIdProp.PropertyType == typeof(Guid))
+         if (_service is ICloneable cloneable && cloneable.Clone() is IOrganizationService clonedService)
          {
-            var originalCallerId = (Guid)callerIdProp.GetValue(_service);
-            callerIdProp.SetValue(_service, callerId.Value);
+            var callerIdProp = clonedService.GetType().GetProperty("CallerId");
+            if (callerIdProp != null && callerIdProp.PropertyType == typeof(Guid))
+            {
+               callerIdProp.SetValue(clonedService, callerId.Value);
+            }
             
             try
             {
-               return action();
+               return action(clonedService);
             }
             finally
             {
-               callerIdProp.SetValue(_service, originalCallerId);
+               if (clonedService is IDisposable disposable)
+               {
+                  disposable.Dispose();
+               }
             }
          }
-         
-         return action();
+
+         lock (_service)
+         {
+            var callerIdProp = _service.GetType().GetProperty("CallerId");
+            if (callerIdProp != null && callerIdProp.PropertyType == typeof(Guid))
+            {
+               var originalCallerId = (Guid)callerIdProp.GetValue(_service);
+               callerIdProp.SetValue(_service, callerId.Value);
+               
+               try
+               {
+                  return action(_service);
+               }
+               finally
+               {
+                  callerIdProp.SetValue(_service, originalCallerId);
+               }
+            }
+            
+            return action(_service);
+         }
       }
 
-      private void ExecuteWithCallerId(Guid? callerId, Action action)
+      private void ExecuteWithCallerId(Guid? callerId, Action<IOrganizationService> action)
       {
-         ExecuteWithCallerId<object?>(callerId, () =>
+         ExecuteWithCallerId<object?>(callerId, svc =>
          {
-            action();
+            action(svc);
             return null;
          });
       }
@@ -133,7 +157,7 @@ namespace dvmig.XTB.Shared
       )
       {
          return await Task.Run(() => 
-            ExecuteWithCallerId(callerId, () => _service.Create(entity)), ct);
+            ExecuteWithCallerId(callerId, svc => svc.Create(entity)), ct);
       }
 
       /// <inheritdoc />
@@ -144,7 +168,7 @@ namespace dvmig.XTB.Shared
       )
       {
          await Task.Run(() => 
-            ExecuteWithCallerId(callerId, () => _service.Update(entity)), ct);
+            ExecuteWithCallerId(callerId, svc => svc.Update(entity)), ct);
       }
 
       /// <inheritdoc />
@@ -194,7 +218,7 @@ namespace dvmig.XTB.Shared
       )
       {
          return await Task.Run(() => 
-            ExecuteWithCallerId(callerId, () => _service.Execute(request)), ct);
+            ExecuteWithCallerId(callerId, svc => svc.Execute(request)), ct);
       }
    }
 }

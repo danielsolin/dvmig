@@ -61,6 +61,8 @@ namespace dvmig.XTB.UI
 
       private void OnEntityItemCheck(object? sender, ItemCheckEventArgs e)
       {
+         if (_isFiltering) return;
+
          if (_clbEntities.Items[e.Index] is EntityItem item)
          {
             if (e.NewValue == CheckState.Checked)
@@ -193,6 +195,7 @@ namespace dvmig.XTB.UI
             ? string.Empty
             : _txtSearch.Text.ToLowerInvariant();
 
+         _isFiltering = true;
          _clbEntities.BeginUpdate();
          _clbEntities.Items.Clear();
 
@@ -212,6 +215,7 @@ namespace dvmig.XTB.UI
             }
          }
          _clbEntities.EndUpdate();
+         _isFiltering = false;
       }
 
       private void RunSync_Click(object? sender, EventArgs e)
