@@ -8,6 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 using XrmToolBox.Extensibility;
 
 using dvmig.Core.Interfaces;
+using dvmig.Core.Providers;
 using dvmig.Core.Synchronization;
 using dvmig.XTB.Shared;
 
@@ -15,16 +16,27 @@ namespace dvmig.XTB.UI
 {
    public partial class MainControl
    {
-      private const string _txtSearchEntities = "Search entities...";
+      private void OnSelectSourceClick(object? sender, EventArgs e)
+      {
+         RaiseRequestConnectionEvent(new RequestConnectionEventArgs
+         {
+            ActionName = "SelectSource",
+            Control = this
+         });
+      }
 
       private void OnSelectTargetClick(object? sender, EventArgs e)
       {
-         AddAdditionalOrganization();
+         RaiseRequestConnectionEvent(new RequestConnectionEventArgs
+         {
+            ActionName = "SelectTarget",
+            Control = this
+         });
       }
 
       private void OnSearchGotFocus(object? sender, EventArgs e)
       {
-         if(_txtSearch.Text == _txtSearchEntities)
+         if(_txtSearch.Text == "Search entities...")
          {
             _txtSearch.Text = "";
             _txtSearch.ForeColor = System.Drawing.Color.Black;
@@ -35,7 +47,7 @@ namespace dvmig.XTB.UI
       {
          if(string.IsNullOrWhiteSpace(_txtSearch.Text))
          {
-            _txtSearch.Text = _txtSearchEntities;
+            _txtSearch.Text = "Search entities...";
             _txtSearch.ForeColor = System.Drawing.Color.Gray;
          }
       }
@@ -43,6 +55,67 @@ namespace dvmig.XTB.UI
       private void OnSearchTextChanged(object? sender, EventArgs e)
       {
          FilterEntities();
+      }
+
+      private void OnEntityItemCheck(object? sender, ItemCheckEventArgs e)
+      {
+         if (_clbEntities.Items[e.Index] is EntityItem item)
+         {
+            if (e.NewValue == CheckState.Checked)
+               _selectedEntities.Add(item.Metadata.LogicalName);
+            else
+               _selectedEntities.Remove(item.Metadata.LogicalName);
+
+            UpdateSelectedEntitiesLabel();
+            ResetSyncProgress();
+         }
+      }
+
+      private void UpdateSelectedEntitiesLabel()
+      {
+         if (_selectedEntities.Count == 0)
+         {
+            _lblSelectedEntities.Text = "Selected: None";
+            _totalRecordsCount = 0;
+            return;
+         }
+
+         var names = string.Join(", ", _selectedEntities);
+         _lblSelectedEntities.Text = $"Selected ({_selectedEntities.Count}): {names} | Records: Counting...";
+         
+         CalculateTotalRecords();
+      }
+
+      private void CalculateTotalRecords()
+      {
+         if (_sourceProvider == null) return;
+
+         var selectedCopy = new List<string>(_selectedEntities);
+
+         WorkAsync(new WorkAsyncInfo
+         {
+            Message = "Counting records...",
+            Work = (worker, args) =>
+            {
+               long total = 0;
+               foreach (var name in selectedCopy)
+               {
+                  total += _sourceProvider.GetRecordCountAsync(name)
+                                    .GetAwaiter()
+                                    .GetResult();
+               }
+               args.Result = total;
+            },
+            PostWorkCallBack = (args) =>
+            {
+               if (args.Error == null && args.Result is long total)
+               {
+                  _totalRecordsCount = total;
+                  var names = string.Join(", ", _selectedEntities);
+                  _lblSelectedEntities.Text = $"Selected ({_selectedEntities.Count}): {names} | Records: {total:N0}";
+               }
+            }
+         });
       }
 
       private void UpdateSyncButtonState()
@@ -56,6 +129,10 @@ namespace dvmig.XTB.UI
          if(_sourceProvider == null || _serviceProvider == null)
             return;
 
+         _selectedEntities.Clear();
+         _totalRecordsCount = 0;
+         UpdateSelectedEntitiesLabel();
+         ResetSyncProgress();
          _clbEntities.Items.Clear();
          _clbEntities.Items.Add("Loading entities...");
          _clbEntities.Enabled = false;
@@ -96,7 +173,7 @@ namespace dvmig.XTB.UI
 
       private void FilterEntities()
       {
-         var filter = (_txtSearch.Text == _txtSearchEntities)
+         var filter = (_txtSearch.Text == "Search entities...")
             ? string.Empty
             : _txtSearch.Text.ToLowerInvariant();
 
@@ -114,7 +191,8 @@ namespace dvmig.XTB.UI
                displayName.ToLowerInvariant().Contains(filter) ||
                entity.LogicalName.ToLowerInvariant().Contains(filter))
             {
-               _clbEntities.Items.Add(new EntityItem(entity));
+               var isChecked = _selectedEntities.Contains(entity.LogicalName);
+               _clbEntities.Items.Add(new EntityItem(entity), isChecked);
             }
          }
          _clbEntities.EndUpdate();
@@ -122,7 +200,7 @@ namespace dvmig.XTB.UI
 
       private void RunSync_Click(object? sender, EventArgs e)
       {
-         if(_clbEntities.CheckedItems.Count == 0)
+         if(_selectedEntities.Count == 0)
          {
             MessageBox.Show(
                "Please select at least one entity to synchronize.",
@@ -134,9 +212,7 @@ namespace dvmig.XTB.UI
             return;
          }
 
-         var selectedLogicalNames = new List<string>();
-         foreach(EntityItem item in _clbEntities.CheckedItems)
-            selectedLogicalNames.Add(item.Metadata.LogicalName);
+         var selectedLogicalNames = new List<string>(_selectedEntities);
 
          if(_sourceProvider == null || _targetProvider == null
             || _serviceProvider == null)
@@ -153,7 +229,7 @@ namespace dvmig.XTB.UI
             Message = "Preparing synchronization...",
             Work = (worker, args) =>
             {
-               if(_userService == null)
+               if (_userService == null)
                {
                   _userService = new UserService(
                      _serviceProvider!.GetRequiredService<ILogger>(),
@@ -168,6 +244,7 @@ namespace dvmig.XTB.UI
                   _targetProvider!,
                   _userService,
                   selectedLogicalNames,
+                  (int)_totalRecordsCount,
                   (percent, message) => worker.ReportProgress(percent, message)
                );
                job.Run();
@@ -181,7 +258,6 @@ namespace dvmig.XTB.UI
             },
             PostWorkCallBack = (args) =>
             {
-               _prgSync.Visible = false;
                _clbEntities.Enabled = true;
                UpdateSyncButtonState();
 
@@ -200,6 +276,7 @@ namespace dvmig.XTB.UI
                }
                else
                {
+                  _prgSync.Value = 100;
                   _rtbLogs.AppendText(
                      "\n[SUCCESS] Synchronization complete!\n"
                   );

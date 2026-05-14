@@ -16,6 +16,7 @@ namespace dvmig.XTB.Shared
       private readonly IDataverseProvider _targetProvider;
       private readonly IUserService _userService;
       private readonly List<string> _entityLogicalNames;
+      private readonly int _totalRecords;
       private readonly Action<int, string> _reportProgress;
       private readonly ILogger _logger;
 
@@ -25,6 +26,7 @@ namespace dvmig.XTB.Shared
          IDataverseProvider targetProvider,
          IUserService userService,
          List<string> entityLogicalNames,
+         int totalRecords,
          Action<int, string> reportProgress
       )
       {
@@ -33,6 +35,7 @@ namespace dvmig.XTB.Shared
          _targetProvider = targetProvider;
          _userService = userService;
          _entityLogicalNames = entityLogicalNames;
+         _totalRecords = totalRecords;
          _reportProgress = reportProgress;
          _logger = _serviceProvider.GetRequiredService<ILogger>();
       }
@@ -88,25 +91,17 @@ namespace dvmig.XTB.Shared
             StripMissingDependencies = true
          };
 
-         int totalRecords = 0;
-         foreach(var name in _entityLogicalNames)
-         {
-            totalRecords += (int)_sourceProvider.GetRecordCountAsync(name)
-                              .GetAwaiter()
-                              .GetResult();
-         }
-
          int processedRecords = 0;
          var progress = new Progress<bool>(success =>
          {
             processedRecords++;
-            int percent = totalRecords > 0
-                   ? (int)((double)processedRecords / totalRecords * 100)
+            int percent = _totalRecords > 0
+                   ? (int)((double)processedRecords / _totalRecords * 100)
                    : 100;
 
             _reportProgress(
                    Math.Min(percent, 100),
-                   $"Synchronizing... ({processedRecords}/{totalRecords})"
+                   $"Synchronizing... ({processedRecords}/{_totalRecords})"
                );
          });
 

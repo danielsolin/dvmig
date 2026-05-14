@@ -5,7 +5,11 @@ namespace dvmig.XTB.UI
 {
     public partial class MainControl
     {
+        private Button _btnSelectSource = null!;
         private Button _btnSelectTarget = null!;
+        private Label _lblSource = null!;
+        private Label _lblTarget = null!;
+        private Label _lblSelectedEntities = null!;
         private Button _btnSync = null!;
         private ProgressBar _prgSync = null!;
         private CheckedListBox _clbEntities = null!;
@@ -18,13 +22,36 @@ namespace dvmig.XTB.UI
             var topPanel = new TableLayoutPanel
             {
                 Dock = DockStyle.Top,
-                Height = 110,
+                Height = 150,
                 ColumnCount = 2,
-                RowCount = 3,
+                RowCount = 4,
                 Padding = new Padding(10)
             };
-            topPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 80));
-            topPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20));
+            topPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 70));
+            topPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 30));
+
+            _lblSource = new Label
+            {
+               Text = "Source: Not Connected",
+               Dock = DockStyle.Fill,
+               TextAlign = ContentAlignment.MiddleLeft,
+               ForeColor = Color.Red
+            };
+
+            _btnSelectSource = new Button
+            {
+                Text = "Select Source",
+                Dock = DockStyle.Fill
+            };
+            _btnSelectSource.Click += OnSelectSourceClick;
+
+            _lblTarget = new Label
+            {
+               Text = "Target: Not Connected",
+               Dock = DockStyle.Fill,
+               TextAlign = ContentAlignment.MiddleLeft,
+               ForeColor = Color.Red
+            };
 
             _btnSelectTarget = new Button
             {
@@ -42,15 +69,27 @@ namespace dvmig.XTB.UI
             };
             _btnSync.Click += RunSync_Click;
 
+            _lblSelectedEntities = new Label
+            {
+               Text = "Selected: None",
+               Dock = DockStyle.Fill,
+               TextAlign = ContentAlignment.MiddleLeft,
+               AutoEllipsis = true
+            };
+
             _prgSync = new ProgressBar
             {
                 Dock = DockStyle.Fill,
                 Visible = true
             };
 
-            topPanel.Controls.Add(_btnSelectTarget, 1, 0);
-            topPanel.Controls.Add(_btnSync, 1, 1);
-            topPanel.Controls.Add(_prgSync, 0, 2);
+            topPanel.Controls.Add(_lblSource, 0, 0);
+            topPanel.Controls.Add(_btnSelectSource, 1, 0);
+            topPanel.Controls.Add(_lblTarget, 0, 1);
+            topPanel.Controls.Add(_btnSelectTarget, 1, 1);
+            topPanel.Controls.Add(_lblSelectedEntities, 0, 2);
+            topPanel.Controls.Add(_btnSync, 1, 2);
+            topPanel.Controls.Add(_prgSync, 0, 3);
             topPanel.SetColumnSpan(_prgSync, 2);
 
             _txtSearch = new TextBox
@@ -70,6 +109,7 @@ namespace dvmig.XTB.UI
                 CheckOnClick = true,
                 IntegralHeight = false
             };
+            _clbEntities.ItemCheck += OnEntityItemCheck;
 
             _rtbLogs = new RichTextBox
             {

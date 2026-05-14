@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
+using System.Drawing;
 
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Metadata;
@@ -20,11 +21,19 @@ namespace dvmig.XTB.UI
         private IDataverseProvider? _targetProvider;
         private IUserService? _userService;
         private List<EntityMetadata> _allEntities = new();
+        private HashSet<string> _selectedEntities = new();
+        private long _totalRecordsCount;
 
         public MainControl()
         {
             InitializeUI(); // UI elements must be initialized first
             _serviceProvider = DIConfigurator.CreateServiceProvider(this, _rtbLogs);
+
+            _rtbLogs.AppendText("Welcome to dvmig for XrmToolBox.\n");
+            _rtbLogs.AppendText("Please connect both a SOURCE and a TARGET " +
+                                "environment to begin.\n");
+            _rtbLogs.AppendText("Note: Any environment connected during " +
+                                "startup is assigned as the SOURCE.\n\n");
         }
 
         public override void UpdateConnection(
@@ -34,29 +43,51 @@ namespace dvmig.XTB.UI
             object parameter
         )
         {
-            base.UpdateConnection(newService, detail, actionName, parameter);
-
-            if (_sourceProvider == null)
+            if (string.IsNullOrEmpty(actionName))
             {
-               _sourceProvider = new XTBDataProvider(
-                  newService,
-                  detail.ConnectionName
-               );
-
-               _userService = null;
-               LoadEntities();
+               base.UpdateConnection(newService, detail, actionName, parameter);
             }
-            else if (_sourceProvider.ConnectionString != detail.ConnectionName)
+
+            ResetSyncProgress();
+
+            if (actionName == "SelectTarget")
             {
                _targetProvider = new XTBDataProvider(
                   newService,
                   detail.ConnectionName
                );
 
+               _lblTarget.Text = $"Target: {detail.OrganizationFriendlyName}";
+               _lblTarget.ForeColor = Color.DarkGreen;
                _userService = null;
+
+               _rtbLogs.AppendText($"Environment '{detail.OrganizationFriendlyName}' " +
+                                   "assigned as TARGET.\n");
+            }
+            else
+            {
+               _sourceProvider = new XTBDataProvider(
+                  newService,
+                  detail.ConnectionName
+               );
+
+               _lblSource.Text = $"Source: {detail.OrganizationFriendlyName}";
+               _lblSource.ForeColor = Color.DarkGreen;
+               _userService = null;
+
+               _rtbLogs.AppendText($"Environment '{detail.OrganizationFriendlyName}' " +
+                                   "assigned as SOURCE.\n");
+
+               LoadEntities();
             }
 
             UpdateSyncButtonState();
+        }
+
+        private void ResetSyncProgress()
+        {
+           _prgSync.Value = 0;
+           _prgSync.Visible = false;
         }
 
         protected override void ConnectionDetailsUpdated(
