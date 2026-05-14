@@ -238,7 +238,6 @@ namespace dvmig.XTB.UI
          _btnSync.Enabled = false;
          _clbEntities.Enabled = false;
          _rtbLogs.Clear();
-         _prgSync.Visible = true;
          _prgSync.Value = 0;
 
          WorkAsync(new WorkAsyncInfo

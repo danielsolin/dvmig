@@ -28,14 +28,6 @@ namespace dvmig.XTB.UI
 
         public MainControl()
         {
-           // Optimizations for Dataverse communication in .NET Framework.
-           // Don't seem to have any effect, but it's here just in case.
-           System.Net.ServicePointManager.DefaultConnectionLimit = 20;
-           System.Net.ServicePointManager.Expect100Continue = false;
-           System.Net.ServicePointManager.UseNagleAlgorithm = false;
-           System.Net.ServicePointManager.SecurityProtocol |= 
-              System.Net.SecurityProtocolType.Tls12;
-
            InitializeUI(); // UI elements must be initialized first
             _serviceProvider = DIConfigurator.CreateServiceProvider(this, _rtbLogs);
 
@@ -97,7 +89,6 @@ namespace dvmig.XTB.UI
         private void ResetSyncProgress()
         {
            _prgSync.Value = 0;
-           _prgSync.Visible = false;
         }
 
         protected override void ConnectionDetailsUpdated(
