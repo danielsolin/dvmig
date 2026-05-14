@@ -1,5 +1,4 @@
 using System;
-using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -10,13 +9,13 @@ using Microsoft.Xrm.Sdk.Messages;
 
 using dvmig.Core.Interfaces;
 
-namespace dvmig.XTB.Providers
+namespace dvmig.XTB.Shared
 {
    /// <summary>
    /// Implementation of <see cref="IDataverseProvider"/> that wraps an 
    /// XrmToolBox <see cref="IOrganizationService"/>.
    /// </summary>
-   public class XrmToolBoxDataProvider : IDataverseProvider
+   public class XTBDataProvider : IDataverseProvider
    {
       private readonly IOrganizationService _service;
       
@@ -25,11 +24,11 @@ namespace dvmig.XTB.Providers
 
       /// <summary>
       /// Initializes a new instance of the 
-      /// <see cref="XrmToolBoxDataProvider"/> class.
+      /// <see cref="XTBDataProvider"/> class.
       /// </summary>
       /// <param name="service">The organization service.</param>
       /// <param name="connectionName">A  name for the connection.</param>
-      public XrmToolBoxDataProvider(
+      public XTBDataProvider(
          IOrganizationService service, 
          string connectionName
       )
