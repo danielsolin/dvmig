@@ -81,7 +81,8 @@ namespace dvmig.XTB.UI
          }
 
          var names = string.Join(", ", _selectedEntities);
-         _lblSelectedEntities.Text = $"Selected ({_selectedEntities.Count}): {names} | Records: Counting...";
+         _lblSelectedEntities.Text = $"Selected ({_selectedEntities.Count}):" +
+            $" {names} | Records: Counting...";
          
          CalculateTotalRecords();
       }
@@ -112,7 +113,9 @@ namespace dvmig.XTB.UI
                {
                   _totalRecordsCount = total;
                   var names = string.Join(", ", _selectedEntities);
-                  _lblSelectedEntities.Text = $"Selected ({_selectedEntities.Count}): {names} | Records: {total:N0}";
+                  _lblSelectedEntities.Text = $"Selected " +
+                     $"({_selectedEntities.Count}): {names} " +
+                     $"| Records: {total:N0}";
                }
             }
          });

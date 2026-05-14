@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using Microsoft.Extensions.DependencyInjection;
 
 using dvmig.Core.Interfaces;
-using dvmig.Core.Providers;
 using dvmig.Core.Synchronization;
 
 namespace dvmig.XTB.Shared
@@ -56,7 +55,8 @@ namespace dvmig.XTB.Shared
          );
 
          _logger.Information("Validating target environment...");
-         var isReady = envService.ValidateTargetEnvironmentAsync(_targetProvider)
+         var isReady = envService
+                        .ValidateTargetEnvironmentAsync(_targetProvider)
                         .GetAwaiter()
                         .GetResult();
 
