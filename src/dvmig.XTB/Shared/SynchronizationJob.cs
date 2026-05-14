@@ -14,6 +14,7 @@ namespace dvmig.XTB.Shared
       private readonly IServiceProvider _serviceProvider;
       private readonly IDataverseProvider _sourceProvider;
       private readonly IDataverseProvider _targetProvider;
+      private readonly IUserService _userService;
       private readonly List<string> _entityLogicalNames;
       private readonly Action<int, string> _reportProgress;
       private readonly ILogger _logger;
@@ -22,6 +23,7 @@ namespace dvmig.XTB.Shared
          IServiceProvider serviceProvider,
          IDataverseProvider sourceProvider,
          IDataverseProvider targetProvider,
+         IUserService userService,
          List<string> entityLogicalNames,
          Action<int, string> reportProgress
       )
@@ -29,6 +31,7 @@ namespace dvmig.XTB.Shared
          _serviceProvider = serviceProvider;
          _sourceProvider = sourceProvider;
          _targetProvider = targetProvider;
+         _userService = userService;
          _entityLogicalNames = entityLogicalNames;
          _reportProgress = reportProgress;
          _logger = _serviceProvider.GetRequiredService<ILogger>();
@@ -41,14 +44,9 @@ namespace dvmig.XTB.Shared
          var syncStateService =
             _serviceProvider.GetRequiredService<ISyncStateService>();
 
-         // NOTE: UserService and EntityService are manually instantiated here,
-         // as their constructors require IDataverseProvider instances which
-         // are runtime-dependent.
-         var userService = new UserService(
-            _logger,
-            _sourceProvider,
-            _targetProvider
-         );
+         // NOTE: EntityService is manually instantiated here,
+         // as its constructor requires IDataverseProvider instance which
+         // is runtime-dependent.
          var entityService = new EntityService(
             _logger,
             _targetProvider
@@ -74,7 +72,7 @@ namespace dvmig.XTB.Shared
          var syncEngine = new SyncEngine(
              _sourceProvider,
              _targetProvider,
-             userService,
+             _userService,
              _logger,
              entityService,
              syncStateService

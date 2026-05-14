@@ -8,6 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 using XrmToolBox.Extensibility;
 
 using dvmig.Core.Interfaces;
+using dvmig.Core.Synchronization;
 using dvmig.XTB.Shared;
 
 namespace dvmig.XTB.UI
@@ -95,7 +96,7 @@ namespace dvmig.XTB.UI
 
       private void FilterEntities()
       {
-         var filter = (_txtSearch.Text == "Search entities...")
+         var filter = (_txtSearch.Text == _txtSearchEntities)
             ? string.Empty
             : _txtSearch.Text.ToLowerInvariant();
 
@@ -144,53 +145,51 @@ namespace dvmig.XTB.UI
          _btnSync.Enabled = false;
          _clbEntities.Enabled = false;
          _rtbLogs.Clear();
+         _prgSync.Visible = true;
          _prgSync.Value = 0;
 
          WorkAsync(new WorkAsyncInfo
          {
-             Message = "Preparing synchronization...",
-             Work = (worker, args) =>
-             {
-                 int totalRecords = 0;
-                 foreach(var name in selectedLogicalNames)
-                 {
-                    totalRecords += (int)_sourceProvider.GetRecordCountAsync(name)
-                                          .GetAwaiter()
-                                          .GetResult();
-                 }
-
-                 var progress = new WorkerProgressAdapter(
-                    worker, 
-                    (p, m) => worker.ReportProgress(p, m), 
-                    totalRecords
-                 );
-
-                 var job = new SynchronizationJob(
-                     _serviceProvider!,
-                     _sourceProvider!,
-                     _targetProvider!,
-                     selectedLogicalNames,
-                     progress,
-                     (percent, message) => worker.ReportProgress(percent, message)
-                 );
-                 job.Run();
-             },
-             ProgressChanged = e =>
-             {
-                 _prgSync.Value = e.ProgressPercentage;
-                 SetWorkingMessage(
-                    e.UserState?.ToString() ?? "Synchronizing..."
-                 );
-             },            PostWorkCallBack = (args) =>
+            Message = "Preparing synchronization...",
+            Work = (worker, args) =>
             {
+               if(_userService == null)
+               {
+                  _userService = new UserService(
+                     _serviceProvider!.GetRequiredService<ILogger>(),
+                     _sourceProvider,
+                     _targetProvider
+                  );
+               }
+
+               var job = new SynchronizationJob(
+                  _serviceProvider!,
+                  _sourceProvider!,
+                  _targetProvider!,
+                  _userService,
+                  selectedLogicalNames,
+                  (percent, message) => worker.ReportProgress(percent, message)
+               );
+               job.Run();
+            },
+            ProgressChanged = e =>
+            {
+               _prgSync.Value = e.ProgressPercentage;
+               SetWorkingMessage(
+                  e.UserState?.ToString() ?? "Synchronizing..."
+               );
+            },
+            PostWorkCallBack = (args) =>
+            {
+               _prgSync.Visible = false;
                _clbEntities.Enabled = true;
                UpdateSyncButtonState();
 
                if(args.Error != null)
                {
                   _rtbLogs.AppendText(
-                         $"\n[ERROR] Sync failed: {args.Error.Message}\n"
-                      );
+                     $"\n[ERROR] Sync failed: {args.Error.Message}\n"
+                  );
 
                   MessageBox.Show(
                      $"Sync failed: {args.Error.Message}",
@@ -214,7 +213,6 @@ namespace dvmig.XTB.UI
                }
 
                _rtbLogs.ScrollToCaret();
-               _prgSync.Value = 0;
             }
          });
       }

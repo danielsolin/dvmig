@@ -18,6 +18,7 @@ namespace dvmig.XTB.UI
         private IServiceProvider? _serviceProvider;
         private IDataverseProvider? _sourceProvider;
         private IDataverseProvider? _targetProvider;
+        private IUserService? _userService;
         private List<EntityMetadata> _allEntities = new();
 
         public MainControl()
@@ -37,18 +38,22 @@ namespace dvmig.XTB.UI
 
             if (_sourceProvider == null)
             {
-                _sourceProvider = new XTBDataProvider(
-                    newService,
-                    detail.ConnectionName
-                );
-                LoadEntities();
+               _sourceProvider = new XTBDataProvider(
+                  newService,
+                  detail.ConnectionName
+               );
+
+               _userService = null;
+               LoadEntities();
             }
             else if (_sourceProvider.ConnectionString != detail.ConnectionName)
             {
-                _targetProvider = new XTBDataProvider(
-                    newService,
-                    detail.ConnectionName
-                );
+               _targetProvider = new XTBDataProvider(
+                  newService,
+                  detail.ConnectionName
+               );
+
+               _userService = null;
             }
 
             UpdateSyncButtonState();
