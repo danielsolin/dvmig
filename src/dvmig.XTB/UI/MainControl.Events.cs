@@ -14,6 +14,8 @@ namespace dvmig.XTB.UI
 {
    public partial class MainControl
    {
+      private const string _txtSearchEntities = "Search entities...";
+
       private void OnSelectTargetClick(object? sender, EventArgs e)
       {
          AddAdditionalOrganization();
@@ -21,7 +23,7 @@ namespace dvmig.XTB.UI
 
       private void OnSearchGotFocus(object? sender, EventArgs e)
       {
-         if(_txtSearch.Text == "Search entities...")
+         if(_txtSearch.Text == _txtSearchEntities)
          {
             _txtSearch.Text = "";
             _txtSearch.ForeColor = System.Drawing.Color.Black;
@@ -32,7 +34,7 @@ namespace dvmig.XTB.UI
       {
          if(string.IsNullOrWhiteSpace(_txtSearch.Text))
          {
-            _txtSearch.Text = "Search entities...";
+            _txtSearch.Text = _txtSearchEntities;
             _txtSearch.ForeColor = System.Drawing.Color.Gray;
          }
       }
@@ -142,33 +144,45 @@ namespace dvmig.XTB.UI
          _btnSync.Enabled = false;
          _clbEntities.Enabled = false;
          _rtbLogs.Clear();
-         _prgSync.Visible = true;
          _prgSync.Value = 0;
 
          WorkAsync(new WorkAsyncInfo
          {
-            Message = "Preparing synchronization...",
-            Work = (worker, args) =>
+             Message = "Preparing synchronization...",
+             Work = (worker, args) =>
+             {
+                 int totalRecords = 0;
+                 foreach(var name in selectedLogicalNames)
+                 {
+                    totalRecords += (int)_sourceProvider.GetRecordCountAsync(name)
+                                          .GetAwaiter()
+                                          .GetResult();
+                 }
+
+                 var progress = new WorkerProgressAdapter(
+                    worker, 
+                    (p, m) => worker.ReportProgress(p, m), 
+                    totalRecords
+                 );
+
+                 var job = new SynchronizationJob(
+                     _serviceProvider!,
+                     _sourceProvider!,
+                     _targetProvider!,
+                     selectedLogicalNames,
+                     progress,
+                     (percent, message) => worker.ReportProgress(percent, message)
+                 );
+                 job.Run();
+             },
+             ProgressChanged = e =>
+             {
+                 _prgSync.Value = e.ProgressPercentage;
+                 SetWorkingMessage(
+                    e.UserState?.ToString() ?? "Synchronizing..."
+                 );
+             },            PostWorkCallBack = (args) =>
             {
-               var job = new SynchronizationJob(
-                       _serviceProvider!,
-                       _sourceProvider!,
-                       _targetProvider!,
-                       selectedLogicalNames,
-                       (percent, message) => worker.ReportProgress(percent, message)
-                   );
-               job.Run();
-            },
-            ProgressChanged = e =>
-            {
-               _prgSync.Value = e.ProgressPercentage;
-               SetWorkingMessage(
-                      e.UserState?.ToString() ?? "Synchronizing..."
-                   );
-            },
-            PostWorkCallBack = (args) =>
-            {
-               _prgSync.Visible = false;
                _clbEntities.Enabled = true;
                UpdateSyncButtonState();
 
@@ -177,27 +191,30 @@ namespace dvmig.XTB.UI
                   _rtbLogs.AppendText(
                          $"\n[ERROR] Sync failed: {args.Error.Message}\n"
                       );
+
                   MessageBox.Show(
-                         $"Sync failed: {args.Error.Message}",
-                         "Error",
-                         MessageBoxButtons.OK,
-                         MessageBoxIcon.Error
-                      );
+                     $"Sync failed: {args.Error.Message}",
+                     "Error",
+                     MessageBoxButtons.OK,
+                     MessageBoxIcon.Error
+                  );
                }
                else
                {
                   _rtbLogs.AppendText(
-                         "\n[SUCCESS] Synchronization complete!\n"
-                      );
+                     "\n[SUCCESS] Synchronization complete!\n"
+                  );
+
                   MessageBox.Show(
-                         "Synchronization completed successfully.",
-                         "Success",
-                         MessageBoxButtons.OK,
-                         MessageBoxIcon.Information
-                      );
+                     "Synchronization completed successfully.",
+                     "Success",
+                     MessageBoxButtons.OK,
+                     MessageBoxIcon.Information
+                  );
                }
 
                _rtbLogs.ScrollToCaret();
+               _prgSync.Value = 0;
             }
          });
       }

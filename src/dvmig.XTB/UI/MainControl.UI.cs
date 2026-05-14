@@ -45,7 +45,7 @@ namespace dvmig.XTB.UI
             _prgSync = new ProgressBar
             {
                 Dock = DockStyle.Fill,
-                Visible = false
+                Visible = true
             };
 
             topPanel.Controls.Add(_btnSelectTarget, 1, 0);
