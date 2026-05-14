@@ -1,5 +1,43 @@
 ![recommended sync run](assets/img/sync-recommended-run.png)
 
+## Installation / Building
+
+You can either download a binary release or clone the repo and built it yourself.
+
+* Download:
+   * Get the latest [release](https://github.com/danielsolin/dvmig/releases),
+   * Unzip it, right-click `dvmig.Cli.exe` and select "Properties". Check "Unblock" at
+     the bottom of the "General" tab and click "Ok".
+   * Double-click `dvmig.Cli.exe`.
+
+* Build:
+   ```console
+   # Clone the repository
+   git clone https://github.com/danielsolin/dvmig.git
+   cd dvmig
+
+   # Build the solution
+   dotnet restore
+   dotnet build
+
+   # Run
+   dotnet run --project src/dvmig.Cli
+   ```
+
+## Usage
+
+When running the app for the first time, start by selecting "Configuration"
+on the main menu to set connection strings for Source and Target environments.
+
+Example connection string:
+
+```code
+# Will open a login window in your default browser:
+AuthType=OAuth;Url=https://<your-instance>.crm.dynamics.com;RedirectUri=http://localhost/;LoginPrompt=Auto;
+```
+
+You can also test the connection strings in the app to make sure they work.
+
 ### Main Menu
 
 **Synchronization (🚀)**
@@ -43,46 +81,6 @@
 - `src/dvmig.Core`: .NET Standard 2.0 library containing the migration logic.
 - `src/dvmig.Plugins`: Dataverse plugin for preserving audit fields.
 - `src/dvmig.Tests`: Unit test project using `xUnit`, `Moq`, and `Bogus`.
-
-## Prerequisites
-
-- [.NET 9.0 SDK](https://dotnet.microsoft.com/download/dotnet/9.0)
-- Source and Target Dataverse/Dynamics 365 environments.
-
-## Installation / Building
-
-Clone the repository and build the solution:
-
-```console
-# Clone the repository
-git clone https://github.com/danielsolin/dvmig.git
-cd dvmig
-
-# Build the solution
-dotnet restore
-dotnet build
-```
-
-## Usage
-
-Start the CLI/TUI from the root directory like so:
-
-```console
-dotnet run --project src/dvmig.Cli
-```
-
-When running the app for the first time, start by selecting "Configuration"
-at the main menu to set connection strings for Source and Target environments.
-
-Example connection string:
-
-```code
-# Will open a login window in your default browser:
-AuthType=OAuth;Url=https://<your-instance>.crm.dynamics.com;
-RedirectUri=http://localhost/;LoginPrompt=Auto;
-```
-
-You can also test the connection strings here to make sure they work.
 
 ## Synchronizaion Process
 This diagram visualizes the synchronization process used in dvmig.Core. It
