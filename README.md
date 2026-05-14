@@ -1,5 +1,22 @@
 ![recommended sync run](assets/img/sync-recommended-run.png)
 
+## Highlights
+
+- **Audit Preservation:**
+   * `CreatedOn` and `ModifiedOn` are preserved by an auto-deployed plugin
+     (`dvmig.Plugins.DMPlugin`).
+   * `CreatedBy` and `ModifiedBy` are preserved by auto-mapped impersonation -
+     users are mapped between source and target environments by either full name
+     or email.
+- **Data Integrity:** Preserves essential metadata and relationships - if an
+  referenced record (like Primary Contact) does not exist on Target environment,
+  it will be automatically created.
+- **Synchronization:** Built with `Polly` for resiliance, handling transient
+  errors and automatic retry strategies.
+- **Interactive TUI:** Using `Spectre.Console`.
+- **Logging:** Detailed error/warning/info logging
+  (see C:\Users\<username>\AppData\Roaming\dvmig).
+
 ## Installation / Building
 
 You can either download a binary release or clone the repo and built it yourself.
@@ -59,33 +76,17 @@ You can also test the connection strings in the app to make sure they work.
 **Settings**
    - Define connection strings, max threads for parallelism etc.
 
-## Highlights
-
-- **Data Integrity:** Preserves essential metadata and relationships - if an
-  referenced record (like Primary Contact) does not exist on Target environment,
-  it will be automatically created.
-- **Audit Preservation:** Uses an auto-deployed plugin to ensure presevation
-  of the `CreatedOn` and `ModifiedOn` fields. `CreatedBy` and `ModifiedBy`
-  are preserved by auto-mapped impersonation (users are mapped between source
-  and target environments by either full name or email).
-- **Synchronization:** Built with `Polly` for resiliance, handling transient
-  errors and automatic retry strategies.
-- **Interactive TUI:** Using `Spectre.Console`.
-- **Error Logging:** Detailed error/warning/info logging.
-- **Settings:** Settings and connections strings are stored in a user-specific
-- settings.json for persistence across sessions. Connection strings are encrypted.
-
 ## Architecture
 
 - `src/dvmig.Cli`: .NET 9.0 CLI application built with `Spectre.Console`.
 - `src/dvmig.Core`: .NET Standard 2.0 library containing the migration logic.
 - `src/dvmig.Plugins`: Dataverse plugin for preserving audit fields.
 - `src/dvmig.Tests`: Unit test project using `xUnit`, `Moq`, and `Bogus`.
+- `src/dvmig.XTB`: XrmToolBox-version not ready for use yet.
 
-## Synchronizaion Process
-This diagram visualizes the synchronization process used in dvmig.Core. It
-handles preservation of audit fields, resolves dependencies, and excutes in
-parallell (using SemaphoreSlim to comply with .NET Standard 2.0).
+The diagram below visualizes the synchronization process used in dvmig.Core.
+It handles preservation of audit fields, resolves dependencies, and excutes
+in parallell (using SemaphoreSlim to comply with .NET Standard 2.0).
 
 ```mermaid
 flowchart TD
