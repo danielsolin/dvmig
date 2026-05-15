@@ -157,6 +157,7 @@ namespace dvmig.Cli
       public static MenuItem PromptMainMenu(
          SyncActions syncActions,
          MaintenanceActions maintenanceActions,
+         DataManagementActions dataManagementActions,
          SettingsActions settingsActions,
          Action onExit
       )
@@ -219,17 +220,17 @@ namespace dvmig.Cli
                   new(
                      $"{"Generate Sample Data".t()} " +
                      $"{SystemConstants.UiMarkup.Grey}({"Source".t()})[/]",
-                     maintenanceActions.HandleSeedingAsync
+                     dataManagementActions.HandleSeedingAsync
                   ),
                   new(
                      $"{"Wipe Data on Source".t()} " +
                      $"{SystemConstants.UiMarkup.Grey}({"Caution!".t()})[/]",
-                     maintenanceActions.HandleSourceDataCleanupAsync
+                     dataManagementActions.HandleSourceDataCleanupAsync
                   ),
                   new(
                      $"{"Wipe Data on Target".t()} " +
                      $"{SystemConstants.UiMarkup.Grey}({"Caution!".t()})[/]",
-                     maintenanceActions.HandleTargetDataCleanupAsync
+                     dataManagementActions.HandleTargetDataCleanupAsync
                   )
                }
             ),
