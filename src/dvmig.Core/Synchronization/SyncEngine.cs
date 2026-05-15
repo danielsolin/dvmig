@@ -880,6 +880,21 @@ namespace dvmig.Core.Synchronization
             return false;
          }
 
+         if (!options.AutoCreateRelatedRecords)
+         {
+            if (options.StripMissingDependencies)
+               return await StripSpecificAttributeAsync(
+                  type,
+                  id,
+                  parent,
+                  sourceParent,
+                  options,
+                  ct
+               );
+
+            return false;
+         }
+
          tried.Add(depKey);
 
          _logger.Information("Resolving missing dependency: {0}", depKey);

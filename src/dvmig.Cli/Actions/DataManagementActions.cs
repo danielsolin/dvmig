@@ -158,71 +158,85 @@ namespace dvmig.Cli.Actions
             return;
          }
 
-         long remainingRecords = -1;
-         long initialRecords = -1;
-         var startTime = DateTime.Now;
+         try
+         {
+            long remainingRecords = -1;
+            long initialRecords = -1;
+            var startTime = DateTime.Now;
 
-         var progress = new Progress<long>(
-            count =>
-            {
-               remainingRecords = count;
-               if (initialRecords == -1)
-                  initialRecords = count;
-            }
-         );
-
-         await AnsiConsole.Status()
-            .StartAsync(
-               "Initializing wipe...",
-               async ctx =>
+            var progress = new Progress<long>(
+               count =>
                {
-                  var cleanupTask = _wipeDataService.WipeEntitiesAsync(
-                     provider,
-                     selectedEntities,
-                     progress,
-                     ct
-                  );
-
-                  while (!cleanupTask.IsCompleted)
-                  {
-                     if (remainingRecords >= 0)
-                     {
-                        var elapsed = DateTime.Now - startTime;
-                        var deleted = initialRecords - remainingRecords;
-                        var etaStr = string.Empty;
-
-                        if (deleted > 0 && elapsed.TotalSeconds > 5)
-                        {
-                           var recordsPerSec =
-                              deleted / elapsed.TotalSeconds;
-
-                           if (recordsPerSec > 0)
-                           {
-                              var remainingSeconds =
-                                 remainingRecords / recordsPerSec;
-                              var remainingTime =
-                                 TimeSpan.FromSeconds(remainingSeconds);
-
-                              etaStr =
-                                 $" [grey]{remainingTime:hh\\:mm\\:ss}[/]";
-                           }
-                        }
-
-                        ctx.Status(
-                           $"[yellow]Wiping data...[/] " +
-                           $"{remainingRecords} records remaining..." +
-                           etaStr
-                        );
-                     }
-
-                     await Task.Delay(1000, ct);
-                  }
-
-                  await cleanupTask;
+                  remainingRecords = count;
+                  if (initialRecords == -1)
+                     initialRecords = count;
                }
             );
 
-         CliUI.WriteSuccess($"Data Wipe Finished for {envName}!");
+            await AnsiConsole.Status()
+               .StartAsync(
+                  "Initializing wipe...",
+                  async ctx =>
+                  {
+                     var cleanupTask = _wipeDataService.WipeEntitiesAsync(
+                        provider,
+                        selectedEntities,
+                        progress,
+                        ct
+                     );
+
+                     while (!cleanupTask.IsCompleted)
+                     {
+                        if (remainingRecords >= 0)
+                        {
+                           var elapsed = DateTime.Now - startTime;
+                           var deleted = initialRecords - remainingRecords;
+                           var etaStr = string.Empty;
+
+                           if (deleted > 0 && elapsed.TotalSeconds > 5)
+                           {
+                              var recordsPerSec =
+                                 deleted / elapsed.TotalSeconds;
+
+                              if (recordsPerSec > 0)
+                              {
+                                 var remainingSeconds =
+                                    remainingRecords / recordsPerSec;
+                                 var remainingTime =
+                                    TimeSpan.FromSeconds(remainingSeconds);
+
+                                 etaStr =
+                                    $" [grey]{remainingTime:hh\\:mm\\:ss}[/]";
+                              }
+                           }
+
+                           ctx.Status(
+                              $"[yellow]Wiping data...[/] " +
+                              $"{remainingRecords} records remaining..." +
+                              etaStr
+                           );
+                        }
+
+                        await Task.Delay(1000, ct);
+                     }
+
+                     await cleanupTask;
+                  }
+               );
+
+            CliUI.WriteSuccess($"Data Wipe Finished for {envName}!");
+         }
+         catch (OperationCanceledException)
+         {
+            throw;
+         }
+         catch (Exception ex)
+         {
+            var baseEx = ex.GetBaseException();
+
+            CliUI.WriteError($"Data wipe failed: {baseEx.Message}");
+         }
+
          CliUI.Pause();
       }
    }
