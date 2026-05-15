@@ -3,6 +3,16 @@ using Microsoft.Xrm.Sdk;
 namespace dvmig.Core.Interfaces
 {
    /// <summary>
+   /// Represents the status of a user mapping.
+   /// </summary>
+   public enum UserMappingStatus
+   {
+      Mapped,
+      Unmapped,
+      Manual
+   }
+
+   /// <summary>
    /// Represents a summary of a user mapping from source to target.
    /// </summary>
    public record UserMappingSummary(
@@ -10,7 +20,7 @@ namespace dvmig.Core.Interfaces
       Guid SourceId,
       string TargetName,
       Guid TargetId,
-      string Status,
+      UserMappingStatus Status,
       bool IsHuman = false
    );
 

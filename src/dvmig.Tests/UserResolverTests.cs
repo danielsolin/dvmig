@@ -263,7 +263,7 @@ namespace dvmig.Tests
          Assert.Single(summaries);
          Assert.Equal("Source User", summaries[0].SourceName);
          Assert.Equal("Target User", summaries[0].TargetName);
-         Assert.Equal("Mapped", summaries[0].Status);
+         Assert.Equal(UserMappingStatus.Mapped, summaries[0].Status);
          Assert.True(summaries[0].IsHuman);
       }
 
@@ -343,7 +343,7 @@ namespace dvmig.Tests
          var summaries = await _resolver.GetMappingSummaryAsync();
          Assert.Single(summaries);
          Assert.Equal("Lonely User", summaries[0].SourceName);
-         Assert.Equal("Unmapped", summaries[0].Status);
+         Assert.Equal(UserMappingStatus.Unmapped, summaries[0].Status);
          Assert.Equal(Guid.Empty, summaries[0].TargetId);
       }
    }

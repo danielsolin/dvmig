@@ -56,7 +56,7 @@ namespace dvmig.Core.Synchronization
             sourceUserId,
             targetUserId.ToString(),
             targetUserId,
-            "Manual"
+            UserMappingStatus.Manual
          );
       }
 
@@ -286,7 +286,7 @@ namespace dvmig.Core.Synchronization
                   sourceUserId,
                   mapped.Value.FullName,
                   mapped.Value.UserRef.Id,
-                  "Mapped",
+                  UserMappingStatus.Mapped,
                   isHuman
                );
 
@@ -325,7 +325,7 @@ namespace dvmig.Core.Synchronization
                   sourceUserId,
                   mapped.Value.FullName,
                   mapped.Value.UserRef.Id,
-                  "Mapped",
+                  UserMappingStatus.Mapped,
                   isHuman
                );
 
@@ -347,7 +347,7 @@ namespace dvmig.Core.Synchronization
             sourceUserId,
             "Caller (Default)",
             Guid.Empty,
-            "Unmapped",
+            UserMappingStatus.Unmapped,
             isHuman
          );
 
