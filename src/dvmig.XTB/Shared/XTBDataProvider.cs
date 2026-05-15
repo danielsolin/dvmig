@@ -22,32 +22,45 @@ namespace dvmig.XTB.Shared
       /// <inheritdoc />
       public string ConnectionString { get; }
 
+      /// <inheritdoc />
+      public bool IsLegacy { get; }
+
       /// <summary>
       /// Initializes a new instance of the 
       /// <see cref="XTBDataProvider"/> class.
       /// </summary>
       /// <param name="service">The organization service.</param>
       /// <param name="connectionName">A  name for the connection.</param>
+      /// <param name="isLegacy">
+      /// Whether the environment is legacy (OnPrem).
+      /// </param>
       public XTBDataProvider(
          IOrganizationService service, 
-         string connectionName
+         string connectionName,
+         bool isLegacy = false
       )
       {
          _service = service;
          ConnectionString = connectionName;
+         IsLegacy = isLegacy;
       }
 
-      private T ExecuteWithCallerId<T>(Guid? callerId, Func<IOrganizationService, T> action)
+      private T ExecuteWithCallerId<T>(
+         Guid? callerId, 
+         Func<IOrganizationService, T> action
+      )
       {
          if (!callerId.HasValue || callerId.Value == Guid.Empty)
          {
             return action(_service);
          }
 
-         if (_service is ICloneable cloneable && cloneable.Clone() is IOrganizationService clonedService)
+         if (_service is ICloneable cloneable && 
+             cloneable.Clone() is IOrganizationService clonedService)
          {
             var callerIdProp = clonedService.GetType().GetProperty("CallerId");
-            if (callerIdProp != null && callerIdProp.PropertyType == typeof(Guid))
+            if (callerIdProp != null && 
+                callerIdProp.PropertyType == typeof(Guid))
             {
                callerIdProp.SetValue(clonedService, callerId.Value);
             }
@@ -68,7 +81,8 @@ namespace dvmig.XTB.Shared
          lock (_service)
          {
             var callerIdProp = _service.GetType().GetProperty("CallerId");
-            if (callerIdProp != null && callerIdProp.PropertyType == typeof(Guid))
+            if (callerIdProp != null && 
+                callerIdProp.PropertyType == typeof(Guid))
             {
                var originalCallerId = (Guid)callerIdProp.GetValue(_service);
                callerIdProp.SetValue(_service, callerId.Value);
@@ -87,7 +101,10 @@ namespace dvmig.XTB.Shared
          }
       }
 
-      private void ExecuteWithCallerId(Guid? callerId, Action<IOrganizationService> action)
+      private void ExecuteWithCallerId(
+         Guid? callerId, 
+         Action<IOrganizationService> action
+      )
       {
          ExecuteWithCallerId<object?>(callerId, svc =>
          {

@@ -93,7 +93,9 @@ namespace dvmig.Core.Settings
             {
                Language = settings.Language,
                MaxParallelism = settings.MaxParallelism,
-               AutoCreateRelatedRecords = settings.AutoCreateRelatedRecords
+               AutoCreateRelatedRecords = settings.AutoCreateRelatedRecords,
+               SourceIsLegacy = settings.SourceIsLegacy,
+               TargetIsLegacy = settings.TargetIsLegacy
             };
 
             settingsCopy.SourceConnectionString =

@@ -17,15 +17,16 @@ namespace dvmig.Cli.Actions
    )
    {
       private readonly ISettingsService _settingsService = settingsService;
-      private readonly ConnectionManager _connectionManager = connectionManager;
+      private readonly ConnectionManager _connectionManager =
+         connectionManager;
 
       private enum SettingChoice
       {
          SourceConn,
          TargetConn,
-         MaxThreads,
          AutoCreate,
          Language,
+         MaxThreads,
          Back
       }
 
@@ -49,7 +50,7 @@ namespace dvmig.Cli.Actions
       {
          var back = false;
 
-         while (!back)
+         while(!back)
          {
             CliUI.WriteHeader();
 
@@ -72,18 +73,23 @@ namespace dvmig.Cli.Actions
                      $"{"Max Threads".t()}: {settings.MaxParallelism}",
                   SettingChoice.AutoCreate =>
                      $"{"Auto-create related records".t()}: " +
-                     $"{(settings.AutoCreateRelatedRecords ? "Yes".t() : "No".t())}",
+                     $"{(settings.AutoCreateRelatedRecords
+                        ? "Yes".t()
+                        : "No".t())}",
                   SettingChoice.Language =>
                      $"{"Language".t()}: " +
                      $"{GetCurrentLanguageName(settings.Language)}",
                   SettingChoice.Back => "Back".t(),
                   _ => throw new ArgumentOutOfRangeException()
                })
-               .AddChoices(Enum.GetValues<SettingChoice>());
+               .AddChoices(
+                  Enum.GetValues<SettingChoice>()
+                     .Where(c => c != SettingChoice.Language)
+               );
 
             var choice = AnsiConsole.Prompt(prompt);
 
-            switch (choice)
+            switch(choice)
             {
                case SettingChoice.Back:
                   back = true;
@@ -131,7 +137,7 @@ namespace dvmig.Cli.Actions
 
          var choice = AnsiConsole.Prompt(prompt);
 
-         if (settings.AutoCreateRelatedRecords != choice)
+         if(settings.AutoCreateRelatedRecords != choice)
          {
             settings.AutoCreateRelatedRecords = choice;
             _settingsService.SaveSettings(settings);
@@ -160,7 +166,7 @@ namespace dvmig.Cli.Actions
          var choice = AnsiConsole.Prompt(prompt);
          var newLanguage = choice == LanguageChoice.Swedish ? "sv" : "en";
 
-         if (settings.Language != newLanguage)
+         if(settings.Language != newLanguage)
          {
             settings.Language = newLanguage;
             _settingsService.SaveSettings(settings);
@@ -183,10 +189,13 @@ namespace dvmig.Cli.Actions
                   $"Select {SystemConstants.UiMarkup.Green}Max Parallelism[/]"
                   + $" ({"Threads".t()}):"
                )
+               .UseConverter(i => i == 10 
+                  ? $"{i} ({"Recommended".t()})" 
+                  : i.ToString())
                .AddChoices(SystemConstants.SyncSettings.ParallelismOptions)
          );
 
-         if (settings.MaxParallelism != maxThreads)
+         if(settings.MaxParallelism != maxThreads)
          {
             settings.MaxParallelism = maxThreads;
             _settingsService.SaveSettings(settings);
@@ -215,7 +224,7 @@ namespace dvmig.Cli.Actions
 
          var back = false;
 
-         while (!back)
+         while(!back)
          {
             CliUI.WriteHeader();
 
@@ -239,7 +248,7 @@ namespace dvmig.Cli.Actions
 
             var choice = AnsiConsole.Prompt(prompt);
 
-            switch (choice)
+            switch(choice)
             {
                case ConnectionSettingChoice.Back:
                   back = true;
@@ -251,9 +260,10 @@ namespace dvmig.Cli.Actions
                         .HideDefaultValue()
                   );
 
-                  if (!string.IsNullOrWhiteSpace(newConn) && newConn != current)
+                  if(!string.IsNullOrWhiteSpace(newConn) &&
+                      newConn != current)
                   {
-                     if (direction ==
+                     if(direction ==
                         SystemConstants.ConnectionDirection.Source)
                         settings.SourceConnectionString = newConn;
                      else
@@ -277,31 +287,26 @@ namespace dvmig.Cli.Actions
          }
       }
 
-      private async Task HandleTestConnectionAsync(
+      private async Task<IDataverseProvider?> HandleTestConnectionAsync(
          string connStr,
          SystemConstants.ConnectionDirection direction
       )
       {
-         if (string.IsNullOrWhiteSpace(connStr))
+         if(string.IsNullOrWhiteSpace(connStr))
          {
             CliUI.WriteError("Connection string is empty.".t());
             await Task.Delay(1000);
 
-            return;
+            return null;
          }
 
-         if (_connectionManager == null)
+         if(_connectionManager == null)
          {
             CliUI.WriteError("CRITICAL: _connectionManager is null!");
             CliUI.Pause();
 
-            return;
+            return null;
          }
-
-         var isLegacy = AnsiConsole.Confirm(
-            "Is this a Legacy CRM (OnPrem) environment?".t(),
-            false
-         );
 
          IDataverseProvider? provider = null;
          Exception? caughtException = null;
@@ -312,13 +317,9 @@ namespace dvmig.Cli.Actions
             {
                try
                {
-                  provider = isLegacy
-                     ? new LegacyCrmProvider(connStr)
-                     : new DataverseProvider(connStr);
-
-                  await provider.ExecuteAsync(new WhoAmIRequest(), default);
+                  provider = await ProviderFactory.CreateAsync(connStr);
                }
-               catch (Exception ex)
+               catch(Exception ex)
                {
                   caughtException = ex;
                   provider = null;
@@ -326,7 +327,7 @@ namespace dvmig.Cli.Actions
             }
          );
 
-         if (caughtException != null)
+         if(caughtException != null)
          {
             AnsiConsole.WriteLine();
             CliUI.WriteError(
@@ -337,24 +338,38 @@ namespace dvmig.Cli.Actions
 
             CliUI.Pause();
 
-            return;
+            return null;
          }
 
-         if (provider != null)
+         if(provider != null)
          {
             try
             {
                _connectionManager.AddActiveConnection(direction, provider);
 
+               // Update settings with the detected legacy status
+               var settings = _settingsService.LoadSettings();
+
+               if(direction == SystemConstants.ConnectionDirection.Source)
+                  settings.SourceIsLegacy = provider.IsLegacy;
+               else
+                  settings.TargetIsLegacy = provider.IsLegacy;
+
+               _settingsService.SaveSettings(settings);
+
                CliUI.WriteSuccess("Connection successful!".t());
-               await Task.Delay(1500);
+               CliUI.Pause();
+
+               return provider;
             }
-            catch (Exception ex)
+            catch(Exception ex)
             {
                CliUI.WriteError(
                   $"Failed to register connection: {ex.Message}"
                );
                CliUI.Pause();
+
+               return null;
             }
          }
          else
@@ -363,6 +378,8 @@ namespace dvmig.Cli.Actions
                "Unknown error: Provider is null but no exception was caught."
             );
             CliUI.Pause();
+
+            return null;
          }
       }
    }

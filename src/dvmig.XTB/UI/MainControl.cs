@@ -37,7 +37,8 @@ namespace dvmig.XTB.UI
               System.Net.SecurityProtocolType.Tls12;
 
            InitializeUI(); // UI elements must be initialized first
-            _serviceProvider = DIConfigurator.CreateServiceProvider(this, _rtbLogs);
+            _serviceProvider = 
+               DIConfigurator.CreateServiceProvider(this, _rtbLogs);
 
             _rtbLogs.AppendText("Welcome to dvmig for XrmToolBox.\n");
             _rtbLogs.AppendText("Please connect both a SOURCE and a TARGET " +
@@ -55,7 +56,12 @@ namespace dvmig.XTB.UI
         {
             if (string.IsNullOrEmpty(actionName))
             {
-               base.UpdateConnection(newService, detail, actionName, parameter);
+               base.UpdateConnection(
+                  newService, 
+                  detail, 
+                  actionName, 
+                  parameter
+               );
             }
 
             ResetSyncProgress();
@@ -64,29 +70,35 @@ namespace dvmig.XTB.UI
             {
                _targetProvider = new XTBDataProvider(
                   newService,
-                  detail.ConnectionName
+                  detail.ConnectionName,
+                  !detail.UseOnline
                );
 
                _lblTarget.Text = $"Target: {detail.OrganizationFriendlyName}";
                _lblTarget.ForeColor = Color.DarkGreen;
                _userService = null;
 
-               _rtbLogs.AppendText($"Environment '{detail.OrganizationFriendlyName}' " +
-                                   "assigned as TARGET.\n");
+               _rtbLogs.AppendText(
+                  $"Environment '{detail.OrganizationFriendlyName}' " +
+                  "assigned as TARGET.\n"
+               );
             }
             else
             {
                _sourceProvider = new XTBDataProvider(
                   newService,
-                  detail.ConnectionName
+                  detail.ConnectionName,
+                  !detail.UseOnline
                );
 
                _lblSource.Text = $"Source: {detail.OrganizationFriendlyName}";
                _lblSource.ForeColor = Color.DarkGreen;
                _userService = null;
 
-               _rtbLogs.AppendText($"Environment '{detail.OrganizationFriendlyName}' " +
-                                   "assigned as SOURCE.\n");
+               _rtbLogs.AppendText(
+                  $"Environment '{detail.OrganizationFriendlyName}' " +
+                  "assigned as SOURCE.\n"
+               );
 
                LoadEntities();
             }

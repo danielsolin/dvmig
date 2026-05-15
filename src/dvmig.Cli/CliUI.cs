@@ -1,4 +1,5 @@
 using System.Reflection;
+using Microsoft.Xrm.Sdk.Metadata;
 using dvmig.Cli.Actions;
 using dvmig.Core.Interfaces;
 using dvmig.Core.Shared;
@@ -6,6 +7,8 @@ using Spectre.Console;
 
 namespace dvmig.Cli
 {
+   using EntityMetadata = Microsoft.Xrm.Sdk.Metadata.EntityMetadata;
+
    /// <summary>
    /// Encapsulates repetitive Spectre.Console UI patterns for the CLI.
    /// </summary>
@@ -349,7 +352,8 @@ namespace dvmig.Cli
          if (entities == null || entities.Count == 0)
             return null;
 
-         var prompt = new MultiSelectionPrompt<Microsoft.Xrm.Sdk.Metadata.EntityMetadata>()
+         var prompt = 
+            new MultiSelectionPrompt<EntityMetadata>()
             .Title(
                $"Select {SystemConstants.UiMarkup.Green}Entities[/] " +
                "to migrate:"

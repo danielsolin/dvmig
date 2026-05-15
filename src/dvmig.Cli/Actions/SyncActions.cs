@@ -255,7 +255,8 @@ namespace dvmig.Cli.Actions
                         {
                            AnsiConsole.MarkupLine(
                               $"{UiMarkup.Grey}" +
-                              $"{"No records found for {0}.".t(logicalName)}[/]"
+                              $"{"No records found for {0}.".t(
+                                 logicalName)}[/]"
                            );
 
                            continue;
@@ -287,7 +288,8 @@ namespace dvmig.Cli.Actions
                         {
                            StripMissingDependencies = true,
                            AutoCreateRelatedRecords =
-                              SettingsService.LoadSettings().AutoCreateRelatedRecords,
+                              SettingsService.LoadSettings()
+                                 .AutoCreateRelatedRecords,
                            MaxDegreeOfParallelism = maxThreads,
                            ForceResync = forceResync,
                            PreserveAuditData = true
