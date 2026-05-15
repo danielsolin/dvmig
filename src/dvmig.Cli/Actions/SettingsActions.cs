@@ -189,6 +189,9 @@ namespace dvmig.Cli.Actions
                   $"Select {SystemConstants.UiMarkup.Green}Max Parallelism[/]"
                   + $" ({"Threads".t()}):"
                )
+               .UseConverter(i => i == 10 
+                  ? $"{i} ({"Recommended".t()})" 
+                  : i.ToString())
                .AddChoices(SystemConstants.SyncSettings.ParallelismOptions)
          );
 
