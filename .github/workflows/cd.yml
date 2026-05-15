@@ -14,6 +14,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v5
@@ -33,7 +35,7 @@ jobs:
 
           # Package Windows
           cd publish/win-x64
-          zip -r ../../dvmig-win-x64.zip .
+          zip -r ../../dvmig-${{ github.ref_name }}-win-x64.zip .
           cd ../..
 
       - name: Create Release
@@ -41,4 +43,4 @@ jobs:
         with:
           draft: false
           files: |
-            dvmig-win-x64.zip
+            dvmig-${{ github.ref_name }}-win-x64.zip
