@@ -51,6 +51,7 @@ namespace dvmig.Cli.Actions
          );
 
          CliUI.WriteSuccess("Seeding Finished!");
+         CliUI.Pause();
       }
 
       private enum WipeTargetChoice
