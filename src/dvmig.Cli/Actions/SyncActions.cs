@@ -116,8 +116,6 @@ namespace dvmig.Cli.Actions
          var humanMappings = mappings.Where(m => m.IsHuman).ToList();
          var systemCount = mappings.Count - humanMappings.Count;
 
-         var title = forceResync ? "Re-sync".t() : "Sync".t();
-
          var entityTable = new Table()
             .Border(TableBorder.Minimal)
             .AddColumn(
@@ -170,6 +168,9 @@ namespace dvmig.Cli.Actions
                .Header($"[bold]{"User Mappings".t()}[/]").Expand()
          );
 
+         var title = forceResync ? "Re-sync".t() : "Sync".t();
+         title = UiMarkup.Red + title + "[/]";
+
          AnsiConsole.Write(
             new Panel(columns)
                .Header($"[bold cyan] {title} {"Plan".t()} [/]")
@@ -214,7 +215,7 @@ namespace dvmig.Cli.Actions
                .Columns(
                   new ProgressColumn[]
                   {
-                     new TaskDescriptionColumn(),
+                     new TaskDescriptionColumn { Alignment = Justify.Left },
                      new ProgressBarColumn(),
                      new PercentageColumn(),
                      new RemainingTimeColumn(),
@@ -228,9 +229,6 @@ namespace dvmig.Cli.Actions
                      {
                         var logicalName = rawLogicalName.ToLowerInvariant();
 
-                        var actionTitle = forceResync
-                           ? "Re-syncing".t()
-                           : "Migrating".t();
                         var displayName = char.ToUpper(logicalName[0]) +
                            logicalName.Substring(1);
 
@@ -274,6 +272,11 @@ namespace dvmig.Cli.Actions
                         );
 
                         task.Value = initialProcessed;
+
+                        //var actionTitle = forceResync
+                        //   ? "Re-syncing".t()
+                        //   : "Migrating".t();
+                        var actionTitle = "";
 
                         var progressProvider = new MigrationProgressProvider(
                            task,
