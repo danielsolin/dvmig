@@ -67,5 +67,47 @@ namespace dvmig.Tests
             Times.Once
          );
       }
+
+      [Fact]
+      public async Task WipeEntitiesAsync_ReportsStatus()
+      {
+         var entityName = "account";
+         var entities = new List<string> { entityName };
+         var statusMock = new Mock<IProgress<string>>();
+         var metadata = new EntityMetadata();
+
+         _providerMock.Setup(
+            p => p.ExecuteAsync(
+               It.IsAny<RetrieveEntityRequest>(),
+               It.IsAny<CancellationToken>(),
+               It.IsAny<Guid?>()
+            )
+         ).ReturnsAsync(new RetrieveEntityResponse
+         {
+            Results = { ["EntityMetadata"] = metadata }
+         });
+
+         _providerMock.Setup(
+            p => p.RetrieveMultipleAsync(
+               It.IsAny<QueryBase>(),
+               It.IsAny<CancellationToken>()
+            )
+         ).ReturnsAsync(new EntityCollection());
+
+         await _service.WipeEntitiesAsync(
+            _providerMock.Object,
+            entities,
+            status: statusMock.Object
+         );
+
+         statusMock.Verify(
+            s => s.Report(It.Is<string>(st => st.Contains("Disassociating"))),
+            Times.AtLeastOnce
+         );
+         statusMock.Verify(
+            s => s.Report(It.Is<string>(st => st.Contains("Cleaning"))),
+            Times.AtLeastOnce
+         );
+      }
    }
 }

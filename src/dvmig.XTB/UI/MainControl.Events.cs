@@ -18,6 +18,8 @@ namespace dvmig.XTB.UI
 {
    public partial class MainControl
    {
+      private const string _searchPlaceholderText = "Search entities...";
+
       private void OnSelectSourceClick(object? sender, EventArgs e)
       {
          RaiseRequestConnectionEvent(new RequestConnectionEventArgs
@@ -38,7 +40,7 @@ namespace dvmig.XTB.UI
 
       private void OnSearchGotFocus(object? sender, EventArgs e)
       {
-         if(_txtSearch.Text == "Search entities...")
+         if(_txtSearch.Text == _searchPlaceholderText)
          {
             _txtSearch.Text = "";
             _txtSearch.ForeColor = System.Drawing.Color.Black;
@@ -49,7 +51,7 @@ namespace dvmig.XTB.UI
       {
          if(string.IsNullOrWhiteSpace(_txtSearch.Text))
          {
-            _txtSearch.Text = "Search entities...";
+            _txtSearch.Text = _searchPlaceholderText;
             _txtSearch.ForeColor = System.Drawing.Color.Gray;
          }
       }
@@ -191,7 +193,7 @@ namespace dvmig.XTB.UI
 
       private void FilterEntities()
       {
-         var filter = (_txtSearch.Text == "Search entities...")
+         var filter = (_txtSearch.Text == _searchPlaceholderText)
             ? string.Empty
             : _txtSearch.Text.ToLowerInvariant();
 

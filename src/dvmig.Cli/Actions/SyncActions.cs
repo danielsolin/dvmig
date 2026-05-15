@@ -152,14 +152,14 @@ namespace dvmig.Cli.Actions
          else
             foreach (var mapping in humanMappings)
             {
-               var statusColor = mapping.Status == "Mapped"
+               var statusColor = mapping.Status == UserMappingStatus.Mapped
                   ? "green"
                   : "yellow";
 
                userTable.AddRow(
                   mapping.SourceName,
                   mapping.TargetName,
-                  $"[{statusColor}]{mapping.Status.t()}[/]"
+                  $"[{statusColor}]{mapping.Status.ToString().t()}[/]"
                );
             }
 

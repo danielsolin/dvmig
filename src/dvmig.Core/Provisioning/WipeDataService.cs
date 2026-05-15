@@ -31,6 +31,7 @@ namespace dvmig.Core.Provisioning
          IDataverseProvider provider,
          List<string>? entities = null,
          IProgress<long>? progress = null,
+         IProgress<string>? status = null,
          CancellationToken ct = default
       )
       {
@@ -38,11 +39,16 @@ namespace dvmig.Core.Provisioning
             SystemConstants.SyncSettings.RecommendedEntities.ToList();
 
          _logger.Information("Pass 1/2: Disassociating records...");
+         status?.Report("Pass 1/2: Disassociating records...".t());
 
          foreach (var logicalName in targetEntities)
+         {
+            status?.Report($"Disassociating {logicalName}...".t());
             await DisassociateEntityRecordsAsync(provider, logicalName, ct);
+         }
 
          _logger.Information("Pass 2/2: Deleting records...");
+         status?.Report("Pass 2/2: Deleting records...".t());
 
          // Reverse to handle potential simple dependencies 
          // (e.g., delete contacts before accounts if needed)
@@ -51,6 +57,8 @@ namespace dvmig.Core.Provisioning
          long totalDeleted = 0;
          long initialTotal = 0;
 
+         status?.Report("Calculating total record count...".t());
+
          foreach (var entity in targetEntities)
             initialTotal += await provider.GetRecordCountAsync(entity, ct);
 
@@ -58,6 +66,8 @@ namespace dvmig.Core.Provisioning
 
          foreach (var logicalName in targetEntities)
          {
+            status?.Report($"Cleaning {logicalName}...".t());
+
             totalDeleted += await WipeEntityRecordsAsync(
                provider,
                logicalName,
@@ -69,6 +79,7 @@ namespace dvmig.Core.Provisioning
          }
 
          _logger.Information("Cleanup complete.");
+         status?.Report("Cleanup complete.".t());
       }
 
       private async Task DisassociateEntityRecordsAsync(
