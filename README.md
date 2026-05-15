@@ -15,7 +15,7 @@
   errors and automatic retry strategies.
 - **Interactive TUI:** Using `Spectre.Console`.
 - **Logging:** Detailed error/warning/info logging
-  (see C:\Users\<username>\AppData\Roaming\dvmig).
+  (see C:\Users\USERNAME\AppData\Roaming\dvmig).
 
 ## Installation / Building
 
