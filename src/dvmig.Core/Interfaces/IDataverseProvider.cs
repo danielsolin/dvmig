@@ -16,6 +16,11 @@ namespace dvmig.Core.Interfaces
       string ConnectionString { get; }
 
       /// <summary>
+      /// Gets a value indicating whether this is a legacy (OnPrem) environment.
+      /// </summary>
+      bool IsLegacy { get; }
+
+      /// <summary>
       /// Retrieves a single entity record by ID.
       /// </summary>
       /// <param name="entityLogicalName">

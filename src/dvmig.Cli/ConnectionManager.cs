@@ -50,12 +50,14 @@ namespace dvmig.Cli
             ? settings.SourceConnectionString
             : settings.TargetConnectionString;
 
+         var storedIsLegacy = direction == ConnectionDirection.Source
+            ? settings.SourceIsLegacy
+            : settings.TargetIsLegacy;
+
          var connStr = storedConn;
-         var isLegacy = false;
 
          if (!string.IsNullOrEmpty(storedConn))
          {
-            var preview = StringMasker.MaskConnectionString(storedConn);
             var useStored = AnsiConsole.Confirm(
                $"Use {UiMarkup.Green}stored[/] {label} connection?",
                true
@@ -67,12 +69,6 @@ namespace dvmig.Cli
                   $"Enter {UiMarkup.BoldBlue}{label}[/] " +
                   "Connection String:"
                );
-
-               isLegacy = AnsiConsole.Confirm(
-                  $"Is {UiMarkup.BoldBlue}{label}[/] Legacy CRM " +
-                  "(OnPrem)?",
-                  false
-               );
             }
          }
          else
@@ -80,12 +76,6 @@ namespace dvmig.Cli
             connStr = AnsiConsole.Ask<string>(
                $"Enter {UiMarkup.BoldBlue}{label}[/] " +
                "Connection String:"
-            );
-
-            isLegacy = AnsiConsole.Confirm(
-               $"Is {UiMarkup.BoldBlue}{label}[/] Legacy CRM " +
-               "(OnPrem)?",
-               false
             );
          }
 
@@ -95,13 +85,14 @@ namespace dvmig.Cli
             {
                try
                {
-                  IDataverseProvider p = isLegacy
-                     ? new LegacyCrmProvider(connStr)
-                     : new DataverseProvider(connStr);
-
-                  await p.ExecuteAsync(new WhoAmIRequest(), default);
-
-                  return p;
+                  // If it's the stored connection, we already know if it's 
+                  // legacy. Otherwise, we auto-detect.
+                  return connStr == storedConn
+                     ? await ProviderFactory.CreateAsync(
+                        connStr,
+                        storedIsLegacy
+                     )
+                     : await ProviderFactory.CreateAsync(connStr);
                }
                catch (Exception ex)
                {
@@ -129,16 +120,22 @@ namespace dvmig.Cli
                $"{UiMarkup.Grey}{displayInfo}[/]"
             );
 
-            if (connStr != storedConn)
+            if (connStr != storedConn || provider.IsLegacy != storedIsLegacy)
                if (AnsiConsole.Confirm(
                   $"Save this {label} connection string?",
                   true
                ))
                {
                   if (direction == ConnectionDirection.Source)
+                  {
                      settings.SourceConnectionString = connStr;
+                     settings.SourceIsLegacy = provider.IsLegacy;
+                  }
                   else
+                  {
                      settings.TargetConnectionString = connStr;
+                     settings.TargetIsLegacy = provider.IsLegacy;
+                  }
 
                   _settingsService.SaveSettings(settings);
                }

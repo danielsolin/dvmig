@@ -22,6 +22,9 @@ namespace dvmig.Core.Providers
       /// <inheritdoc />
       public string ConnectionString { get; }
 
+      /// <inheritdoc />
+      public bool IsLegacy => false;
+
       /// <summary>
       /// Initializes a new instance of the 
       /// <see cref="DataverseProvider"/> class.

@@ -33,5 +33,17 @@ namespace dvmig.Core.Settings
       /// missing related records.
       /// </summary>
       public bool AutoCreateRelatedRecords { get; set; } = true;
+
+      /// <summary>
+      /// Gets or sets a value indicating whether the source environment
+      /// is a legacy (OnPrem) environment.
+      /// </summary>
+      public bool SourceIsLegacy { get; set; }
+
+      /// <summary>
+      /// Gets or sets a value indicating whether the target environment
+      /// is a legacy (OnPrem) environment.
+      /// </summary>
+      public bool TargetIsLegacy { get; set; }
    }
 }

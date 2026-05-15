@@ -23,6 +23,9 @@ namespace dvmig.Core.Providers
       /// <inheritdoc />
       public string ConnectionString { get; }
 
+      /// <inheritdoc />
+      public bool IsLegacy => true;
+
       /// <summary>
       /// Initializes a new instance of the 
       /// <see cref="LegacyCrmProvider"/> class.
