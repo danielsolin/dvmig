@@ -14,12 +14,16 @@ namespace dvmig.Core.Interfaces
       /// <param name="progress">
       /// Optional progress reporter for remaining count.
       /// </param>
+      /// <param name="status">
+      /// Optional progress reporter for status messages.
+      /// </param>
       /// <param name="ct">A cancellation token.</param>
       /// <returns>A task representing the asynchronous operation.</returns>
       Task WipeEntitiesAsync(
          IDataverseProvider provider,
          List<string>? entities = null,
          IProgress<long>? progress = null,
+         IProgress<string>? status = null,
          CancellationToken ct = default
       );
    }

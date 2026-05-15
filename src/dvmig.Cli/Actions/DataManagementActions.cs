@@ -1,4 +1,5 @@
 using dvmig.Core.Interfaces;
+using dvmig.Core.Shared;
 using Spectre.Console;
 using static dvmig.Core.Shared.SystemConstants;
 
@@ -172,6 +173,7 @@ namespace dvmig.Cli.Actions
          {
             long remainingRecords = -1;
             long initialRecords = -1;
+            var currentStatus = "Initializing wipe...".t();
             var startTime = DateTime.Now;
 
             var progress = new Progress<long>(
@@ -183,20 +185,27 @@ namespace dvmig.Cli.Actions
                }
             );
 
+            var statusProgress = new Progress<string>(
+               status => currentStatus = status
+            );
+
             await AnsiConsole.Status()
                .StartAsync(
-                  "Initializing wipe...",
+                  currentStatus,
                   async ctx =>
                   {
                      var cleanupTask = _wipeDataService.WipeEntitiesAsync(
                         provider,
                         selectedEntities,
                         progress,
+                        statusProgress,
                         ct
                      );
 
                      while (!cleanupTask.IsCompleted)
                      {
+                        var statusLine = $"[yellow]{currentStatus}[/]";
+
                         if (remainingRecords >= 0)
                         {
                            var elapsed = DateTime.Now - startTime;
@@ -220,14 +229,14 @@ namespace dvmig.Cli.Actions
                               }
                            }
 
-                           ctx.Status(
-                              $"[yellow]Wiping data...[/] " +
-                              $"{remainingRecords} records remaining..." +
-                              etaStr
-                           );
+                           statusLine += 
+                              $" {remainingRecords} records remaining..." +
+                              etaStr;
                         }
 
-                        await Task.Delay(1000, ct);
+                        ctx.Status(statusLine);
+
+                        await Task.Delay(500, ct);
                      }
 
                      await cleanupTask;
