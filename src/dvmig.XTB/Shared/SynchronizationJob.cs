@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using Microsoft.Extensions.DependencyInjection;
 
 using dvmig.Core.Interfaces;
-using dvmig.Core.Providers;
 using dvmig.Core.Synchronization;
 
 namespace dvmig.XTB.Shared
@@ -14,7 +13,9 @@ namespace dvmig.XTB.Shared
       private readonly IServiceProvider _serviceProvider;
       private readonly IDataverseProvider _sourceProvider;
       private readonly IDataverseProvider _targetProvider;
+      private readonly IUserService _userService;
       private readonly List<string> _entityLogicalNames;
+      private readonly int _totalRecords;
       private readonly Action<int, string> _reportProgress;
       private readonly ILogger _logger;
 
@@ -22,14 +23,18 @@ namespace dvmig.XTB.Shared
          IServiceProvider serviceProvider,
          IDataverseProvider sourceProvider,
          IDataverseProvider targetProvider,
+         IUserService userService,
          List<string> entityLogicalNames,
+         int totalRecords,
          Action<int, string> reportProgress
       )
       {
          _serviceProvider = serviceProvider;
          _sourceProvider = sourceProvider;
          _targetProvider = targetProvider;
+         _userService = userService;
          _entityLogicalNames = entityLogicalNames;
+         _totalRecords = totalRecords;
          _reportProgress = reportProgress;
          _logger = _serviceProvider.GetRequiredService<ILogger>();
       }
@@ -41,21 +46,17 @@ namespace dvmig.XTB.Shared
          var syncStateService =
             _serviceProvider.GetRequiredService<ISyncStateService>();
 
-         // NOTE: UserService and EntityService are manually instantiated here,
-         // as their constructors require IDataverseProvider instances which
-         // are runtime-dependent.
-         var userService = new UserService(
-            _logger,
-            _sourceProvider,
-            _targetProvider
-         );
+         // NOTE: EntityService is manually instantiated here,
+         // as its constructor requires IDataverseProvider instance which
+         // is runtime-dependent.
          var entityService = new EntityService(
             _logger,
             _targetProvider
          );
 
          _logger.Information("Validating target environment...");
-         var isReady = envService.ValidateTargetEnvironmentAsync(_targetProvider)
+         var isReady = envService
+                        .ValidateTargetEnvironmentAsync(_targetProvider)
                         .GetAwaiter()
                         .GetResult();
 
@@ -74,7 +75,7 @@ namespace dvmig.XTB.Shared
          var syncEngine = new SyncEngine(
              _sourceProvider,
              _targetProvider,
-             userService,
+             _userService,
              _logger,
              entityService,
              syncStateService
@@ -84,31 +85,23 @@ namespace dvmig.XTB.Shared
 
          var options = new SyncOptions
          {
-            MaxDegreeOfParallelism = 4,
+            MaxDegreeOfParallelism = 10,
             ForceResync = false,
             PreserveAuditData = true,
             StripMissingDependencies = true
          };
 
-         int totalRecords = 0;
-         foreach(var name in _entityLogicalNames)
-         {
-            totalRecords += (int)_sourceProvider.GetRecordCountAsync(name)
-                              .GetAwaiter()
-                              .GetResult();
-         }
-
          int processedRecords = 0;
          var progress = new Progress<bool>(success =>
          {
             processedRecords++;
-            int percent = totalRecords > 0
-                   ? (int)((double)processedRecords / totalRecords * 100)
+            int percent = _totalRecords > 0
+                   ? (int)((double)processedRecords / _totalRecords * 100)
                    : 100;
 
             _reportProgress(
                    Math.Min(percent, 100),
-                   $"Synchronizing... ({processedRecords}/{totalRecords})"
+                   $"Synchronizing... ({processedRecords}/{_totalRecords})"
                );
          });
 
