@@ -92,7 +92,8 @@ namespace dvmig.Core.Settings
             var settingsCopy = new UserSettings
             {
                Language = settings.Language,
-               MaxParallelism = settings.MaxParallelism
+               MaxParallelism = settings.MaxParallelism,
+               AutoCreateRelatedRecords = settings.AutoCreateRelatedRecords
             };
 
             settingsCopy.SourceConnectionString =

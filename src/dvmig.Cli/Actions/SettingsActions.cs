@@ -24,6 +24,7 @@ namespace dvmig.Cli.Actions
          SourceConn,
          TargetConn,
          MaxThreads,
+         AutoCreate,
          Language,
          Back
       }
@@ -69,6 +70,9 @@ namespace dvmig.Cli.Actions
                         settings.TargetConnectionString)}",
                   SettingChoice.MaxThreads =>
                      $"{"Max Threads".t()}: {settings.MaxParallelism}",
+                  SettingChoice.AutoCreate =>
+                     $"{"Auto-create related records".t()}: " +
+                     $"{(settings.AutoCreateRelatedRecords ? "Yes".t() : "No".t())}",
                   SettingChoice.Language =>
                      $"{"Language".t()}: " +
                      $"{GetCurrentLanguageName(settings.Language)}",
@@ -86,6 +90,9 @@ namespace dvmig.Cli.Actions
                   break;
                case SettingChoice.Language:
                   await HandleLanguageChangeAsync(settings);
+                  break;
+               case SettingChoice.AutoCreate:
+                  await HandleAutoCreateChangeAsync(settings);
                   break;
                case SettingChoice.SourceConn:
                   await HandleConnectionStringChange(
@@ -113,6 +120,29 @@ namespace dvmig.Cli.Actions
             "sv" => "Swedish".t(),
             _ => "English".t()
          };
+      }
+
+      private async Task HandleAutoCreateChangeAsync(UserSettings settings)
+      {
+         var prompt = new SelectionPrompt<bool>()
+            .Title("Auto-create missing related records?".t())
+            .UseConverter(b => b ? "Yes".t() : "No".t())
+            .AddChoices(true, false);
+
+         var choice = AnsiConsole.Prompt(prompt);
+
+         if (settings.AutoCreateRelatedRecords != choice)
+         {
+            settings.AutoCreateRelatedRecords = choice;
+            _settingsService.SaveSettings(settings);
+
+            AnsiConsole.MarkupLine(
+               $"{SystemConstants.UiMarkup.Green}" +
+               $"{"Settings updated.".t()}[/]"
+            );
+
+            await Task.Delay(1000);
+         }
       }
 
       private async Task HandleLanguageChangeAsync(UserSettings settings)

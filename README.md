@@ -82,7 +82,8 @@ You can also test the connection strings in the app to make sure they work.
 - `src/dvmig.Core`: .NET Standard 2.0 library containing the migration logic.
 - `src/dvmig.Plugins`: Dataverse plugin for preserving audit fields.
 - `src/dvmig.Tests`: Unit test project using `xUnit`, `Moq`, and `Bogus`.
-- `src/dvmig.XTB`: XrmToolBox-version not ready for use yet.
+- `src/dvmig.XTB`: XrmToolBox plugin. Can technically sync records, but is
+  significantly slower and less robust than the CLI version.
 
 The diagram below visualizes the synchronization process used in dvmig.Core.
 It handles preservation of audit fields, resolves dependencies, and excutes

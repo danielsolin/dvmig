@@ -111,7 +111,9 @@ namespace dvmig.Cli
             version = version[..version.IndexOf('+')];
 
          AnsiConsole.MarkupLine(
-            $"[bold]Dataverse Migrator (v{version})[/]"
+            $"  [bold]Dataverse Migrator (v{version})[/]\n" +
+            $"    {SystemConstants.UiMarkup.Grey}by Daniel Solin " +
+            $"(daniel@solin.org)[/]"
          );
 
          AnsiConsole.WriteLine();
@@ -157,6 +159,7 @@ namespace dvmig.Cli
       public static MenuItem PromptMainMenu(
          SyncActions syncActions,
          MaintenanceActions maintenanceActions,
+         DataManagementActions dataManagementActions,
          SettingsActions settingsActions,
          Action onExit
       )
@@ -219,17 +222,17 @@ namespace dvmig.Cli
                   new(
                      $"{"Generate Sample Data".t()} " +
                      $"{SystemConstants.UiMarkup.Grey}({"Source".t()})[/]",
-                     maintenanceActions.HandleSeedingAsync
+                     dataManagementActions.HandleSeedingAsync
                   ),
                   new(
                      $"{"Wipe Data on Source".t()} " +
                      $"{SystemConstants.UiMarkup.Grey}({"Caution!".t()})[/]",
-                     maintenanceActions.HandleSourceDataCleanupAsync
+                     dataManagementActions.HandleSourceDataCleanupAsync
                   ),
                   new(
                      $"{"Wipe Data on Target".t()} " +
                      $"{SystemConstants.UiMarkup.Grey}({"Caution!".t()})[/]",
-                     maintenanceActions.HandleTargetDataCleanupAsync
+                     dataManagementActions.HandleTargetDataCleanupAsync
                   )
                }
             ),
@@ -346,7 +349,7 @@ namespace dvmig.Cli
          if (entities == null || entities.Count == 0)
             return null;
 
-         var prompt = new MultiSelectionPrompt<string>()
+         var prompt = new MultiSelectionPrompt<Microsoft.Xrm.Sdk.Metadata.EntityMetadata>()
             .Title(
                $"Select {SystemConstants.UiMarkup.Green}Entities[/] " +
                "to migrate:"
@@ -360,12 +363,15 @@ namespace dvmig.Cli
                $"{SystemConstants.UiMarkup.Grey}(Press " +
                $"{SystemConstants.UiMarkup.Blue}<space>[/] to toggle, " +
                $"{SystemConstants.UiMarkup.Green}<enter>[/] to accept)[/]"
-            );
+            )
+            .UseConverter(e => e.DisplayName.UserLocalizedLabel.Label);
 
          foreach (var entity in entities)
-            prompt.AddChoice(entity.DisplayName.UserLocalizedLabel.Label);
+            prompt.AddChoice(entity);
 
-         return AnsiConsole.Prompt(prompt);
+         var selected = AnsiConsole.Prompt(prompt);
+
+         return selected.Select(e => e.LogicalName).ToList();
       }
    }
 }

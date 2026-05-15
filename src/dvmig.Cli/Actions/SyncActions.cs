@@ -206,141 +206,156 @@ namespace dvmig.Cli.Actions
          CancellationToken ct
       )
       {
-         var maxThreads = SettingsService.LoadSettings().MaxParallelism;
+         try
+         {
+            var maxThreads = SettingsService.LoadSettings().MaxParallelism;
 
-         await AnsiConsole.Progress()
-            .Columns(
-               new ProgressColumn[]
-               {
-                  new TaskDescriptionColumn(),
-                  new ProgressBarColumn(),
-                  new PercentageColumn(),
-                  new RemainingTimeColumn(),
-                  new SpinnerColumn(),
-               }
-            )
-            .StartAsync(
-               async ctx =>
-               {
-                  foreach (var rawLogicalName in entities)
+            await AnsiConsole.Progress()
+               .Columns(
+                  new ProgressColumn[]
                   {
-                     var logicalName = rawLogicalName.ToLowerInvariant();
+                     new TaskDescriptionColumn(),
+                     new ProgressBarColumn(),
+                     new PercentageColumn(),
+                     new RemainingTimeColumn(),
+                     new SpinnerColumn(),
+                  }
+               )
+               .StartAsync(
+                  async ctx =>
+                  {
+                     foreach (var rawLogicalName in entities)
+                     {
+                        var logicalName = rawLogicalName.ToLowerInvariant();
 
-                     var actionTitle = forceResync
-                        ? "Re-syncing".t()
-                        : "Migrating".t();
-                     var displayName = char.ToUpper(logicalName[0]) +
-                        logicalName.Substring(1);
+                        var actionTitle = forceResync
+                           ? "Re-syncing".t()
+                           : "Migrating".t();
+                        var displayName = char.ToUpper(logicalName[0]) +
+                           logicalName.Substring(1);
 
-                     var sourceCountTask = source.GetRecordCountAsync(
-                        logicalName,
-                        ct
-                     );
-
-                     var targetCountTask = forceResync
-                        ? Task.FromResult(0L)
-                        : target.GetRecordCountAsync(
+                        var sourceCountTask = source.GetRecordCountAsync(
                            logicalName,
                            ct
                         );
 
-                     await Task.WhenAll(sourceCountTask, targetCountTask);
+                        var targetCountTask = forceResync
+                           ? Task.FromResult(0L)
+                           : target.GetRecordCountAsync(
+                              logicalName,
+                              ct
+                           );
 
-                     var totalCount = await sourceCountTask;
-                     var targetCount = await targetCountTask;
+                        await Task.WhenAll(sourceCountTask, targetCountTask);
 
-                     if (totalCount == 0)
-                     {
-                        AnsiConsole.MarkupLine(
-                           $"{UiMarkup.Grey}" +
-                           $"{"No records found for {0}.".t(logicalName)}[/]"
+                        var totalCount = await sourceCountTask;
+                        var targetCount = await targetCountTask;
+
+                        if (totalCount == 0)
+                        {
+                           AnsiConsole.MarkupLine(
+                              $"{UiMarkup.Grey}" +
+                              $"{"No records found for {0}.".t(logicalName)}[/]"
+                           );
+
+                           continue;
+                        }
+
+                        var initialProcessed = (int)Math.Min(
+                           totalCount,
+                           targetCount
                         );
 
-                        continue;
-                     }
-
-                     var initialProcessed = (int)Math.Min(
-                        totalCount,
-                        targetCount
-                     );
-
-                     var task = ctx.AddTask(
-                        "Initializing...".t(),
-                        true,
-                        totalCount
-                     );
-
-                     task.Value = initialProcessed;
-
-                     var progressProvider = new MigrationProgressProvider(
-                        task,
-                        maxThreads,
-                        actionTitle,
-                        displayName,
-                        totalCount,
-                        initialProcessed
-                     );
-
-                     var options = new SyncOptions
-                     {
-                        StripMissingDependencies = true,
-                        MaxDegreeOfParallelism = maxThreads,
-                        ForceResync = forceResync,
-                        PreserveAuditData = true
-                     };
-
-                     Logger.AttachProgress(
-                        new Progress<string>(
-                           msg =>
-                           {
-                              var isCritical =
-                                 msg.Contains(
-                                    UiMarkup.Wait,
-                                    StringComparison.Ordinal
-                                 ) ||
-                                 msg.Contains(
-                                    ErrorKeywords.TooManyRequests,
-                                    StringComparison.OrdinalIgnoreCase
-                                 ) ||
-                                 msg.StartsWith(UiMarkup.Yellow) ||
-                                 msg.StartsWith(UiMarkup.Red);
-
-                              if (isCritical)
-                                 AnsiConsole.MarkupLine(msg);
-                           }
-                        )
-                     );
-
-                     try
-                     {
-                        await engine.SyncAsync(
-                           logicalName,
-                           options,
-                           null,
-                           progressProvider.GetProgressReporter(),
-                           ct
+                        var task = ctx.AddTask(
+                           "Initializing...".t(),
+                           true,
+                           totalCount
                         );
-                     }
-                     catch (Exception ex)
-                     {
-                        var baseEx = ex.GetBaseException();
 
-                        CliUI.WriteError(
-                           $"{"Sync aborted for {0}:".t(logicalName)} " +
-                           $"{baseEx.Message}"
+                        task.Value = initialProcessed;
+
+                        var progressProvider = new MigrationProgressProvider(
+                           task,
+                           maxThreads,
+                           actionTitle,
+                           displayName,
+                           totalCount,
+                           initialProcessed
                         );
-                     }
-                     finally
-                     {
-                        Logger.DetachProgress();
-                        progressProvider.FinalizeProgress();
+
+                        var options = new SyncOptions
+                        {
+                           StripMissingDependencies = true,
+                           AutoCreateRelatedRecords =
+                              SettingsService.LoadSettings().AutoCreateRelatedRecords,
+                           MaxDegreeOfParallelism = maxThreads,
+                           ForceResync = forceResync,
+                           PreserveAuditData = true
+                        };
+
+                        Logger.AttachProgress(
+                           new Progress<string>(
+                              msg =>
+                              {
+                                 var isCritical =
+                                    msg.Contains(
+                                       UiMarkup.Wait,
+                                       StringComparison.Ordinal
+                                    ) ||
+                                    msg.Contains(
+                                       ErrorKeywords.TooManyRequests,
+                                       StringComparison.OrdinalIgnoreCase
+                                    ) ||
+                                    msg.StartsWith(UiMarkup.Yellow) ||
+                                    msg.StartsWith(UiMarkup.Red);
+
+                                 if (isCritical)
+                                    AnsiConsole.MarkupLine(msg);
+                              }
+                           )
+                        );
+
+                        try
+                        {
+                           await engine.SyncAsync(
+                              logicalName,
+                              options,
+                              null,
+                              progressProvider.GetProgressReporter(),
+                              ct
+                           );
+                        }
+                        catch (Exception ex)
+                        {
+                           var baseEx = ex.GetBaseException();
+
+                           CliUI.WriteError(
+                              $"{"Sync aborted for {0}:".t(logicalName)} " +
+                              $"{baseEx.Message}"
+                           );
+                        }
+                        finally
+                        {
+                           Logger.DetachProgress();
+                           progressProvider.FinalizeProgress();
+                        }
                      }
                   }
-               }
-            );
+               );
 
-         var actionName = forceResync ? "Re-sync".t() : "Migration".t();
-         CliUI.WriteSuccess($"{"{0} Finished!".t(actionName)}");
+            var actionName = forceResync ? "Re-sync".t() : "Migration".t();
+            CliUI.WriteSuccess($"{"{0} Finished!".t(actionName)}");
+         }
+         catch (OperationCanceledException)
+         {
+            throw;
+         }
+         catch (Exception ex)
+         {
+            var baseEx = ex.GetBaseException();
+
+            CliUI.WriteError($"{"Sync failed:".t()} {baseEx.Message}");
+         }
 
          CliUI.Pause();
       }

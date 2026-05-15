@@ -56,6 +56,7 @@ namespace dvmig.Cli
          // CLI Actions
          services.AddTransient<SyncActions>();
          services.AddTransient<MaintenanceActions>();
+         services.AddTransient<DataManagementActions>();
          services.AddTransient<SettingsActions>();
 
          _serviceProvider = services.BuildServiceProvider();
@@ -97,6 +98,9 @@ namespace dvmig.Cli
          var maintenanceActions = _serviceProvider
             .GetRequiredService<MaintenanceActions>();
 
+         var dataManagementActions = _serviceProvider
+            .GetRequiredService<DataManagementActions>();
+
          var settingsActions = _serviceProvider
             .GetRequiredService<SettingsActions>();
 
@@ -111,6 +115,7 @@ namespace dvmig.Cli
                choice = CliUI.PromptMainMenu(
                   syncActions,
                   maintenanceActions,
+                  dataManagementActions,
                   settingsActions,
                   () => exit = true
                );

@@ -19,6 +19,12 @@ namespace dvmig.Core.Synchronization
       public bool StripMissingDependencies { get; set; } = false;
 
       /// <summary>
+      /// Gets or sets a value indicating whether to automatically create
+      /// missing related records.
+      /// </summary>
+      public bool AutoCreateRelatedRecords { get; set; } = true;
+
+      /// <summary>
       /// Gets or sets the maximum number of concurrent requests to the
       /// target environment.
       /// </summary>
@@ -39,6 +45,7 @@ namespace dvmig.Core.Synchronization
          {
             PreserveAuditData = PreserveAuditData,
             StripMissingDependencies = StripMissingDependencies,
+            AutoCreateRelatedRecords = AutoCreateRelatedRecords,
             MaxDegreeOfParallelism = MaxDegreeOfParallelism,
             ForceResync = true
          };
