@@ -12,10 +12,10 @@
   referenced record (like Primary Contact) does not exist on Target environment,
   it will be automatically created.
 - **Synchronization:** Built with `Polly` for resiliance, handling transient
-  errors and automatic retry strategies. *(Note: Microsoft Dataverse enforces 
-  strict API rate limits. When these limits are hit, dvmig gracefully throttles 
-  requests, which may make the app appear as if it has stalled or frozen. 
-  This is normal behavior and cannot be bypassed by any external tool.)*
+  errors and automatic retry strategies. *(Note: Dataverse enforces API rate
+  limits. When these limits are hit, dvmig throttles requests, which may make
+  the app appear stalled or frozen.  This is normal behavior and cannot be
+  bypassed.)*
 - **Interactive TUI:** Using `Spectre.Console`.
 - **Logging:** Detailed error/warning/info logging
   (see C:\Users\<username>\AppData\Roaming\dvmig).
