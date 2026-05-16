@@ -1,5 +1,7 @@
+using System.Runtime.CompilerServices;
 using dvmig.Core.Shared;
 using Spectre.Console;
+using Spectre.Console.Rendering;
 
 namespace dvmig.Cli.Providers
 {
@@ -9,6 +11,9 @@ namespace dvmig.Cli.Providers
    /// </summary>
    public class MigrationProgressProvider
    {
+      internal static readonly ConditionalWeakTable<ProgressTask, MigrationProgressProvider> 
+         Providers = new();
+
       private readonly ProgressTask _task;
       private readonly int _maxThreads;
       private readonly string _actionTitle;
@@ -20,6 +25,16 @@ namespace dvmig.Cli.Providers
       private int _processed;
       private int _failedCount;
       private DateTime _lastUpdate = DateTime.MinValue;
+
+      /// <summary>
+      /// Gets the number of failed records.
+      /// </summary>
+      public int FailedCount => _failedCount;
+
+      /// <summary>
+      /// Gets the maximum number of threads.
+      /// </summary>
+      public int MaxThreads => _maxThreads;
 
       /// <summary>
       /// Initializes a new instance of the 
@@ -43,7 +58,8 @@ namespace dvmig.Cli.Providers
 
          _sw = System.Diagnostics.Stopwatch.StartNew();
 
-         UpdateDescription(0);
+         _task.Description = _displayName;
+         Providers.Add(_task, this);
       }
 
       /// <summary>
@@ -59,11 +75,6 @@ namespace dvmig.Cli.Providers
       /// </summary>
       public void FinalizeProgress()
       {
-         var finalElapsed = _sw.Elapsed.TotalSeconds;
-         var finalRate = _processed / (finalElapsed > 0 ? finalElapsed : 1);
-
-         UpdateDescription(finalRate);
-
          _task.Value = _totalCount;
          _task.StopTask();
       }
@@ -85,51 +96,78 @@ namespace dvmig.Cli.Providers
 
             _lastUpdate = now;
             _task.Value = currentProcessed;
-
-            var swElapsed = _sw.Elapsed.TotalSeconds;
-            var recsPerSec =
-               currentProcessed / (swElapsed > 0 ? swElapsed : 1);
-
-            UpdateDescription(recsPerSec);
          }
       }
+   }
 
-      private void UpdateDescription(double rate)
-      {
-         _task.Description = GetDesc(
-            _processed,
-            _totalCount,
-            rate,
-            _failedCount,
-            _maxThreads,
-            _actionTitle,
-            _displayName
-         );
-      }
-
-      private static string GetDesc(
-         int p,
-         long t,
-         double r,
-         int f,
-         int maxThreads,
-         string actionTitle,
-         string displayName
+   /// <summary>
+   /// Renders the entity name column.
+   /// </summary>
+   public sealed class EntityColumn : ProgressColumn
+   {
+      /// <inheritdoc/>
+      public override IRenderable Render(
+         RenderOptions options,
+         ProgressTask task,
+         TimeSpan elapsed
       )
       {
-         var titleMarkup = $"{SystemConstants.UiMarkup.BoldRed}" +
-            $"{actionTitle} " +
-            $"{displayName}[/]";
+         var text = task.Description;
 
-         var rateInfo = r > 0 ? $" - {r:F1} r/s" : "";
-         var desc = $"{titleMarkup} ({p}/{t}) " +
-            $"[[{SystemConstants.UiMarkup.Green}" +
-            $"{maxThreads}t{rateInfo}[/]]] ";
+         return new Markup($"{SystemConstants.UiMarkup.BoldRed}{text}[/]");
+      }
+   }
 
-         if (f > 0)
-            desc += $"{SystemConstants.UiMarkup.Red}({f} failed)[/]";
+   /// <summary>
+   /// Renders the record count column (processed/total).
+   /// </summary>
+   public sealed class RecordCountColumn : ProgressColumn
+   {
+      /// <inheritdoc/>
+      public override IRenderable Render(
+         RenderOptions options,
+         ProgressTask task,
+         TimeSpan elapsed
+      )
+      {
+         var p = (long)task.Value;
+         var t = (long)task.MaxValue;
 
-         return desc;
+         return new Markup($"({p}/{t})");
+      }
+   }
+
+   /// <summary>
+   /// Renders the speed and thread info column.
+   /// </summary>
+   public sealed class SpeedColumn : ProgressColumn
+   {
+      /// <inheritdoc/>
+      public override IRenderable Render(
+         RenderOptions options,
+         ProgressTask task,
+         TimeSpan elapsed
+      )
+      {
+         if (MigrationProgressProvider.Providers.TryGetValue(
+            task,
+            out var provider
+         ))
+         {
+            var r = task.Speed ?? 0;
+            var rateInfo = r > 0 ? $" - {r:F1} r/s" : "";
+
+            var desc = $"[[{SystemConstants.UiMarkup.Green}" +
+               $"{provider.MaxThreads}t{rateInfo}[/]]] ";
+
+            if (provider.FailedCount > 0)
+               desc += $"{SystemConstants.UiMarkup.Red}" +
+                  $"({provider.FailedCount} failed)[/]";
+
+            return new Markup(desc);
+         }
+
+         return new Markup("");
       }
    }
 }

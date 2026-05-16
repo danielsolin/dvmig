@@ -25,6 +25,13 @@ namespace dvmig.Cli
          _activeConnections[direction] = provider;
       }
 
+      public IDataverseProvider? GetActiveConnection(ConnectionDirection direction)
+      {
+         return _activeConnections.TryGetValue(direction, out var provider)
+            ? provider
+            : null;
+      }
+
       public async Task<IDataverseProvider?> ConnectAsync(
          ConnectionDirection direction,
          string? label = null

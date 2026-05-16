@@ -163,9 +163,13 @@ namespace dvmig.Cli.Actions
 
          var columns = new Columns(
             new Panel(entityTable)
-               .Header($"[bold]{"Entities".t()}[/]").Expand(),
+               .Header($"[bold]{"Entities".t()}[/]")
+               .Border(BoxBorder.Rounded)
+               .Expand(),
             new Panel(userTable)
-               .Header($"[bold]{"User Mappings".t()}[/]").Expand()
+               .Header($"[bold]{"User Mappings".t()}[/]")
+               .Border(BoxBorder.Rounded)
+               .Expand()
          );
 
          var title = forceResync ? "Re-sync".t() : "Sync".t();
@@ -173,8 +177,9 @@ namespace dvmig.Cli.Actions
 
          AnsiConsole.Write(
             new Panel(columns)
-               .Header($"[bold cyan] {title} {"Plan".t()} [/]")
+               //.Header($"[bold cyan] {title} {"Plan".t()} [/]")
                .Expand()
+               .Border(BoxBorder.None)
          );
 
          if (systemCount > 0)
@@ -215,7 +220,9 @@ namespace dvmig.Cli.Actions
                .Columns(
                   new ProgressColumn[]
                   {
-                     new TaskDescriptionColumn { Alignment = Justify.Left },
+                     new EntityColumn(),
+                     new RecordCountColumn(),
+                     new SpeedColumn(),
                      new ProgressBarColumn(),
                      new PercentageColumn(),
                      new RemainingTimeColumn(),

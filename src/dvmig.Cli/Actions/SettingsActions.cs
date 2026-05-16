@@ -52,7 +52,7 @@ namespace dvmig.Cli.Actions
 
          while(!back)
          {
-            CliUI.WriteHeader();
+            CliUI.WriteHeader(false);
 
             var settings = _settingsService.LoadSettings();
 
@@ -226,7 +226,7 @@ namespace dvmig.Cli.Actions
 
          while(!back)
          {
-            CliUI.WriteHeader();
+            CliUI.WriteHeader(false);
 
             AnsiConsole.MarkupLine(
                $"[bold]{"Edit {0} Connection String".t(label)}[/]"

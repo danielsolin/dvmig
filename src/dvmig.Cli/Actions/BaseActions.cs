@@ -75,29 +75,6 @@ namespace dvmig.Cli.Actions
          // Clear connection noise and show clean summary
          CliUI.WriteHeader();
 
-         var sourceUrl = GetProviderUrl(source);
-         var targetUrl = GetProviderUrl(target);
-
-         AnsiConsole.Write(
-            new Panel(
-               new Grid()
-                  .AddColumn(new GridColumn().NoWrap())
-                  .AddColumn(new GridColumn().PadLeft(2))
-                  .AddRow(
-                     $"{UiMarkup.BoldGreen}Source:[/]",
-                     $"{UiMarkup.BoldYellow}{sourceUrl}[/]"
-                  )
-                  .AddRow(
-                     $"{UiMarkup.BoldGreen}Target:[/]",
-                     $"{UiMarkup.BoldYellow}{targetUrl}[/]"
-                  )
-            )
-            .Header($"{UiMarkup.BoldCyan} Environments [/]")
-            .Expand()
-         );
-
-         AnsiConsole.WriteLine();
-
          if (ConnectionManager.UserResolver == null)
          {
             ConnectionManager.UserResolver = new UserService(
@@ -154,15 +131,6 @@ namespace dvmig.Cli.Actions
             var baseEx = ex.GetBaseException();
             CliUI.WriteError($"Installation failed: {baseEx.Message}");
          }
-      }
-
-      private static string GetProviderUrl(IDataverseProvider provider)
-      {
-         var conn = provider.ConnectionString;
-
-         return conn.Contains("://")
-            ? conn.Split("://")[1].Split(";")[0].Split("/")[0]
-            : "Connected";
       }
    }
 }
