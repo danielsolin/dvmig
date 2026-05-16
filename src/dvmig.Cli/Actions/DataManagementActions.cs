@@ -131,27 +131,22 @@ namespace dvmig.Cli.Actions
                .AddColumn("Message");
 
             warningTable.AddRow(
-               "[bold red]![/]",
-               $"{UiMarkup.BoldRed}CRITICAL WARNING:[/] This " +
-               "operation will delete [bold]EVERY SINGLE[/] " +
-               $"{entityNames} record from the {envName} environment."
+               $"{UiMarkup.BoldRed}![/]",
+               $"{UiMarkup.BoldRed}CRITICAL WARNING:[/]\n" +
+               $"{UiMarkup.BoldYellow}This operation will delete every " +
+               $"single {entityNames} record from the[/] {UiMarkup.BoldBlue}" +
+               $"{envName} environment.[/]"
             );
 
             warningTable.AddRow(
-               "[bold red]![/]",
-               $"{UiMarkup.Red}This is NOT restricted to " +
-               "test data. Real data will be destroyed.[/]"
-            );
-
-            warningTable.AddRow(
-               "[bold red]![/]",
+               $"{UiMarkup.BoldRed}![/]",
                $"{UiMarkup.Red}This action is permanent and " +
                "irreversible.[/]"
             );
 
             AnsiConsole.Write(
                new Panel(warningTable)
-                  .Header("[bold red] DANGER [/]")
+                  .Header($"{UiMarkup.BoldRed} DANGER [/]")
                   .BorderColor(Color.Red)
             );
          }
@@ -166,6 +161,7 @@ namespace dvmig.Cli.Actions
          if (confirmation != UiMarkup.WipeDataConfirmation)
          {
             CliUI.WriteWarning("Wipe cancelled.");
+            CliUI.Pause();
 
             return;
          }
