@@ -3,7 +3,10 @@ using Microsoft.Xrm.Sdk.Metadata;
 using dvmig.Cli.Actions;
 using dvmig.Core.Interfaces;
 using dvmig.Core.Shared;
+using dvmig.Core.Settings;
 using Spectre.Console;
+using Spectre.Console.Rendering;
+using static dvmig.Core.Shared.SystemConstants;
 
 namespace dvmig.Cli
 {
@@ -14,6 +17,16 @@ namespace dvmig.Cli
    /// </summary>
    public static class CliUI
    {
+      /// <summary>
+      /// Gets or sets the connection manager used to display environment info.
+      /// </summary>
+      public static ConnectionManager? ConnectionManager { get; set; }
+
+      /// <summary>
+      /// Gets or sets the settings service used to retrieve stored URIs.
+      /// </summary>
+      public static ISettingsService? SettingsService { get; set; }
+
       /// <summary>
       /// Represents an item in the main menu.
       /// </summary>
@@ -45,12 +58,12 @@ namespace dvmig.Cli
                var progress = new Progress<string>(msg =>
                {
                   var isPersistent = lineByLine ||
-                     msg.StartsWith(SystemConstants.UiMarkup.Yellow) ||
-                     msg.StartsWith(SystemConstants.UiMarkup.Red);
+                     msg.StartsWith(UiMarkup.Yellow) ||
+                     msg.StartsWith(UiMarkup.Red);
 
                   if (isPersistent)
                      AnsiConsole.MarkupLine(
-                        $"{SystemConstants.UiMarkup.Grey}" +
+                        $"{UiMarkup.Grey}" +
                         $"[[{DateTime.Now:HH:mm:ss}]][/] {msg}"
                      );
                   else
@@ -101,7 +114,7 @@ namespace dvmig.Cli
             });
       }
 
-      public static void WriteHeader()
+      public static void WriteHeader(bool includeEnvironments = true)
       {
          AnsiConsole.Clear();
          AnsiConsole.Write(new FigletText("DVMIG").Color(Color.Blue));
@@ -115,31 +128,103 @@ namespace dvmig.Cli
 
          AnsiConsole.MarkupLine(
             $"  [bold]Dataverse Migrator (v{version})[/]\n" +
-            $"    {SystemConstants.UiMarkup.Grey}by Daniel Solin " +
+            $"    {UiMarkup.Grey}by Daniel Solin " +
             $"(daniel@solin.org)[/]"
          );
 
          AnsiConsole.WriteLine();
+
+         if (includeEnvironments)
+            WriteEnvironments();
+      }
+
+      public static void WriteEnvironments()
+      {
+         var panel = GetEnvironmentsPanel();
+
+         if (panel != null)
+         {
+            AnsiConsole.Write(panel);
+            AnsiConsole.WriteLine();
+         }
+      }
+
+      public static Panel? GetEnvironmentsPanel()
+      {
+         if(ConnectionManager == null || SettingsService == null)
+            return null;
+
+         var settings = SettingsService.LoadSettings();
+
+         var source = ConnectionManager.GetActiveConnection(
+            ConnectionDirection.Source
+         );
+
+         var target = ConnectionManager.GetActiveConnection(
+            ConnectionDirection.Target
+         );
+
+         var sourceUrl = StringMasker.GetEnvironmentUrl(
+            settings.SourceConnectionString
+         );
+
+         var targetUrl = StringMasker.GetEnvironmentUrl(
+            settings.TargetConnectionString
+         );
+
+         var sourceLabel = source != null
+            ? $"{UiMarkup.BoldGreen}{GetProviderUrl(source)}[/]"
+            : $"{UiMarkup.Grey}{sourceUrl}[/]";
+
+         var targetLabel = target != null
+            ? $"{UiMarkup.BoldGreen}{GetProviderUrl(target)}[/]"
+            : $"{UiMarkup.Grey}{targetUrl}[/]";
+
+         return new Panel(
+               new Grid()
+                  .AddColumn(new GridColumn().NoWrap())
+                  .AddColumn(new GridColumn().PadLeft(2))
+                  .AddRow(
+                     $"{UiMarkup.BoldCyan}Source:[/]",
+                     sourceLabel
+                  )
+                  .AddRow(
+                     $"{UiMarkup.BoldCyan}Target:[/]",
+                     targetLabel
+                  )
+            )
+            .Header($"Environments".t())
+            .Border(BoxBorder.Rounded)
+            .Expand();
+      }
+
+      private static string GetProviderUrl(IDataverseProvider provider)
+      {
+         var conn = provider.ConnectionString;
+
+         return conn.Contains("://")
+            ? conn.Split("://")[1].Split(";")[0].Split("/")[0]
+            : "Connected";
       }
 
       public static void WriteSuccess(string message)
       {
          AnsiConsole.MarkupLine(
-            $"{SystemConstants.UiMarkup.BoldGreen}{message}[/]"
+            $"{UiMarkup.BoldGreen}{message}[/]"
          );
       }
 
       public static void WriteWarning(string message)
       {
          AnsiConsole.MarkupLine(
-            $"{SystemConstants.UiMarkup.Yellow}{message}[/]"
+            $"{UiMarkup.Yellow}{message}[/]"
          );
       }
 
       public static void WriteError(string message)
       {
          AnsiConsole.MarkupLine(
-            $"{SystemConstants.UiMarkup.Red}{message}[/]"
+            $"{UiMarkup.Red}{message}[/]"
          );
       }
 
@@ -147,7 +232,7 @@ namespace dvmig.Cli
       {
          AnsiConsole.WriteLine();
          AnsiConsole.MarkupLine(
-            $"{SystemConstants.UiMarkup.Grey}" +
+            $"{UiMarkup.Grey}" +
             "Press any key to return to menu...".t() + "[/]"
          );
 
@@ -167,10 +252,12 @@ namespace dvmig.Cli
          Action onExit
       )
       {
+         WriteHeader(false);
+
          var sections = new List<(string Header, List<MenuItem> Items)>
          {
             (
-               $"🚀 {SystemConstants.UiMarkup.BoldGreen}" +
+               $"🚀 {UiMarkup.BoldGreen}" +
                "Synchronization".t() + "[/]",
                new List<MenuItem>
                {
@@ -180,7 +267,7 @@ namespace dvmig.Cli
                   ),
                   new(
                      $"{"Sync Selected".t()} " +
-                     $"{SystemConstants.UiMarkup.Grey}" +
+                     $"{UiMarkup.Grey}" +
                      $"({"pick entities".t()})[/]",
                      ct => syncActions.HandleSelectedSyncAsync(ct, false)
                   ),
@@ -190,25 +277,25 @@ namespace dvmig.Cli
                   ),
                   new(
                      $"{"Re-sync Selected".t()} " +
-                     $"{SystemConstants.UiMarkup.Grey}" +
+                     $"{UiMarkup.Grey}" +
                      $"({"pick entities".t()})[/]",
                      ct => syncActions.HandleSelectedSyncAsync(ct, true)
                   )
                }
             ),
             (
-               $"🛠️ {SystemConstants.UiMarkup.BoldCyan}" +
+               $"🛠️ {UiMarkup.BoldCyan}" +
                "Maintenance".t() + "[/]",
                new List<MenuItem>
                {
                   new(
                      $"{"Install DVMig Components".t()} " +
-                     $"{SystemConstants.UiMarkup.Grey}({"Target".t()})[/]",
+                     $"{UiMarkup.Grey}({"Target".t()})[/]",
                      maintenanceActions.HandleInstallComponentsAsync
                   ),
                   new(
                      $"{"Uninstall DVMig Components".t()} " +
-                     $"{SystemConstants.UiMarkup.Grey}({"Target".t()})[/]",
+                     $"{UiMarkup.Grey}({"Target".t()})[/]",
                      maintenanceActions.HandleUninstallComponentsAsync
                   ),
                   new(
@@ -218,23 +305,23 @@ namespace dvmig.Cli
                }
             ),
             (
-               $"🧪 {SystemConstants.UiMarkup.BoldMagenta}" +
+               $"🧪 {UiMarkup.BoldMagenta}" +
                "Data Management".t() + "[/]",
                new List<MenuItem>
                {
                   new(
                      $"{"Generate Sample Data".t()} " +
-                     $"{SystemConstants.UiMarkup.Grey}({"Source".t()})[/]",
+                     $"{UiMarkup.Grey}({"Source".t()})[/]",
                      dataManagementActions.HandleSeedingAsync
                   ),
                   new(
                      $"{"Wipe Data on Source".t()} " +
-                     $"{SystemConstants.UiMarkup.Grey}({"Caution!".t()})[/]",
+                     $"{UiMarkup.Grey}({"Caution!".t()})[/]",
                      dataManagementActions.HandleSourceDataCleanupAsync
                   ),
                   new(
                      $"{"Wipe Data on Target".t()} " +
-                     $"{SystemConstants.UiMarkup.Grey}({"Caution!".t()})[/]",
+                     $"{UiMarkup.Grey}({"Caution!".t()})[/]",
                      dataManagementActions.HandleTargetDataCleanupAsync
                   )
                }
@@ -268,13 +355,11 @@ namespace dvmig.Cli
             {
                while (true)
                {
+                  var header = (IRenderable?)GetEnvironmentsPanel() ?? new Markup("");
+
                   var table = new Table()
                      .Border(TableBorder.Rounded)
-                     .AddColumn(
-                        new TableColumn(
-                           $"[bold white]{"What would you like to do?".t()}[/]"
-                        ).LeftAligned()
-                     );
+                     .AddColumn(new TableColumn(header).LeftAligned());
 
                   table.Expand = false;
 
@@ -355,18 +440,18 @@ namespace dvmig.Cli
          var prompt = 
             new MultiSelectionPrompt<EntityMetadata>()
             .Title(
-               $"Select {SystemConstants.UiMarkup.Green}Entities[/] " +
+               $"Select {UiMarkup.Green}Entities[/] " +
                "to migrate:"
             )
             .PageSize(15)
             .MoreChoicesText(
-               $"{SystemConstants.UiMarkup.Grey}" +
+               $"{UiMarkup.Grey}" +
                "(Move up and down to reveal more)[/]"
             )
             .InstructionsText(
-               $"{SystemConstants.UiMarkup.Grey}(Press " +
-               $"{SystemConstants.UiMarkup.Blue}<space>[/] to toggle, " +
-               $"{SystemConstants.UiMarkup.Green}<enter>[/] to accept)[/]"
+               $"{UiMarkup.Grey}(Press " +
+               $"{UiMarkup.Blue}<space>[/] to toggle, " +
+               $"{UiMarkup.Green}<enter>[/] to accept)[/]"
             )
             .UseConverter(e => e.DisplayName.UserLocalizedLabel.Label);
 

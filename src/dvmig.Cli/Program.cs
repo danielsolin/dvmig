@@ -83,14 +83,20 @@ namespace dvmig.Cli
 
       private static async Task HandleMenuActions()
       {
-         CliUI.WriteHeader();
-
          if (_serviceProvider == null)
          {
             CliUI.WriteError("Service provider is not initialized.");
 
             return;
          }
+
+         CliUI.ConnectionManager = _serviceProvider
+            .GetRequiredService<ConnectionManager>();
+
+         CliUI.SettingsService = _serviceProvider
+            .GetRequiredService<ISettingsService>();
+
+         CliUI.WriteHeader();
 
          var syncActions = _serviceProvider
             .GetRequiredService<SyncActions>();
