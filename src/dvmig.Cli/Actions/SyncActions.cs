@@ -215,7 +215,9 @@ namespace dvmig.Cli.Actions
                .Columns(
                   new ProgressColumn[]
                   {
-                     new TaskDescriptionColumn { Alignment = Justify.Left },
+                     new EntityColumn(),
+                     new RecordCountColumn(),
+                     new SpeedColumn(),
                      new ProgressBarColumn(),
                      new PercentageColumn(),
                      new RemainingTimeColumn(),
