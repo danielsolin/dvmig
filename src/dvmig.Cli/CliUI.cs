@@ -127,9 +127,8 @@ namespace dvmig.Cli
             version = version[..version.IndexOf('+')];
 
          AnsiConsole.MarkupLine(
-            $"  [bold]Dataverse Migrator (v{version})[/]\n" +
-            $"    {UiMarkup.Grey}by Daniel Solin " +
-            $"(daniel@solin.org)[/]"
+            $"[bold]Dataverse Migrator (v{version})[/]\n" +
+            $"{UiMarkup.Grey}by daniel@solin.org[/]"
          );
 
          AnsiConsole.WriteLine();
