@@ -1,3 +1,5 @@
+![main menu](assets/img/main-menu.png)
+
 ![recommended sync run](assets/img/sync-recommended-run.png)
 
 ## Highlights
