@@ -1,5 +1,7 @@
 using System.Reflection;
+using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Metadata;
+using Microsoft.Xrm.Sdk.Query;
 using dvmig.Cli.Actions;
 using dvmig.Core.Interfaces;
 using dvmig.Core.Shared;
@@ -108,6 +110,8 @@ namespace dvmig.Cli
                   WriteError(
                      $"Status task failed: {ex.GetBaseException().Message}"
                   );
+
+                  Pause();
 
                   return default!;
                }
@@ -271,6 +275,12 @@ namespace dvmig.Cli
                      ct => syncActions.HandleSelectedSyncAsync(ct, false)
                   ),
                   new(
+                     $"{"Sync View".t()} " +
+                     $"{UiMarkup.Grey}" +
+                     $"({"personal and public".t()})[/]",
+                     ct => syncActions.HandleViewSyncAsync(ct, false)
+                  ),
+                  new(
                      "Re-sync Recommended".t(),
                      ct => syncActions.HandleRecommendedSyncAsync(ct, true)
                   ),
@@ -405,12 +415,12 @@ namespace dvmig.Cli
             });
       }
 
-      public static async Task<List<string>?> SelectEntitiesAsync(
+      private static async Task<List<EntityMetadata>?> FetchEntitiesAsync(
          IEntityService entityService,
          IDataverseProvider provider
       )
       {
-         var entities = await RunStatusAsync(
+         return await RunStatusAsync(
             "Fetching entity metadata...".t(),
             async () =>
             {
@@ -432,11 +442,21 @@ namespace dvmig.Cli
                }
             }
          );
+      }
+
+      public static async Task<List<string>?> SelectEntitiesAsync(
+         IEntityService entityService,
+         IDataverseProvider provider
+      )
+      {
+         var entities = await FetchEntitiesAsync(entityService, provider);
 
          if (entities == null || entities.Count == 0)
+         {
             return null;
+         }
 
-         var prompt = 
+         var prompt =
             new MultiSelectionPrompt<EntityMetadata>()
             .Title(
                $"Select {UiMarkup.Green}Entities[/] " +
@@ -455,11 +475,91 @@ namespace dvmig.Cli
             .UseConverter(e => e.DisplayName.UserLocalizedLabel.Label);
 
          foreach (var entity in entities)
+         {
             prompt.AddChoice(entity);
+         }
 
          var selected = AnsiConsole.Prompt(prompt);
 
          return selected.Select(e => e.LogicalName).ToList();
+      }
+
+      public static async Task<string?> SelectEntityAsync(
+         IEntityService entityService,
+         IDataverseProvider provider
+      )
+      {
+         var entities = await FetchEntitiesAsync(entityService, provider);
+
+         if (entities == null || entities.Count == 0)
+         {
+            return null;
+         }
+
+         var prompt =
+            new SelectionPrompt<EntityMetadata>()
+            .Title(
+               $"Select {UiMarkup.Green}Entity[/] " +
+               "to migrate:"
+            )
+            .PageSize(15)
+            .MoreChoicesText(
+               $"{UiMarkup.Grey}" +
+               "(Move up and down to reveal more)[/]"
+            )
+            .UseConverter(e => e.DisplayName.UserLocalizedLabel.Label);
+
+         foreach (var entity in entities)
+         {
+            prompt.AddChoice(entity);
+         }
+
+         var selected = AnsiConsole.Prompt(prompt);
+
+         return selected.LogicalName;
+      }
+
+      public static async Task<(string Name, string FetchXml)?> SelectViewAsync(
+         IEntityService entityService,
+         IDataverseProvider provider,
+         string entityLogicalName
+      )
+      {
+         var views = await RunStatusAsync(
+            "Fetching views...".t(),
+            async () => await entityService.GetViewsAsync(provider, entityLogicalName)
+         );
+
+         if (views == null || views.Count == 0)
+         {
+            WriteWarning("No views found for this entity.".t());
+
+            return null;
+         }
+
+         var prompt =
+            new SelectionPrompt<Entity>()
+            .Title(
+               $"Select {UiMarkup.Green}View[/] " +
+               "to use for filtering:"
+            )
+            .PageSize(15)
+            .UseConverter(v => 
+               $"{v.GetAttributeValue<string>("name")} " +
+               $"{UiMarkup.Grey}({v["viewtype"]})[/]"
+            );
+
+         foreach (var view in views.OrderBy(v => v.GetAttributeValue<string>("name")))
+         {
+            prompt.AddChoice(view);
+         }
+
+         var selected = AnsiConsole.Prompt(prompt);
+
+         return (
+            selected.GetAttributeValue<string>("name"),
+            selected.GetAttributeValue<string>("fetchxml")
+         );
       }
    }
 }

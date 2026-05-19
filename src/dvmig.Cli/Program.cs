@@ -156,6 +156,8 @@ namespace dvmig.Cli
                   CliUI.WriteError(
                      "An unexpected error occurred: " + ex.Message
                   );
+
+                  CliUI.Pause();
                }
                finally
                {

@@ -60,7 +60,7 @@ namespace dvmig.Core.Provisioning
          status?.Report("Calculating total record count...".t());
 
          foreach (var entity in targetEntities)
-            initialTotal += await provider.GetRecordCountAsync(entity, ct);
+            initialTotal += await provider.GetRecordCountAsync(entity, ct: ct);
 
          progress?.Report(initialTotal);
 

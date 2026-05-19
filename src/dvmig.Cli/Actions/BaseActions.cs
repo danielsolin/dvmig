@@ -40,7 +40,8 @@ namespace dvmig.Cli.Actions
          IDataverseProvider? Source,
          IDataverseProvider? Target,
          ISyncEngine? Engine,
-         IUserService? UserResolver
+         IUserService? UserResolver,
+         IEntityService? EntityService
       )> SetupSyncEngineAsync()
       {
          var source = await ConnectionManager.ConnectAsync(
@@ -48,14 +49,14 @@ namespace dvmig.Cli.Actions
          );
 
          if (source == null)
-            return (null, null, null, null);
+            return (null, null, null, null, null);
 
          var target = await ConnectionManager.ConnectAsync(
             ConnectionDirection.Target
          );
 
          if (target == null)
-            return (null, null, null, null);
+            return (null, null, null, null, null);
 
          var isReady = await EnvironmentService.ValidateTargetEnvironmentAsync(
             target,
@@ -100,7 +101,7 @@ namespace dvmig.Cli.Actions
             syncStateService
          );
 
-         return (source, target, engine, userResolver);
+         return (source, target, engine, userResolver, syncEntityService);
       }
 
       /// <summary>

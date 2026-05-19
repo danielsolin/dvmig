@@ -112,7 +112,7 @@ namespace dvmig.XTB.UI
                {
                   if (token.IsCancellationRequested) return;
 
-                  total += await _sourceProvider.GetRecordCountAsync(name, token);
+                  total += await _sourceProvider.GetRecordCountAsync(name, ct: token);
                }
 
                if (token.IsCancellationRequested) return;
