@@ -65,6 +65,7 @@ You can also test the connection strings in the app to make sure they work.
    - **Sync Recommended:** Synchronizes `Account`, `Contact`, `Task`, `Email`,
      `PhoneCall` and `Appointment`.
    - **Sync Selected:** Allows manual entity selection.
+   - **Sync View:** Sync records in a view.
    - **Re-sync:** Ignores sync state and forces an update of all records.
 
 **Maintenance (🛠️)**
