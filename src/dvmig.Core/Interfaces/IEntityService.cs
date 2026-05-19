@@ -77,6 +77,15 @@ namespace dvmig.Core.Interfaces
       );
 
       /// <summary>
+      /// Retrieves a list of personal and system views for a specific entity.
+      /// </summary>
+      Task<List<Entity>> GetViewsAsync(
+         IDataverseProvider provider,
+         string entityLogicalName,
+         CancellationToken ct = default
+      );
+
+      /// <summary>
       /// Clears the internal metadata cache.
       /// </summary>
       void ClearMetadataCache();

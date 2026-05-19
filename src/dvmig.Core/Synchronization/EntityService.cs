@@ -365,6 +365,82 @@ namespace dvmig.Core.Synchronization
       }
 
       /// <inheritdoc />
+      public async Task<List<Entity>> GetViewsAsync(
+         IDataverseProvider provider,
+         string entityLogicalName,
+         CancellationToken ct = default
+      )
+      {
+         var personalQuery = new QueryExpression("userquery")
+         {
+            ColumnSet = new ColumnSet("name", "fetchxml"),
+            Criteria = new FilterExpression
+            {
+               Conditions =
+               {
+                  new ConditionExpression(
+                     "returnedtypecode",
+                     ConditionOperator.Equal,
+                     entityLogicalName
+                  ),
+                  new ConditionExpression(
+                     "statecode",
+                     ConditionOperator.Equal,
+                     0
+                  )
+               }
+            }
+         };
+
+         var systemQuery = new QueryExpression("savedquery")
+         {
+            ColumnSet = new ColumnSet("name", "fetchxml"),
+            Criteria = new FilterExpression
+            {
+               Conditions =
+               {
+                  new ConditionExpression(
+                     "returnedtypecode",
+                     ConditionOperator.Equal,
+                     entityLogicalName
+                  ),
+                  new ConditionExpression(
+                     "statecode",
+                     ConditionOperator.Equal,
+                     0
+                  ),
+                  new ConditionExpression(
+                     "querytype",
+                     ConditionOperator.Equal,
+                     0 // Main application views
+                  )
+               }
+            }
+         };
+
+         var personalTask = provider.RetrieveMultipleAsync(personalQuery, ct);
+         var systemTask = provider.RetrieveMultipleAsync(systemQuery, ct);
+
+         await Task.WhenAll(personalTask, systemTask);
+
+         var allViews = new List<Entity>();
+
+         foreach (var view in systemTask.Result.Entities)
+         {
+            view["viewtype"] = "System".t();
+            allViews.Add(view);
+         }
+
+         foreach (var view in personalTask.Result.Entities)
+         {
+            view["viewtype"] = "Personal".t();
+            allViews.Add(view);
+         }
+
+         return allViews.OrderBy(v => v.GetAttributeValue<string>("name")).ToList();
+      }
+
+      /// <inheritdoc />
       public void ClearMetadataCache()
       {
          _metaCache.Clear();

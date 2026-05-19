@@ -1,8 +1,10 @@
 using System.ServiceModel;
-
+using System.Text.RegularExpressions;
+using Microsoft.Crm.Sdk.Messages;
+using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Messages;
 using Microsoft.Xrm.Sdk.Metadata;
-
+using Microsoft.Xrm.Sdk.Query;
 using dvmig.Core.Interfaces;
 using dvmig.Core.Shared;
 
@@ -61,39 +63,74 @@ namespace dvmig.Core.Providers
       }
 
       /// <summary>
-      /// Gets the total record count for a specific entity type.
+      /// Gets the total record count for a specific entity type, optionally 
+      /// filtered by a query.
       /// </summary>
       /// <param name="provider">The Dataverse provider.</param>
       /// <param name="entityName">The logical name of the entity.</param>
+      /// <param name="query">Optional query expression for filtering.</param>
       /// <param name="ct">A cancellation token.</param>
       /// <returns>The total number of records.</returns>
       public static async Task<long> GetRecordCountAsync(
          this IDataverseProvider provider,
          string entityName,
+         QueryExpression? query = null,
          CancellationToken ct = default
       )
       {
-         var request = new RetrieveEntityRequest
+         var primaryId = await provider.GetPrimaryIdAttributeAsync(
+            entityName,
+            ct
+         ) ?? $"{entityName}id";
+
+         string fetchXml;
+
+         if (query != null)
          {
-            LogicalName = entityName,
-            EntityFilters = EntityFilters.Entity
-         };
+            var conversionRequest = new QueryExpressionToFetchXmlRequest
+            {
+               Query = query
+            };
 
-         var metaResponse = (RetrieveEntityResponse)
-            await provider.ExecuteAsync(request, ct);
+            var conversionResponse = (QueryExpressionToFetchXmlResponse)
+               await provider.ExecuteAsync(conversionRequest, ct);
 
-         var primaryId = metaResponse.EntityMetadata.PrimaryIdAttribute ??
-            $"{entityName}id";
+            fetchXml = conversionResponse.FetchXml;
 
-         var fetchXml = $@"
-            <fetch aggregate='true'>
-              <entity name='{entityName}'>
-                <attribute name='{primaryId}' alias='count' aggregate='count' />
-              </entity>
-            </fetch>";
+            // Remove existing attributes to make it an aggregate query
+            fetchXml = Regex.Replace(fetchXml, "<attribute[^>]+?/>", "");
+
+            fetchXml = Regex.Replace(
+               fetchXml,
+               "<attribute[^>]+?>.*?</attribute>",
+               "",
+               RegexOptions.Singleline
+            );
+
+            // Remove order clauses as they are not allowed in aggregate queries
+            fetchXml = Regex.Replace(fetchXml, "<order[^>]+?/>", "");
+
+            fetchXml = fetchXml.Replace("<fetch", "<fetch aggregate='true'");
+
+            fetchXml = Regex.Replace(
+               fetchXml,
+               $"(<entity name=[\"']{entityName}[\"']>)",
+               $"$1<attribute name='{primaryId}' alias='count' aggregate='count' />",
+               RegexOptions.IgnoreCase
+            );
+         }
+         else
+         {
+            fetchXml = $@"
+               <fetch aggregate='true'>
+                 <entity name='{entityName}'>
+                   <attribute name='{primaryId}' alias='count' aggregate='count' />
+                 </entity>
+               </fetch>";
+         }
 
          var result = await provider.RetrieveMultipleAsync(
-            new Microsoft.Xrm.Sdk.Query.FetchExpression(fetchXml),
+            new FetchExpression(fetchXml),
             ct
          );
 
@@ -101,7 +138,7 @@ namespace dvmig.Core.Providers
              result.Entities[0].Contains("count"))
          {
             var entity = result.Entities[0];
-            var aliasedValue = (Microsoft.Xrm.Sdk.AliasedValue)entity["count"];
+            var aliasedValue = (AliasedValue)entity["count"];
 
             return Convert.ToInt64(aliasedValue.Value);
          }

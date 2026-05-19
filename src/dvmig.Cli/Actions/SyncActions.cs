@@ -1,4 +1,6 @@
 using dvmig.Cli.Providers;
+using Microsoft.Crm.Sdk.Messages;
+using Microsoft.Xrm.Sdk.Query;
 using dvmig.Core.Interfaces;
 using dvmig.Core.Providers;
 using dvmig.Core.Shared;
@@ -27,7 +29,7 @@ namespace dvmig.Cli.Actions
          bool forceResync = false
       )
       {
-         var (source, target, engine, userResolver) =
+         var (source, target, engine, userResolver, _) =
             await SetupSyncEngineAsync();
 
          if (source == null || target == null || engine == null ||
@@ -65,12 +67,104 @@ namespace dvmig.Cli.Actions
          );
       }
 
+      public async Task HandleViewSyncAsync(
+         CancellationToken ct,
+         bool forceResync = false
+      )
+      {
+         try
+         {
+            var (source, target, engine, userResolver, syncEntityService) =
+               await SetupSyncEngineAsync();
+
+            if (source == null || target == null || engine == null ||
+               userResolver == null || syncEntityService == null)
+               return;
+
+            var logicalName = await CliUI.SelectEntityAsync(
+               EntityService,
+               source
+            );
+
+            if (string.IsNullOrEmpty(logicalName))
+               return;
+
+            var viewInfo = await CliUI.SelectViewAsync(EntityService, source, logicalName);
+
+            if (viewInfo == null)
+               return;
+
+            var (viewName, fetchXml) = viewInfo.Value;
+
+            var query = await CliUI.RunStatusAsync(
+               "Converting view to query...".t(),
+               async () =>
+               {
+                  var request = new FetchXmlToQueryExpressionRequest
+                  {
+                     FetchXml = fetchXml
+                  };
+
+                  var response = (FetchXmlToQueryExpressionResponse)
+                     await source.ExecuteAsync(request, ct);
+
+                  return response.Query;
+               }
+            );
+
+            if (query == null)
+            {
+               CliUI.WriteError("Failed to convert View to Query.".t());
+               CliUI.Pause();
+
+               return;
+            }
+
+            // Enforce all attributes
+            query.ColumnSet = await syncEntityService.GetValidColumnsAsync(logicalName, ct);
+
+            var selectedEntities = new List<string> { logicalName };
+
+            if (!await ShowSyncPlanAsync(
+               engine,
+               userResolver,
+               selectedEntities,
+               forceResync,
+               ct,
+               query,
+               viewName
+            ))
+            {
+               CliUI.Pause();
+
+               return;
+            }
+
+            await ExecuteSyncWorkflowAsync(
+               engine,
+               source,
+               target,
+               selectedEntities,
+               forceResync,
+               ct,
+               query
+            );
+         }
+         catch (Exception ex)
+         {
+            var baseEx = ex.GetBaseException();
+
+            CliUI.WriteError($"{"Sync failed:".t()} {baseEx.Message}");
+            CliUI.Pause();
+         }
+      }
+
       public async Task HandleRecommendedSyncAsync(
          CancellationToken ct,
          bool forceResync = false
       )
       {
-         var (source, target, engine, userResolver) =
+         var (source, target, engine, userResolver, _) =
             await SetupSyncEngineAsync();
 
          if (source == null || target == null || engine == null ||
@@ -103,7 +197,9 @@ namespace dvmig.Cli.Actions
          IUserService userResolver,
          List<string> entities,
          bool forceResync,
-         CancellationToken ct
+         CancellationToken ct,
+         QueryExpression? query = null,
+         string? viewName = null
       )
       {
          await CliUI.RunStatusAsync(
@@ -127,10 +223,23 @@ namespace dvmig.Cli.Actions
             );
 
          for (var i = 0; i < entities.Count; i++)
+         {
+            var label = entities[i];
+
+            if (query != null && entities.Count == 1 && entities[0] == label)
+            {
+               var viewLabel = !string.IsNullOrEmpty(viewName) 
+                  ? viewName 
+                  : "filtered by view".t();
+
+               label += $" {UiMarkup.Grey}({"View: {0}".t(viewLabel)})[/]";
+            }
+
             entityTable.AddRow(
                (i + 1).ToString(),
-               $"{UiMarkup.Yellow}{entities[i]}[/]"
+               $"{UiMarkup.Yellow}{label}[/]"
             );
+         }
 
          var userTable = new Table()
             .Border(TableBorder.Minimal)
@@ -209,7 +318,8 @@ namespace dvmig.Cli.Actions
          IDataverseProvider target,
          List<string> entities,
          bool forceResync,
-         CancellationToken ct
+         CancellationToken ct,
+         QueryExpression? customQuery = null
       )
       {
          try
@@ -239,8 +349,17 @@ namespace dvmig.Cli.Actions
                         var displayName = char.ToUpper(logicalName[0]) +
                            logicalName.Substring(1);
 
+                        var query = (customQuery != null &&
+                                     customQuery.EntityName.Equals(
+                                        logicalName,
+                                        StringComparison.OrdinalIgnoreCase
+                                     ))
+                           ? customQuery
+                           : null;
+
                         var sourceCountTask = source.GetRecordCountAsync(
                            logicalName,
+                           query,
                            ct
                         );
 
@@ -248,6 +367,7 @@ namespace dvmig.Cli.Actions
                            ? Task.FromResult(0L)
                            : target.GetRecordCountAsync(
                               logicalName,
+                              null,
                               ct
                            );
 
@@ -332,7 +452,7 @@ namespace dvmig.Cli.Actions
                            await engine.SyncAsync(
                               logicalName,
                               options,
-                              null,
+                              query,
                               progressProvider.GetProgressReporter(),
                               ct
                            );
