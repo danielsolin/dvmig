@@ -1,6 +1,5 @@
-![main menu](assets/img/main-menu.png)
-
-![recommended sync run](assets/img/sync-recommended-run.png)
+<img src="assets/img/main-menu.png" width="300px" />
+<img src="assets/img/sync-recommended-run.png" width="400px" />
 
 ## Highlights
 
