@@ -17,7 +17,7 @@ namespace dvmig.XTB
       "Description",
       "Synchronize data between environments with audit preservation."
    )]
-   public class DvmigPlugin : PluginBase
+   public class DvmigPlugin : PluginBase, INoConnectionRequired
    {
       public override IXrmToolBoxPluginControl GetControl()
       {

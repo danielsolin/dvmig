@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Windows.Forms;
 using System.Threading;
 using System.Threading.Tasks;
@@ -11,6 +12,7 @@ using XrmToolBox.Extensibility;
 
 using dvmig.Core.Interfaces;
 using dvmig.Core.Providers;
+using dvmig.Core.Shared;
 using dvmig.Core.Synchronization;
 using dvmig.XTB.Shared;
 
@@ -24,7 +26,7 @@ namespace dvmig.XTB.UI
       {
          RaiseRequestConnectionEvent(new RequestConnectionEventArgs
          {
-            ActionName = "SelectSource",
+            ActionName = SelectSourceAction,
             Control = this
          });
       }
@@ -33,7 +35,7 @@ namespace dvmig.XTB.UI
       {
          RaiseRequestConnectionEvent(new RequestConnectionEventArgs
          {
-            ActionName = "SelectTarget",
+            ActionName = SelectTargetAction,
             Control = this
          });
       }
@@ -61,6 +63,34 @@ namespace dvmig.XTB.UI
          FilterEntities();
       }
 
+      private void OnMainSplitSizeChanged(object? sender, EventArgs e)
+      {
+         ApplyPreferredSplitterLayout();
+      }
+
+      private void ApplyPreferredSplitterLayout()
+      {
+         if (_mainSplit == null ||
+             _mainSplit.Width <= _mainSplit.Panel1MinSize)
+            return;
+
+         var minimumLeftWidth = _mainSplit.Panel1MinSize;
+         var maximumLeftWidth =
+            _mainSplit.Width - _mainSplit.SplitterWidth - 1;
+
+         var desiredLeftWidth = 360;
+         var splitterDistance = Math.Max(minimumLeftWidth, desiredLeftWidth);
+         splitterDistance = Math.Min(splitterDistance, maximumLeftWidth);
+
+         if (splitterDistance < minimumLeftWidth)
+            return;
+
+         if (_mainSplit.SplitterDistance == splitterDistance)
+            return;
+
+         _mainSplit.SplitterDistance = splitterDistance;
+      }
+
       private void OnEntityItemCheck(object? sender, ItemCheckEventArgs e)
       {
          if (_isFiltering) return;
@@ -77,8 +107,75 @@ namespace dvmig.XTB.UI
          }
       }
 
+      private void OnSyncOptionsChanged(object? sender, EventArgs e)
+      {
+         _lblSyncStatus.Text = "Ready";
+         ResetSyncProgress();
+      }
+
+      private void OnAutoCreateRelatedRecordsChanged(
+         object? sender,
+         EventArgs e
+      )
+      {
+         SaveAutoCreateRelatedRecordsSetting();
+         OnSyncOptionsChanged(sender, e);
+      }
+
+      private void LoadPersistedSyncSettings()
+      {
+         if (_serviceProvider == null)
+            return;
+
+         var settings = _serviceProvider
+            .GetRequiredService<ISettingsService>()
+            .LoadSettings();
+
+         _chkAutoCreateRelatedRecords.Checked =
+            settings.AutoCreateRelatedRecords;
+      }
+
+      private void SaveAutoCreateRelatedRecordsSetting()
+      {
+         if (_serviceProvider == null)
+            return;
+
+         var settingsService = _serviceProvider
+            .GetRequiredService<ISettingsService>();
+         var settings = settingsService.LoadSettings();
+         settings.AutoCreateRelatedRecords =
+            _chkAutoCreateRelatedRecords.Checked;
+         settingsService.SaveSettings(settings);
+      }
+
+      private void OnSelectRecommendedChanged(object? sender, EventArgs e)
+      {
+         var availableEntities = _allEntities
+            .Select(e => e.LogicalName)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+         var recommendedEntities = SystemConstants.SyncSettings
+            .RecommendedEntities
+            .Where(availableEntities.Contains)
+            .ToList();
+
+         foreach (var logicalName in recommendedEntities)
+         {
+            if (_chkSelectRecommended.Checked)
+               _selectedEntities.Add(logicalName);
+            else
+               _selectedEntities.Remove(logicalName);
+         }
+
+         FilterEntities();
+         UpdateSelectedEntitiesLabel();
+         ResetSyncProgress();
+      }
+
       private void UpdateSelectedEntitiesLabel()
       {
+         _selectedEntityChipsPanel.Controls.Clear();
+
          if (_selectedEntities.Count == 0)
          {
             _lblSelectedEntities.Text = "Selected: None";
@@ -86,11 +183,32 @@ namespace dvmig.XTB.UI
             return;
          }
 
-         var names = string.Join(", ", _selectedEntities);
-         _lblSelectedEntities.Text = $"Selected ({_selectedEntities.Count}):" +
-            $" {names} | Records: Counting...";
+         _lblSelectedEntities.Text =
+            $"Selected ({_selectedEntities.Count}) | Records: Counting...";
+
+         foreach (var logicalName in _selectedEntities.OrderBy(e => e))
+         {
+            _selectedEntityChipsPanel.Controls.Add(
+               CreateSelectedEntityChip(logicalName)
+            );
+         }
          
          CalculateTotalRecords();
+      }
+
+      private Label CreateSelectedEntityChip(string logicalName)
+      {
+         return new Label
+         {
+            AutoSize = true,
+            Text = logicalName,
+            BackColor = System.Drawing.Color.FromArgb(232, 240, 254),
+            ForeColor = System.Drawing.Color.FromArgb(32, 66, 120),
+            BorderStyle = BorderStyle.FixedSingle,
+            Font = _uiFont,
+            Margin = new Padding(0, 2, 4, 2),
+            Padding = new Padding(6, 2, 6, 2)
+         };
       }
 
       private void CalculateTotalRecords()
@@ -120,10 +238,9 @@ namespace dvmig.XTB.UI
                _lblSelectedEntities.Invoke(new Action(() =>
                {
                   _totalRecordsCount = total;
-                  var names = string.Join(", ", _selectedEntities);
-                  _lblSelectedEntities.Text = $"Selected " +
-                     $"({_selectedEntities.Count}): {names} " +
-                     $"| Records: {total:N0}";
+                  _lblSelectedEntities.Text =
+                     $"Selected ({_selectedEntities.Count}) | " +
+                     $"Records: {total:N0}";
                }));
             }
             catch (OperationCanceledException) { }
@@ -140,7 +257,13 @@ namespace dvmig.XTB.UI
       private void UpdateSyncButtonState()
       {
          _btnSync.Enabled = _sourceProvider != null &&
-            _targetProvider != null;
+            _targetProvider != null &&
+            _syncCts == null;
+
+         _btnCancelSync.Enabled = _syncCts != null;
+         _chkSelectRecommended.Enabled = _syncCts == null;
+         _chkForceResync.Enabled = _syncCts == null;
+         _chkAutoCreateRelatedRecords.Enabled = _syncCts == null;
       }
 
       private void LoadEntities()
@@ -151,6 +274,7 @@ namespace dvmig.XTB.UI
          _countCts?.Cancel();
          _selectedEntities.Clear();
          _totalRecordsCount = 0;
+         _chkSelectRecommended.Checked = false;
          UpdateSelectedEntitiesLabel();
          ResetSyncProgress();
          _clbEntities.Items.Clear();
@@ -241,79 +365,117 @@ namespace dvmig.XTB.UI
             return;
 
          _countCts?.Cancel();
+         _syncCts = new CancellationTokenSource();
          _btnSync.Enabled = false;
+         _btnCancelSync.Enabled = true;
+         _chkSelectRecommended.Enabled = false;
+         _chkForceResync.Enabled = false;
+         _chkAutoCreateRelatedRecords.Enabled = false;
          _clbEntities.Enabled = false;
          _rtbLogs.Clear();
          _prgSync.Value = 0;
+         _lblSyncStatus.Text = "Preparing synchronization...";
+         SaveAutoCreateRelatedRecordsSetting();
 
-         WorkAsync(new WorkAsyncInfo
+         if (_userService == null)
          {
-            Message = "Preparing synchronization...",
-            Work = (worker, args) =>
-            {
-               if (_userService == null)
-               {
-                  _userService = new UserService(
-                     _serviceProvider!.GetRequiredService<ILogger>(),
-                     _sourceProvider,
-                     _targetProvider
-                  );
-               }
+            _userService = new UserService(
+               _serviceProvider.GetRequiredService<ILogger>(),
+               _sourceProvider,
+               _targetProvider
+            );
+         }
 
-               var job = new SynchronizationJob(
-                  _serviceProvider!,
-                  _sourceProvider!,
-                  _targetProvider!,
-                  _userService,
-                  selectedLogicalNames,
-                  (int)_totalRecordsCount,
-                  (percent, message) => worker.ReportProgress(percent, message)
-               );
-               job.Run();
-            },
-            ProgressChanged = e =>
-            {
-               _prgSync.Value = e.ProgressPercentage;
-               SetWorkingMessage(
-                  e.UserState?.ToString() ?? "Synchronizing..."
-               );
-            },
-            PostWorkCallBack = (args) =>
-            {
-               _clbEntities.Enabled = true;
-               UpdateSyncButtonState();
-
-               if(args.Error != null)
-               {
-                  _rtbLogs.AppendText(
-                     $"\n[ERROR] Sync failed: {args.Error.Message}\n"
-                  );
-
-                  MessageBox.Show(
-                     $"Sync failed: {args.Error.Message}",
-                     "Error",
-                     MessageBoxButtons.OK,
-                     MessageBoxIcon.Error
-                  );
-               }
-               else
-               {
-                  _prgSync.Value = 100;
-                  _rtbLogs.AppendText(
-                     "\n[SUCCESS] Synchronization complete!\n"
-                  );
-
-                  MessageBox.Show(
-                     "Synchronization completed successfully.",
-                     "Success",
-                     MessageBoxButtons.OK,
-                     MessageBoxIcon.Information
-                  );
-               }
-
-               _rtbLogs.ScrollToCaret();
-            }
+         var syncCts = _syncCts;
+         var progress = new Progress<Tuple<int, string>>(update =>
+         {
+            _prgSync.Value = update.Item1;
+            _lblSyncStatus.Text = update.Item2;
          });
+
+         var job = new SynchronizationJob(
+            _serviceProvider,
+            _sourceProvider,
+            _targetProvider,
+            _userService,
+            selectedLogicalNames,
+            (int)_totalRecordsCount,
+            _chkForceResync.Checked,
+            (percent, message) =>
+               ((IProgress<Tuple<int, string>>)progress).Report(
+                  Tuple.Create(percent, message)
+               )
+         );
+
+         Task.Run(() =>
+         {
+            try
+            {
+               job.Run(syncCts.Token);
+               return null;
+            }
+            catch (OperationCanceledException)
+            {
+               return null;
+            }
+         }).ContinueWith(task =>
+         {
+            _syncCts?.Dispose();
+            _syncCts = null;
+            _clbEntities.Enabled = true;
+            UpdateSyncButtonState();
+
+            if (task.IsFaulted && task.Exception != null)
+            {
+               var error = task.Exception.GetBaseException();
+               _lblSyncStatus.Text = "Synchronization failed.";
+               _rtbLogs.AppendText(
+                  $"\n[ERROR] Sync failed: {error.Message}\n"
+               );
+
+               MessageBox.Show(
+                  $"Sync failed: {error.Message}",
+                  "Error",
+                  MessageBoxButtons.OK,
+                  MessageBoxIcon.Error
+               );
+            }
+            else if (syncCts.IsCancellationRequested)
+            {
+               _prgSync.Value = 0;
+               _lblSyncStatus.Text = "Synchronization cancelled.";
+               _rtbLogs.AppendText("\n[INFO] Synchronization cancelled.\n");
+
+               MessageBox.Show(
+                  "Synchronization cancelled.",
+                  "Cancelled",
+                  MessageBoxButtons.OK,
+                  MessageBoxIcon.Information
+               );
+            }
+            else
+            {
+               _prgSync.Value = 100;
+               _lblSyncStatus.Text = "Synchronization complete.";
+               _rtbLogs.AppendText("\n[SUCCESS] Synchronization complete!\n");
+
+               MessageBox.Show(
+                  "Synchronization completed successfully.",
+                  "Success",
+                  MessageBoxButtons.OK,
+                  MessageBoxIcon.Information
+               );
+            }
+
+            _rtbLogs.ScrollToCaret();
+         }, TaskScheduler.FromCurrentSynchronizationContext());
+      }
+
+      private void CancelSync_Click(object? sender, EventArgs e)
+      {
+         _syncCts?.Cancel();
+         _btnCancelSync.Enabled = false;
+         _lblSyncStatus.Text = "Cancelling synchronization...";
       }
    }
 }
