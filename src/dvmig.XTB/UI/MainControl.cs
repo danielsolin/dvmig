@@ -17,6 +17,9 @@ namespace dvmig.XTB.UI
 {
     public partial class MainControl : MultipleConnectionsPluginControlBase
     {
+        private const string SelectSourceAction = "SelectSource";
+        private const string SelectTargetAction = "SelectTarget";
+
         private IServiceProvider? _serviceProvider;
         private IDataverseProvider? _sourceProvider;
         private IDataverseProvider? _targetProvider;
@@ -55,20 +58,30 @@ namespace dvmig.XTB.UI
             object parameter
         )
         {
-            if (string.IsNullOrEmpty(actionName))
+            if (actionName != SelectSourceAction &&
+                actionName != SelectTargetAction)
             {
-               base.UpdateConnection(
-                  newService, 
-                  detail, 
-                  actionName, 
-                  parameter
+               _rtbLogs.AppendText(
+                  string.IsNullOrEmpty(actionName)
+                     ? "Connection update ignored. Use Source or Target " +
+                       "to assign a connection.\n"
+                     : $"Unknown connection action '{actionName}' ignored.\n"
                );
+
+               UpdateSyncButtonState();
+
+               return;
             }
 
             ResetSyncProgress();
 
-            if (actionName == "SelectTarget")
+            if (actionName == SelectTargetAction)
             {
+               if (IsSameConnection(detail.ConnectionName, _sourceProvider))
+                  ClearSourceConnection(
+                     "Source reset because it matched the selected Target.\n"
+                  );
+
                _targetProvider = new XTBDataProvider(
                   newService,
                   detail.ConnectionName,
@@ -76,7 +89,7 @@ namespace dvmig.XTB.UI
                );
 
                _btnSelectTarget.Text =
-                  $"Target: {detail.OrganizationFriendlyName}";
+                  $"Target: {detail.ConnectionName}";
                _btnSelectTarget.ForeColor = Color.DarkGreen;
                _userService = null;
 
@@ -87,6 +100,11 @@ namespace dvmig.XTB.UI
             }
             else
             {
+               if (IsSameConnection(detail.ConnectionName, _targetProvider))
+                  ClearTargetConnection(
+                     "Target reset because it matched the selected Source.\n"
+                  );
+
                _sourceProvider = new XTBDataProvider(
                   newService,
                   detail.ConnectionName,
@@ -94,7 +112,7 @@ namespace dvmig.XTB.UI
                );
 
                _btnSelectSource.Text =
-                  $"Source: {detail.OrganizationFriendlyName}";
+                  $"Source: {detail.ConnectionName}";
                _btnSelectSource.ForeColor = Color.DarkGreen;
                _userService = null;
 
@@ -107,6 +125,43 @@ namespace dvmig.XTB.UI
             }
 
             UpdateSyncButtonState();
+        }
+
+        private static bool IsSameConnection(
+           string connectionName,
+           IDataverseProvider? provider
+        )
+        {
+           return provider != null &&
+              string.Equals(
+                 connectionName.Trim(),
+                 provider.ConnectionString.Trim(),
+                 StringComparison.OrdinalIgnoreCase
+              );
+        }
+
+        private void ClearSourceConnection(string logMessage)
+        {
+           _sourceProvider = null;
+           _userService = null;
+           _countCts?.Cancel();
+           _allEntities.Clear();
+           _selectedEntities.Clear();
+           _totalRecordsCount = 0;
+           _btnSelectSource.Text = "Source: Not Connected";
+           _btnSelectSource.ForeColor = Color.Red;
+           _clbEntities.Items.Clear();
+           UpdateSelectedEntitiesLabel();
+           _rtbLogs.AppendText(logMessage);
+        }
+
+        private void ClearTargetConnection(string logMessage)
+        {
+           _targetProvider = null;
+           _userService = null;
+           _btnSelectTarget.Text = "Target: Not Connected";
+           _btnSelectTarget.ForeColor = Color.Red;
+           _rtbLogs.AppendText(logMessage);
         }
 
         private void ResetSyncProgress()

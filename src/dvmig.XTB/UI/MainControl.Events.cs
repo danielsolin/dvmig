@@ -26,7 +26,7 @@ namespace dvmig.XTB.UI
       {
          RaiseRequestConnectionEvent(new RequestConnectionEventArgs
          {
-            ActionName = "SelectSource",
+            ActionName = SelectSourceAction,
             Control = this
          });
       }
@@ -35,7 +35,7 @@ namespace dvmig.XTB.UI
       {
          RaiseRequestConnectionEvent(new RequestConnectionEventArgs
          {
-            ActionName = "SelectTarget",
+            ActionName = SelectTargetAction,
             Control = this
          });
       }
