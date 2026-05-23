@@ -109,7 +109,43 @@ namespace dvmig.XTB.UI
 
       private void OnSyncOptionsChanged(object? sender, EventArgs e)
       {
+         _lblSyncStatus.Text = "Ready";
          ResetSyncProgress();
+      }
+
+      private void OnAutoCreateRelatedRecordsChanged(
+         object? sender,
+         EventArgs e
+      )
+      {
+         SaveAutoCreateRelatedRecordsSetting();
+         OnSyncOptionsChanged(sender, e);
+      }
+
+      private void LoadPersistedSyncSettings()
+      {
+         if (_serviceProvider == null)
+            return;
+
+         var settings = _serviceProvider
+            .GetRequiredService<ISettingsService>()
+            .LoadSettings();
+
+         _chkAutoCreateRelatedRecords.Checked =
+            settings.AutoCreateRelatedRecords;
+      }
+
+      private void SaveAutoCreateRelatedRecordsSetting()
+      {
+         if (_serviceProvider == null)
+            return;
+
+         var settingsService = _serviceProvider
+            .GetRequiredService<ISettingsService>();
+         var settings = settingsService.LoadSettings();
+         settings.AutoCreateRelatedRecords =
+            _chkAutoCreateRelatedRecords.Checked;
+         settingsService.SaveSettings(settings);
       }
 
       private void OnSelectRecommendedChanged(object? sender, EventArgs e)
@@ -227,6 +263,7 @@ namespace dvmig.XTB.UI
          _btnCancelSync.Enabled = _syncCts != null;
          _chkSelectRecommended.Enabled = _syncCts == null;
          _chkForceResync.Enabled = _syncCts == null;
+         _chkAutoCreateRelatedRecords.Enabled = _syncCts == null;
       }
 
       private void LoadEntities()
@@ -333,108 +370,112 @@ namespace dvmig.XTB.UI
          _btnCancelSync.Enabled = true;
          _chkSelectRecommended.Enabled = false;
          _chkForceResync.Enabled = false;
+         _chkAutoCreateRelatedRecords.Enabled = false;
          _clbEntities.Enabled = false;
          _rtbLogs.Clear();
          _prgSync.Value = 0;
+         _lblSyncStatus.Text = "Preparing synchronization...";
+         SaveAutoCreateRelatedRecordsSetting();
 
-         WorkAsync(new WorkAsyncInfo
+         if (_userService == null)
          {
-            Message = "Preparing synchronization...",
-            Work = (worker, args) =>
-            {
-               if (_userService == null)
-               {
-                  _userService = new UserService(
-                     _serviceProvider!.GetRequiredService<ILogger>(),
-                     _sourceProvider,
-                     _targetProvider
-                  );
-               }
+            _userService = new UserService(
+               _serviceProvider.GetRequiredService<ILogger>(),
+               _sourceProvider,
+               _targetProvider
+            );
+         }
 
-               var job = new SynchronizationJob(
-                  _serviceProvider!,
-                  _sourceProvider!,
-                  _targetProvider!,
-                  _userService,
-                  selectedLogicalNames,
-                  (int)_totalRecordsCount,
-                  _chkForceResync.Checked,
-                  (percent, message) => worker.ReportProgress(percent, message)
-               );
-
-               try
-               {
-                  job.Run(_syncCts.Token);
-               }
-               catch (OperationCanceledException)
-               {
-                  args.Cancel = true;
-               }
-            },
-            ProgressChanged = e =>
-            {
-               _prgSync.Value = e.ProgressPercentage;
-               SetWorkingMessage(
-                  e.UserState?.ToString() ?? "Synchronizing..."
-               );
-            },
-            PostWorkCallBack = (args) =>
-            {
-               _syncCts?.Dispose();
-               _syncCts = null;
-               _clbEntities.Enabled = true;
-               UpdateSyncButtonState();
-
-               if(args.Cancelled)
-               {
-                  _prgSync.Value = 0;
-                  _rtbLogs.AppendText("\n[INFO] Synchronization cancelled.\n");
-
-                  MessageBox.Show(
-                     "Synchronization cancelled.",
-                     "Cancelled",
-                     MessageBoxButtons.OK,
-                     MessageBoxIcon.Information
-                  );
-               }
-               else if(args.Error != null)
-               {
-                  _rtbLogs.AppendText(
-                     $"\n[ERROR] Sync failed: {args.Error.Message}\n"
-                  );
-
-                  MessageBox.Show(
-                     $"Sync failed: {args.Error.Message}",
-                     "Error",
-                     MessageBoxButtons.OK,
-                     MessageBoxIcon.Error
-                  );
-               }
-               else
-               {
-                  _prgSync.Value = 100;
-                  _rtbLogs.AppendText(
-                     "\n[SUCCESS] Synchronization complete!\n"
-                  );
-
-                  MessageBox.Show(
-                     "Synchronization completed successfully.",
-                     "Success",
-                     MessageBoxButtons.OK,
-                     MessageBoxIcon.Information
-                  );
-               }
-
-               _rtbLogs.ScrollToCaret();
-            }
+         var syncCts = _syncCts;
+         var progress = new Progress<Tuple<int, string>>(update =>
+         {
+            _prgSync.Value = update.Item1;
+            _lblSyncStatus.Text = update.Item2;
          });
+
+         var job = new SynchronizationJob(
+            _serviceProvider,
+            _sourceProvider,
+            _targetProvider,
+            _userService,
+            selectedLogicalNames,
+            (int)_totalRecordsCount,
+            _chkForceResync.Checked,
+            (percent, message) =>
+               ((IProgress<Tuple<int, string>>)progress).Report(
+                  Tuple.Create(percent, message)
+               )
+         );
+
+         Task.Run(() =>
+         {
+            try
+            {
+               job.Run(syncCts.Token);
+               return null;
+            }
+            catch (OperationCanceledException)
+            {
+               return null;
+            }
+         }).ContinueWith(task =>
+         {
+            _syncCts?.Dispose();
+            _syncCts = null;
+            _clbEntities.Enabled = true;
+            UpdateSyncButtonState();
+
+            if (task.IsFaulted && task.Exception != null)
+            {
+               var error = task.Exception.GetBaseException();
+               _lblSyncStatus.Text = "Synchronization failed.";
+               _rtbLogs.AppendText(
+                  $"\n[ERROR] Sync failed: {error.Message}\n"
+               );
+
+               MessageBox.Show(
+                  $"Sync failed: {error.Message}",
+                  "Error",
+                  MessageBoxButtons.OK,
+                  MessageBoxIcon.Error
+               );
+            }
+            else if (syncCts.IsCancellationRequested)
+            {
+               _prgSync.Value = 0;
+               _lblSyncStatus.Text = "Synchronization cancelled.";
+               _rtbLogs.AppendText("\n[INFO] Synchronization cancelled.\n");
+
+               MessageBox.Show(
+                  "Synchronization cancelled.",
+                  "Cancelled",
+                  MessageBoxButtons.OK,
+                  MessageBoxIcon.Information
+               );
+            }
+            else
+            {
+               _prgSync.Value = 100;
+               _lblSyncStatus.Text = "Synchronization complete.";
+               _rtbLogs.AppendText("\n[SUCCESS] Synchronization complete!\n");
+
+               MessageBox.Show(
+                  "Synchronization completed successfully.",
+                  "Success",
+                  MessageBoxButtons.OK,
+                  MessageBoxIcon.Information
+               );
+            }
+
+            _rtbLogs.ScrollToCaret();
+         }, TaskScheduler.FromCurrentSynchronizationContext());
       }
 
       private void CancelSync_Click(object? sender, EventArgs e)
       {
          _syncCts?.Cancel();
          _btnCancelSync.Enabled = false;
-         SetWorkingMessage("Cancelling synchronization...");
+         _lblSyncStatus.Text = "Cancelling synchronization...";
       }
    }
 }

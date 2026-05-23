@@ -41,8 +41,9 @@ namespace dvmig.XTB.UI
               System.Net.SecurityProtocolType.Tls12;
 
            InitializeUI(); // UI elements must be initialized first
-            _serviceProvider = 
-               DIConfigurator.CreateServiceProvider(this, _rtbLogs);
+           _serviceProvider = 
+              DIConfigurator.CreateServiceProvider(this, _rtbLogs);
+           LoadPersistedSyncSettings();
 
             _rtbLogs.AppendText("Welcome to dvmig for XrmToolBox.\n");
             _rtbLogs.AppendText("Please connect both a SOURCE and a TARGET " +

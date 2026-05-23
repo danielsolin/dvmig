@@ -100,18 +100,6 @@ namespace dvmig.XTB.Shared
          };
 
          int processedRecords = 0;
-         var progress = new Progress<bool>(success =>
-         {
-            processedRecords++;
-            int percent = _totalRecords > 0
-                   ? (int)((double)processedRecords / _totalRecords * 100)
-                   : 100;
-
-            _reportProgress(
-                   Math.Min(percent, 100),
-                   $"Synchronizing... ({processedRecords}/{_totalRecords})"
-               );
-         });
 
          foreach(var entityLogicalName in _entityLogicalNames)
          {
@@ -119,6 +107,23 @@ namespace dvmig.XTB.Shared
 
             _logger.Information($"Starting synchronization for entity:" +
                                  $" {entityLogicalName}");
+
+            _reportProgress(
+               GetProgressPercent(processedRecords),
+               $"Synchronizing {entityLogicalName}... " +
+               $"({processedRecords}/{_totalRecords})"
+            );
+
+            var progress = new Progress<bool>(success =>
+            {
+               processedRecords++;
+
+               _reportProgress(
+                  GetProgressPercent(processedRecords),
+                  $"Synchronizing {entityLogicalName}... " +
+                  $"({processedRecords}/{_totalRecords})"
+               );
+            });
 
             syncEngine.SyncAsync(
                 entityLogicalName,
@@ -131,6 +136,13 @@ namespace dvmig.XTB.Shared
             _logger.Information($"Synchronization for entity " +
                                  $"{entityLogicalName} completed.");
          }
+      }
+
+      private int GetProgressPercent(int processedRecords)
+      {
+         return _totalRecords > 0
+            ? Math.Min((int)((double)processedRecords / _totalRecords * 100), 100)
+            : 100;
       }
    }
 }
