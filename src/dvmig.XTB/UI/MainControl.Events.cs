@@ -63,6 +63,34 @@ namespace dvmig.XTB.UI
          FilterEntities();
       }
 
+      private void OnMainSplitSizeChanged(object? sender, EventArgs e)
+      {
+         ApplyPreferredSplitterLayout();
+      }
+
+      private void ApplyPreferredSplitterLayout()
+      {
+         if (_mainSplit == null ||
+             _mainSplit.Width <= _mainSplit.Panel1MinSize)
+            return;
+
+         var minimumLeftWidth = _mainSplit.Panel1MinSize;
+         var maximumLeftWidth =
+            _mainSplit.Width - _mainSplit.SplitterWidth - 1;
+
+         var desiredLeftWidth = 360;
+         var splitterDistance = Math.Max(minimumLeftWidth, desiredLeftWidth);
+         splitterDistance = Math.Min(splitterDistance, maximumLeftWidth);
+
+         if (splitterDistance < minimumLeftWidth)
+            return;
+
+         if (_mainSplit.SplitterDistance == splitterDistance)
+            return;
+
+         _mainSplit.SplitterDistance = splitterDistance;
+      }
+
       private void OnEntityItemCheck(object? sender, ItemCheckEventArgs e)
       {
          if (_isFiltering) return;
@@ -84,28 +112,24 @@ namespace dvmig.XTB.UI
          ResetSyncProgress();
       }
 
-      private void SelectRecommended_Click(object? sender, EventArgs e)
+      private void OnSelectRecommendedChanged(object? sender, EventArgs e)
       {
-         if (_allEntities.Count == 0)
-         {
-            MessageBox.Show(
-               "Connect a source environment before selecting recommended entities.",
-               "No Source Connected",
-               MessageBoxButtons.OK,
-               MessageBoxIcon.Information
-            );
-
-            return;
-         }
-
          var availableEntities = _allEntities
             .Select(e => e.LogicalName)
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-         _selectedEntities = SystemConstants.SyncSettings
+         var recommendedEntities = SystemConstants.SyncSettings
             .RecommendedEntities
             .Where(availableEntities.Contains)
-            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            .ToList();
+
+         foreach (var logicalName in recommendedEntities)
+         {
+            if (_chkSelectRecommended.Checked)
+               _selectedEntities.Add(logicalName);
+            else
+               _selectedEntities.Remove(logicalName);
+         }
 
          FilterEntities();
          UpdateSelectedEntitiesLabel();
@@ -114,6 +138,8 @@ namespace dvmig.XTB.UI
 
       private void UpdateSelectedEntitiesLabel()
       {
+         _selectedEntityChipsPanel.Controls.Clear();
+
          if (_selectedEntities.Count == 0)
          {
             _lblSelectedEntities.Text = "Selected: None";
@@ -121,11 +147,32 @@ namespace dvmig.XTB.UI
             return;
          }
 
-         var names = string.Join(", ", _selectedEntities);
-         _lblSelectedEntities.Text = $"Selected ({_selectedEntities.Count}):" +
-            $" {names} | Records: Counting...";
+         _lblSelectedEntities.Text =
+            $"Selected ({_selectedEntities.Count}) | Records: Counting...";
+
+         foreach (var logicalName in _selectedEntities.OrderBy(e => e))
+         {
+            _selectedEntityChipsPanel.Controls.Add(
+               CreateSelectedEntityChip(logicalName)
+            );
+         }
          
          CalculateTotalRecords();
+      }
+
+      private Label CreateSelectedEntityChip(string logicalName)
+      {
+         return new Label
+         {
+            AutoSize = true,
+            Text = logicalName,
+            BackColor = System.Drawing.Color.FromArgb(232, 240, 254),
+            ForeColor = System.Drawing.Color.FromArgb(32, 66, 120),
+            BorderStyle = BorderStyle.FixedSingle,
+            Font = _uiFont,
+            Margin = new Padding(0, 2, 4, 2),
+            Padding = new Padding(6, 2, 6, 2)
+         };
       }
 
       private void CalculateTotalRecords()
@@ -155,10 +202,9 @@ namespace dvmig.XTB.UI
                _lblSelectedEntities.Invoke(new Action(() =>
                {
                   _totalRecordsCount = total;
-                  var names = string.Join(", ", _selectedEntities);
-                  _lblSelectedEntities.Text = $"Selected " +
-                     $"({_selectedEntities.Count}): {names} " +
-                     $"| Records: {total:N0}";
+                  _lblSelectedEntities.Text =
+                     $"Selected ({_selectedEntities.Count}) | " +
+                     $"Records: {total:N0}";
                }));
             }
             catch (OperationCanceledException) { }
@@ -179,7 +225,7 @@ namespace dvmig.XTB.UI
             _syncCts == null;
 
          _btnCancelSync.Enabled = _syncCts != null;
-         _btnSelectRecommended.Enabled = _syncCts == null;
+         _chkSelectRecommended.Enabled = _syncCts == null;
          _chkForceResync.Enabled = _syncCts == null;
       }
 
@@ -191,6 +237,7 @@ namespace dvmig.XTB.UI
          _countCts?.Cancel();
          _selectedEntities.Clear();
          _totalRecordsCount = 0;
+         _chkSelectRecommended.Checked = false;
          UpdateSelectedEntitiesLabel();
          ResetSyncProgress();
          _clbEntities.Items.Clear();
@@ -284,7 +331,7 @@ namespace dvmig.XTB.UI
          _syncCts = new CancellationTokenSource();
          _btnSync.Enabled = false;
          _btnCancelSync.Enabled = true;
-         _btnSelectRecommended.Enabled = false;
+         _chkSelectRecommended.Enabled = false;
          _chkForceResync.Enabled = false;
          _clbEntities.Enabled = false;
          _rtbLogs.Clear();

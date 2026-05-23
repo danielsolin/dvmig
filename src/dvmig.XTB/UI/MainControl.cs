@@ -47,8 +47,6 @@ namespace dvmig.XTB.UI
             _rtbLogs.AppendText("Welcome to dvmig for XrmToolBox.\n");
             _rtbLogs.AppendText("Please connect both a SOURCE and a TARGET " +
                                 "environment to begin.\n");
-            _rtbLogs.AppendText("Note: Any environment connected during " +
-                                "startup is assigned as the SOURCE.\n\n");
         }
 
         public override void UpdateConnection(
@@ -94,7 +92,7 @@ namespace dvmig.XTB.UI
                _userService = null;
 
                _rtbLogs.AppendText(
-                  $"Environment '{detail.OrganizationFriendlyName}' " +
+                  $"Environment '{detail.ConnectionName}' " +
                   "assigned as TARGET.\n"
                );
             }
@@ -117,7 +115,7 @@ namespace dvmig.XTB.UI
                _userService = null;
 
                _rtbLogs.AppendText(
-                  $"Environment '{detail.OrganizationFriendlyName}' " +
+                  $"Environment '{detail.ConnectionName}' " +
                   "assigned as SOURCE.\n"
                );
 
@@ -174,6 +172,12 @@ namespace dvmig.XTB.UI
         )
         {
             // Here because an implementation is required.
+        }
+
+        protected override void OnHandleCreated(EventArgs e)
+        {
+           base.OnHandleCreated(e);
+           ApplyPreferredSplitterLayout();
         }
 
         private class EntityItem
