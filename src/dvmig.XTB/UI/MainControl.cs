@@ -81,11 +81,8 @@ namespace dvmig.XTB.UI
                      "Source reset because it matched the selected Target.\n"
                   );
 
-               _targetProvider = new XTBDataProvider(
-                  newService,
-                  detail.ConnectionName,
-                  !detail.UseOnline
-               );
+               DisposeProvider(_targetProvider);
+               _targetProvider = CreateProvider(newService, detail);
 
                _btnSelectTarget.Text =
                   $"Target: {detail.ConnectionName}";
@@ -104,11 +101,8 @@ namespace dvmig.XTB.UI
                      "Target reset because it matched the selected Source.\n"
                   );
 
-               _sourceProvider = new XTBDataProvider(
-                  newService,
-                  detail.ConnectionName,
-                  !detail.UseOnline
-               );
+               DisposeProvider(_sourceProvider);
+               _sourceProvider = CreateProvider(newService, detail);
 
                _btnSelectSource.Text =
                   $"Source: {detail.ConnectionName}";
@@ -126,6 +120,45 @@ namespace dvmig.XTB.UI
             UpdateSyncButtonState();
         }
 
+        private IDataverseProvider CreateProvider(
+           IOrganizationService service,
+           ConnectionDetail detail
+        )
+        {
+           try
+           {
+              var client = detail.GetCrmServiceClient();
+
+              if (client != null && client.IsReady)
+              {
+                 _rtbLogs.AppendText(
+                    $"Using XrmTooling provider for " +
+                    $"'{detail.ConnectionName}'.\n"
+                 );
+
+                 return new XTBToolingDataProvider(
+                    client,
+                    detail.ConnectionName,
+                    !detail.UseOnline
+                 );
+              }
+           }
+           catch (Exception ex)
+           {
+              _rtbLogs.AppendText(
+                 "XrmTooling provider unavailable for " +
+                 $"'{detail.ConnectionName}'; using XrmToolBox service. " +
+                 $"Reason: {ex.Message}\n"
+              );
+           }
+
+           return new XTBDataProvider(
+              service,
+              detail.ConnectionName,
+              !detail.UseOnline
+           );
+        }
+
         private static bool IsSameConnection(
            string connectionName,
            IDataverseProvider? provider
@@ -141,6 +174,7 @@ namespace dvmig.XTB.UI
 
         private void ClearSourceConnection(string logMessage)
         {
+           DisposeProvider(_sourceProvider);
            _sourceProvider = null;
            _userService = null;
            _countCts?.Cancel();
@@ -156,11 +190,18 @@ namespace dvmig.XTB.UI
 
         private void ClearTargetConnection(string logMessage)
         {
+           DisposeProvider(_targetProvider);
            _targetProvider = null;
            _userService = null;
            _btnSelectTarget.Text = "Target: Not Connected";
            _btnSelectTarget.ForeColor = Color.Red;
            _rtbLogs.AppendText(logMessage);
+        }
+
+        private static void DisposeProvider(IDataverseProvider? provider)
+        {
+           if (provider is IDisposable disposable)
+              disposable.Dispose();
         }
 
         private void ResetSyncProgress()
