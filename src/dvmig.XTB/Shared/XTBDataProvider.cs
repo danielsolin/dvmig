@@ -15,7 +15,7 @@ namespace dvmig.XTB.Shared
    /// Implementation of <see cref="IDataverseProvider"/> that wraps an 
    /// XrmToolBox <see cref="IOrganizationService"/>.
    /// </summary>
-   public class XTBDataProvider : IDataverseProvider
+   internal sealed class XTBDataProvider : IDataverseProvider
    {
       private readonly IOrganizationService _service;
       
