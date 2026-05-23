@@ -25,6 +25,7 @@ namespace dvmig.XTB.UI
         private HashSet<string> _selectedEntities = new();
         private long _totalRecordsCount;
         private CancellationTokenSource? _countCts;
+        private CancellationTokenSource? _syncCts;
         private bool _isFiltering;
 
         public MainControl()

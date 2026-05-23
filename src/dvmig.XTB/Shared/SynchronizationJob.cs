@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
 
 using Microsoft.Extensions.DependencyInjection;
 
@@ -16,6 +17,7 @@ namespace dvmig.XTB.Shared
       private readonly IUserService _userService;
       private readonly List<string> _entityLogicalNames;
       private readonly int _totalRecords;
+      private readonly bool _forceResync;
       private readonly Action<int, string> _reportProgress;
       private readonly ILogger _logger;
 
@@ -26,6 +28,7 @@ namespace dvmig.XTB.Shared
          IUserService userService,
          List<string> entityLogicalNames,
          int totalRecords,
+         bool forceResync,
          Action<int, string> reportProgress
       )
       {
@@ -35,16 +38,20 @@ namespace dvmig.XTB.Shared
          _userService = userService;
          _entityLogicalNames = entityLogicalNames;
          _totalRecords = totalRecords;
+         _forceResync = forceResync;
          _reportProgress = reportProgress;
          _logger = _serviceProvider.GetRequiredService<ILogger>();
       }
 
-      public void Run()
+      public void Run(CancellationToken ct)
       {
          var envService =
             _serviceProvider.GetRequiredService<IEnvironmentService>();
          var syncStateService =
             _serviceProvider.GetRequiredService<ISyncStateService>();
+         var settings =
+            _serviceProvider.GetRequiredService<ISettingsService>()
+               .LoadSettings();
 
          // NOTE: EntityService is manually instantiated here,
          // as its constructor requires IDataverseProvider instance which
@@ -56,7 +63,7 @@ namespace dvmig.XTB.Shared
 
          _logger.Information("Validating target environment...");
          var isReady = envService
-                        .ValidateTargetEnvironmentAsync(_targetProvider)
+                        .ValidateTargetEnvironmentAsync(_targetProvider, ct)
                         .GetAwaiter()
                         .GetResult();
 
@@ -65,7 +72,7 @@ namespace dvmig.XTB.Shared
             _logger.Warning("Target environment is not ready. " +
                               "Installing required components...");
 
-            envService.InstallComponentsAsync(_targetProvider)
+            envService.InstallComponentsAsync(_targetProvider, ct)
                .GetAwaiter()
                .GetResult();
 
@@ -81,14 +88,15 @@ namespace dvmig.XTB.Shared
              syncStateService
          );
 
-         syncEngine.InitializeSyncAsync().GetAwaiter().GetResult();
+         syncEngine.InitializeSyncAsync(ct).GetAwaiter().GetResult();
 
          var options = new SyncOptions
          {
-            MaxDegreeOfParallelism = 10,
-            ForceResync = false,
+            MaxDegreeOfParallelism = settings.MaxParallelism,
+            ForceResync = _forceResync,
             PreserveAuditData = true,
-            StripMissingDependencies = true
+            StripMissingDependencies = true,
+            AutoCreateRelatedRecords = settings.AutoCreateRelatedRecords
          };
 
          int processedRecords = 0;
@@ -107,6 +115,8 @@ namespace dvmig.XTB.Shared
 
          foreach(var entityLogicalName in _entityLogicalNames)
          {
+            ct.ThrowIfCancellationRequested();
+
             _logger.Information($"Starting synchronization for entity:" +
                                  $" {entityLogicalName}");
 
@@ -114,7 +124,8 @@ namespace dvmig.XTB.Shared
                 entityLogicalName,
                 options,
                 null,
-                progress
+                progress,
+                ct
             ).GetAwaiter().GetResult();
 
             _logger.Information($"Synchronization for entity " +

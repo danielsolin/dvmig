@@ -10,7 +10,10 @@ namespace dvmig.XTB.UI
         private Label _lblSource = null!;
         private Label _lblTarget = null!;
         private Label _lblSelectedEntities = null!;
+        private CheckBox _chkForceResync = null!;
         private Button _btnSync = null!;
+        private Button _btnSelectRecommended = null!;
+        private Button _btnCancelSync = null!;
         private ProgressBar _prgSync = null!;
         private CheckedListBox _clbEntities = null!;
         private TextBox _txtSearch = null!;
@@ -22,14 +25,15 @@ namespace dvmig.XTB.UI
             var topPanel = new TableLayoutPanel
             {
                 Dock = DockStyle.Top,
-                Height = 170,
+                Height = 205,
                 ColumnCount = 2,
-                RowCount = 4,
+                RowCount = 5,
                 Padding = new Padding(10)
             };
             topPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 70));
             topPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 30));
             
+            topPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 35));
             topPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 35));
             topPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 35));
             topPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 35));
@@ -74,6 +78,21 @@ namespace dvmig.XTB.UI
             };
             _btnSync.Click += RunSync_Click;
 
+            _btnSelectRecommended = new Button
+            {
+                Text = "Select Recommended",
+                Dock = DockStyle.Fill
+            };
+            _btnSelectRecommended.Click += SelectRecommended_Click;
+
+            _btnCancelSync = new Button
+            {
+                Text = "Cancel",
+                Dock = DockStyle.Fill,
+                Enabled = false
+            };
+            _btnCancelSync.Click += CancelSync_Click;
+
             _lblSelectedEntities = new Label
             {
                Text = "Selected: None",
@@ -81,6 +100,14 @@ namespace dvmig.XTB.UI
                TextAlign = ContentAlignment.MiddleLeft,
                AutoEllipsis = true
             };
+
+            _chkForceResync = new CheckBox
+            {
+               Text = "Force re-sync",
+               Dock = DockStyle.Fill,
+               TextAlign = ContentAlignment.MiddleLeft
+            };
+            _chkForceResync.CheckedChanged += OnSyncOptionsChanged;
 
             _prgSync = new ProgressBar
             {
@@ -94,7 +121,24 @@ namespace dvmig.XTB.UI
             topPanel.Controls.Add(_btnSelectTarget, 1, 1);
             topPanel.Controls.Add(_lblSelectedEntities, 0, 2);
             topPanel.Controls.Add(_btnSync, 1, 2);
-            topPanel.Controls.Add(_prgSync, 0, 3);
+            topPanel.Controls.Add(_chkForceResync, 0, 3);
+            var syncToolsPanel = new TableLayoutPanel
+            {
+               Dock = DockStyle.Fill,
+               ColumnCount = 2,
+               RowCount = 1,
+               Margin = new Padding(0)
+            };
+            syncToolsPanel.ColumnStyles.Add(
+               new ColumnStyle(SizeType.Percent, 60)
+            );
+            syncToolsPanel.ColumnStyles.Add(
+               new ColumnStyle(SizeType.Percent, 40)
+            );
+            syncToolsPanel.Controls.Add(_btnSelectRecommended, 0, 0);
+            syncToolsPanel.Controls.Add(_btnCancelSync, 1, 0);
+            topPanel.Controls.Add(syncToolsPanel, 1, 3);
+            topPanel.Controls.Add(_prgSync, 0, 4);
             topPanel.SetColumnSpan(_prgSync, 2);
 
             _txtSearch = new TextBox

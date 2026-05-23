@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Windows.Forms;
 using System.Threading;
 using System.Threading.Tasks;
@@ -11,6 +12,7 @@ using XrmToolBox.Extensibility;
 
 using dvmig.Core.Interfaces;
 using dvmig.Core.Providers;
+using dvmig.Core.Shared;
 using dvmig.Core.Synchronization;
 using dvmig.XTB.Shared;
 
@@ -77,6 +79,39 @@ namespace dvmig.XTB.UI
          }
       }
 
+      private void OnSyncOptionsChanged(object? sender, EventArgs e)
+      {
+         ResetSyncProgress();
+      }
+
+      private void SelectRecommended_Click(object? sender, EventArgs e)
+      {
+         if (_allEntities.Count == 0)
+         {
+            MessageBox.Show(
+               "Connect a source environment before selecting recommended entities.",
+               "No Source Connected",
+               MessageBoxButtons.OK,
+               MessageBoxIcon.Information
+            );
+
+            return;
+         }
+
+         var availableEntities = _allEntities
+            .Select(e => e.LogicalName)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+         _selectedEntities = SystemConstants.SyncSettings
+            .RecommendedEntities
+            .Where(availableEntities.Contains)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+         FilterEntities();
+         UpdateSelectedEntitiesLabel();
+         ResetSyncProgress();
+      }
+
       private void UpdateSelectedEntitiesLabel()
       {
          if (_selectedEntities.Count == 0)
@@ -140,7 +175,12 @@ namespace dvmig.XTB.UI
       private void UpdateSyncButtonState()
       {
          _btnSync.Enabled = _sourceProvider != null &&
-            _targetProvider != null;
+            _targetProvider != null &&
+            _syncCts == null;
+
+         _btnCancelSync.Enabled = _syncCts != null;
+         _btnSelectRecommended.Enabled = _syncCts == null;
+         _chkForceResync.Enabled = _syncCts == null;
       }
 
       private void LoadEntities()
@@ -241,7 +281,11 @@ namespace dvmig.XTB.UI
             return;
 
          _countCts?.Cancel();
+         _syncCts = new CancellationTokenSource();
          _btnSync.Enabled = false;
+         _btnCancelSync.Enabled = true;
+         _btnSelectRecommended.Enabled = false;
+         _chkForceResync.Enabled = false;
          _clbEntities.Enabled = false;
          _rtbLogs.Clear();
          _prgSync.Value = 0;
@@ -267,9 +311,18 @@ namespace dvmig.XTB.UI
                   _userService,
                   selectedLogicalNames,
                   (int)_totalRecordsCount,
+                  _chkForceResync.Checked,
                   (percent, message) => worker.ReportProgress(percent, message)
                );
-               job.Run();
+
+               try
+               {
+                  job.Run(_syncCts.Token);
+               }
+               catch (OperationCanceledException)
+               {
+                  args.Cancel = true;
+               }
             },
             ProgressChanged = e =>
             {
@@ -280,10 +333,24 @@ namespace dvmig.XTB.UI
             },
             PostWorkCallBack = (args) =>
             {
+               _syncCts?.Dispose();
+               _syncCts = null;
                _clbEntities.Enabled = true;
                UpdateSyncButtonState();
 
-               if(args.Error != null)
+               if(args.Cancelled)
+               {
+                  _prgSync.Value = 0;
+                  _rtbLogs.AppendText("\n[INFO] Synchronization cancelled.\n");
+
+                  MessageBox.Show(
+                     "Synchronization cancelled.",
+                     "Cancelled",
+                     MessageBoxButtons.OK,
+                     MessageBoxIcon.Information
+                  );
+               }
+               else if(args.Error != null)
                {
                   _rtbLogs.AppendText(
                      $"\n[ERROR] Sync failed: {args.Error.Message}\n"
@@ -314,6 +381,13 @@ namespace dvmig.XTB.UI
                _rtbLogs.ScrollToCaret();
             }
          });
+      }
+
+      private void CancelSync_Click(object? sender, EventArgs e)
+      {
+         _syncCts?.Cancel();
+         _btnCancelSync.Enabled = false;
+         SetWorkingMessage("Cancelling synchronization...");
       }
    }
 }
