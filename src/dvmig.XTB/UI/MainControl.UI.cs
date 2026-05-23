@@ -5,10 +5,9 @@ namespace dvmig.XTB.UI
 {
     public partial class MainControl
     {
+        private const int _connectionButtonWidth = 385;
         private Button _btnSelectSource = null!;
         private Button _btnSelectTarget = null!;
-        private Label _lblSource = null!;
-        private Label _lblTarget = null!;
         private Label _lblSelectedEntities = null!;
         private CheckBox _chkForceResync = null!;
         private Button _btnSync = null!;
@@ -39,33 +38,23 @@ namespace dvmig.XTB.UI
             topPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 35));
             topPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 30));
 
-            _lblSource = new Label
-            {
-               Text = "Source: Not Connected",
-               Dock = DockStyle.Fill,
-               TextAlign = ContentAlignment.MiddleLeft,
-               ForeColor = Color.Red
-            };
-
             _btnSelectSource = new Button
             {
-                Text = "Select Source",
-                Dock = DockStyle.Fill
+                Text = "Source: Not Connected",
+                Dock = DockStyle.Left,
+                Width = _connectionButtonWidth,
+                TextAlign = ContentAlignment.MiddleLeft,
+                ForeColor = Color.Red
             };
             _btnSelectSource.Click += OnSelectSourceClick;
 
-            _lblTarget = new Label
-            {
-               Text = "Target: Not Connected",
-               Dock = DockStyle.Fill,
-               TextAlign = ContentAlignment.MiddleLeft,
-               ForeColor = Color.Red
-            };
-
             _btnSelectTarget = new Button
             {
-                Text = "Select Target",
-                Dock = DockStyle.Fill
+                Text = "Target: Not Connected",
+                Dock = DockStyle.Left,
+                Width = _connectionButtonWidth,
+                TextAlign = ContentAlignment.MiddleLeft,
+                ForeColor = Color.Red
             };
             _btnSelectTarget.Click += OnSelectTargetClick;
 
@@ -115,10 +104,8 @@ namespace dvmig.XTB.UI
                 Visible = true
             };
 
-            topPanel.Controls.Add(_lblSource, 0, 0);
-            topPanel.Controls.Add(_btnSelectSource, 1, 0);
-            topPanel.Controls.Add(_lblTarget, 0, 1);
-            topPanel.Controls.Add(_btnSelectTarget, 1, 1);
+            topPanel.Controls.Add(_btnSelectSource, 0, 0);
+            topPanel.Controls.Add(_btnSelectTarget, 0, 1);
             topPanel.Controls.Add(_lblSelectedEntities, 0, 2);
             topPanel.Controls.Add(_btnSync, 1, 2);
             topPanel.Controls.Add(_chkForceResync, 0, 3);

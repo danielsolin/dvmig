@@ -75,8 +75,9 @@ namespace dvmig.XTB.UI
                   !detail.UseOnline
                );
 
-               _lblTarget.Text = $"Target: {detail.OrganizationFriendlyName}";
-               _lblTarget.ForeColor = Color.DarkGreen;
+               _btnSelectTarget.Text =
+                  $"Target: {detail.OrganizationFriendlyName}";
+               _btnSelectTarget.ForeColor = Color.DarkGreen;
                _userService = null;
 
                _rtbLogs.AppendText(
@@ -92,8 +93,9 @@ namespace dvmig.XTB.UI
                   !detail.UseOnline
                );
 
-               _lblSource.Text = $"Source: {detail.OrganizationFriendlyName}";
-               _lblSource.ForeColor = Color.DarkGreen;
+               _btnSelectSource.Text =
+                  $"Source: {detail.OrganizationFriendlyName}";
+               _btnSelectSource.ForeColor = Color.DarkGreen;
                _userService = null;
 
                _rtbLogs.AppendText(
