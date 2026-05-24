@@ -109,6 +109,7 @@ namespace dvmig.XTB.UI
 
             UpdateSelectedEntitiesLabel();
             ResetSyncProgress();
+            UpdateSyncButtonState();
          }
       }
 
@@ -175,6 +176,7 @@ namespace dvmig.XTB.UI
          FilterEntities();
          UpdateSelectedEntitiesLabel();
          ResetSyncProgress();
+         UpdateSyncButtonState();
       }
 
       private void UpdateSelectedEntitiesLabel()
@@ -261,15 +263,241 @@ namespace dvmig.XTB.UI
 
       private void UpdateSyncButtonState()
       {
-         _btnSync.Enabled = _sourceProvider != null &&
+         var canInteractWithSync = _syncCts == null;
+         var canRunSync = _sourceProvider != null &&
             _targetProvider != null &&
-            _syncCts == null;
+            _targetComponentsReady == true &&
+            _selectedEntities.Count > 0 &&
+            canInteractWithSync;
+
+         _btnSync.Enabled = canInteractWithSync;
+         _btnSync.BackColor = canRunSync
+            ? System.Drawing.Color.LightGreen
+            : System.Drawing.SystemColors.Control;
+         _btnSync.ForeColor = canRunSync
+            ? System.Drawing.SystemColors.ControlText
+            : System.Drawing.SystemColors.GrayText;
 
          _btnCancelSync.Enabled = _syncCts != null;
          _chkSelectRecommended.Enabled = _syncCts == null;
          _chkForceResync.Enabled = _syncCts == null;
          _chkAutoCreateRelatedRecords.Enabled = _syncCts == null;
          _chkShowHiddenEntities.Enabled = _syncCts == null;
+         UpdateInstallComponentsButtonState();
+      }
+
+      private void UpdateInstallComponentsButtonState()
+      {
+         var shouldShow = _targetProvider != null &&
+            _targetComponentsReady.HasValue;
+
+         _btnInstallComponents.Text = _targetComponentsReady == true
+            ? "<-- Uninstall Components"
+            : "<-- Install Components";
+
+         _btnInstallComponents.Visible = shouldShow;
+         _btnInstallComponents.Enabled = shouldShow &&
+            _syncCts == null &&
+            !_isCheckingTargetComponents &&
+            !_isUpdatingTargetComponents;
+      }
+
+      private void CheckTargetComponents()
+      {
+         if (_targetProvider == null || _serviceProvider == null)
+            return;
+
+         var target = _targetProvider;
+         var environmentService =
+            _serviceProvider.GetRequiredService<IEnvironmentService>();
+
+         _isCheckingTargetComponents = true;
+         _targetComponentsReady = null;
+         UpdateSyncButtonState();
+         _rtbLogs.AppendText("Checking dvmig components on Target...\n");
+
+         WorkAsync(new WorkAsyncInfo
+         {
+            Message = "Checking dvmig components on Target...",
+            Work = (worker, args) =>
+            {
+               args.Result = environmentService
+                  .ValidateTargetEnvironmentAsync(target)
+                  .GetAwaiter()
+                  .GetResult();
+            },
+            PostWorkCallBack = (args) =>
+            {
+               if (!ReferenceEquals(target, _targetProvider))
+                  return;
+
+               _isCheckingTargetComponents = false;
+
+               if(args.Error != null)
+               {
+                  _targetComponentsReady = false;
+                  _rtbLogs.AppendText(
+                     "Could not validate dvmig components on Target: " +
+                     $"{args.Error.GetBaseException().Message}\n"
+                  );
+               }
+               else if(args.Result is bool isReady && isReady)
+               {
+                  _targetComponentsReady = true;
+                  _rtbLogs.AppendText(
+                     "Target has the required dvmig components.\n"
+                  );
+               }
+               else
+               {
+                  _targetComponentsReady = false;
+                  _rtbLogs.AppendText(
+                     "Target is missing required dvmig components. " +
+                     "Install them before running synchronization.\n"
+                  );
+               }
+
+               UpdateSyncButtonState();
+            }
+         });
+      }
+
+      private void OnTargetComponentsActionClick(object? sender, EventArgs e)
+      {
+         if (_targetComponentsReady == true)
+            UninstallTargetComponents();
+         else
+            InstallTargetComponents();
+      }
+
+      private void InstallTargetComponents()
+      {
+         if (_targetProvider == null || _serviceProvider == null)
+            return;
+
+         var target = _targetProvider;
+         var environmentService =
+            _serviceProvider.GetRequiredService<IEnvironmentService>();
+
+         _isUpdatingTargetComponents = true;
+         UpdateSyncButtonState();
+         _rtbLogs.AppendText("Installing dvmig components on Target...\n");
+
+         WorkAsync(new WorkAsyncInfo
+         {
+            Message = "Installing dvmig components on Target...",
+            Work = (worker, args) =>
+            {
+               environmentService
+                  .InstallComponentsAsync(target)
+                  .GetAwaiter()
+                  .GetResult();
+            },
+            PostWorkCallBack = (args) =>
+            {
+               if (!ReferenceEquals(target, _targetProvider))
+                  return;
+
+               _isUpdatingTargetComponents = false;
+
+               if(args.Error != null)
+               {
+                  _targetComponentsReady = false;
+                  var error = args.Error.GetBaseException();
+
+                  _rtbLogs.AppendText(
+                     $"Failed to install dvmig components: {error.Message}\n"
+                  );
+
+                  MessageBox.Show(
+                     $"Failed to install dvmig components: {error.Message}",
+                     "Installation Failed",
+                     MessageBoxButtons.OK,
+                     MessageBoxIcon.Error
+                  );
+
+                  UpdateSyncButtonState();
+                  return;
+               }
+
+               _rtbLogs.AppendText(
+                  "dvmig components installed. Validating Target...\n"
+               );
+               CheckTargetComponents();
+            }
+         });
+      }
+
+      private void UninstallTargetComponents()
+      {
+         if (_targetProvider == null || _serviceProvider == null)
+            return;
+
+         var result = MessageBox.Show(
+            "Remove all dvmig system components from the Target " +
+            "environment?",
+            "Uninstall dvmig Components",
+            MessageBoxButtons.YesNo,
+            MessageBoxIcon.Warning,
+            MessageBoxDefaultButton.Button2
+         );
+
+         if (result != DialogResult.Yes)
+            return;
+
+         var target = _targetProvider;
+         var environmentService =
+            _serviceProvider.GetRequiredService<IEnvironmentService>();
+
+         _isUpdatingTargetComponents = true;
+         UpdateSyncButtonState();
+         _rtbLogs.AppendText("Uninstalling dvmig components from Target...\n");
+
+         WorkAsync(new WorkAsyncInfo
+         {
+            Message = "Uninstalling dvmig components from Target...",
+            Work = (worker, args) =>
+            {
+               environmentService
+                  .UninstallComponentsAsync(target)
+                  .GetAwaiter()
+                  .GetResult();
+            },
+            PostWorkCallBack = (args) =>
+            {
+               if (!ReferenceEquals(target, _targetProvider))
+                  return;
+
+               _isUpdatingTargetComponents = false;
+
+               if(args.Error != null)
+               {
+                  _targetComponentsReady = true;
+                  var error = args.Error.GetBaseException();
+
+                  _rtbLogs.AppendText(
+                     "Failed to uninstall dvmig components: " +
+                     $"{error.Message}\n"
+                  );
+
+                  MessageBox.Show(
+                     "Failed to uninstall dvmig components: " +
+                     $"{error.Message}",
+                     "Uninstallation Failed",
+                     MessageBoxButtons.OK,
+                     MessageBoxIcon.Error
+                  );
+
+                  UpdateSyncButtonState();
+                  return;
+               }
+
+               _rtbLogs.AppendText(
+                  "dvmig components uninstalled. Validating Target...\n"
+               );
+               CheckTargetComponents();
+            }
+         });
       }
 
       private void LoadEntities(bool resetSelection = true)
@@ -327,6 +555,7 @@ namespace dvmig.XTB.UI
                   RemoveUnavailableSelectedEntities();
                   FilterEntities();
                   UpdateSelectedEntitiesLabel();
+                  UpdateSyncButtonState();
                   _rtbLogs.AppendText(
                      $"Loaded {entities.Count:N0} entities " +
                      $"(show hidden: {includeHidden}).\n"
@@ -376,6 +605,58 @@ namespace dvmig.XTB.UI
 
       private void RunSync_Click(object? sender, EventArgs e)
       {
+         if(_sourceProvider == null)
+         {
+            MessageBox.Show(
+               "Please select a Source environment before running " +
+               "synchronization.",
+               "Source Not Selected",
+               MessageBoxButtons.OK,
+               MessageBoxIcon.Warning
+            );
+
+            return;
+         }
+
+         if(_targetProvider == null)
+         {
+            MessageBox.Show(
+               "Please select a Target environment before running " +
+               "synchronization.",
+               "Target Not Selected",
+               MessageBoxButtons.OK,
+               MessageBoxIcon.Warning
+            );
+
+            return;
+         }
+
+         if(_targetComponentsReady == false)
+         {
+            MessageBox.Show(
+               "Please install dvmig components on the Target environment " +
+               "before running synchronization.",
+               "Target Components Missing",
+               MessageBoxButtons.OK,
+               MessageBoxIcon.Warning
+            );
+
+            return;
+         }
+
+         if(_targetComponentsReady != true)
+         {
+            MessageBox.Show(
+               "Please wait until dvmig has checked the Target " +
+               "components.",
+               "Target Components Not Checked",
+               MessageBoxButtons.OK,
+               MessageBoxIcon.Information
+            );
+
+            return;
+         }
+
          if(_selectedEntities.Count == 0)
          {
             MessageBox.Show(

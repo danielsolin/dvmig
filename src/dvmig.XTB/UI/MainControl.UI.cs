@@ -6,11 +6,13 @@ namespace dvmig.XTB.UI
     public partial class MainControl
     {
         private const int _connectionButtonWidth = 385;
+        private const int _installComponentsButtonWidth = 220;
         private readonly Font _buttonFont = new("Segoe UI", 10F, FontStyle.Bold);
         private readonly Font _uiFont = new("Segoe UI", 9F);
 
         private Button _btnSelectSource = null!;
         private Button _btnSelectTarget = null!;
+        private Button _btnInstallComponents = null!;
         private Label _lblSelectedEntities = null!;
         private FlowLayoutPanel _selectedEntityChipsPanel = null!;
         private CheckBox _chkSelectRecommended = null!;
@@ -65,12 +67,24 @@ namespace dvmig.XTB.UI
             };
             _btnSelectTarget.Click += OnSelectTargetClick;
 
+            _btnInstallComponents = new Button
+            {
+                Text = "<-- Install Components",
+                Dock = DockStyle.Left,
+                Enabled = false,
+                Visible = false,
+                Width = _installComponentsButtonWidth,
+                Font = _buttonFont
+            };
+            _btnInstallComponents.Click += OnTargetComponentsActionClick;
+
             _btnSync = new Button
             {
                 Text = "Run Synchronization",
                 Dock = DockStyle.Fill,
                 Enabled = false,
                 BackColor = Color.LightGreen,
+                UseVisualStyleBackColor = false,
                 Font = _buttonFont
             };
             _btnSync.Click += RunSync_Click;
@@ -149,8 +163,31 @@ namespace dvmig.XTB.UI
                Font = _uiFont
             };
 
+            var targetConnectionPanel = new TableLayoutPanel
+            {
+               Dock = DockStyle.Fill,
+               ColumnCount = 2,
+               RowCount = 1,
+               Margin = new Padding(0),
+               Padding = new Padding(0)
+            };
+            targetConnectionPanel.ColumnStyles.Add(
+               new ColumnStyle(
+                  SizeType.Absolute,
+                  _connectionButtonWidth + _btnSelectTarget.Margin.Horizontal
+               )
+            );
+            targetConnectionPanel.ColumnStyles.Add(
+               new ColumnStyle(SizeType.Percent, 100)
+            );
+            targetConnectionPanel.RowStyles.Add(
+               new RowStyle(SizeType.Percent, 100)
+            );
+            targetConnectionPanel.Controls.Add(_btnSelectTarget, 0, 0);
+            targetConnectionPanel.Controls.Add(_btnInstallComponents, 1, 0);
+
             topPanel.Controls.Add(_btnSelectSource, 0, 0);
-            topPanel.Controls.Add(_btnSelectTarget, 0, 1);
+            topPanel.Controls.Add(targetConnectionPanel, 0, 1);
             topPanel.Controls.Add(_btnSync, 1, 0);
             topPanel.Controls.Add(_btnCancelSync, 1, 1);
 
