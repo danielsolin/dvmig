@@ -124,10 +124,13 @@ flowchart TD
 ## Performance
 A test set of 2874 records, including `Account`, `Contact`, `Task`, `Email`,
 `PhoneCall` and `Appointment`, produced these results:  
-  
-3 threads:  9m 19s = 559s = ~5.1 records/s   
-5 threads:  6m 00s = 360s = ~8.0 records/s  
-7 threads:  6m 22s = 382s = ~7.5 records/s   
-10 threads: 7m 08s = 428s = ~6.7 records/s    
+
+| Threads | Time | Seconds | Throughput |
+| ---: | ---: | ---: | ---: |
+| 1 | 28m 46s | 1726s | ~1.7 records/s |
+| 3 | 9m 19s | 559s | ~5.1 records/s |
+| 5 | 6m 00s | 360s | ~8.0 records/s |
+| 7 | 6m 22s | 382s | ~7.5 records/s |
+| 10 | 7m 08s | 428s | ~6.7 records/s |
 
 Five threads is therefore set as default in dvmig.
