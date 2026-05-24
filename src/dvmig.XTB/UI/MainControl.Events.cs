@@ -124,7 +124,13 @@ namespace dvmig.XTB.UI
          EventArgs e
       )
       {
-         SaveAutoCreateRelatedRecordsSetting();
+         SaveSyncSettings();
+         OnSyncOptionsChanged(sender, e);
+      }
+
+      private void OnMaxThreadsChanged(object? sender, EventArgs e)
+      {
+         SaveSyncSettings();
          OnSyncOptionsChanged(sender, e);
       }
 
@@ -139,9 +145,15 @@ namespace dvmig.XTB.UI
 
          _chkAutoCreateRelatedRecords.Checked =
             settings.AutoCreateRelatedRecords;
+         _cmbMaxThreads.SelectedItem =
+            SystemConstants.SyncSettings
+               .ParallelismOptions
+               .Contains(settings.MaxParallelism)
+               ? settings.MaxParallelism
+               : 10;
       }
 
-      private void SaveAutoCreateRelatedRecordsSetting()
+      private void SaveSyncSettings()
       {
          if (_serviceProvider == null)
             return;
@@ -151,6 +163,8 @@ namespace dvmig.XTB.UI
          var settings = settingsService.LoadSettings();
          settings.AutoCreateRelatedRecords =
             _chkAutoCreateRelatedRecords.Checked;
+         if (_cmbMaxThreads.SelectedItem is int maxThreads)
+            settings.MaxParallelism = maxThreads;
          settingsService.SaveSettings(settings);
       }
 
@@ -509,6 +523,7 @@ namespace dvmig.XTB.UI
          _chkSelectRecommended.Enabled = canInteract;
          _chkForceResync.Enabled = canInteract;
          _chkAutoCreateRelatedRecords.Enabled = canInteract;
+         _cmbMaxThreads.Enabled = canInteract;
          _chkShowHiddenEntities.Enabled = canInteract;
          _txtSearch.Enabled = canInteract;
          _clbEntities.Enabled = canInteract;
@@ -949,13 +964,14 @@ namespace dvmig.XTB.UI
          _chkSelectRecommended.Enabled = false;
          _chkForceResync.Enabled = false;
          _chkAutoCreateRelatedRecords.Enabled = false;
+         _cmbMaxThreads.Enabled = false;
          _chkShowHiddenEntities.Enabled = false;
          _btnClearSelectedEntities.Enabled = false;
          _clbEntities.Enabled = false;
          _rtbLogs.Clear();
          _prgSync.Value = 0;
          _lblSyncStatus.Text = "Preparing synchronization...";
-         SaveAutoCreateRelatedRecordsSetting();
+         SaveSyncSettings();
 
          if (_userService == null)
          {

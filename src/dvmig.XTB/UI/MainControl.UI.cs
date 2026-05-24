@@ -1,5 +1,8 @@
 using System.Drawing;
+using System.Linq;
 using System.Windows.Forms;
+
+using dvmig.Core.Shared;
 
 namespace dvmig.XTB.UI
 {
@@ -20,6 +23,7 @@ namespace dvmig.XTB.UI
         private CheckBox _chkSelectRecommended = null!;
         private CheckBox _chkForceResync = null!;
         private CheckBox _chkAutoCreateRelatedRecords = null!;
+        private ComboBox _cmbMaxThreads = null!;
         private Button _btnSync = null!;
         private Button _btnCancelSync = null!;
         private Label _lblSyncStatus = null!;
@@ -43,7 +47,7 @@ namespace dvmig.XTB.UI
             };
             topPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 400));
             topPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-            topPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 400));
+            topPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 430));
             
             topPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 44));
             topPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 44));
@@ -221,6 +225,32 @@ namespace dvmig.XTB.UI
             _chkAutoCreateRelatedRecords.CheckedChanged +=
                OnAutoCreateRelatedRecordsChanged;
 
+            var maxThreadsLabel = new Label
+            {
+               Text = "Threads",
+               AutoSize = true,
+               Anchor = AnchorStyles.Left | AnchorStyles.Bottom,
+               Margin = new Padding(18, 3, 4, 0),
+               TextAlign = ContentAlignment.MiddleLeft,
+               Font = _uiFont
+            };
+
+            _cmbMaxThreads = new ComboBox
+            {
+               DropDownStyle = ComboBoxStyle.DropDownList,
+               Anchor = AnchorStyles.Left | AnchorStyles.Bottom,
+               Font = _uiFont,
+               Margin = new Padding(0, 0, 0, 0),
+               Width = 58
+            };
+            _cmbMaxThreads.Items.AddRange(
+               SystemConstants.SyncSettings
+                  .ParallelismOptions
+                  .Cast<object>()
+                  .ToArray()
+            );
+            _cmbMaxThreads.SelectedIndexChanged += OnMaxThreadsChanged;
+
             _prgSync = new ProgressBar
             {
                 Dock = DockStyle.Fill,
@@ -246,6 +276,8 @@ namespace dvmig.XTB.UI
             };
             syncOptionsPanel.Controls.Add(_chkForceResync);
             syncOptionsPanel.Controls.Add(_chkAutoCreateRelatedRecords);
+            syncOptionsPanel.Controls.Add(maxThreadsLabel);
+            syncOptionsPanel.Controls.Add(_cmbMaxThreads);
 
             topPanel.Controls.Add(_btnSelectSource, 0, 0);
             topPanel.Controls.Add(_btnSelectTarget, 0, 1);
