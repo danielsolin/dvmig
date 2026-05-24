@@ -3,7 +3,7 @@
   <metadata>
     <id>dvmig.XTB</id>
     <version>$version$</version>
-    <title>Dataverse Migration (dvmig)</title>
+    <title>Dataverse Migrator (dvmig)</title>
     <authors>Daniel Solin</authors>
     <owners>Daniel Solin</owners>
     <projectUrl>https://github.com/danielsolin/dvmig</projectUrl>
