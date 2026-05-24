@@ -19,6 +19,8 @@ namespace dvmig.XTB.Shared
       private readonly int _totalRecords;
       private readonly bool _forceResync;
       private readonly Action<int, string> _reportProgress;
+      private readonly Action<IReadOnlyCollection<UserMappingSummary>>
+         _reportUserMappings;
       private readonly ILogger _logger;
       private TimeSpan _syncElapsed = TimeSpan.Zero;
 
@@ -32,7 +34,8 @@ namespace dvmig.XTB.Shared
          List<string> entityLogicalNames,
          int totalRecords,
          bool forceResync,
-         Action<int, string> reportProgress
+         Action<int, string> reportProgress,
+         Action<IReadOnlyCollection<UserMappingSummary>> reportUserMappings
       )
       {
          _serviceProvider = serviceProvider;
@@ -43,6 +46,7 @@ namespace dvmig.XTB.Shared
          _totalRecords = totalRecords;
          _forceResync = forceResync;
          _reportProgress = reportProgress;
+         _reportUserMappings = reportUserMappings;
          _logger = _serviceProvider.GetRequiredService<ILogger>();
       }
 
@@ -92,6 +96,10 @@ namespace dvmig.XTB.Shared
          );
 
          syncEngine.InitializeSyncAsync(ct).GetAwaiter().GetResult();
+         _reportUserMappings(
+            _userService.GetMappingSummaryAsync(ct).GetAwaiter().GetResult()
+         );
+
          var syncTimer = SyncTimer.StartNew();
 
          try

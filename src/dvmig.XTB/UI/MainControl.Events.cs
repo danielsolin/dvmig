@@ -194,8 +194,6 @@ namespace dvmig.XTB.UI
 
       private void UpdateSelectedEntitiesLabel()
       {
-         _selectedEntityChipsPanel.Controls.Clear();
-
          if (_selectedEntities.Count == 0)
          {
             _lblSelectedEntities.Text = "Selected: None";
@@ -207,30 +205,234 @@ namespace dvmig.XTB.UI
          _btnClearSelectedEntities.Enabled = _syncCts == null;
          _lblSelectedEntities.Text =
             $"Selected ({_selectedEntities.Count}) | Records: Counting...";
-
-         foreach (var logicalName in _selectedEntities.OrderBy(e => e))
-         {
-            _selectedEntityChipsPanel.Controls.Add(
-               CreateSelectedEntityChip(logicalName)
-            );
-         }
          
          CalculateTotalRecords();
       }
 
-      private Label CreateSelectedEntityChip(string logicalName)
+      private void ResetUserMappingsPanel()
       {
-         return new Label
+         _isMappingUsers = false;
+         _dgvUserMappings.Rows.Clear();
+         _dgvUserMappings.Enabled = false;
+         _btnEditUserMappings.Enabled = false;
+      }
+
+      private void OnUserMappingsSelectionChanged(
+         object? sender,
+         EventArgs e
+      )
+      {
+         ClearUserMappingsSelection();
+      }
+
+      private void ClearUserMappingsSelection()
+      {
+         if (_isClearingUserMappingSelection)
+            return;
+
+         _isClearingUserMappingSelection = true;
+
+         try
          {
-            AutoSize = true,
-            Text = logicalName,
-            BackColor = System.Drawing.Color.FromArgb(232, 240, 254),
-            ForeColor = System.Drawing.Color.FromArgb(32, 66, 120),
-            BorderStyle = BorderStyle.FixedSingle,
-            Font = _uiFont,
-            Margin = new Padding(0, 2, 4, 2),
-            Padding = new Padding(6, 2, 6, 2)
-         };
+            _dgvUserMappings.ClearSelection();
+            _dgvUserMappings.CurrentCell = null;
+         }
+         finally
+         {
+            _isClearingUserMappingSelection = false;
+         }
+      }
+
+      private void OnUserMappingsGroupResize(object? sender, EventArgs e)
+      {
+         _btnEditUserMappings.Location = new System.Drawing.Point(
+            Math.Max(
+               0,
+               _grpUserMappings.ClientSize.Width -
+                  _btnEditUserMappings.Width - 8
+            ),
+            0
+         );
+         _btnEditUserMappings.BringToFront();
+      }
+
+      private void OnEditUserMappingsClick(object? sender, EventArgs e)
+      {
+         if (_userService == null ||
+             _targetProvider == null ||
+             _syncCts != null ||
+             _isCheckingTargetComponents ||
+             _isUpdatingTargetComponents ||
+             _isMappingUsers ||
+             _isLoadingEntities)
+            return;
+
+         var userService = _userService;
+         var target = _targetProvider;
+
+         WorkAsync(new WorkAsyncInfo
+         {
+            Message = "Opening user mappings editor...",
+            Work = (worker, args) =>
+            {
+               var mappings = userService.GetMappingSummaryAsync()
+                  .GetAwaiter()
+                  .GetResult();
+               var targetUsers = UserMappingsEditorForm
+                  .LoadTargetUsersAsync(target)
+                  .GetAwaiter()
+                  .GetResult();
+
+               args.Result = new UserMappingsEditorData(
+                  mappings,
+                  targetUsers
+               );
+            },
+            PostWorkCallBack = (args) =>
+            {
+               if (args.Error != null)
+               {
+                  MessageBox.Show(
+                     "Could not open user mappings editor: " +
+                     args.Error.GetBaseException().Message,
+                     "User Mappings Editor",
+                     MessageBoxButtons.OK,
+                     MessageBoxIcon.Error
+                  );
+
+                  return;
+               }
+
+               if (args.Result is not UserMappingsEditorData data)
+                  return;
+
+               using (var editor = new UserMappingsEditorForm(
+                  userService,
+                  data.Mappings,
+                  data.TargetUsers
+               ))
+               {
+                  editor.ShowDialog(this);
+               }
+
+               var updatedMappings = userService.GetMappingSummaryAsync()
+                  .GetAwaiter()
+                  .GetResult();
+               UpdateUserMappingsPanel(updatedMappings);
+            }
+         });
+      }
+
+      private void StartUserMappingIfReady()
+      {
+         if (_sourceProvider == null ||
+             _targetProvider == null ||
+             _serviceProvider == null)
+            return;
+
+         _userMappingCts?.Cancel();
+         _userMappingCts = new CancellationTokenSource();
+         var token = _userMappingCts.Token;
+
+         var source = _sourceProvider;
+         var target = _targetProvider;
+         var userService = new UserService(
+            _serviceProvider.GetRequiredService<ILogger>(),
+            source,
+            target
+         );
+         _userService = userService;
+
+         _isMappingUsers = true;
+         _dgvUserMappings.Rows.Clear();
+         _dgvUserMappings.Enabled = false;
+         UpdateSyncButtonState();
+
+         WorkAsync(new WorkAsyncInfo
+         {
+            Message = "Mapping users...",
+            Work = (worker, args) =>
+            {
+               userService.MapAllSourceUsersAsync(token)
+                  .GetAwaiter()
+                  .GetResult();
+
+               args.Result = userService.GetMappingSummaryAsync(token)
+                  .GetAwaiter()
+                  .GetResult();
+            },
+            PostWorkCallBack = (args) =>
+            {
+               if (!ReferenceEquals(source, _sourceProvider) ||
+                   !ReferenceEquals(target, _targetProvider))
+                  return;
+
+               _isMappingUsers = false;
+
+               if (args.Error != null)
+               {
+                  _dgvUserMappings.Rows.Clear();
+                  _dgvUserMappings.Enabled = false;
+                  _dgvUserMappings.Rows.Add(
+                     args.Error.GetBaseException().Message,
+                     string.Empty,
+                     "Error"
+                  );
+                  UpdateSyncButtonState();
+
+                  return;
+               }
+
+               if (args.Result is IReadOnlyCollection<UserMappingSummary>
+                   mappings)
+                  UpdateUserMappingsPanel(mappings);
+
+               UpdateSyncButtonState();
+            }
+         });
+      }
+
+      private void UpdateUserMappingsPanel(
+         IReadOnlyCollection<UserMappingSummary> mappings
+      )
+      {
+         var humanMappings = mappings
+            .Where(m => m.IsHuman)
+            .OrderBy(m => m.SourceName)
+            .ToList();
+
+         _dgvUserMappings.Rows.Clear();
+
+         if (humanMappings.Count == 0)
+         {
+            _dgvUserMappings.Enabled = false;
+            _dgvUserMappings.Rows.Add(
+               "No human users found.",
+               string.Empty,
+               string.Empty
+            );
+
+            return;
+         }
+
+         foreach (var mapping in humanMappings)
+         {
+            var rowIndex = _dgvUserMappings.Rows.Add(
+               mapping.SourceName,
+               mapping.TargetName,
+               mapping.Status.ToString()
+            );
+
+            var row = _dgvUserMappings.Rows[rowIndex];
+            row.Cells[2].Style.ForeColor =
+               mapping.Status == UserMappingStatus.Unmapped
+                  ? System.Drawing.Color.DarkGoldenrod
+                  : System.Drawing.Color.DarkGreen;
+         }
+
+         _dgvUserMappings.Enabled = true;
+         _btnEditUserMappings.Enabled = true;
+         ClearUserMappingsSelection();
       }
 
       private void CalculateTotalRecords()
@@ -278,14 +480,22 @@ namespace dvmig.XTB.UI
 
       private void UpdateSyncButtonState()
       {
-         var canInteractWithSync = _syncCts == null;
+         var isSyncRunning = _syncCts != null;
+         var hasBlockingOperation =
+            isSyncRunning ||
+            _isCheckingTargetComponents ||
+            _isUpdatingTargetComponents ||
+            _isMappingUsers ||
+            _isLoadingEntities;
+
+         var canInteract = !hasBlockingOperation;
          var canRunSync = _sourceProvider != null &&
             _targetProvider != null &&
             _targetComponentsReady == true &&
             _selectedEntities.Count > 0 &&
-            canInteractWithSync;
+            canInteract;
 
-         _btnSync.Enabled = canInteractWithSync;
+         _btnSync.Enabled = canRunSync;
          _btnSync.BackColor = canRunSync
             ? System.Drawing.Color.LightGreen
             : System.Drawing.SystemColors.Control;
@@ -293,13 +503,21 @@ namespace dvmig.XTB.UI
             ? System.Drawing.SystemColors.ControlText
             : System.Drawing.SystemColors.GrayText;
 
-         _btnCancelSync.Enabled = _syncCts != null;
-         _chkSelectRecommended.Enabled = _syncCts == null;
-         _chkForceResync.Enabled = _syncCts == null;
-         _chkAutoCreateRelatedRecords.Enabled = _syncCts == null;
-         _chkShowHiddenEntities.Enabled = _syncCts == null;
+         _btnCancelSync.Enabled = isSyncRunning;
+         _btnSelectSource.Enabled = canInteract;
+         _btnSelectTarget.Enabled = canInteract;
+         _chkSelectRecommended.Enabled = canInteract;
+         _chkForceResync.Enabled = canInteract;
+         _chkAutoCreateRelatedRecords.Enabled = canInteract;
+         _chkShowHiddenEntities.Enabled = canInteract;
+         _txtSearch.Enabled = canInteract;
+         _clbEntities.Enabled = canInteract;
+         _btnEditUserMappings.Enabled = canInteract &&
+            _userService != null &&
+            _sourceProvider != null &&
+            _targetProvider != null;
          _btnClearSelectedEntities.Enabled =
-            canInteractWithSync && _selectedEntities.Count > 0;
+            canInteract && _selectedEntities.Count > 0;
          UpdateInstallComponentsButtonState();
       }
 
@@ -315,6 +533,8 @@ namespace dvmig.XTB.UI
          _btnInstallComponents.Visible = shouldShow;
          _btnInstallComponents.Enabled = shouldShow &&
             _syncCts == null &&
+            !_isMappingUsers &&
+            !_isLoadingEntities &&
             !_isCheckingTargetComponents &&
             !_isUpdatingTargetComponents;
       }
@@ -381,6 +601,13 @@ namespace dvmig.XTB.UI
 
       private void OnTargetComponentsActionClick(object? sender, EventArgs e)
       {
+         if (_syncCts != null ||
+             _isCheckingTargetComponents ||
+             _isUpdatingTargetComponents ||
+             _isMappingUsers ||
+             _isLoadingEntities)
+            return;
+
          if (_targetComponentsReady == true)
             UninstallTargetComponents();
          else
@@ -532,6 +759,8 @@ namespace dvmig.XTB.UI
          }
 
          ResetSyncProgress();
+         _isLoadingEntities = true;
+         UpdateSyncButtonState();
          _clbEntities.Items.Clear();
          _clbEntities.Items.Add("Loading entities...");
          _clbEntities.Enabled = false;
@@ -556,6 +785,7 @@ namespace dvmig.XTB.UI
             },
             PostWorkCallBack = (args) =>
             {
+               _isLoadingEntities = false;
                _clbEntities.Enabled = true;
                if(args.Error != null)
                {
@@ -563,6 +793,7 @@ namespace dvmig.XTB.UI
                          $"Error fetching entities: {args.Error.Message}\n"
                       );
 
+                  UpdateSyncButtonState();
                   return;
                }
 
@@ -578,6 +809,8 @@ namespace dvmig.XTB.UI
                      $"(show hidden: {includeHidden}).\n"
                   );
                }
+
+               UpdateSyncButtonState();
             }
          });
       }
@@ -622,6 +855,23 @@ namespace dvmig.XTB.UI
 
       private void RunSync_Click(object? sender, EventArgs e)
       {
+         if (_syncCts != null ||
+             _isCheckingTargetComponents ||
+             _isUpdatingTargetComponents ||
+             _isMappingUsers ||
+             _isLoadingEntities)
+         {
+            MessageBox.Show(
+               "Please wait for the current operation to finish before " +
+               "running synchronization.",
+               "Operation In Progress",
+               MessageBoxButtons.OK,
+               MessageBoxIcon.Information
+            );
+
+            return;
+         }
+
          if(_sourceProvider == null)
          {
             MessageBox.Show(
@@ -734,7 +984,16 @@ namespace dvmig.XTB.UI
             (percent, message) =>
                ((IProgress<Tuple<int, string>>)progress).Report(
                   Tuple.Create(percent, message)
-               )
+               ),
+            mappings =>
+            {
+               if (IsDisposed || !IsHandleCreated)
+                  return;
+
+               BeginInvoke(new Action(() =>
+                  UpdateUserMappingsPanel(mappings)
+               ));
+            }
          );
 
          Task.Run(() =>

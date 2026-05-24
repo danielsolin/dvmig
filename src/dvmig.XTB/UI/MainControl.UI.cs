@@ -14,7 +14,9 @@ namespace dvmig.XTB.UI
         private Button _btnInstallComponents = null!;
         private Button _btnClearSelectedEntities = null!;
         private Label _lblSelectedEntities = null!;
-        private FlowLayoutPanel _selectedEntityChipsPanel = null!;
+        private GroupBox _grpUserMappings = null!;
+        private DataGridView _dgvUserMappings = null!;
+        private Button _btnEditUserMappings = null!;
         private CheckBox _chkSelectRecommended = null!;
         private CheckBox _chkForceResync = null!;
         private CheckBox _chkAutoCreateRelatedRecords = null!;
@@ -33,7 +35,7 @@ namespace dvmig.XTB.UI
             var topPanel = new TableLayoutPanel
             {
                 Dock = DockStyle.Top,
-                Height = 144,
+                Height = 156,
                 ColumnCount = 3,
                 RowCount = 3,
                 Padding = new Padding(12),
@@ -43,9 +45,9 @@ namespace dvmig.XTB.UI
             topPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
             topPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 400));
             
-            topPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 40));
-            topPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 40));
-            topPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 40));
+            topPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 44));
+            topPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 44));
+            topPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 44));
 
             _btnSelectSource = new Button
             {
@@ -125,14 +127,64 @@ namespace dvmig.XTB.UI
             _btnClearSelectedEntities.FlatAppearance.BorderSize = 0;
             _btnClearSelectedEntities.Click += OnClearSelectedEntitiesClick;
 
-            _selectedEntityChipsPanel = new FlowLayoutPanel
+            _dgvUserMappings = new DataGridView
             {
+               AllowUserToAddRows = false,
+               AllowUserToDeleteRows = false,
+               AllowUserToResizeRows = false,
+               AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
+               BackgroundColor = Color.White,
+               BorderStyle = BorderStyle.FixedSingle,
+               ColumnHeadersHeightSizeMode =
+                  DataGridViewColumnHeadersHeightSizeMode.DisableResizing,
                Dock = DockStyle.Fill,
-               AutoScroll = true,
-               WrapContents = true,
-               Margin = new Padding(0),
-               Padding = new Padding(0)
+               Enabled = false,
+               Font = _uiFont,
+               MultiSelect = false,
+               ReadOnly = true,
+               RowHeadersVisible = false,
+               SelectionMode = DataGridViewSelectionMode.FullRowSelect,
+               TabStop = false
             };
+            _dgvUserMappings.DefaultCellStyle.SelectionBackColor =
+               _dgvUserMappings.DefaultCellStyle.BackColor;
+            _dgvUserMappings.DefaultCellStyle.SelectionForeColor =
+               _dgvUserMappings.DefaultCellStyle.ForeColor;
+            _dgvUserMappings.ColumnHeadersHeight = 22;
+            _dgvUserMappings.SelectionChanged +=
+               OnUserMappingsSelectionChanged;
+            _dgvUserMappings.Columns.Add("SourceUser", "Source User");
+            _dgvUserMappings.Columns.Add("TargetUser", "Target User");
+            _dgvUserMappings.Columns.Add("Status", "Status");
+            _dgvUserMappings.Columns[0].FillWeight = 42;
+            _dgvUserMappings.Columns[1].FillWeight = 42;
+            _dgvUserMappings.Columns[2].FillWeight = 16;
+
+            _btnEditUserMappings = new Button
+            {
+               Text = "Edit",
+               Anchor = AnchorStyles.Top | AnchorStyles.Right,
+               Enabled = false,
+               FlatStyle = FlatStyle.Flat,
+               Font = _uiFont,
+               Size = new Size(44, 20),
+               TabStop = false,
+               UseVisualStyleBackColor = true
+            };
+            _btnEditUserMappings.FlatAppearance.BorderSize = 0;
+            _btnEditUserMappings.Click += OnEditUserMappingsClick;
+
+            _grpUserMappings = new GroupBox
+            {
+               Text = "User Mappings",
+               Dock = DockStyle.Fill,
+               Font = _uiFont,
+               Margin = new Padding(8, 0, 8, 0),
+               Padding = new Padding(8, 4, 8, 8)
+            };
+            _grpUserMappings.Controls.Add(_dgvUserMappings);
+            _grpUserMappings.Controls.Add(_btnEditUserMappings);
+            _grpUserMappings.Resize += OnUserMappingsGroupResize;
 
             _chkSelectRecommended = new CheckBox
             {
@@ -195,25 +247,11 @@ namespace dvmig.XTB.UI
             syncOptionsPanel.Controls.Add(_chkForceResync);
             syncOptionsPanel.Controls.Add(_chkAutoCreateRelatedRecords);
 
-            var selectedEntitiesPanel = new TableLayoutPanel
-            {
-               Dock = DockStyle.Fill,
-               ColumnCount = 1,
-               RowCount = 1,
-               Margin = new Padding(8, 0, 8, 0),
-               Padding = new Padding(0, 2, 0, 0)
-            };
-            selectedEntitiesPanel.ColumnStyles.Add(
-               new ColumnStyle(SizeType.Percent, 100)
-            );
-            selectedEntitiesPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
-            selectedEntitiesPanel.Controls.Add(_selectedEntityChipsPanel, 0, 0);
-
             topPanel.Controls.Add(_btnSelectSource, 0, 0);
             topPanel.Controls.Add(_btnSelectTarget, 0, 1);
             topPanel.Controls.Add(_btnInstallComponents, 0, 2);
-            topPanel.Controls.Add(selectedEntitiesPanel, 1, 0);
-            topPanel.SetRowSpan(selectedEntitiesPanel, 3);
+            topPanel.Controls.Add(_grpUserMappings, 1, 0);
+            topPanel.SetRowSpan(_grpUserMappings, 3);
             topPanel.Controls.Add(_btnSync, 2, 0);
             topPanel.Controls.Add(_btnCancelSync, 2, 1);
             topPanel.Controls.Add(syncOptionsPanel, 2, 2);
