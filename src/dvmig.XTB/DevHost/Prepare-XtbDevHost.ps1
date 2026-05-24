@@ -63,7 +63,8 @@ if (-not $cecil) {
 }
 
 if (-not $cecil) {
-    throw "Could not find Mono.Cecil.dll in the local NuGet cache."
+    Write-Warning "Could not find Mono.Cecil.dll in the local NuGet cache; skipping XrmToolBox dev-host patch."
+    return
 }
 
 Copy-Item $cecil.FullName $patcherDirectory -Force
