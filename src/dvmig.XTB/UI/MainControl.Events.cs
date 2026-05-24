@@ -179,6 +179,19 @@ namespace dvmig.XTB.UI
          UpdateSyncButtonState();
       }
 
+      private void OnClearSelectedEntitiesClick(object? sender, EventArgs e)
+      {
+         if (_selectedEntities.Count == 0)
+            return;
+
+         _selectedEntities.Clear();
+         _chkSelectRecommended.Checked = false;
+         FilterEntities();
+         UpdateSelectedEntitiesLabel();
+         ResetSyncProgress();
+         UpdateSyncButtonState();
+      }
+
       private void UpdateSelectedEntitiesLabel()
       {
          _selectedEntityChipsPanel.Controls.Clear();
@@ -187,9 +200,11 @@ namespace dvmig.XTB.UI
          {
             _lblSelectedEntities.Text = "Selected: None";
             _totalRecordsCount = 0;
+            _btnClearSelectedEntities.Enabled = false;
             return;
          }
 
+         _btnClearSelectedEntities.Enabled = _syncCts == null;
          _lblSelectedEntities.Text =
             $"Selected ({_selectedEntities.Count}) | Records: Counting...";
 
@@ -283,6 +298,8 @@ namespace dvmig.XTB.UI
          _chkForceResync.Enabled = _syncCts == null;
          _chkAutoCreateRelatedRecords.Enabled = _syncCts == null;
          _chkShowHiddenEntities.Enabled = _syncCts == null;
+         _btnClearSelectedEntities.Enabled =
+            canInteractWithSync && _selectedEntities.Count > 0;
          UpdateInstallComponentsButtonState();
       }
 
@@ -292,8 +309,8 @@ namespace dvmig.XTB.UI
             _targetComponentsReady.HasValue;
 
          _btnInstallComponents.Text = _targetComponentsReady == true
-            ? "<-- Uninstall Components"
-            : "<-- Install Components";
+            ? "Uninstall Components on Target"
+            : "Install Components on Target";
 
          _btnInstallComponents.Visible = shouldShow;
          _btnInstallComponents.Enabled = shouldShow &&
@@ -683,6 +700,7 @@ namespace dvmig.XTB.UI
          _chkForceResync.Enabled = false;
          _chkAutoCreateRelatedRecords.Enabled = false;
          _chkShowHiddenEntities.Enabled = false;
+         _btnClearSelectedEntities.Enabled = false;
          _clbEntities.Enabled = false;
          _rtbLogs.Clear();
          _prgSync.Value = 0;

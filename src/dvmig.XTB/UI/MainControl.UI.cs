@@ -6,13 +6,13 @@ namespace dvmig.XTB.UI
     public partial class MainControl
     {
         private const int _connectionButtonWidth = 385;
-        private const int _installComponentsButtonWidth = 220;
         private readonly Font _buttonFont = new("Segoe UI", 10F, FontStyle.Bold);
         private readonly Font _uiFont = new("Segoe UI", 9F);
 
         private Button _btnSelectSource = null!;
         private Button _btnSelectTarget = null!;
         private Button _btnInstallComponents = null!;
+        private Button _btnClearSelectedEntities = null!;
         private Label _lblSelectedEntities = null!;
         private FlowLayoutPanel _selectedEntityChipsPanel = null!;
         private CheckBox _chkSelectRecommended = null!;
@@ -33,15 +33,17 @@ namespace dvmig.XTB.UI
             var topPanel = new TableLayoutPanel
             {
                 Dock = DockStyle.Top,
-                Height = 105,
-                ColumnCount = 2,
-                RowCount = 2,
+                Height = 144,
+                ColumnCount = 3,
+                RowCount = 3,
                 Padding = new Padding(12),
                 Font = _uiFont
             };
-            topPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 70));
-            topPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 30));
+            topPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 400));
+            topPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+            topPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 400));
             
+            topPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 40));
             topPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 40));
             topPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 40));
 
@@ -69,11 +71,11 @@ namespace dvmig.XTB.UI
 
             _btnInstallComponents = new Button
             {
-                Text = "<-- Install Components",
+                Text = "Install Components on Target",
                 Dock = DockStyle.Left,
                 Enabled = false,
                 Visible = false,
-                Width = _installComponentsButtonWidth,
+                Width = _connectionButtonWidth,
                 Font = _buttonFont
             };
             _btnInstallComponents.Click += OnTargetComponentsActionClick;
@@ -107,11 +109,27 @@ namespace dvmig.XTB.UI
                Font = _uiFont
             };
 
+            _btnClearSelectedEntities = new Button
+            {
+               Text = "Clear",
+               AutoSize = true,
+               AutoSizeMode = AutoSizeMode.GrowAndShrink,
+               Dock = DockStyle.Right,
+               Enabled = false,
+               FlatStyle = FlatStyle.Flat,
+               Font = _uiFont,
+               Margin = new Padding(0),
+               Padding = new Padding(6, 0, 6, 0),
+               UseVisualStyleBackColor = true
+            };
+            _btnClearSelectedEntities.FlatAppearance.BorderSize = 0;
+            _btnClearSelectedEntities.Click += OnClearSelectedEntitiesClick;
+
             _selectedEntityChipsPanel = new FlowLayoutPanel
             {
                Dock = DockStyle.Fill,
                AutoScroll = true,
-               WrapContents = false,
+               WrapContents = true,
                Margin = new Padding(0),
                Padding = new Padding(0)
             };
@@ -120,7 +138,8 @@ namespace dvmig.XTB.UI
             {
                Text = "Select recommended",
                AutoSize = true,
-               Anchor = AnchorStyles.Left,
+               Anchor = AnchorStyles.Left | AnchorStyles.Bottom,
+               Margin = new Padding(18, 0, 0, 0),
                TextAlign = ContentAlignment.MiddleLeft,
                Font = _uiFont
             };
@@ -131,7 +150,8 @@ namespace dvmig.XTB.UI
             {
                Text = "Force re-sync",
                AutoSize = true,
-               Anchor = AnchorStyles.Left,
+               Anchor = AnchorStyles.Left | AnchorStyles.Bottom,
+               Margin = new Padding(2, 0, 0, 0),
                TextAlign = ContentAlignment.MiddleLeft,
                Font = _uiFont
             };
@@ -141,7 +161,8 @@ namespace dvmig.XTB.UI
             {
                Text = "Auto-create related records",
                AutoSize = true,
-               Anchor = AnchorStyles.Left,
+               Anchor = AnchorStyles.Left | AnchorStyles.Bottom,
+               Margin = new Padding(18, 0, 0, 0),
                TextAlign = ContentAlignment.MiddleLeft,
                Font = _uiFont
             };
@@ -163,33 +184,39 @@ namespace dvmig.XTB.UI
                Font = _uiFont
             };
 
-            var targetConnectionPanel = new TableLayoutPanel
+            var syncOptionsPanel = new FlowLayoutPanel
             {
                Dock = DockStyle.Fill,
-               ColumnCount = 2,
-               RowCount = 1,
-               Margin = new Padding(0),
-               Padding = new Padding(0)
+               FlowDirection = FlowDirection.LeftToRight,
+               WrapContents = false,
+               Margin = new Padding(3, 0, 3, 0),
+               Padding = new Padding(0, 5, 0, 0)
             };
-            targetConnectionPanel.ColumnStyles.Add(
-               new ColumnStyle(
-                  SizeType.Absolute,
-                  _connectionButtonWidth + _btnSelectTarget.Margin.Horizontal
-               )
-            );
-            targetConnectionPanel.ColumnStyles.Add(
+            syncOptionsPanel.Controls.Add(_chkForceResync);
+            syncOptionsPanel.Controls.Add(_chkAutoCreateRelatedRecords);
+
+            var selectedEntitiesPanel = new TableLayoutPanel
+            {
+               Dock = DockStyle.Fill,
+               ColumnCount = 1,
+               RowCount = 1,
+               Margin = new Padding(8, 0, 8, 0),
+               Padding = new Padding(0, 2, 0, 0)
+            };
+            selectedEntitiesPanel.ColumnStyles.Add(
                new ColumnStyle(SizeType.Percent, 100)
             );
-            targetConnectionPanel.RowStyles.Add(
-               new RowStyle(SizeType.Percent, 100)
-            );
-            targetConnectionPanel.Controls.Add(_btnSelectTarget, 0, 0);
-            targetConnectionPanel.Controls.Add(_btnInstallComponents, 1, 0);
+            selectedEntitiesPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+            selectedEntitiesPanel.Controls.Add(_selectedEntityChipsPanel, 0, 0);
 
             topPanel.Controls.Add(_btnSelectSource, 0, 0);
-            topPanel.Controls.Add(targetConnectionPanel, 0, 1);
-            topPanel.Controls.Add(_btnSync, 1, 0);
-            topPanel.Controls.Add(_btnCancelSync, 1, 1);
+            topPanel.Controls.Add(_btnSelectTarget, 0, 1);
+            topPanel.Controls.Add(_btnInstallComponents, 0, 2);
+            topPanel.Controls.Add(selectedEntitiesPanel, 1, 0);
+            topPanel.SetRowSpan(selectedEntitiesPanel, 3);
+            topPanel.Controls.Add(_btnSync, 2, 0);
+            topPanel.Controls.Add(_btnCancelSync, 2, 1);
+            topPanel.Controls.Add(syncOptionsPanel, 2, 2);
 
             _txtSearch = new TextBox
             {
@@ -207,7 +234,8 @@ namespace dvmig.XTB.UI
             {
                Text = "Show hidden",
                AutoSize = true,
-               Dock = DockStyle.Fill,
+               Anchor = AnchorStyles.Left | AnchorStyles.Bottom,
+               Margin = new Padding(0),
                TextAlign = ContentAlignment.MiddleLeft,
                Font = _uiFont
             };
@@ -232,20 +260,57 @@ namespace dvmig.XTB.UI
                 Font = new Font("Consolas", 12)
             };
 
+            var entityFilterOptionsPanel = new FlowLayoutPanel
+            {
+               Dock = DockStyle.Fill,
+               FlowDirection = FlowDirection.LeftToRight,
+               WrapContents = false,
+               Margin = new Padding(0),
+               Padding = new Padding(6, 5, 0, 0)
+            };
+            entityFilterOptionsPanel.Controls.Add(_chkShowHiddenEntities);
+            entityFilterOptionsPanel.Controls.Add(_chkSelectRecommended);
+
+            var entitySelectionSummaryPanel = new TableLayoutPanel
+            {
+               Dock = DockStyle.Fill,
+               ColumnCount = 2,
+               RowCount = 1,
+               Margin = new Padding(0),
+               Padding = new Padding(0)
+            };
+            entitySelectionSummaryPanel.ColumnStyles.Add(
+               new ColumnStyle(SizeType.Percent, 100)
+            );
+            entitySelectionSummaryPanel.ColumnStyles.Add(
+               new ColumnStyle(SizeType.AutoSize)
+            );
+            entitySelectionSummaryPanel.RowStyles.Add(
+               new RowStyle(SizeType.Percent, 100)
+            );
+            entitySelectionSummaryPanel.Controls.Add(_lblSelectedEntities, 0, 0);
+            entitySelectionSummaryPanel.Controls.Add(
+               _btnClearSelectedEntities,
+               1,
+               0
+            );
+
             var leftPanel = new TableLayoutPanel
             {
                Dock = DockStyle.Fill,
                ColumnCount = 1,
-               RowCount = 3,
+               RowCount = 4,
                Margin = new Padding(0),
-               Padding = new Padding(0)
+               Padding = new Padding(12, 0, 0, 0)
             };
             leftPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 24));
             leftPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 24));
+            leftPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 24));
             leftPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
-            leftPanel.Controls.Add(_txtSearch, 0, 0);
-            leftPanel.Controls.Add(_chkShowHiddenEntities, 0, 1);
-            leftPanel.Controls.Add(_clbEntities, 0, 2);
+            leftPanel.Controls.Add(entitySelectionSummaryPanel, 0, 0);
+            leftPanel.Controls.Add(entityFilterOptionsPanel, 0, 1);
+            leftPanel.Controls.Add(_txtSearch, 0, 2);
+            leftPanel.Controls.Add(_clbEntities, 0, 3);
 
             _mainSplit = new SplitContainer
             {
@@ -272,38 +337,14 @@ namespace dvmig.XTB.UI
             _mainSplit.Panel2.Controls.Add(_rtbLogs);
             _mainSplit.Panel2.Controls.Add(syncStatusPanel);
 
-            var selectionPanel = new TableLayoutPanel
+            var contentPanel = new Panel
             {
-               Dock = DockStyle.Top,
-               Height = 58,
-               ColumnCount = 4,
-               RowCount = 2,
-               Margin = new Padding(0),
-               Padding = new Padding(4, 2, 4, 2)
+               Dock = DockStyle.Fill,
+               Padding = new Padding(0, 0, 12, 12)
             };
-            selectionPanel.ColumnStyles.Add(
-               new ColumnStyle(SizeType.Absolute, 200)
-            );
-            selectionPanel.ColumnStyles.Add(
-               new ColumnStyle(SizeType.Absolute, 150)
-            );
-            selectionPanel.ColumnStyles.Add(
-               new ColumnStyle(SizeType.Absolute, 130)
-            );
-            selectionPanel.ColumnStyles.Add(
-               new ColumnStyle(SizeType.Absolute, 190)
-            );
-            selectionPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 24));
-            selectionPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
-            selectionPanel.Controls.Add(_lblSelectedEntities, 0, 0);
-            selectionPanel.Controls.Add(_chkSelectRecommended, 1, 0);
-            selectionPanel.Controls.Add(_chkForceResync, 2, 0);
-            selectionPanel.Controls.Add(_chkAutoCreateRelatedRecords, 3, 0);
-            selectionPanel.Controls.Add(_selectedEntityChipsPanel, 0, 1);
-            selectionPanel.SetColumnSpan(_selectedEntityChipsPanel, 4);
+            contentPanel.Controls.Add(_mainSplit);
 
-            Controls.Add(_mainSplit);
-            Controls.Add(selectionPanel);
+            Controls.Add(contentPanel);
             Controls.Add(topPanel);
         }
     }
