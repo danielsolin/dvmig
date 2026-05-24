@@ -51,5 +51,40 @@ namespace dvmig.Tests
 
          Assert.Equal(6, entities.Count);
       }
+
+      [Fact]
+      public void DefaultVisibleEntities_ExtendsRecommendedEntities()
+      {
+         var entities = SyncSettings.DefaultVisibleEntities;
+
+         Assert.Contains("account", entities);
+         Assert.Contains("contact", entities);
+         Assert.Contains("activitymimeattachment", entities);
+         Assert.Contains("annotation", entities);
+         Assert.Contains("attachment", entities);
+         Assert.Contains("businessunit", entities);
+         Assert.Contains("connection", entities);
+         Assert.Contains("competitor", entities);
+         Assert.Contains("letter", entities);
+         Assert.Contains("lead", entities);
+         Assert.Contains("subject", entities);
+         Assert.Contains("team", entities);
+         Assert.Contains("territory", entities);
+         Assert.Contains("transactioncurrency", entities);
+         Assert.Contains("uom", entities);
+         Assert.Contains("uomschedule", entities);
+         Assert.Contains("opportunity", entities);
+         Assert.Contains("quote", entities);
+         Assert.Contains("salesorder", entities);
+         Assert.Contains("invoice", entities);
+         Assert.Contains("product", entities);
+         Assert.Contains("incident", entities);
+         Assert.Contains("campaign", entities);
+
+         Assert.DoesNotContain("systemuser", entities);
+         Assert.DoesNotContain("activityparty", entities);
+         Assert.DoesNotContain("queue", entities);
+         Assert.DoesNotContain("template", entities);
+      }
    }
 }

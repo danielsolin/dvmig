@@ -63,6 +63,11 @@ namespace dvmig.XTB.UI
          FilterEntities();
       }
 
+      private void OnShowHiddenEntitiesChanged(object? sender, EventArgs e)
+      {
+         LoadEntities(resetSelection: false);
+      }
+
       private void OnMainSplitSizeChanged(object? sender, EventArgs e)
       {
          ApplyPreferredSplitterLayout();
@@ -264,22 +269,29 @@ namespace dvmig.XTB.UI
          _chkSelectRecommended.Enabled = _syncCts == null;
          _chkForceResync.Enabled = _syncCts == null;
          _chkAutoCreateRelatedRecords.Enabled = _syncCts == null;
+         _chkShowHiddenEntities.Enabled = _syncCts == null;
       }
 
-      private void LoadEntities()
+      private void LoadEntities(bool resetSelection = true)
       {
          if(_sourceProvider == null || _serviceProvider == null)
             return;
 
          _countCts?.Cancel();
-         _selectedEntities.Clear();
-         _totalRecordsCount = 0;
-         _chkSelectRecommended.Checked = false;
-         UpdateSelectedEntitiesLabel();
+         if (resetSelection)
+         {
+            _selectedEntities.Clear();
+            _totalRecordsCount = 0;
+            _chkSelectRecommended.Checked = false;
+            UpdateSelectedEntitiesLabel();
+         }
+
          ResetSyncProgress();
          _clbEntities.Items.Clear();
          _clbEntities.Items.Add("Loading entities...");
          _clbEntities.Enabled = false;
+
+         var includeHidden = _chkShowHiddenEntities.Checked;
 
          WorkAsync(new WorkAsyncInfo
          {
@@ -290,7 +302,10 @@ namespace dvmig.XTB.UI
                       _serviceProvider.GetRequiredService<IEntityService>();
 
                args.Result = entityService
-                      .GetMigrationEntitiesAsync(_sourceProvider)
+                      .GetMigrationEntitiesAsync(
+                         _sourceProvider,
+                         includeHidden
+                      )
                       .GetAwaiter()
                       .GetResult();
             },
@@ -309,10 +324,25 @@ namespace dvmig.XTB.UI
                if(args.Result is List<EntityMetadata> entities)
                {
                   _allEntities = entities;
+                  RemoveUnavailableSelectedEntities();
                   FilterEntities();
+                  UpdateSelectedEntitiesLabel();
+                  _rtbLogs.AppendText(
+                     $"Loaded {entities.Count:N0} entities " +
+                     $"(show hidden: {includeHidden}).\n"
+                  );
                }
             }
          });
+      }
+
+      private void RemoveUnavailableSelectedEntities()
+      {
+         var availableEntities = _allEntities
+            .Select(e => e.LogicalName)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+         _selectedEntities.RemoveWhere(e => !availableEntities.Contains(e));
       }
 
       private void FilterEntities()
@@ -371,6 +401,7 @@ namespace dvmig.XTB.UI
          _chkSelectRecommended.Enabled = false;
          _chkForceResync.Enabled = false;
          _chkAutoCreateRelatedRecords.Enabled = false;
+         _chkShowHiddenEntities.Enabled = false;
          _clbEntities.Enabled = false;
          _rtbLogs.Clear();
          _prgSync.Value = 0;

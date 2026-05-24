@@ -338,6 +338,7 @@ namespace dvmig.Core.Synchronization
       /// <inheritdoc />
       public async Task<List<EntityMetadata>> GetMigrationEntitiesAsync(
          IDataverseProvider provider,
+         bool includeHidden = true,
          CancellationToken ct = default
       )
       {
@@ -351,17 +352,21 @@ namespace dvmig.Core.Synchronization
             provider.ExecuteAsync(request, ct);
 
          var entities = response.EntityMetadata
-            .Where(e =>
-               e.IsIntersect == false &&
-               e.IsValidForAdvancedFind == true &&
-               e.IsImportable == true &&
-               e.IsLogicalEntity == false)
+            .Where(e => includeHidden || IsCuratedEntity(e))
             .OrderBy(e =>
                e.DisplayName?.UserLocalizedLabel?.Label ??
                e.LogicalName)
             .ToList();
 
          return entities;
+      }
+
+      private static bool IsCuratedEntity(EntityMetadata entity)
+      {
+         return SyncSettings.DefaultVisibleEntities.Contains(
+            entity.LogicalName,
+            StringComparer.OrdinalIgnoreCase
+         );
       }
 
       /// <inheritdoc />
