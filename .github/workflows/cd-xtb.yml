@@ -38,13 +38,16 @@ jobs:
         uses: NuGet/setup-nuget@v2
 
       - name: Set package version
+        id: version
         shell: pwsh
         run: |
           $refName = "${{ github.ref_name }}"
           if ($refName -match '^v(?<version>\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?)$') {
             $version = $Matches.version
+            $releaseTag = $refName
           } else {
             $version = Get-Date -Format 'yyyy.M.d.HHmm'
+            $releaseTag = "xtb-$version"
           }
 
           $assemblyVersion = ($version -split '[-+]')[0]
@@ -54,8 +57,11 @@ jobs:
 
           "PACKAGE_VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Append
           "ASSEMBLY_VERSION=$assemblyVersion" | Out-File -FilePath $env:GITHUB_ENV -Append
+          "package_version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          "release_tag=$releaseTag" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
           "Package version: $version"
           "Assembly version: $assemblyVersion"
+          "Release tag: $releaseTag"
 
       - name: Restore XTB
         run: dotnet restore src/dvmig.XTB/dvmig.XTB.csproj
@@ -105,6 +111,8 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           draft: false
+          tag_name: ${{ steps.version.outputs.release_tag }}
+          target_commitish: ${{ github.sha }}
           files: |
-            artifacts/${{ env.PACKAGE_ID }}.${{ env.PACKAGE_VERSION }}.nupkg
-            artifacts/${{ env.PACKAGE_ID }}-${{ env.PACKAGE_VERSION }}-manual.zip
+            artifacts/${{ env.PACKAGE_ID }}.${{ steps.version.outputs.package_version }}.nupkg
+            artifacts/${{ env.PACKAGE_ID }}-${{ steps.version.outputs.package_version }}-manual.zip
