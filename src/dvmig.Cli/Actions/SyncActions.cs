@@ -322,6 +322,8 @@ namespace dvmig.Cli.Actions
          QueryExpression? customQuery = null
       )
       {
+         var syncTimer = SyncTimer.StartNew();
+
          try
          {
             var maxThreads = SettingsService.LoadSettings().MaxParallelism;
@@ -476,7 +478,11 @@ namespace dvmig.Cli.Actions
                );
 
             var actionName = forceResync ? "Re-sync".t() : "Migration".t();
-            CliUI.WriteSuccess($"{"{0} Finished!".t(actionName)}");
+            var elapsed = syncTimer.StopAndFormat();
+            CliUI.WriteSuccess(
+               $"{"{0} Finished!".t(actionName)} " +
+               $"{"Elapsed: {0}".t(elapsed)}"
+            );
          }
          catch (OperationCanceledException)
          {
@@ -485,8 +491,12 @@ namespace dvmig.Cli.Actions
          catch (Exception ex)
          {
             var baseEx = ex.GetBaseException();
+            var elapsed = syncTimer.StopAndFormat();
 
-            CliUI.WriteError($"{"Sync failed:".t()} {baseEx.Message}");
+            CliUI.WriteError(
+               $"{"Sync failed:".t()} {baseEx.Message} " +
+               $"({"Elapsed: {0}".t(elapsed)})"
+            );
          }
 
          CliUI.Pause();

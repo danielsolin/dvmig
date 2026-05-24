@@ -20,6 +20,9 @@ namespace dvmig.XTB.Shared
       private readonly bool _forceResync;
       private readonly Action<int, string> _reportProgress;
       private readonly ILogger _logger;
+      private TimeSpan _syncElapsed = TimeSpan.Zero;
+
+      public TimeSpan SyncElapsed => _syncElapsed;
 
       public SynchronizationJob(
          IServiceProvider serviceProvider,
@@ -89,52 +92,60 @@ namespace dvmig.XTB.Shared
          );
 
          syncEngine.InitializeSyncAsync(ct).GetAwaiter().GetResult();
+         var syncTimer = SyncTimer.StartNew();
 
-         var options = new SyncOptions
+         try
          {
-            MaxDegreeOfParallelism = settings.MaxParallelism,
-            ForceResync = _forceResync,
-            PreserveAuditData = true,
-            StripMissingDependencies = true,
-            AutoCreateRelatedRecords = settings.AutoCreateRelatedRecords
-         };
-
-         int processedRecords = 0;
-
-         foreach(var entityLogicalName in _entityLogicalNames)
-         {
-            ct.ThrowIfCancellationRequested();
-
-            _logger.Information($"Starting synchronization for entity:" +
-                                 $" {entityLogicalName}");
-
-            _reportProgress(
-               GetProgressPercent(processedRecords),
-               $"Synchronizing {entityLogicalName}... " +
-               $"({processedRecords}/{_totalRecords})"
-            );
-
-            var progress = new Progress<bool>(success =>
+            var options = new SyncOptions
             {
-               processedRecords++;
+               MaxDegreeOfParallelism = settings.MaxParallelism,
+               ForceResync = _forceResync,
+               PreserveAuditData = true,
+               StripMissingDependencies = true,
+               AutoCreateRelatedRecords = settings.AutoCreateRelatedRecords
+            };
+
+            int processedRecords = 0;
+
+            foreach(var entityLogicalName in _entityLogicalNames)
+            {
+               ct.ThrowIfCancellationRequested();
+
+               _logger.Information($"Starting synchronization for entity:" +
+                                    $" {entityLogicalName}");
 
                _reportProgress(
                   GetProgressPercent(processedRecords),
                   $"Synchronizing {entityLogicalName}... " +
                   $"({processedRecords}/{_totalRecords})"
                );
-            });
 
-            syncEngine.SyncAsync(
-                entityLogicalName,
-                options,
-                null,
-                progress,
-                ct
-            ).GetAwaiter().GetResult();
+               var progress = new Progress<bool>(success =>
+               {
+                  processedRecords++;
 
-            _logger.Information($"Synchronization for entity " +
-                                 $"{entityLogicalName} completed.");
+                  _reportProgress(
+                     GetProgressPercent(processedRecords),
+                     $"Synchronizing {entityLogicalName}... " +
+                     $"({processedRecords}/{_totalRecords})"
+                  );
+               });
+
+               syncEngine.SyncAsync(
+                   entityLogicalName,
+                   options,
+                   null,
+                   progress,
+                   ct
+               ).GetAwaiter().GetResult();
+
+               _logger.Information($"Synchronization for entity " +
+                                    $"{entityLogicalName} completed.");
+            }
+         }
+         finally
+         {
+            _syncElapsed = syncTimer.Stop();
          }
       }
 
