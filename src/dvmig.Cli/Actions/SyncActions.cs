@@ -294,8 +294,9 @@ namespace dvmig.Cli.Actions
          if (systemCount > 0)
             AnsiConsole.MarkupLine(
                $"{UiMarkup.Grey}" +
-               $"{"Note: {0} system accounts mapped automatically and " +
-               "hidden from this view.".t(systemCount)}[/]"
+               ("Note: {0} system accounts mapped automatically and " +
+                "hidden from this view.").t(systemCount) +
+               "[/]"
             );
 
          AnsiConsole.WriteLine();
