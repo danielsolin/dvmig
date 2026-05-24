@@ -12,6 +12,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="DevHost\**\*.cs" />
+    <None Include="DevHost\**\*" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="MscrmTools.Xrm.Connection" Version="1.2025.9.64" />
     <PackageReference Include="XrmToolBoxPackage" Version="1.2025.10.74" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.1" />
@@ -25,6 +30,10 @@
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
     <Exec Command="if exist &quot;$(TargetDir)Plugins&quot; rd /s /q &quot;$(TargetDir)Plugins&quot;&#xD;&#xA;mkdir &quot;$(TargetDir)Plugins&quot;&#xD;&#xA;copy /Y &quot;$(TargetDir)dvmig.XTB.dll&quot; &quot;$(TargetDir)Plugins&quot;" />
+  </Target>
+
+  <Target Name="PrepareXtbDevHost" AfterTargets="PostBuild" Condition="Exists('$(TargetDir)XrmToolBox.exe')">
+    <Exec Command="powershell -NoProfile -ExecutionPolicy Bypass -File &quot;$(MSBuildProjectDirectory)\DevHost\Prepare-XtbDevHost.ps1&quot; -HostDirectory &quot;$(TargetDir)&quot;" />
   </Target>
 
 </Project>
