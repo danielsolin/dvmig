@@ -73,6 +73,7 @@ namespace dvmig.Core.Interfaces
       /// </summary>
       Task<List<EntityMetadata>> GetMigrationEntitiesAsync(
          IDataverseProvider provider,
+         bool includeHidden = true,
          CancellationToken ct = default
       );
 

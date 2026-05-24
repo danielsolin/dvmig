@@ -22,6 +22,7 @@ namespace dvmig.XTB.UI
         private ProgressBar _prgSync = null!;
         private CheckedListBox _clbEntities = null!;
         private TextBox _txtSearch = null!;
+        private CheckBox _chkShowHiddenEntities = null!;
         private RichTextBox _rtbLogs = null!;
         private SplitContainer _mainSplit = null!;
 
@@ -165,6 +166,17 @@ namespace dvmig.XTB.UI
             _txtSearch.LostFocus += OnSearchLostFocus;
             _txtSearch.TextChanged += OnSearchTextChanged;
 
+            _chkShowHiddenEntities = new CheckBox
+            {
+               Text = "Show hidden",
+               AutoSize = true,
+               Dock = DockStyle.Fill,
+               TextAlign = ContentAlignment.MiddleLeft,
+               Font = _uiFont
+            };
+            _chkShowHiddenEntities.CheckedChanged +=
+               OnShowHiddenEntitiesChanged;
+
             _clbEntities = new CheckedListBox
             {
                 Dock = DockStyle.Fill,
@@ -187,14 +199,16 @@ namespace dvmig.XTB.UI
             {
                Dock = DockStyle.Fill,
                ColumnCount = 1,
-               RowCount = 2,
+               RowCount = 3,
                Margin = new Padding(0),
                Padding = new Padding(0)
             };
             leftPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 24));
+            leftPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 24));
             leftPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
             leftPanel.Controls.Add(_txtSearch, 0, 0);
-            leftPanel.Controls.Add(_clbEntities, 0, 1);
+            leftPanel.Controls.Add(_chkShowHiddenEntities, 0, 1);
+            leftPanel.Controls.Add(_clbEntities, 0, 2);
 
             _mainSplit = new SplitContainer
             {

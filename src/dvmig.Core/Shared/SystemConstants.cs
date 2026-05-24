@@ -17,12 +17,14 @@ namespace dvmig.Core.Shared
       public class DataverseEntity(
          string name,
          bool isSystemEntity,
-         bool isActivityEntity
+         bool isActivityEntity,
+         bool isVisibleByDefault = false
       )
       {
          public string Name { get; } = name;
          public bool IsSystemEntity { get; } = isSystemEntity;
          public bool IsActivityEntity { get; } = isActivityEntity;
+         public bool IsVisibleByDefault { get; } = isVisibleByDefault;
       }
 
       /// <summary>
@@ -31,67 +33,109 @@ namespace dvmig.Core.Shared
       public static class DataverseEntities
       {
          public static readonly DataverseEntity Account =
-            new("account", false, false);
+            new("account", false, false, true);
 
          public static readonly DataverseEntity Contact =
-            new("contact", false, false);
+            new("contact", false, false, true);
 
          public static readonly DataverseEntity Task =
-            new("task", false, true);
+            new("task", false, true, true);
 
          public static readonly DataverseEntity PhoneCall =
-            new("phonecall", false, true);
+            new("phonecall", false, true, true);
 
          public static readonly DataverseEntity Appointment =
-            new("appointment", false, true);
+            new("appointment", false, true, true);
 
          public static readonly DataverseEntity Email =
-            new("email", false, true);
+            new("email", false, true, true);
+
+         public static readonly DataverseEntity Letter =
+            new("letter", true, true, true);
+
+         public static readonly DataverseEntity ActivityMimeAttachment =
+            new("activitymimeattachment", true, false, true);
 
          public static readonly DataverseEntity EmailTemplate =
             new("template", true, false);
 
+         public static readonly DataverseEntity Attachment =
+            new("attachment", true, false, true);
+
+         public static readonly DataverseEntity Note =
+            new("annotation", true, false, true);
+
+         public static readonly DataverseEntity Connection =
+            new("connection", true, false, true);
+
+         public static readonly DataverseEntity BusinessUnit =
+            new("businessunit", true, false, true);
+
+         public static readonly DataverseEntity Team =
+            new("team", true, false, true);
+
+         public static readonly DataverseEntity Currency =
+            new("transactioncurrency", true, false, true);
+
+         public static readonly DataverseEntity UnitGroup =
+            new("uomschedule", true, false, true);
+
+         public static readonly DataverseEntity Unit =
+            new("uom", true, false, true);
+
+         public static readonly DataverseEntity Territory =
+            new("territory", true, false, true);
+
+         public static readonly DataverseEntity Subject =
+            new("subject", true, false, true);
+
+         public static readonly DataverseEntity Lead =
+            new("lead", true, false, true);
+
+         public static readonly DataverseEntity Competitor =
+            new("competitor", true, false, true);
+
          public static readonly DataverseEntity Fax =
-            new("fax", true, true);
+            new("fax", true, true, true);
 
          public static readonly DataverseEntity Queue =
             new("queue", true, false);
 
          public static readonly DataverseEntity Opportunity =
-            new("opportunity", true, false);
+            new("opportunity", true, false, true);
 
          public static readonly DataverseEntity Quote =
-            new("quote", true, false);
+            new("quote", true, false, true);
 
          public static readonly DataverseEntity Order =
-            new("salesorder", true, false);
+            new("salesorder", true, false, true);
 
          public static readonly DataverseEntity Invoice =
-            new("invoice", true, false);
+            new("invoice", true, false, true);
 
          public static readonly DataverseEntity Product =
-            new("product", true, false);
+            new("product", true, false, true);
 
          public static readonly DataverseEntity Category =
-            new("category", true, false);
+            new("category", true, false, true);
 
          public static readonly DataverseEntity Case =
-            new("incident", true, false);
+            new("incident", true, false, true);
 
          public static readonly DataverseEntity Entitlement =
-            new("entitlement", true, false);
+            new("entitlement", true, false, true);
 
          public static readonly DataverseEntity Campaign =
-            new("campaign", true, false);
+            new("campaign", true, false, true);
 
          public static readonly DataverseEntity CampaignActivity =
-            new("campaignactivity", true, true);
+            new("campaignactivity", true, true, true);
 
          public static readonly DataverseEntity MarketingList =
-            new("list", true, false);
+            new("list", true, false, true);
 
          public static readonly DataverseEntity PriceLevel =
-            new("pricelevel", true, false);
+            new("pricelevel", true, false, true);
 
          public static readonly DataverseEntity SystemUser =
             new("systemuser", true, false);
@@ -305,6 +349,13 @@ namespace dvmig.Core.Shared
          public static IReadOnlyList<string> RecommendedEntities =>
             DataverseEntities.ToList()
                .Where(e => !e.IsSystemEntity)
+               .Select(e => e.Name)
+               .ToList()
+               .AsReadOnly();
+
+         public static IReadOnlyList<string> DefaultVisibleEntities =>
+            DataverseEntities.ToList()
+               .Where(e => e.IsVisibleByDefault)
                .Select(e => e.Name)
                .ToList()
                .AsReadOnly();
