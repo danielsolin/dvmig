@@ -29,6 +29,9 @@ namespace dvmig.XTB.UI
         private long _totalRecordsCount;
         private CancellationTokenSource? _countCts;
         private CancellationTokenSource? _syncCts;
+        private bool? _targetComponentsReady;
+        private bool _isCheckingTargetComponents;
+        private bool _isUpdatingTargetComponents;
         private bool _isFiltering;
 
         public MainControl()
@@ -44,6 +47,7 @@ namespace dvmig.XTB.UI
            _serviceProvider = 
               DIConfigurator.CreateServiceProvider(this, _rtbLogs);
            LoadPersistedSyncSettings();
+           UpdateSyncButtonState();
 
             _rtbLogs.AppendText("Welcome to dvmig for XrmToolBox.\n");
             _rtbLogs.AppendText("Please connect both a SOURCE and a TARGET " +
@@ -83,6 +87,9 @@ namespace dvmig.XTB.UI
 
                DisposeProvider(_targetProvider);
                _targetProvider = CreateProvider(newService, detail);
+               _targetComponentsReady = null;
+               _isCheckingTargetComponents = false;
+               _isUpdatingTargetComponents = false;
 
                _btnSelectTarget.Text =
                   $"Target: {detail.ConnectionName}";
@@ -93,6 +100,8 @@ namespace dvmig.XTB.UI
                   $"Environment '{detail.ConnectionName}' " +
                   "assigned as TARGET.\n"
                );
+
+               CheckTargetComponents();
             }
             else
             {
@@ -193,8 +202,12 @@ namespace dvmig.XTB.UI
            DisposeProvider(_targetProvider);
            _targetProvider = null;
            _userService = null;
+           _targetComponentsReady = null;
+           _isCheckingTargetComponents = false;
+           _isUpdatingTargetComponents = false;
            _btnSelectTarget.Text = "Target: Not Connected";
            _btnSelectTarget.ForeColor = Color.Red;
+           UpdateInstallComponentsButtonState();
            _rtbLogs.AppendText(logMessage);
         }
 
