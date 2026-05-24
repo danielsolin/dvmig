@@ -32,7 +32,7 @@
     <Exec Command="if exist &quot;$(TargetDir)Plugins&quot; rd /s /q &quot;$(TargetDir)Plugins&quot;&#xD;&#xA;mkdir &quot;$(TargetDir)Plugins&quot;&#xD;&#xA;copy /Y &quot;$(TargetDir)dvmig.XTB.dll&quot; &quot;$(TargetDir)Plugins&quot;" />
   </Target>
 
-  <Target Name="PrepareXtbDevHost" AfterTargets="PostBuild" Condition="Exists('$(TargetDir)XrmToolBox.exe')">
+  <Target Name="PrepareXtbDevHost" AfterTargets="PostBuild" Condition="Exists('$(TargetDir)XrmToolBox.exe') And '$(Configuration)' == 'Debug' And '$(CI)' != 'true' And '$(GITHUB_ACTIONS)' != 'true'">
     <Exec Command="powershell -NoProfile -ExecutionPolicy Bypass -File &quot;$(MSBuildProjectDirectory)\DevHost\Prepare-XtbDevHost.ps1&quot; -HostDirectory &quot;$(TargetDir)&quot;" />
   </Target>
 
