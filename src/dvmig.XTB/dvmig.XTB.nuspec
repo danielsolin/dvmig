@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package>
+  <metadata>
+    <id>dvmig.XTB</id>
+    <version>$version$</version>
+    <title>Dataverse Migrator (dvmig)</title>
+    <authors>Daniel Solin</authors>
+    <owners>Daniel Solin</owners>
+    <projectUrl>https://github.com/danielsolin/dvmig</projectUrl>
+    <iconUrl>https://raw.githubusercontent.com/danielsolin/dvmig/main/assets/img/xtb-plugin.png</iconUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>XrmToolBox plugin for synchronizing Dataverse data between environments with audit preservation.</description>
+    <summary>Synchronize Dataverse data between environments from XrmToolBox.</summary>
+    <releaseNotes>See https://github.com/danielsolin/dvmig/releases for release notes.</releaseNotes>
+    <copyright>Copyright Daniel Solin</copyright>
+    <tags>XrmToolBox Plugins Dataverse Migration dvmig</tags>
+    <dependencies>
+      <dependency id="XrmToolBox" version="1.2025.10.74" />
+    </dependencies>
+  </metadata>
+  <files>
+    <file src="Plugins\**\*" target="lib\net48\Plugins" />
+  </files>
+</package>
