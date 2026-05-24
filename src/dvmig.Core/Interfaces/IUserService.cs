@@ -58,7 +58,13 @@ namespace dvmig.Core.Interfaces
       /// </summary>
       /// <param name="sourceUserId">The ID of the source user.</param>
       /// <param name="targetUserId">The ID of the target user.</param>
-      void AddManualMapping(Guid sourceUserId, Guid targetUserId);
+      void AddManualMapping(
+         Guid sourceUserId,
+         Guid targetUserId,
+         string? sourceName = null,
+         string? targetName = null,
+         bool isHuman = true
+      );
 
       /// <summary>
       /// Retrieves a summary of all user mappings resolved so far.

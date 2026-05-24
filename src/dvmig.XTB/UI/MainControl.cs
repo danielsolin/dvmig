@@ -29,9 +29,13 @@ namespace dvmig.XTB.UI
         private long _totalRecordsCount;
         private CancellationTokenSource? _countCts;
         private CancellationTokenSource? _syncCts;
+        private CancellationTokenSource? _userMappingCts;
         private bool? _targetComponentsReady;
         private bool _isCheckingTargetComponents;
         private bool _isUpdatingTargetComponents;
+        private bool _isMappingUsers;
+        private bool _isLoadingEntities;
+        private bool _isClearingUserMappingSelection;
         private bool _isFiltering;
 
         public MainControl()
@@ -47,6 +51,7 @@ namespace dvmig.XTB.UI
            _serviceProvider = 
               DIConfigurator.CreateServiceProvider(this, _rtbLogs);
            LoadPersistedSyncSettings();
+           ResetUserMappingsPanel();
            UpdateSyncButtonState();
 
             _rtbLogs.AppendText("Welcome to dvmig for XrmToolBox.\n");
@@ -95,6 +100,7 @@ namespace dvmig.XTB.UI
                   $"Target: {detail.ConnectionName}";
                _btnSelectTarget.ForeColor = Color.DarkGreen;
                _userService = null;
+               ResetUserMappingsPanel();
 
                _rtbLogs.AppendText(
                   $"Environment '{detail.ConnectionName}' " +
@@ -102,6 +108,7 @@ namespace dvmig.XTB.UI
                );
 
                CheckTargetComponents();
+               StartUserMappingIfReady();
             }
             else
             {
@@ -117,6 +124,7 @@ namespace dvmig.XTB.UI
                   $"Source: {detail.ConnectionName}";
                _btnSelectSource.ForeColor = Color.DarkGreen;
                _userService = null;
+               ResetUserMappingsPanel();
 
                _rtbLogs.AppendText(
                   $"Environment '{detail.ConnectionName}' " +
@@ -124,6 +132,7 @@ namespace dvmig.XTB.UI
                );
 
                LoadEntities();
+               StartUserMappingIfReady();
             }
 
             UpdateSyncButtonState();
@@ -186,6 +195,7 @@ namespace dvmig.XTB.UI
            DisposeProvider(_sourceProvider);
            _sourceProvider = null;
            _userService = null;
+           _userMappingCts?.Cancel();
            _countCts?.Cancel();
            _allEntities.Clear();
            _selectedEntities.Clear();
@@ -194,6 +204,7 @@ namespace dvmig.XTB.UI
            _btnSelectSource.ForeColor = Color.Red;
            _clbEntities.Items.Clear();
            UpdateSelectedEntitiesLabel();
+           ResetUserMappingsPanel();
            _rtbLogs.AppendText(logMessage);
         }
 
@@ -202,12 +213,14 @@ namespace dvmig.XTB.UI
            DisposeProvider(_targetProvider);
            _targetProvider = null;
            _userService = null;
+           _userMappingCts?.Cancel();
            _targetComponentsReady = null;
            _isCheckingTargetComponents = false;
            _isUpdatingTargetComponents = false;
            _btnSelectTarget.Text = "Target: Not Connected";
            _btnSelectTarget.ForeColor = Color.Red;
            UpdateInstallComponentsButtonState();
+           ResetUserMappingsPanel();
            _rtbLogs.AppendText(logMessage);
         }
 

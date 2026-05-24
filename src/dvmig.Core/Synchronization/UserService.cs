@@ -44,7 +44,13 @@ namespace dvmig.Core.Synchronization
       }
 
       /// <inheritdoc />
-      public void AddManualMapping(Guid sourceUserId, Guid targetUserId)
+      public void AddManualMapping(
+         Guid sourceUserId,
+         Guid targetUserId,
+         string? sourceName = null,
+         string? targetName = null,
+         bool isHuman = true
+      )
       {
          _mappingCache[sourceUserId] = new EntityReference(
             DataverseEntities.SystemUser.Name,
@@ -52,11 +58,12 @@ namespace dvmig.Core.Synchronization
          );
 
          _summaries[sourceUserId] = new UserMappingSummary(
-            sourceUserId.ToString(),
+            sourceName ?? sourceUserId.ToString(),
             sourceUserId,
-            targetUserId.ToString(),
+            targetName ?? targetUserId.ToString(),
             targetUserId,
-            UserMappingStatus.Manual
+            UserMappingStatus.Manual,
+            isHuman
          );
       }
 

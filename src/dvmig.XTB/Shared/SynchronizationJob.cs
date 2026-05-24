@@ -19,6 +19,8 @@ namespace dvmig.XTB.Shared
       private readonly int _totalRecords;
       private readonly bool _forceResync;
       private readonly Action<int, string> _reportProgress;
+      private readonly Action<IReadOnlyCollection<UserMappingSummary>>
+         _reportUserMappings;
       private readonly ILogger _logger;
       private TimeSpan _syncElapsed = TimeSpan.Zero;
 
@@ -32,7 +34,8 @@ namespace dvmig.XTB.Shared
          List<string> entityLogicalNames,
          int totalRecords,
          bool forceResync,
-         Action<int, string> reportProgress
+         Action<int, string> reportProgress,
+         Action<IReadOnlyCollection<UserMappingSummary>> reportUserMappings
       )
       {
          _serviceProvider = serviceProvider;
@@ -43,6 +46,7 @@ namespace dvmig.XTB.Shared
          _totalRecords = totalRecords;
          _forceResync = forceResync;
          _reportProgress = reportProgress;
+         _reportUserMappings = reportUserMappings;
          _logger = _serviceProvider.GetRequiredService<ILogger>();
       }
 
@@ -92,6 +96,10 @@ namespace dvmig.XTB.Shared
          );
 
          syncEngine.InitializeSyncAsync(ct).GetAwaiter().GetResult();
+         _reportUserMappings(
+            _userService.GetMappingSummaryAsync(ct).GetAwaiter().GetResult()
+         );
+
          var syncTimer = SyncTimer.StartNew();
 
          try
@@ -106,6 +114,7 @@ namespace dvmig.XTB.Shared
             };
 
             int processedRecords = 0;
+            var progressStats = new SyncProgressStats(_totalRecords);
 
             foreach(var entityLogicalName in _entityLogicalNames)
             {
@@ -116,18 +125,26 @@ namespace dvmig.XTB.Shared
 
                _reportProgress(
                   GetProgressPercent(processedRecords),
-                  $"Synchronizing {entityLogicalName}... " +
-                  $"({processedRecords}/{_totalRecords})"
+                  FormatProgressMessage(
+                     entityLogicalName,
+                     processedRecords,
+                     progressStats
+                  )
                );
 
                var progress = new Progress<bool>(success =>
                {
-                  processedRecords++;
+                  var currentProcessedRecords =
+                     Interlocked.Increment(ref processedRecords);
+                  progressStats.RecordProgress();
 
                   _reportProgress(
-                     GetProgressPercent(processedRecords),
-                     $"Synchronizing {entityLogicalName}... " +
-                     $"({processedRecords}/{_totalRecords})"
+                     GetProgressPercent(currentProcessedRecords),
+                     FormatProgressMessage(
+                        entityLogicalName,
+                        currentProcessedRecords,
+                        progressStats
+                     )
                   );
                });
 
@@ -154,6 +171,109 @@ namespace dvmig.XTB.Shared
          return _totalRecords > 0
             ? Math.Min((int)((double)processedRecords / _totalRecords * 100), 100)
             : 100;
+      }
+
+      private string FormatProgressMessage(
+         string entityLogicalName,
+         int processedRecords,
+         SyncProgressStats progressStats
+      )
+      {
+         var averageRate = progressStats.GetAverageRate(processedRecords);
+         var currentRate = progressStats.GetCurrentRate();
+         var eta = progressStats.GetEstimatedRemaining(processedRecords);
+
+         return $"Synchronizing {entityLogicalName}... " +
+            $"({processedRecords}/{_totalRecords}) | " +
+            $"Avg: {FormatRate(averageRate)} r/s | " +
+            $"Current: {FormatRate(currentRate)} r/s | " +
+            $"ETA: {FormatDuration(eta)}";
+      }
+
+      private static string FormatRate(double? recordsPerSecond)
+      {
+         return recordsPerSecond.HasValue
+            ? recordsPerSecond.Value.ToString("0.0")
+            : "--";
+      }
+
+      private static string FormatDuration(TimeSpan? duration)
+      {
+         if (!duration.HasValue)
+            return "--";
+
+         return duration.Value.TotalHours >= 1
+            ? duration.Value.ToString(@"h\:mm\:ss")
+            : duration.Value.ToString(@"m\:ss");
+      }
+
+      private sealed class SyncProgressStats
+      {
+         private readonly object _syncRoot = new object();
+         private readonly int _totalRecords;
+         private readonly Queue<DateTime> _recentRecords =
+            new Queue<DateTime>();
+         private readonly DateTime _startedAt = DateTime.UtcNow;
+         private static readonly TimeSpan _currentWindow =
+            TimeSpan.FromSeconds(5);
+
+         public SyncProgressStats(int totalRecords)
+         {
+            _totalRecords = totalRecords;
+         }
+
+         public void RecordProgress()
+         {
+            var now = DateTime.UtcNow;
+
+            lock (_syncRoot)
+            {
+               _recentRecords.Enqueue(now);
+
+               while (_recentRecords.Count > 0 &&
+                      now - _recentRecords.Peek() > _currentWindow)
+               {
+                  _recentRecords.Dequeue();
+               }
+            }
+         }
+
+         public double? GetAverageRate(int processedRecords)
+         {
+            var elapsedSeconds = (DateTime.UtcNow - _startedAt).TotalSeconds;
+
+            return processedRecords > 0 && elapsedSeconds > 0
+               ? processedRecords / elapsedSeconds
+               : null;
+         }
+
+         public double? GetCurrentRate()
+         {
+            lock (_syncRoot)
+            {
+               if (_recentRecords.Count < 2)
+                  return null;
+
+               var elapsedSeconds =
+                  (DateTime.UtcNow - _recentRecords.Peek()).TotalSeconds;
+
+               return elapsedSeconds > 0
+                  ? _recentRecords.Count / elapsedSeconds
+                  : null;
+            }
+         }
+
+         public TimeSpan? GetEstimatedRemaining(int processedRecords)
+         {
+            var averageRate = GetAverageRate(processedRecords);
+
+            if (!averageRate.HasValue || averageRate.Value <= 0)
+               return null;
+
+            var remainingRecords = Math.Max(0, _totalRecords - processedRecords);
+
+            return TimeSpan.FromSeconds(remainingRecords / averageRate.Value);
+         }
       }
    }
 }

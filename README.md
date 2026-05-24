@@ -83,12 +83,11 @@ You can also test the connection strings in the app to make sure they work.
 
 ## Architecture
 
-- `src/dvmig.Cli`: .NET 9.0 CLI application built with `Spectre.Console`.
+- `src/dvmig.Cli`: .NET 9.0 TUI application built with `Spectre.Console`.
 - `src/dvmig.Core`: .NET Standard 2.0 library containing the migration logic.
 - `src/dvmig.Plugins`: Dataverse plugin for preserving audit fields.
 - `src/dvmig.Tests`: Unit test project using `xUnit`, `Moq`, and `Bogus`.
-- `src/dvmig.XTB`: XrmToolBox plugin. Can technically sync records, but is
-  significantly slower and less robust than the CLI version.
+- `src/dvmig.XTB`: XrmToolBox plugin with the same functionality as the TUI.
 
 The diagram below visualizes the synchronization process used in dvmig.Core.
 It handles preservation of audit fields, resolves dependencies, and excutes
@@ -121,3 +120,14 @@ flowchart TD
     ErrorType -- Invalid Attribute --> StripAttr["Strip Problematic Attribute & Retry"] --> AttemptSync
     ErrorType -- Unresolvable --> LogFail["Log Migration Failure"] --> Fail(["Finish (Failed)"])
 ```
+  
+## Performance
+A test set of 2874 records, including `Account`, `Contact`, `Task`, `Email`,
+`PhoneCall` and `Appointment`, produced these results:  
+  
+3 threads:  9m 19s = 559s = ~5.1 records/s   
+5 threads:  6m 00s = 360s = ~8.0 records/s  
+7 threads:  6m 22s = 382s = ~7.5 records/s   
+10 threads: 7m 08s = 428s = ~6.7 records/s    
+
+Five threads is therefore set as default in dvmig.
