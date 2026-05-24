@@ -150,7 +150,7 @@ namespace dvmig.XTB.UI
                .ParallelismOptions
                .Contains(settings.MaxParallelism)
                ? settings.MaxParallelism
-               : 10;
+               : 5;
       }
 
       private void SaveSyncSettings()

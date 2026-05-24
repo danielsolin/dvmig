@@ -340,10 +340,10 @@ namespace dvmig.Core.Shared
             new[]
             {
                1,
+               3,
                5,
-               10,
-               15,
-               20
+               7,
+               10
             };
 
          public static IReadOnlyList<string> RecommendedEntities =>

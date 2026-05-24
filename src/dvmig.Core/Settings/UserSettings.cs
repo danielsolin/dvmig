@@ -26,7 +26,7 @@ namespace dvmig.Core.Settings
       /// <summary>
       /// Gets or sets the maximum number of parallel sync threads.
       /// </summary>
-      public int MaxParallelism { get; set; } = 10;
+      public int MaxParallelism { get; set; } = 5;
 
       /// <summary>
       /// Gets or sets a value indicating whether to automatically create 
