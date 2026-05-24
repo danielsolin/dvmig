@@ -451,6 +451,8 @@ namespace dvmig.XTB.UI
             }
          }).ContinueWith(task =>
          {
+            var elapsed = SyncTimer.Format(job.SyncElapsed);
+
             _syncCts?.Dispose();
             _syncCts = null;
             _clbEntities.Enabled = true;
@@ -461,11 +463,12 @@ namespace dvmig.XTB.UI
                var error = task.Exception.GetBaseException();
                _lblSyncStatus.Text = "Synchronization failed.";
                _rtbLogs.AppendText(
-                  $"\n[ERROR] Sync failed: {error.Message}\n"
+                  $"\n[ERROR] Sync failed after {elapsed}: " +
+                  $"{error.Message}\n"
                );
 
                MessageBox.Show(
-                  $"Sync failed: {error.Message}",
+                  $"Sync failed after {elapsed}: {error.Message}",
                   "Error",
                   MessageBoxButtons.OK,
                   MessageBoxIcon.Error
@@ -475,10 +478,12 @@ namespace dvmig.XTB.UI
             {
                _prgSync.Value = 0;
                _lblSyncStatus.Text = "Synchronization cancelled.";
-               _rtbLogs.AppendText("\n[INFO] Synchronization cancelled.\n");
+               _rtbLogs.AppendText(
+                  $"\n[INFO] Synchronization cancelled after {elapsed}.\n"
+               );
 
                MessageBox.Show(
-                  "Synchronization cancelled.",
+                  $"Synchronization cancelled after {elapsed}.",
                   "Cancelled",
                   MessageBoxButtons.OK,
                   MessageBoxIcon.Information
@@ -487,11 +492,14 @@ namespace dvmig.XTB.UI
             else
             {
                _prgSync.Value = 100;
-               _lblSyncStatus.Text = "Synchronization complete.";
-               _rtbLogs.AppendText("\n[SUCCESS] Synchronization complete!\n");
+               _lblSyncStatus.Text =
+                  $"Synchronization complete in {elapsed}.";
+               _rtbLogs.AppendText(
+                  $"\n[SUCCESS] Synchronization complete in {elapsed}!\n"
+               );
 
                MessageBox.Show(
-                  "Synchronization completed successfully.",
+                  $"Synchronization completed successfully in {elapsed}.",
                   "Success",
                   MessageBoxButtons.OK,
                   MessageBoxIcon.Information
