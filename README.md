@@ -91,7 +91,7 @@ You can also test the connection strings in the app to make sure they work.
 
 The diagram below visualizes the synchronization process used in dvmig.Core.
 It handles preservation of audit fields, resolves dependencies, and excutes
-in parallell (using SemaphoreSlim to comply with .NET Standard 2.0).
+in parallel (using SemaphoreSlim to comply with .NET Standard 2.0).
 
 ```mermaid
 flowchart TD
