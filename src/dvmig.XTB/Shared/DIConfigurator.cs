@@ -43,15 +43,12 @@ namespace dvmig.XTB.Shared
             {
                logControl.Invoke(new Action(() =>
                   {
-                     logControl
-                        .AppendText($"[{DateTime.Now:HH:mm:ss}] {msg}\n");
-                     logControl.ScrollToCaret();
+                     XTBLogWriter.AppendLogMessage(logControl, msg);
                   }));
             }
             else
             {
-               logControl.AppendText($"[{DateTime.Now:HH:mm:ss}] {msg}\n");
-               logControl.ScrollToCaret();
+               XTBLogWriter.AppendLogMessage(logControl, msg);
             }
          });
          logger.AttachProgress(progress);

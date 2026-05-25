@@ -54,9 +54,11 @@ namespace dvmig.XTB.UI
            ResetUserMappingsPanel();
            UpdateSyncButtonState();
 
-            _rtbLogs.AppendText("Welcome to dvmig for XrmToolBox.\n");
-            _rtbLogs.AppendText("Please connect both a SOURCE and a TARGET " +
-                                "environment to begin.\n");
+            XTBLogWriter.AppendWelcomeBanner(
+               _rtbLogs,
+               "Welcome to dvmig for XrmToolBox!",
+               "Please connect both a SOURCE and a TARGET environment to begin."
+            );
         }
 
         public override void UpdateConnection(

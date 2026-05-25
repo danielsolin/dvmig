@@ -955,7 +955,7 @@ namespace dvmig.Core.Synchronization
          if (string.IsNullOrEmpty(attr))
             return false;
 
-         _logger.Warning(
+         _logger.Information(
             "Stripping missing dependency '{0}' from {1}",
             attr,
             parent.LogicalName

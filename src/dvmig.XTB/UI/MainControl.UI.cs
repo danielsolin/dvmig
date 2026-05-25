@@ -326,7 +326,7 @@ namespace dvmig.XTB.UI
                 Dock = DockStyle.Fill,
                 ReadOnly = true,
                 BackColor = Color.Black,
-                ForeColor = Color.LightGreen,
+                ForeColor = Color.Gainsboro,
                 Font = new Font("Consolas", 12)
             };
 
