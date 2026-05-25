@@ -41,12 +41,18 @@ namespace dvmig.Core.Synchronization
          ISyncStateService syncStateService
       )
       {
-         _source = source;
-         _target = target;
-         _userService = userService;
-         _logger = logger;
-         _entityService = entityService;
-         _syncStateService = syncStateService;
+         _source = source ??
+            throw new ArgumentNullException(nameof(source));
+         _target = target ??
+            throw new ArgumentNullException(nameof(target));
+         _userService = userService ??
+            throw new ArgumentNullException(nameof(userService));
+         _logger = logger ??
+            throw new ArgumentNullException(nameof(logger));
+         _entityService = entityService ??
+            throw new ArgumentNullException(nameof(entityService));
+         _syncStateService = syncStateService ??
+            throw new ArgumentNullException(nameof(syncStateService));
       }
 
       /// <inheritdoc />
