@@ -3,12 +3,10 @@
 
 ## Highlights
 
-- **Audit Preservation:**
-   * `CreatedOn` and `ModifiedOn` are preserved by an auto-deployed plugin
-     (`dvmig.Plugins.DMPlugin`).
-   * `CreatedBy` and `ModifiedBy` are preserved by auto-mapped impersonation -
-     users are mapped between source and target environments by either full name
-     or email.
+- **Audit Preservation:** `CreatedOn` and `ModifiedOn` are preserved by an
+  auto-deployed plugin (`dvmig.Plugins.DMPlugin`). `CreatedBy` and `ModifiedBy`
+  are preserved by auto-mapped impersonation - mapping users between source and
+  target environments by either full name or email.
 - **Data Integrity:** Preserves essential metadata and relationships - if an
   referenced record (like Primary Contact) does not exist on Target environment,
   it will be automatically created.
@@ -22,8 +20,10 @@
 ## Architecture
 
 - `src/dvmig.Core`: .NET Standard 2.0 library containing the migration logic.
-- `src/dvmig.XTB`: XrmToolBox plugin providing a GUI for using the sync/migrate functionality from `dvmig.Core`.
-- `src/dvmig.Cli`: .NET 9.0 app providing a TUI for using the sync/migrate functionality from `dvmig.Core`.
+- `src/dvmig.XTB`: XrmToolBox plugin providing a GUI for using the sync/migrate
+functionality from `dvmig.Core`.
+- `src/dvmig.Cli`: .NET 9.0 app providing a TUI for using the sync/migrate
+functionality from `dvmig.Core`.
 - `src/dvmig.Plugins`: Dataverse plugin for preserving audit fields.
 - `src/dvmig.Tests`: Unit test project using `xUnit`, `Moq`, and `Bogus`.
   
@@ -75,12 +75,13 @@ Five threads is therefore set as default in dvmig.
 
 ## Installation / Building
 
-You can either download a binary release or clone the repo and built it yourself.
+You can either download a binary release or clone the repo and built it
+yourself.
 
 * Download:
    * Get the latest [release](https://github.com/danielsolin/dvmig/releases),
-   * Unzip it, right-click `dvmig.Cli.exe` and select "Properties". Check "Unblock" at
-     the bottom of the "General" tab and click "Ok".
+   * Unzip it, right-click `dvmig.Cli.exe` and select "Properties". Check
+     "Unblock" at the bottom of the "General" tab and click "Ok".
    * Double-click `dvmig.Cli.exe`.
 
 * Build:
