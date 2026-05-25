@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 18
-VisualStudioVersion = 18.6.11806.211 stable
+VisualStudioVersion = 18.6.11806.211
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{827E0CD3-B72D-47B6-A68D-7590B98EB39B}"
 EndProject
@@ -25,6 +25,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "img", "img", "{372094D3-05E
 	ProjectSection(SolutionItems) = preProject
 		assets\img\main-menu.png = assets\img\main-menu.png
 		assets\img\sync-recommended-run.png = assets\img\sync-recommended-run.png
+		assets\img\xtb-plugin.png = assets\img\xtb-plugin.png
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dvmig.XTB", "src\dvmig.XTB\dvmig.XTB.csproj", "{2EA5673E-C454-436C-895F-7AB2DB5034B1}"
