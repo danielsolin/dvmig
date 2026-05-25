@@ -955,7 +955,7 @@ namespace dvmig.Core.Synchronization
          if (string.IsNullOrEmpty(attr))
             return false;
 
-         _logger.Warning(
+         _logger.Information(
             "Stripping missing dependency '{0}' from {1}",
             attr,
             parent.LogicalName
@@ -1077,7 +1077,7 @@ namespace dvmig.Core.Synchronization
             {
                await _target.UpdateAsync(preparedEntity, ct, modifiedById);
 
-               _logger.Information(
+               _logger.Debug(
                   "Updated (Sync-Completion) {Key}:{Id}",
                   preparedEntity.LogicalName,
                   preparedEntity.Id
@@ -1087,7 +1087,7 @@ namespace dvmig.Core.Synchronization
             {
                await _target.CreateAsync(preparedEntity, ct, creatorId);
 
-               _logger.Information(
+               _logger.Debug(
                   "Created {Key}:{Id}",
                   preparedEntity.LogicalName,
                   preparedEntity.Id

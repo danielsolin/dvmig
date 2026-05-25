@@ -20,7 +20,7 @@ namespace dvmig.XTB.Shared
          var services = new ServiceCollection();
 
          // Shared Infrastructure
-         var logger = new XTBLogger(control);
+         var logger = new XTBLogger();
          services.AddSingleton<ILogger>(logger);
          services.AddSingleton<ISyncStateService, SyncStateService>();
          services.AddSingleton<ISettingsService>(
@@ -43,15 +43,12 @@ namespace dvmig.XTB.Shared
             {
                logControl.Invoke(new Action(() =>
                   {
-                     logControl
-                        .AppendText($"[{DateTime.Now:HH:mm:ss}] {msg}\n");
-                     logControl.ScrollToCaret();
+                     XTBLogWriter.AppendLogMessage(logControl, msg);
                   }));
             }
             else
             {
-               logControl.AppendText($"[{DateTime.Now:HH:mm:ss}] {msg}\n");
-               logControl.ScrollToCaret();
+               XTBLogWriter.AppendLogMessage(logControl, msg);
             }
          });
          logger.AttachProgress(progress);

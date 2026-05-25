@@ -1068,7 +1068,8 @@ namespace dvmig.XTB.UI
                _prgSync.Value = 100;
                _lblSyncStatus.Text =
                   $"Synchronization complete in {elapsed}.";
-               _rtbLogs.AppendText(
+               XTBLogWriter.AppendAccentMessage(
+                  _rtbLogs,
                   $"\n[SUCCESS] Synchronization complete in {elapsed}!\n"
                );
 
