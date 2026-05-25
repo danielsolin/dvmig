@@ -2,6 +2,7 @@ using XrmToolBox.Extensibility;
 
 using dvmig.Core.Interfaces;
 using dvmig.Core.Settings;
+using System;
 
 namespace dvmig.XTB.Shared
 {
@@ -11,11 +12,11 @@ namespace dvmig.XTB.Shared
    /// </summary>
    public class XTBSettingsService : ISettingsService
    {
-      private readonly PluginControlBase _control;
+      private readonly Type _settingsType;
 
       public XTBSettingsService(PluginControlBase control)
       {
-         _control = control;
+         _settingsType = control.GetType();
       }
       
       /// <inheritdoc />
@@ -24,7 +25,7 @@ namespace dvmig.XTB.Shared
          UserSettings settings;
          
          if (SettingsManager.Instance.TryLoad(
-               _control.GetType(),
+               _settingsType.GetType(),
                out settings
             )
          )
@@ -38,7 +39,7 @@ namespace dvmig.XTB.Shared
       /// <inheritdoc />
       public void SaveSettings(UserSettings settings)
       {
-         SettingsManager.Instance.Save(_control.GetType(), settings);
+         SettingsManager.Instance.Save(_settingsType.GetType(), settings);
       }
    }
 }
