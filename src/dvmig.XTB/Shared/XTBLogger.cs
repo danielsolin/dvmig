@@ -1,6 +1,5 @@
 using System;
 using System.Text.RegularExpressions;
-using XrmToolBox.Extensibility;
 using dvmig.Core.Interfaces;
 
 namespace dvmig.XTB.Shared
@@ -12,12 +11,10 @@ namespace dvmig.XTB.Shared
    /// </summary>
    public class XTBLogger : ILogger
    {
-      private readonly PluginControlBase _control;
       private IProgress<string>? _progress;
 
-      public XTBLogger(PluginControlBase control)
+      public XTBLogger()
       {
-         _control = control;
       }
 
       public void AttachProgress(IProgress<string> progress)

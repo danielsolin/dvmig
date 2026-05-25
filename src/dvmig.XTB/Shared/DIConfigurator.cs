@@ -20,7 +20,7 @@ namespace dvmig.XTB.Shared
          var services = new ServiceCollection();
 
          // Shared Infrastructure
-         var logger = new XTBLogger(control);
+         var logger = new XTBLogger();
          services.AddSingleton<ILogger>(logger);
          services.AddSingleton<ISyncStateService, SyncStateService>();
          services.AddSingleton<ISettingsService>(
