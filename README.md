@@ -1,4 +1,4 @@
-<img src="assets/img/main-menu.png" width="300px" />
+<img src="assets/img/xtb-plugin.png" width="400px" />
 <img src="assets/img/sync-recommended-run.png" width="400px" />
 
 ## Highlights
@@ -13,22 +13,20 @@
   referenced record (like Primary Contact) does not exist on Target environment,
   it will be automatically created.
 - **Synchronization:** Built with `Polly` for resiliance, handling transient
-  errors and automatic retry strategies. *(Note: Dataverse enforces API rate
-  limits. When these limits are hit, dvmig throttles requests, which may make
-  the app appear stalled or frozen.  This is normal behavior and cannot be
-  bypassed.)*
-- **Interactive TUI:** Using `Spectre.Console`.
-- **Logging:** Detailed error/warning/info logging
-  (see C:\Users\USERNAME\AppData\Roaming\dvmig).  
+  errors and automatic retry strategies.
+- **Performance:** User-configurable parallelism. See performance table below.
+  *(Note: Dataverse enforces API rate limits. When these limits are hit, dvmig
+  throttles requests, which may make the app appear stalled or frozen.  This is
+  normal behavior and cannot be bypassed.)*
   
 ## Architecture
 
-- `src/dvmig.Cli`: .NET 9.0 TUI application built with `Spectre.Console`.
 - `src/dvmig.Core`: .NET Standard 2.0 library containing the migration logic.
+- `src/dvmig.XTB`: XrmToolBox plugin providing a GUI for using the sync/migrate functionality from `dvmig.Core`.
+- `src/dvmig.Cli`: .NET 9.0 app providing a TUI for using the sync/migrate functionality from `dvmig.Core`.
 - `src/dvmig.Plugins`: Dataverse plugin for preserving audit fields.
 - `src/dvmig.Tests`: Unit test project using `xUnit`, `Moq`, and `Bogus`.
-- `src/dvmig.XTB`: XrmToolBox plugin with the same functionality as the TUI.
-
+  
 The diagram below visualizes the synchronization process used in dvmig.Core.
 It handles preservation of audit fields, resolves dependencies, and excutes
 in parallell (using SemaphoreSlim to comply with .NET Standard 2.0).
