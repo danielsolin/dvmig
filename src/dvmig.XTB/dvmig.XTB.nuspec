@@ -7,7 +7,7 @@
     <authors>Daniel Solin</authors>
     <owners>Daniel Solin</owners>
     <projectUrl>https://github.com/danielsolin/dvmig</projectUrl>
-    <iconUrl>https://raw.githubusercontent.com/danielsolin/dvmig/main/assets/img/xtb-plugin.png</iconUrl>
+    <iconUrl>https://raw.githubusercontent.com/danielsolin/dvmig/main/assets/img/dvmig-icon.png</iconUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>XrmToolBox plugin for synchronizing Dataverse data between environments with audit preservation.</description>
     <summary>Synchronize Dataverse data between environments from XrmToolBox.</summary>

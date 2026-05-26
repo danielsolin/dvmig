@@ -22,8 +22,13 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "assets", "assets", "{C1D08D
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "img", "img", "{372094D3-05EA-471F-9823-11EB0FA3C206}"
 	ProjectSection(SolutionItems) = preProject
+		assets\img\dvmig-icon.png = assets\img\dvmig-icon.png
 		assets\img\main-menu.png = assets\img\main-menu.png
 		assets\img\sync-recommended-run.png = assets\img\sync-recommended-run.png
+		assets\img\xtb-plugin-connected.png = assets\img\xtb-plugin-connected.png
+		assets\img\xtb-plugin-finished.png = assets\img\xtb-plugin-finished.png
+		assets\img\xtb-plugin-startup.png = assets\img\xtb-plugin-startup.png
+		assets\img\xtb-plugin-syncing.png = assets\img\xtb-plugin-syncing.png
 		assets\img\xtb-plugin.png = assets\img\xtb-plugin.png
 	EndProjectSection
 EndProject
