@@ -6,11 +6,11 @@ UIs:
 - `dvmig.CLI`: A terminal-based user interface (TUI).  
   
 <figure>
-   <figcaption>XrmToolBox Plugin (dvmig.XTB)</figcaption>
+   <figcaption>XrmToolBox Plugin</figcaption>
   <img src="assets/img/xtb-plugin.png" width="400px" />
 </figure>
 <figure>
-   <figcaption>TUI App (dvmig.CLI)</figcaption>
+   <figcaption>TUI App</figcaption>
   <img src="assets/img/sync-recommended-run.png" width="400px" />
 </figure>
 
