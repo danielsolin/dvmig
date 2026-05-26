@@ -25,11 +25,21 @@ namespace dvmig.XTB.Shared
          UserSettings settings;
          
          if (SettingsManager.Instance.TryLoad(
+               _settingsType,
+               out settings
+            )
+         )
+         {
+            return settings;
+         }
+
+         if (SettingsManager.Instance.TryLoad(
                _settingsType.GetType(),
                out settings
             )
          )
          {
+            SettingsManager.Instance.Save(_settingsType, settings);
             return settings;
          }
 
@@ -39,7 +49,7 @@ namespace dvmig.XTB.Shared
       /// <inheritdoc />
       public void SaveSettings(UserSettings settings)
       {
-         SettingsManager.Instance.Save(_settingsType.GetType(), settings);
+         SettingsManager.Instance.Save(_settingsType, settings);
       }
    }
 }
