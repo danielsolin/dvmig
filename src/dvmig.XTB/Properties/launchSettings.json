@@ -3,7 +3,7 @@
     "XTB": {
       "commandName": "Executable",
       "executablePath": "C:\\Users\\daniel\\source\\dvmig\\src\\dvmig.XTB\\bin\\Debug\\net48\\XrmToolBox.exe",
-      "commandLineArgs": "/overridepath:. /plugin:\"Dataverse Migration (dvmig)\"",
+      "commandLineArgs": "/overridepath:. /plugin:\"Dataverse Migrator (dvmig)\"",
       "workingDirectory": "C:\\Users\\daniel\\source\\dvmig\\src\\dvmig.XTB\\bin\\Debug\\net48"
     }
   }

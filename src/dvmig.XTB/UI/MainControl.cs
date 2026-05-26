@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Drawing;
+using System.IO;
 using System.Threading;
 
 using Microsoft.Xrm.Sdk;
@@ -40,6 +41,9 @@ namespace dvmig.XTB.UI
 
         public MainControl()
         {
+           PluginIcon = LoadPluginIcon();
+           TabIcon = LoadPluginTabIcon();
+
            // Optimizations for Dataverse communication in .NET Framework.
            System.Net.ServicePointManager.DefaultConnectionLimit = 65000;
            System.Net.ServicePointManager.Expect100Continue = false;
@@ -59,6 +63,37 @@ namespace dvmig.XTB.UI
                "Welcome to dvmig for XrmToolBox!",
                "Please connect both a SOURCE and a TARGET environment to begin."
             );
+        }
+
+        private static Icon LoadPluginIcon()
+        {
+           var stream = typeof(MainControl).Assembly
+              .GetManifestResourceStream(
+                 "dvmig.XTB.Resources.dvmig-icon.ico"
+              );
+
+           if (stream == null)
+              throw new InvalidOperationException(
+                 "Embedded dvmig XrmToolBox icon was not found."
+              );
+
+           using (stream)
+           {
+              return new Icon(stream);
+           }
+        }
+
+        private static Image LoadPluginTabIcon()
+        {
+           var bytes = Convert.FromBase64String(
+              PluginImages.SmallImageBase64
+           );
+
+           using (var stream = new MemoryStream(bytes))
+           using (var image = Image.FromStream(stream))
+           {
+              return new Bitmap(image);
+           }
         }
 
         public override void UpdateConnection(

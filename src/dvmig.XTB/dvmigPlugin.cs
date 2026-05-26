@@ -7,7 +7,7 @@ namespace dvmig.XTB
 {
    #region DvmigPlugin
    [Export(typeof(IXrmToolBoxPlugin))]
-   [ExportMetadata("Name", "Dataverse Migration (dvmig)")]
+   [ExportMetadata("Name", "Dataverse Migrator (dvmig)")]
    [ExportMetadata("SmallImageBase64", PluginImages.SmallImageBase64)]
    [ExportMetadata("BigImageBase64", PluginImages.BigImageBase64)]
    [ExportMetadata("BackgroundColor", "White")]

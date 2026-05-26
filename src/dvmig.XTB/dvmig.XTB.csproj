@@ -9,11 +9,13 @@
     <UseWindowsForms>true</UseWindowsForms>
     <AssemblyName>dvmig.XTB</AssemblyName>
     <RootNamespace>dvmig.XTB</RootNamespace>
+    <ApplicationIcon>..\..\assets\img\dvmig-icon.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
     <Compile Remove="DevHost\**\*.cs" />
     <None Include="DevHost\**\*" />
+    <EmbeddedResource Include="..\..\assets\img\dvmig-icon.ico" Link="Resources\dvmig-icon.ico" LogicalName="dvmig.XTB.Resources.dvmig-icon.ico" />
   </ItemGroup>
 
   <ItemGroup>
