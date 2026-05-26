@@ -36,6 +36,8 @@ jobs:
 
       - name: Setup NuGet
         uses: NuGet/setup-nuget@v2
+        with:
+          nuget-version: 'latest'
 
       - name: Set package version
         id: version

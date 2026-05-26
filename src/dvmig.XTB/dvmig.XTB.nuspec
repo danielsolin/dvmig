@@ -6,10 +6,11 @@
     <title>Dataverse Migrator (dvmig)</title>
     <authors>Daniel Solin</authors>
     <owners>Daniel Solin</owners>
+    <license type="file">LICENSE.txt</license>
     <projectUrl>https://github.com/danielsolin/dvmig</projectUrl>
     <iconUrl>https://raw.githubusercontent.com/danielsolin/dvmig/main/assets/img/dvmig-icon-nuget.png</iconUrl>
+    <readme>README.md</readme>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
-    <license type="file">LICENSE.txt</license>
     <description>XrmToolBox plugin for synchronizing Dataverse data between environments with audit preservation.</description>
     <summary>Synchronize Dataverse data between environments from XrmToolBox.</summary>
     <releaseNotes>See https://github.com/danielsolin/dvmig/releases for release notes.</releaseNotes>
