@@ -1,18 +1,18 @@
-<figure>
-  <img src="assets/img/xtb-plugin.png" width="400px" />
-  <figcaption>XrmToolBox Plugin (dvmig.XTB)</figcaption>
-</figure>
-<figure>
-  <img src="assets/img/sync-recommended-run.png" width="400px" />
-  <figcaption>TUI App (dvmig.CLI)</figcaption>
-</figure>
-
 Dataverse Migrator (dvmig) is a synchronization/migration engine that can be
 used to sync/migrate data between CDS/Dataverse/Dynamics environments while
 preserving audit data and entity/table relations. It comes with two separate
 UIs:
 - `dvmig.XTB`: An XrmToolBox plugin.
-- `dvmig.CLI`: A terminal-based user interface (TUI).
+- `dvmig.CLI`: A terminal-based user interface (TUI).  
+  
+<figure>
+   <figcaption>XrmToolBox Plugin (dvmig.XTB)</figcaption>
+  <img src="assets/img/xtb-plugin.png" width="400px" />
+</figure>
+<figure>
+   <figcaption>TUI App (dvmig.CLI)</figcaption>
+  <img src="assets/img/sync-recommended-run.png" width="400px" />
+</figure>
 
 ## Highlights
 
