@@ -46,7 +46,9 @@ jobs:
             $version = $Matches.version
             $releaseTag = $refName
           } else {
-            $version = Get-Date -Format 'yyyy.M.d.HHmm'
+            $now = Get-Date
+            $timeSegment = ($now.Hour * 100) + $now.Minute
+            $version = '{0}.{1}.{2}.{3}' -f $now.Year, $now.Month, $now.Day, $timeSegment
             $releaseTag = "xtb-$version"
           }
 
