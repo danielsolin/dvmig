@@ -95,6 +95,24 @@ jobs:
           $zip = Join-Path $env:GITHUB_WORKSPACE "artifacts/$env:PACKAGE_ID-$env:PACKAGE_VERSION-manual.zip"
           Compress-Archive -Path "$env:GITHUB_WORKSPACE/$env:XTB_PACKAGE_DIR/Plugins" -DestinationPath $zip -Force
 
+      - name: Verify release artifacts
+        shell: pwsh
+        run: |
+          $nupkg = Join-Path $env:GITHUB_WORKSPACE "artifacts/$env:PACKAGE_ID.$env:PACKAGE_VERSION.nupkg"
+          $zip = Join-Path $env:GITHUB_WORKSPACE "artifacts/$env:PACKAGE_ID-$env:PACKAGE_VERSION-manual.zip"
+
+          Get-ChildItem -Path "$env:GITHUB_WORKSPACE/artifacts" -File |
+            Sort-Object Name |
+            Select-Object Name, Length
+
+          if (-not (Test-Path -LiteralPath $nupkg)) {
+            throw "Missing NuGet package artifact: $nupkg"
+          }
+
+          if (-not (Test-Path -LiteralPath $zip)) {
+            throw "Missing manual install zip artifact: $zip"
+          }
+
       - name: Publish XTB package to NuGet
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.publish_to_nuget == true }}
         env:
@@ -111,6 +129,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           draft: false
+          fail_on_unmatched_files: true
           tag_name: ${{ steps.version.outputs.release_tag }}
           target_commitish: ${{ github.sha }}
           files: |
