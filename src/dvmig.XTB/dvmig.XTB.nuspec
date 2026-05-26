@@ -6,22 +6,27 @@
     <title>Dataverse Migrator (dvmig)</title>
     <authors>Daniel Solin</authors>
     <owners>Daniel Solin</owners>
-    <projectUrl>https://github.com/danielsolin/dvmig</projectUrl>
-    <iconUrl>https://raw.githubusercontent.com/danielsolin/dvmig/main/assets/img/dvmig-icon-nuget.png</iconUrl>
-    <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <license type="file">LICENSE.txt</license>
+    <projectUrl>https://github.com/danielsolin/dvmig</projectUrl>
+    <icon>dvmig-icon-nuget.png</icon>
+    <iconUrl>https://raw.githubusercontent.com/danielsolin/dvmig/main/assets/img/dvmig-icon-nuget.png</iconUrl>
+    <readme>README.md</readme>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>XrmToolBox plugin for synchronizing Dataverse data between environments with audit preservation.</description>
     <summary>Synchronize Dataverse data between environments from XrmToolBox.</summary>
     <releaseNotes>See https://github.com/danielsolin/dvmig/releases for release notes.</releaseNotes>
     <copyright>Copyright Daniel Solin</copyright>
     <tags>XrmToolBox Plugins Dataverse Migrator dvmig</tags>
     <dependencies>
-      <dependency id="XrmToolBox" version="1.2025.10.74" />
+      <group targetFramework=".NETFramework4.8">
+        <dependency id="XrmToolBox" version="1.2025.10.74" />
+      </group>
     </dependencies>
   </metadata>
   <files>
     <file src="LICENSE.txt" target="" />
     <file src="README.md" target="" />
+    <file src="dvmig-icon-nuget.png" target="" />
     <file src="Plugins\**\*" target="lib\net48\Plugins" />
   </files>
 </package>

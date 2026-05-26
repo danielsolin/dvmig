@@ -36,6 +36,8 @@ jobs:
 
       - name: Setup NuGet
         uses: NuGet/setup-nuget@v2
+        with:
+          nuget-version: 'latest'
 
       - name: Set package version
         id: version
@@ -77,6 +79,7 @@ jobs:
           $source = Join-Path $env:GITHUB_WORKSPACE $env:XTB_BUILD_DIR
           $licenseSource = Join-Path $env:GITHUB_WORKSPACE 'LICENSE'
           $readmeSource = Join-Path $env:GITHUB_WORKSPACE 'src/dvmig.XTB/README.md'
+          $iconSource = Join-Path $env:GITHUB_WORKSPACE 'assets/img/dvmig-icon-nuget.png'
           $plugins = Join-Path (Join-Path $env:GITHUB_WORKSPACE $env:XTB_PACKAGE_DIR) 'Plugins'
           $dependencies = Join-Path $plugins "$env:PACKAGE_ID"
 
@@ -84,6 +87,7 @@ jobs:
           New-Item -ItemType Directory -Force -Path $dependencies | Out-Null
           Copy-Item -Path $licenseSource -Destination (Join-Path $env:GITHUB_WORKSPACE $env:XTB_PACKAGE_DIR 'LICENSE.txt') -Force
           Copy-Item -Path $readmeSource -Destination (Join-Path $env:GITHUB_WORKSPACE $env:XTB_PACKAGE_DIR 'README.md') -Force
+          Copy-Item -Path $iconSource -Destination (Join-Path $env:GITHUB_WORKSPACE $env:XTB_PACKAGE_DIR 'dvmig-icon-nuget.png') -Force
 
           Get-ChildItem -Path $source -File |
             Where-Object {
