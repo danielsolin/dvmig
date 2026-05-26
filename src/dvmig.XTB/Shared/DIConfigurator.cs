@@ -30,7 +30,6 @@ namespace dvmig.XTB.Shared
          // Metadata & Synchronization
          services.AddTransient<IEntityService, EntityService>();
          services.AddTransient<IUserService, UserService>();
-         services.AddTransient<ISeedingService, SeedingService>();
          services.AddTransient<IWipeDataService, WipeDataService>();
          services.AddTransient<IEnvironmentService, EnvironmentService>();
 

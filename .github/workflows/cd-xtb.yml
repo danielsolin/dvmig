@@ -82,7 +82,8 @@ jobs:
           Get-ChildItem -Path $source -File |
             Where-Object {
               $_.Extension -in '.dll', '.config' -and
-              $_.Name -notlike 'XrmToolBox*'
+              $_.Name -notlike 'XrmToolBox*' -and
+              $_.Name -ne 'Bogus.dll'
             } |
             Copy-Item -Destination $plugins -Force
 
