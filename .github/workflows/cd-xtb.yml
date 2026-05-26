@@ -137,12 +137,21 @@ jobs:
           nuget push "artifacts/$env:PACKAGE_ID.$env:PACKAGE_VERSION.nupkg" -ApiKey $env:NUGET_API_KEY -Source https://api.nuget.org/v3/index.json -SkipDuplicate
 
       - name: Create Release
-        uses: softprops/action-gh-release@v2
-        with:
-          draft: false
-          fail_on_unmatched_files: true
-          tag_name: ${{ steps.version.outputs.release_tag }}
-          target_commitish: ${{ github.sha }}
-          files: |
-            artifacts/${{ env.PACKAGE_ID }}.${{ steps.version.outputs.package_version }}.nupkg
-            artifacts/${{ env.PACKAGE_ID }}-${{ steps.version.outputs.package_version }}-manual.zip
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: pwsh
+        run: |
+          $tag = "${{ steps.version.outputs.release_tag }}"
+          $version = "${{ steps.version.outputs.package_version }}"
+          $nupkg = "artifacts/$env:PACKAGE_ID.$version.nupkg"
+          $zip = "artifacts/$env:PACKAGE_ID-$version-manual.zip"
+
+          if (gh release view $tag --repo $env:GITHUB_REPOSITORY *> $null) {
+            gh release upload $tag $nupkg $zip --repo $env:GITHUB_REPOSITORY --clobber
+          } else {
+            gh release create $tag $nupkg $zip `
+              --repo $env:GITHUB_REPOSITORY `
+              --target $env:GITHUB_SHA `
+              --title $tag `
+              --notes "XrmToolBox release $version"
+          }
