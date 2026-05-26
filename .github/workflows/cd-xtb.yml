@@ -76,18 +76,26 @@ jobs:
         run: |
           $source = Join-Path $env:GITHUB_WORKSPACE $env:XTB_BUILD_DIR
           $plugins = Join-Path (Join-Path $env:GITHUB_WORKSPACE $env:XTB_PACKAGE_DIR) 'Plugins'
+          $dependencies = Join-Path $plugins "$env:PACKAGE_ID"
 
           New-Item -ItemType Directory -Force -Path $plugins | Out-Null
+          New-Item -ItemType Directory -Force -Path $dependencies | Out-Null
 
           Get-ChildItem -Path $source -File |
             Where-Object {
               $_.Extension -in '.dll', '.config' -and
               $_.Name -notlike 'XrmToolBox*' -and
-              $_.Name -ne 'Bogus.dll'
+              $_.Name -ne 'Bogus.dll' -and
+              $_.Name -notin @("$env:PACKAGE_ID.dll", "$env:PACKAGE_ID.dll.config")
             } |
-            Copy-Item -Destination $plugins -Force
+            Copy-Item -Destination $dependencies -Force
 
-          Get-ChildItem -Path $plugins -File | Sort-Object Name | Select-Object Name, Length
+          Copy-Item -Path (Join-Path $source "$env:PACKAGE_ID.dll") -Destination $plugins -Force
+          Copy-Item -Path (Join-Path $source "$env:PACKAGE_ID.dll.config") -Destination $plugins -Force
+
+          Get-ChildItem -Path $plugins -Recurse -File |
+            Sort-Object FullName |
+            Select-Object FullName, Length
 
       - name: Pack XTB NuGet package
         run: nuget pack src/dvmig.XTB/dvmig.XTB.nuspec -Version $env:PACKAGE_VERSION -BasePath "$env:GITHUB_WORKSPACE/$env:XTB_PACKAGE_DIR" -OutputDirectory "$env:GITHUB_WORKSPACE/artifacts"
