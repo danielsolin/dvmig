@@ -1,12 +1,26 @@
-<img src="assets/img/xtb-plugin.png" width="400px" />
-<img src="assets/img/sync-recommended-run.png" width="400px" />
+<figure>
+  <img src="assets/img/xtb-plugin.png" width="400px" />
+  <figcaption>XrmToolBox Plugin (dvmig.XTB)</figcaption>
+</figure>
+<figure>
+  <img src="assets/img/sync-recommended-run.png" width="400px" />
+  <figcaption>TUI App (dvmig.CLI)</figcaption>
+</figure>
+
+Dataverse Migrator (dvmig) is a synchronization/migration engine that can be
+used to sync/migrate data between CDS/Dataverse/Dynamics environments while
+preserving audit data and entity/table relations. It comes with two separate
+UIs:
+- `dvmig.XTB`: An XrmToolBox plugin.
+- `dvmig.CLI`: A terminal-based user interface (TUI).
 
 ## Highlights
 
 - **Audit Preservation:** `CreatedOn` and `ModifiedOn` are preserved by an
   auto-deployed plugin (`dvmig.Plugins.DMPlugin`). `CreatedBy` and `ModifiedBy`
-  are preserved by auto-mapped impersonation - mapping users between source and
-  target environments by either full name or email.
+  are preserved by impersonation - mapping users between source and target
+  environments automatically by matching full name or email, or using user-
+  defined mappings (XrmToolBox plugin only).
 - **Data Integrity:** Preserves essential metadata and relationships - if an
   referenced record (like Primary Contact) does not exist on Target environment,
   it will be automatically created.
@@ -60,8 +74,9 @@ flowchart TD
 ```
   
 ## Performance
-A test set of 2874 records, including `Account`, `Contact`, `Task`, `Email`,
-`PhoneCall` and `Appointment`, produced these results:  
+Synchronizing a set of 2874 records, including `Account`, `Contact`, `Task`,
+`Email`, `PhoneCall` and `Appointment`, running with 1, 3, 5, 7 and 10 threads,
+produced these results:  
   
 | Threads | Time | Seconds | Throughput |
 | ---: | ---: | ---: | ---: |
@@ -71,9 +86,18 @@ A test set of 2874 records, including `Account`, `Contact`, `Task`, `Email`,
 | 7 | 6m 22s | 382s | ~7.5 records/s |
 | 10 | 7m 08s | 428s | ~6.7 records/s |
   
-Five threads is therefore set as default in dvmig.  
+Five threads is therefore set as default in dvmig.
 
-## Installation / Building
+## dvmig.XTB - XrmToolBox Plugin
+
+`dvmig.XTB` is the XrmToolBox plugin for Dataverse Migrator.
+
+Install it from XrmToolBox Tool Library using package id `dvmig.XTB`, or
+get the NuGet package directly from
+[NuGet.org](https://www.nuget.org/packages/dvmig.XTB/).  
+  
+  
+## dvmig.CLI - TUI App
 
 You can either download a binary release or clone the repo and built it
 yourself.
@@ -98,7 +122,7 @@ yourself.
    dotnet run --project src/dvmig.Cli
    ```
 
-## Usage
+### Usage
 
 When running the app for the first time, start by selecting "Configuration"
 on the main menu to set connection strings for Source and Target environments.
