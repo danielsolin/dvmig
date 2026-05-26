@@ -1,7 +1,7 @@
 [CmdletBinding()]
 param(
     [string]$HostDirectory = "C:\tmp\dvmig-xtb-build",
-    [string]$ProfileDirectory = "C:\tmp\dvmig-xtb-dev-profile"
+    [string]$ProfileDirectory = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -10,6 +10,11 @@ $HostDirectory = $HostDirectory.Trim('"')
 $ProfileDirectory = $ProfileDirectory.Trim('"')
 
 $hostDirectoryPath = [System.IO.Path]::GetFullPath($HostDirectory)
+$ProfileDirectory = if ([string]::IsNullOrWhiteSpace($ProfileDirectory)) {
+    $hostDirectoryPath
+} else {
+    $ProfileDirectory
+}
 $profileDirectoryPath = [System.IO.Path]::GetFullPath($ProfileDirectory)
 $xrmToolBoxExe = Join-Path $hostDirectoryPath "XrmToolBox.exe"
 
