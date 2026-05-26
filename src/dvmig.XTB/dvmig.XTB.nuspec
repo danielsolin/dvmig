@@ -8,7 +8,6 @@
     <owners>Daniel Solin</owners>
     <license type="file">LICENSE.txt</license>
     <projectUrl>https://github.com/danielsolin/dvmig</projectUrl>
-    <icon>dvmig-icon-nuget.png</icon>
     <iconUrl>https://raw.githubusercontent.com/danielsolin/dvmig/main/assets/img/dvmig-icon-nuget.png</iconUrl>
     <readme>README.md</readme>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
@@ -26,7 +25,6 @@
   <files>
     <file src="LICENSE.txt" target="" />
     <file src="README.md" target="" />
-    <file src="dvmig-icon-nuget.png" target="" />
     <file src="Plugins\**\*" target="lib\net48\Plugins" />
   </files>
 </package>
