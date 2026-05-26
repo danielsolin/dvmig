@@ -19,6 +19,7 @@
     </dependencies>
   </metadata>
   <files>
+    <file src="README.md" target="" />
     <file src="Plugins\**\*" target="lib\net48\Plugins" />
   </files>
 </package>
