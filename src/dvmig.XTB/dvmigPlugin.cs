@@ -15,7 +15,7 @@ namespace dvmig.XTB
    [ExportMetadata("SecondaryFontColor", "Gray")]
    [ExportMetadata(
       "Description",
-      "Synchronize data between environments while preserving audit data and entity relations."
+      "Synchronize records between environments while preserving audit fields and entity relations."
    )]
    public class DvmigPlugin : PluginBase, INoConnectionRequired
    {
