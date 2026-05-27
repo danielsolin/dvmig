@@ -1,18 +1,32 @@
+<figure>
+   <figcaption>XrmToolBox Plugin</figcaption>
+  <img src="assets/img/xtb-plugin.png" width="400px" />
+</figure>
+
 Dataverse Migrator (dvmig) is a synchronization/migration engine that can be
 used to sync/migrate data between CDS/Dataverse/Dynamics environments while
 preserving audit data and entity/table relations. It comes with two separate
 UIs:
 - `dvmig.XTB`: An XrmToolBox plugin.
-- `dvmig.CLI`: A terminal-based user interface (TUI).  
+- `dvmig.CLI`: A terminal-based user interface (TUI).
+
+## dvmig.XTB - XrmToolBox Plugin
+
+`dvmig.XTB` is the XrmToolBox plugin for Dataverse Migrator.
+
+Install it from XrmToolBox Tool Library using package id `dvmig.XTB`, or
+get the NuGet package directly from
+[NuGet.org](https://www.nuget.org/packages/dvmig.XTB/).
+
+See the [Dataverse Migrator XrmToolBox Guide](docs/XTB-GUIDE.md) for detailed
+instructions.
   
-<figure>
-   <figcaption>XrmToolBox Plugin</figcaption>
-  <img src="assets/img/xtb-plugin.png" width="400px" />
-</figure>
-<figure>
-   <figcaption>TUI App</figcaption>
-  <img src="assets/img/sync-recommended-run.png" width="400px" />
-</figure>
+## dvmig.CLI - TUI App
+
+`dvmig.CLI` is the TUI app for Dataverse Migrator.
+
+See the [Dataverse Migrator CLI Guide](docs/CLI-GUIDE.md) for detailed
+instructions.
 
 ## Highlights
 
@@ -87,22 +101,3 @@ produced these results:
 | 10 | 7m 08s | 428s | ~6.7 records/s |
   
 Five threads is therefore set as default in dvmig.
-
-## dvmig.XTB - XrmToolBox Plugin
-
-`dvmig.XTB` is the XrmToolBox plugin for Dataverse Migrator.
-
-Install it from XrmToolBox Tool Library using package id `dvmig.XTB`, or
-get the NuGet package directly from
-[NuGet.org](https://www.nuget.org/packages/dvmig.XTB/).
-
-See the [Dataverse Migrator XrmToolBox Guide](docs/XTB-GUIDE.md) for detailed
-instructions.
-  
-## dvmig.CLI - TUI App
-
-`dvmig.CLI` is the TUI app for Dataverse Migrator.
-
-See the [Dataverse Migrator CLI Guide](docs/CLI-GUIDE.md) for detailed
-instructions.
-
