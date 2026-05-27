@@ -9,7 +9,8 @@ namespace dvmig.XTB.UI
     public partial class MainControl
     {
         private const int _connectionButtonWidth = 385;
-        private readonly Font _buttonFont = new("Segoe UI", 10F, FontStyle.Bold);
+        private readonly Font _primaryButtonFont =
+           new("Segoe UI", 10F, FontStyle.Bold);
         private readonly Font _uiFont = new("Segoe UI", 9F);
 
         private Button _btnSelectSource = null!;
@@ -60,7 +61,7 @@ namespace dvmig.XTB.UI
                 Width = _connectionButtonWidth,
                 TextAlign = ContentAlignment.MiddleLeft,
                 ForeColor = Color.Red,
-                Font = _buttonFont
+                Font = _uiFont
             };
             _btnSelectSource.Click += OnSelectSourceClick;
 
@@ -71,7 +72,7 @@ namespace dvmig.XTB.UI
                 Width = _connectionButtonWidth,
                 TextAlign = ContentAlignment.MiddleLeft,
                 ForeColor = Color.Red,
-                Font = _buttonFont
+                Font = _uiFont
             };
             _btnSelectTarget.Click += OnSelectTargetClick;
 
@@ -82,7 +83,7 @@ namespace dvmig.XTB.UI
                 Enabled = false,
                 Visible = false,
                 Width = _connectionButtonWidth,
-                Font = _buttonFont
+                Font = _uiFont
             };
             _btnInstallComponents.Click += OnTargetComponentsActionClick;
 
@@ -93,7 +94,7 @@ namespace dvmig.XTB.UI
                 Enabled = false,
                 BackColor = Color.LightGreen,
                 UseVisualStyleBackColor = false,
-                Font = _buttonFont
+                Font = _primaryButtonFont
             };
             _btnSync.Click += RunSync_Click;
 
@@ -102,7 +103,7 @@ namespace dvmig.XTB.UI
                 Text = "Cancel",
                 Dock = DockStyle.Fill,
                 Enabled = false,
-                Font = _buttonFont
+                Font = _uiFont
             };
             _btnCancelSync.Click += CancelSync_Click;
 
@@ -123,7 +124,7 @@ namespace dvmig.XTB.UI
                Dock = DockStyle.Right,
                Enabled = false,
                FlatStyle = FlatStyle.Flat,
-               Font = _uiFont,
+                Font = _uiFont,
                Margin = new Padding(0),
                Padding = new Padding(6, 0, 6, 0),
                UseVisualStyleBackColor = true
@@ -230,7 +231,7 @@ namespace dvmig.XTB.UI
                Text = "Threads",
                AutoSize = true,
                Anchor = AnchorStyles.Left | AnchorStyles.Bottom,
-               Margin = new Padding(18, 3, 4, 0),
+               Margin = new Padding(18, 3, 4, 3),
                TextAlign = ContentAlignment.MiddleLeft,
                Font = _uiFont
             };
@@ -325,9 +326,9 @@ namespace dvmig.XTB.UI
             {
                 Dock = DockStyle.Fill,
                 ReadOnly = true,
-                BackColor = Color.Black,
+                BackColor = Color.FromArgb(18, 18, 18),
                 ForeColor = Color.Gainsboro,
-                Font = new Font("Consolas", 12)
+                Font = new Font("Consolas", 10F)
             };
 
             var entityFilterOptionsPanel = new FlowLayoutPanel
@@ -394,7 +395,7 @@ namespace dvmig.XTB.UI
             var syncStatusPanel = new TableLayoutPanel
             {
                Dock = DockStyle.Top,
-               Height = 54,
+               Height = 48,
                ColumnCount = 1,
                RowCount = 2,
                Margin = new Padding(0),
