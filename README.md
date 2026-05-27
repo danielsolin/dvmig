@@ -24,7 +24,7 @@ UIs:
 - **Data Integrity:** Preserves essential metadata and relationships - if an
   referenced record (like Primary Contact) does not exist on Target environment,
   it will be automatically created.
-- **Synchronization:** Built with `Polly` for resiliance, handling transient
+- **Synchronization:** Built with `Polly` for resilience, handling transient
   errors and automatic retry strategies.
 - **Performance:** User-configurable parallelism. See performance table below.
   *(Note: Dataverse enforces API rate limits. When these limits are hit, dvmig
@@ -42,8 +42,8 @@ functionality from `dvmig.Core`.
 - `src/dvmig.Tests`: Unit test project using `xUnit`, `Moq`, and `Bogus`.
   
 The diagram below visualizes the synchronization process used in dvmig.Core.
-It handles preservation of audit fields, resolves dependencies, and excutes
-in parallell (using SemaphoreSlim to comply with .NET Standard 2.0).
+It handles preservation of audit fields, resolves dependencies, and executes
+in parallel (using SemaphoreSlim to comply with .NET Standard 2.0).
 
 ```mermaid
 flowchart TD
@@ -94,67 +94,15 @@ Five threads is therefore set as default in dvmig.
 
 Install it from XrmToolBox Tool Library using package id `dvmig.XTB`, or
 get the NuGet package directly from
-[NuGet.org](https://www.nuget.org/packages/dvmig.XTB/).  
-  
+[NuGet.org](https://www.nuget.org/packages/dvmig.XTB/).
+
+See the [Dataverse Migrator XrmToolBox Guide](docs/XTB-GUIDE.md) for detailed
+instructions.
   
 ## dvmig.CLI - TUI App
 
-You can either download a binary release or clone the repo and built it
-yourself.
+`dvmig.CLI` is the TUI app for Dataverse Migrator.
 
-* Download:
-   * Get the latest [release](https://github.com/danielsolin/dvmig/releases),
-   * Unzip it, right-click `dvmig.Cli.exe` and select "Properties". Check
-     "Unblock" at the bottom of the "General" tab and click "Ok".
-   * Double-click `dvmig.Cli.exe`.
-
-* Build:
-   ```console
-   # Clone the repository
-   git clone https://github.com/danielsolin/dvmig.git
-   cd dvmig
-
-   # Build the solution
-   dotnet restore
-   dotnet build
-
-   # Run
-   dotnet run --project src/dvmig.Cli
-   ```
-
-### Usage
-
-When running the app for the first time, start by selecting "Configuration"
-on the main menu to set connection strings for Source and Target environments.
-
-Example connection string:
-
-```code
-# Will open a login window in your default browser:
-AuthType=OAuth;Url=https://<your-instance>.crm.dynamics.com;RedirectUri=http://localhost/;LoginPrompt=Auto;
-```
-
-You can also test the connection strings in the app to make sure they work.
-
-### Main Menu
-
-**Synchronization (🚀)**
-   - **Sync Recommended:** Synchronizes `Account`, `Contact`, `Task`, `Email`,
-     `PhoneCall` and `Appointment`.
-   - **Sync Selected:** Allows manual entity selection.
-   - **Sync View:** Sync records in a view.
-   - **Re-sync:** Ignores sync state and forces an update of all records.
-
-**Maintenance (🛠️)**
-   - **Install dvmig Components:** Installs custom entities and plugin.
-   - **Uninstall dvmig Components:** Removes plugin and entities.
-   - **View Recorded Migration Failures:** Lists failure logs.
-
-**Data Management (🧪)**
-   - **Generate Sample Data:** Seeds the source environment with mock
-     data.
-   - **Wipe Data (Source/Target):** Purges data from environments.
-
-**Settings**
-   - Define connection strings, max threads for parallelism etc.
+See the [Dataverse Migrator CLI Guide](docs/CLI-GUIDE.md) for detailed
+instructions.
 

@@ -9,7 +9,9 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dvmig.Plugins", "src\dvmig.
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "doc", "doc", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
 	ProjectSection(SolutionItems) = preProject
+		docs\CLI-GUIDE.md = docs\CLI-GUIDE.md
 		README.md = README.md
+		docs\XTB-GUIDE.md = docs\XTB-GUIDE.md
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dvmig.Core", "src\dvmig.Core\dvmig.Core.csproj", "{3467DA6D-6314-4212-91BC-E1DCDFFEE2C1}"
