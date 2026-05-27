@@ -11,14 +11,14 @@
     <iconUrl>https://raw.githubusercontent.com/danielsolin/dvmig/main/assets/img/dvmig-icon-nuget.png?v=20260526-2</iconUrl>
     <readme>README.md</readme>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
-    <description>XrmToolBox plugin for synchronizing Dataverse data between environments with audit preservation.</description>
-    <summary>Synchronize Dataverse data between environments from XrmToolBox.</summary>
+    <description>XrmToolBox plugin for synchronizing Dataverse data between environments while preserving audit data and entity relations.</description>
+    <summary>Synchronize data between environments while preserving audit data and entity relations.</summary>
     <releaseNotes>See https://github.com/danielsolin/dvmig/releases for release notes.</releaseNotes>
     <copyright>Copyright Daniel Solin</copyright>
     <tags>XrmToolBox Plugins Dataverse Migrator dvmig</tags>
     <dependencies>
       <group targetFramework=".NETFramework4.8">
-        <dependency id="XrmToolBox" version="1.2025.10.74" />
+        <dependency id="XrmToolBoxPackage" version="1.2025.10.74" />
       </group>
     </dependencies>
   </metadata>
