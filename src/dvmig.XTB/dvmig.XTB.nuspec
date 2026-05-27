@@ -11,9 +11,9 @@
     <iconUrl>https://raw.githubusercontent.com/danielsolin/dvmig/main/assets/img/dvmig-icon-nuget.png?v=20260526-2</iconUrl>
     <readme>README.md</readme>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
-    <description>Synchronize data between environments while preserving audit data and entity relations.</description>
-    <summary>Synchronize data between environments while preserving audit data and entity relations.</summary>
-    <releaseNotes>See https://github.com/danielsolin/dvmig/releases for release notes.</releaseNotes>
+    <description>Synchronize data between environments while preserving audit data and entity relations. More info: https://github.com/danielsolin/dvmig/</description>
+    <summary>Synchronize data between environments while preserving audit data and entity relations. More info: https://github.com/danielsolin/dvmig/</summary>
+    <releaseNotes>See https://github.com/danielsolin/dvmig/ for more information.</releaseNotes>
     <copyright>Copyright Daniel Solin</copyright>
     <tags>XrmToolBox Plugins Dataverse Migrator dvmig</tags>
     <dependencies>
