@@ -1,8 +1,3 @@
-<figure>
-   <figcaption>XrmToolBox Plugin</figcaption>
-  <img src="assets/img/xtb-plugin.png" width="400px" />
-</figure>
-
 Dataverse Migrator (dvmig) is a synchronization/migration engine that can be
 used to sync/migrate data between CDS/Dataverse/Dynamics environments while
 preserving audit data and entity/table relations. It comes with two separate
