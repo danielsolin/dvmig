@@ -1,5 +1,9 @@
 # CLI GUIDE
 
+<figure>
+  <img src="/assets/img/sync-recommended-run.png" width="400px" />
+</figure>
+
 You can either download a binary release or clone the repo and build it
 yourself.
 
