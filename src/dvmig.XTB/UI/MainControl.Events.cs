@@ -511,7 +511,7 @@ namespace dvmig.XTB.UI
 
          _btnSync.Enabled = canRunSync;
          _btnSync.BackColor = canRunSync
-            ? System.Drawing.Color.LightGreen
+            ? System.Drawing.Color.FromArgb(198, 239, 206)
             : System.Drawing.SystemColors.Control;
          _btnSync.ForeColor = canRunSync
             ? System.Drawing.SystemColors.ControlText
