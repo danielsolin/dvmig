@@ -9,6 +9,7 @@
     <UseWindowsForms>true</UseWindowsForms>
     <AssemblyName>dvmig.XTB</AssemblyName>
     <RootNamespace>dvmig.XTB</RootNamespace>
+    <Company>Daniel Solin</Company>
     <ApplicationIcon>..\..\assets\img\dvmig-icon.ico</ApplicationIcon>
   </PropertyGroup>
 
