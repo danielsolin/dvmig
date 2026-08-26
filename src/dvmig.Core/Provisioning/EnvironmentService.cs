@@ -609,30 +609,11 @@ namespace dvmig.Core.Provisioning
          CancellationToken ct
       )
       {
-         var assemblyPath = pluginAssemblyPath;
-
-         if (string.IsNullOrEmpty(assemblyPath))
-         {
-            assemblyPath = Path.Combine(
-               AppDomain.CurrentDomain.BaseDirectory,
-               AppConstants.PluginAssemblyName
-            );
-
-            // Fallback for development if not in same folder
-            if (!File.Exists(assemblyPath))
-               assemblyPath = Path.Combine(
-                  AppDomain.CurrentDomain.BaseDirectory,
-                  "..",
-                  "..",
-                  "..",
-                  "..",
-                  AppConstants.PluginName,
-                  "bin",
-                  "Debug",
-                  "netstandard2.0",
-                  AppConstants.PluginAssemblyName
-               );
-         }
+         var assemblyPath = PluginAssemblyPathResolver.Resolve(
+            pluginAssemblyPath,
+            AppDomain.CurrentDomain.BaseDirectory,
+            typeof(EnvironmentService).Assembly.Location
+         );
 
          if (!File.Exists(assemblyPath))
          {

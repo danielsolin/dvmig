@@ -4,6 +4,9 @@
 // a specific target and scoped to a namespace, type, member, etc.
 
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
+
+[assembly: InternalsVisibleTo("dvmig.Tests")]
 
 [assembly: SuppressMessage(
    "Style",
